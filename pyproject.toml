@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68,<80"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rosbridge"
+version = "0.3.0"
+description = "Public robotics simulators as managed ROS 2 graphs"
+requires-python = ">=3.12"
+readme = "README.md"
+dependencies = ["PyYAML>=6,<7"]
+
+[project.optional-dependencies]
+runtime = ["numpy"]
+dev = ["numpy", "pytest", "ruff"]
+
+[project.scripts]
+rosbridge = "rosbridge.cli.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests/unit", "simulators/abc/tests/unit", "simulators/libero/tests/unit",
+             "simulators/robotwin/tests/unit", "simulators/robodojo/tests/unit",
+             "simulators/robocasa/tests/unit"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]

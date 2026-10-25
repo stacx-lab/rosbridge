@@ -1,0 +1,16 @@
+identity:
+  id: robotwin-aloha-agilex
+  name: RoboTwin ALOHA AgileX
+  kind: arm
+  model: ALOHA AgileX (dual ARX5)
+  source: user
+devices:
+  source: user
+safety:
+  source: user
+  max_joint_velocity: null
+  max_cartesian_velocity: null
+  keep_out_zones: []
+meta:
+  created_at: '2026-10-24T00:00:00Z'
+  updated_at: '2026-10-24T00:00:00Z'

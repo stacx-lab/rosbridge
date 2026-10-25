@@ -1,0 +1,90 @@
+name: left_arm
+runtime:
+  domain_id: 0
+  nodes:
+  - entry: links.py
+    factory: create
+  ready_timeout_s: 30
+operations:
+  joint_state:
+    description: Measured positions of joint1, joint2, joint3, joint4, joint5, joint6 in radians
+      with velocities and the world-clock acquisition stamp; do not infer motion completion
+      from a sent command.
+    transport: topic
+    direction: output
+    endpoint: /left_arm/joint_state
+    type: sensor_msgs/msg/JointState
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: transient_local
+    timeout_s: 10
+  joint_target:
+    description: Joint trajectory over all 6 arm joints in radians, timed from receipt by
+      strictly increasing time_from_start and finishing within 120 seconds; velocities, accelerations
+      and effort must be empty. A zero header stamp selects now; a nonzero stamp must not
+      start in the past. Points are absolute native joint positions, linearly interpolated
+      at the native control period. Replacement clears pending references; invalid trajectories
+      are ignored, so verify measured joint_state.
+    transport: topic
+    direction: input
+    endpoint: /left_arm/joint_target
+    type: trajectory_msgs/msg/JointTrajectory
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: volatile
+    timeout_s: 10
+  stop:
+    description: Stop arm motion and hold the measured posture.
+    transport: service
+    direction: input
+    endpoint: /left_arm/stop
+    type: std_srvs/srv/Trigger
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: volatile
+    timeout_s: 10
+loaded: false
+meta:
+  created_at: '2026-10-24T00:00:00Z'
+  updated_at: '2026-10-24T00:00:00Z'
+type: joint
+description: ARX X5 six-joint left arm of the RoboDojo rig. Geometry is the sibling arm.urdf
+  with flange (link6) as the tip link; measured links are on TF as left_arm/<link>, and helpers.joint_model('left_arm')
+  computes FK/IK from it. Commands are upstream's absolute joint positions (left_arm_joint_state
+  of EvalEnv.take_action), interpolated by the native controller over each 0.04 s frame. Both
+  arms use the native joint names joint1..joint6.
+source: introspected
+calibrated_at: null
+method: introspection
+model:
+  format: urdf
+  path: arm.urdf
+  base_link: base_link
+  tip_link: flange
+limits: native
+home:
+  joint1: 0.0
+  joint2: 0.0
+  joint3: 0.0
+  joint4: 0.0
+  joint5: 0.0
+  joint6: 0.0
+stop:
+  behavior: hold
+  affected_devices:
+  - left_arm
+frames:
+  base:
+    translation_m:
+    - -0.300000011921
+    - -0.449999988079
+    - 0.764999985695
+    rotation_xyzw:
+    - 0.0
+    - 0.0
+    - 0.707106923696
+    - 0.707106733684
+    parent: world:base

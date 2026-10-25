@@ -1,0 +1,13 @@
+diff --git a/abc_sim/randomization/core.py b/abc_sim/randomization/core.py
+--- a/abc_sim/randomization/core.py
++++ b/abc_sim/randomization/core.py
+@@ -292,5 +292,8 @@ def _resolve_scene_xml_paths(xml: str, base_dir: _Path | None) -> str:
+         for attr in ("meshdir", "texturedir"):
+             value = compiler.get(attr)
+             if value and not _Path(value).is_absolute():
+-                compiler.set(attr, str((base_dir / value).resolve()))
++                # Preserve the mounted scene layout: resolving symlinks here
++                # makes relative sibling assets point into another cache pack.
++                # MuJoCo normalizes each mesh path against this logical root.
++                compiler.set(attr, str((base_dir / value).absolute()))
+     return _ET.tostring(root, encoding="unicode")

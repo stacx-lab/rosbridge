@@ -1,0 +1,85 @@
+name: camera_agentview
+runtime:
+  domain_id: 0
+  nodes: []
+  ready_timeout_s: 30
+operations:
+  image:
+    description: RGB image measurements with encoding, dimensions, row stride and
+      acquisition timestamp in the Image header. The frame_id identifies the calibrated
+      optical frame; use its stamp for tf2 lookup. Subscription does not advance world
+      time.
+    transport: topic
+    direction: output
+    endpoint: /camera_agentview/image
+    type: sensor_msgs/msg/Image
+    qos:
+      depth: 1
+      reliability: best_effort
+      durability: volatile
+    timeout_s: 10
+  camera_info:
+    description: Projection and distortion calibration for the image stream, including
+      K, D, image size and optical frame. Use the declared distortion model and raw/rectified
+      image space when projecting pixels; intrinsics are not TF transforms.
+    transport: topic
+    direction: output
+    endpoint: /camera_agentview/camera_info
+    type: sensor_msgs/msg/CameraInfo
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: transient_local
+    timeout_s: 10
+  capture:
+    description: Return the current image in Capture.response.image without advancing
+      world time. Preserve the image header acquisition stamp and frame_id; request
+      fields and response status are available through runtime.describe.
+    transport: service
+    direction: input
+    endpoint: /camera_agentview/capture
+    type: kinex_interfaces/srv/Capture
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: volatile
+    timeout_s: 10
+loaded: false
+meta:
+  created_at: '2026-10-19T00:00:00Z'
+  updated_at: '2026-10-20T17:24:01.453Z'
+type: rgb
+description: Fixed RGB camera observing the tabletop scene. Image calibration and
+  the optical-frame mount are in the profile. Images are measurements at world-clock
+  acquisition timestamps.
+source: introspected
+method: introspection
+calibrated_at: null
+color:
+  width: 256
+  height: 256
+  fps: null
+  projection:
+    model: pinhole
+    fx: 309.01933598375615
+    fy: 309.01933598375615
+    cx: 127.5
+    cy: 127.5
+    skew: 0
+  distortion:
+    model: none
+  fov:
+    horizontal_deg: 45.00000000000001
+    vertical_deg: 45.00000000000001
+frames:
+  base:
+    translation_m:
+    - 0.458613174683
+    - 0.0
+    - 1.610350024037
+    rotation_xyzw:
+    - 0.638017721229
+    - 0.638017721229
+    - -0.304849838016
+    - -0.304849718806
+    parent: world:base

@@ -1,0 +1,12 @@
+diff --git a/prepare.py b/prepare.py
+--- a/prepare.py
++++ b/prepare.py
+@@ -126,6 +126,8 @@
+     "pour": ("cup_stacking", "mug"),
+     "chess": ("chess", "task_chess"),
+     "blocks": ("blocks",),
++    "drawer": ("drawer", "marker"),
++    "building_blocks": ("building_blocks",),
+ }
+ # Policy-specific VLA releases use a distinct catalogue prefix so they cannot
+ # replace the existing DiT checkpoint for the same simulator task.

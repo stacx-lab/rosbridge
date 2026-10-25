@@ -1,0 +1,53 @@
+<?xml version="1.0"?>
+<!-- ABC YAM right arm measured from MuJoCo right_arm..right_link_6; flange is the link_6 body frame. -->
+<robot name="yam_right_arm">
+  <link name="base_link"/>
+  <link name="link1"/>
+  <link name="link2"/>
+  <link name="link3"/>
+  <link name="link4"/>
+  <link name="link5"/>
+  <link name="flange"/>
+  <joint name="right_joint1" type="revolute">
+    <parent link="base_link"/>
+    <child link="link1"/>
+    <origin xyz="0 0 0.0631" rpy="0 0 1.5707963268"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-2.61799" upper="3.05433" effort="100" velocity="10"/>
+  </joint>
+  <joint name="right_joint2" type="revolute">
+    <parent link="link1"/>
+    <child link="link2"/>
+    <origin xyz="2.5e-05 -0.02 0.0409" rpy="1.5707963268 0 1.5707963268"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="0" upper="3.66519" effort="100" velocity="10"/>
+  </joint>
+  <joint name="right_joint3" type="revolute">
+    <parent link="link2"/>
+    <child link="link3"/>
+    <origin xyz="0.264 0 0" rpy="3.14159265359 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="0" upper="3.66519" effort="100" velocity="10"/>
+  </joint>
+  <joint name="right_joint4" type="revolute">
+    <parent link="link3"/>
+    <child link="link4"/>
+    <origin xyz="-0.245 -0.06 0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-1.5708" upper="1.5708" effort="100" velocity="10"/>
+  </joint>
+  <joint name="right_joint5" type="revolute">
+    <parent link="link4"/>
+    <child link="link5"/>
+    <origin xyz="-0.074 -0.0395 2.5e-05" rpy="0 1.5707963268 1.5707963268"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-1.5708" upper="1.5708" effort="100" velocity="10"/>
+  </joint>
+  <joint name="right_joint6" type="revolute">
+    <parent link="link5"/>
+    <child link="flange"/>
+    <origin xyz="0 0.0353 0.0395" rpy="-1.5707963268 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-2.0944" upper="2.0944" effort="100" velocity="10"/>
+  </joint>
+</robot>

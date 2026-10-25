@@ -1,0 +1,1039 @@
+[[tasks]]
+id = "libero/libero-spatial-01"
+robot = "libero/libero-panda-tabletop"
+native_task = "libero-spatial-01"
+suite = "libero_spatial"
+task_index = 0
+task_name = "pick_up_the_black_bowl_between_the_plate_and_the_ramekin_and_place_it_on_the_plate"
+
+[[tasks]]
+id = "libero/libero-spatial-02"
+robot = "libero/libero-panda-tabletop"
+native_task = "libero-spatial-02"
+suite = "libero_spatial"
+task_index = 1
+task_name = "pick_up_the_black_bowl_next_to_the_ramekin_and_place_it_on_the_plate"
+
+[[tasks]]
+id = "libero/libero-spatial-03"
+robot = "libero/libero-panda-tabletop"
+native_task = "libero-spatial-03"
+suite = "libero_spatial"
+task_index = 2
+task_name = "pick_up_the_black_bowl_from_table_center_and_place_it_on_the_plate"
+
+[[tasks]]
+id = "libero/libero-spatial-04"
+robot = "libero/libero-panda-tabletop"
+native_task = "libero-spatial-04"
+suite = "libero_spatial"
+task_index = 3
+task_name = "pick_up_the_black_bowl_on_the_cookie_box_and_place_it_on_the_plate"
+
+[[tasks]]
+id = "libero/libero-spatial-05"
+robot = "libero/libero-panda-tabletop"
+native_task = "libero-spatial-05"
+suite = "libero_spatial"
+task_index = 4
+task_name = "pick_up_the_black_bowl_in_the_top_drawer_of_the_wooden_cabinet_and_place_it_on_the_plate"
+
+[[tasks]]
+id = "libero/libero-spatial-06"
+robot = "libero/libero-panda-tabletop"
+native_task = "libero-spatial-06"
+suite = "libero_spatial"
+task_index = 5
+task_name = "pick_up_the_black_bowl_on_the_ramekin_and_place_it_on_the_plate"
+
+[[tasks]]
+id = "libero/libero-spatial-07"
+robot = "libero/libero-panda-tabletop"
+native_task = "libero-spatial-07"
+suite = "libero_spatial"
+task_index = 6
+task_name = "pick_up_the_black_bowl_next_to_the_cookie_box_and_place_it_on_the_plate"
+
+[[tasks]]
+id = "libero/libero-spatial-08"
+robot = "libero/libero-panda-tabletop"
+native_task = "libero-spatial-08"
+suite = "libero_spatial"
+task_index = 7
+task_name = "pick_up_the_black_bowl_on_the_stove_and_place_it_on_the_plate"
+
+[[tasks]]
+id = "libero/libero-spatial-09"
+robot = "libero/libero-panda-tabletop"
+native_task = "libero-spatial-09"
+suite = "libero_spatial"
+task_index = 8
+task_name = "pick_up_the_black_bowl_next_to_the_plate_and_place_it_on_the_plate"
+
+[[tasks]]
+id = "libero/libero-spatial-10"
+robot = "libero/libero-panda-tabletop"
+native_task = "libero-spatial-10"
+suite = "libero_spatial"
+task_index = 9
+task_name = "pick_up_the_black_bowl_on_the_wooden_cabinet_and_place_it_on_the_plate"
+
+[[tasks]]
+id = "libero/libero-object-01"
+robot = "libero/libero-panda-floor"
+native_task = "libero-object-01"
+suite = "libero_object"
+task_index = 0
+task_name = "pick_up_the_alphabet_soup_and_place_it_in_the_basket"
+
+[[tasks]]
+id = "libero/libero-object-02"
+robot = "libero/libero-panda-floor"
+native_task = "libero-object-02"
+suite = "libero_object"
+task_index = 1
+task_name = "pick_up_the_cream_cheese_and_place_it_in_the_basket"
+
+[[tasks]]
+id = "libero/libero-object-03"
+robot = "libero/libero-panda-floor"
+native_task = "libero-object-03"
+suite = "libero_object"
+task_index = 2
+task_name = "pick_up_the_salad_dressing_and_place_it_in_the_basket"
+
+[[tasks]]
+id = "libero/libero-object-04"
+robot = "libero/libero-panda-floor"
+native_task = "libero-object-04"
+suite = "libero_object"
+task_index = 3
+task_name = "pick_up_the_bbq_sauce_and_place_it_in_the_basket"
+
+[[tasks]]
+id = "libero/libero-object-05"
+robot = "libero/libero-panda-floor"
+native_task = "libero-object-05"
+suite = "libero_object"
+task_index = 4
+task_name = "pick_up_the_ketchup_and_place_it_in_the_basket"
+
+[[tasks]]
+id = "libero/libero-object-06"
+robot = "libero/libero-panda-floor"
+native_task = "libero-object-06"
+suite = "libero_object"
+task_index = 5
+task_name = "pick_up_the_tomato_sauce_and_place_it_in_the_basket"
+
+[[tasks]]
+id = "libero/libero-object-07"
+robot = "libero/libero-panda-floor"
+native_task = "libero-object-07"
+suite = "libero_object"
+task_index = 6
+task_name = "pick_up_the_butter_and_place_it_in_the_basket"
+
+[[tasks]]
+id = "libero/libero-object-08"
+robot = "libero/libero-panda-floor"
+native_task = "libero-object-08"
+suite = "libero_object"
+task_index = 7
+task_name = "pick_up_the_milk_and_place_it_in_the_basket"
+
+[[tasks]]
+id = "libero/libero-object-09"
+robot = "libero/libero-panda-floor"
+native_task = "libero-object-09"
+suite = "libero_object"
+task_index = 8
+task_name = "pick_up_the_chocolate_pudding_and_place_it_in_the_basket"
+
+[[tasks]]
+id = "libero/libero-object-10"
+robot = "libero/libero-panda-floor"
+native_task = "libero-object-10"
+suite = "libero_object"
+task_index = 9
+task_name = "pick_up_the_orange_juice_and_place_it_in_the_basket"
+
+[[tasks]]
+id = "libero/libero-goal-01"
+robot = "libero/libero-panda-tabletop"
+native_task = "libero-goal-01"
+suite = "libero_goal"
+task_index = 0
+task_name = "open_the_middle_drawer_of_the_cabinet"
+
+[[tasks]]
+id = "libero/libero-goal-02"
+robot = "libero/libero-panda-tabletop"
+native_task = "libero-goal-02"
+suite = "libero_goal"
+task_index = 1
+task_name = "put_the_bowl_on_the_stove"
+
+[[tasks]]
+id = "libero/libero-goal-03"
+robot = "libero/libero-panda-tabletop"
+native_task = "libero-goal-03"
+suite = "libero_goal"
+task_index = 2
+task_name = "put_the_wine_bottle_on_top_of_the_cabinet"
+
+[[tasks]]
+id = "libero/libero-goal-04"
+robot = "libero/libero-panda-tabletop"
+native_task = "libero-goal-04"
+suite = "libero_goal"
+task_index = 3
+task_name = "open_the_top_drawer_and_put_the_bowl_inside"
+
+[[tasks]]
+id = "libero/libero-goal-05"
+robot = "libero/libero-panda-tabletop"
+native_task = "libero-goal-05"
+suite = "libero_goal"
+task_index = 4
+task_name = "put_the_bowl_on_top_of_the_cabinet"
+
+[[tasks]]
+id = "libero/libero-goal-06"
+robot = "libero/libero-panda-tabletop"
+native_task = "libero-goal-06"
+suite = "libero_goal"
+task_index = 5
+task_name = "push_the_plate_to_the_front_of_the_stove"
+
+[[tasks]]
+id = "libero/libero-goal-07"
+robot = "libero/libero-panda-tabletop"
+native_task = "libero-goal-07"
+suite = "libero_goal"
+task_index = 6
+task_name = "put_the_cream_cheese_in_the_bowl"
+
+[[tasks]]
+id = "libero/libero-goal-08"
+robot = "libero/libero-panda-tabletop"
+native_task = "libero-goal-08"
+suite = "libero_goal"
+task_index = 7
+task_name = "turn_on_the_stove"
+
+[[tasks]]
+id = "libero/libero-goal-09"
+robot = "libero/libero-panda-tabletop"
+native_task = "libero-goal-09"
+suite = "libero_goal"
+task_index = 8
+task_name = "put_the_bowl_on_the_plate"
+
+[[tasks]]
+id = "libero/libero-goal-10"
+robot = "libero/libero-panda-tabletop"
+native_task = "libero-goal-10"
+suite = "libero_goal"
+task_index = 9
+task_name = "put_the_wine_bottle_on_the_rack"
+
+[[tasks]]
+id = "libero/libero-10-01"
+robot = "libero/libero-panda-living-room"
+native_task = "libero-10-01"
+suite = "libero_10"
+task_index = 0
+task_name = "LIVING_ROOM_SCENE2_put_both_the_alphabet_soup_and_the_tomato_sauce_in_the_basket"
+
+[[tasks]]
+id = "libero/libero-10-02"
+robot = "libero/libero-panda-living-room"
+native_task = "libero-10-02"
+suite = "libero_10"
+task_index = 1
+task_name = "LIVING_ROOM_SCENE2_put_both_the_cream_cheese_box_and_the_butter_in_the_basket"
+
+[[tasks]]
+id = "libero/libero-10-03"
+robot = "libero/libero-panda-kitchen"
+native_task = "libero-10-03"
+suite = "libero_10"
+task_index = 2
+task_name = "KITCHEN_SCENE3_turn_on_the_stove_and_put_the_moka_pot_on_it"
+
+[[tasks]]
+id = "libero/libero-10-04"
+robot = "libero/libero-panda-kitchen"
+native_task = "libero-10-04"
+suite = "libero_10"
+task_index = 3
+task_name = "KITCHEN_SCENE4_put_the_black_bowl_in_the_bottom_drawer_of_the_cabinet_and_close_it"
+
+[[tasks]]
+id = "libero/libero-10-05"
+robot = "libero/libero-panda-living-room"
+native_task = "libero-10-05"
+suite = "libero_10"
+task_index = 4
+task_name = "LIVING_ROOM_SCENE5_put_the_white_mug_on_the_left_plate_and_put_the_yellow_and_white_mug_on_the_right_plate"
+
+[[tasks]]
+id = "libero/libero-10-06"
+robot = "libero/libero-panda-study"
+native_task = "libero-10-06"
+suite = "libero_10"
+task_index = 5
+task_name = "STUDY_SCENE1_pick_up_the_book_and_place_it_in_the_back_compartment_of_the_caddy"
+
+[[tasks]]
+id = "libero/libero-10-07"
+robot = "libero/libero-panda-living-room"
+native_task = "libero-10-07"
+suite = "libero_10"
+task_index = 6
+task_name = "LIVING_ROOM_SCENE6_put_the_white_mug_on_the_plate_and_put_the_chocolate_pudding_to_the_right_of_the_plate"
+
+[[tasks]]
+id = "libero/libero-10-08"
+robot = "libero/libero-panda-living-room"
+native_task = "libero-10-08"
+suite = "libero_10"
+task_index = 7
+task_name = "LIVING_ROOM_SCENE1_put_both_the_alphabet_soup_and_the_cream_cheese_box_in_the_basket"
+
+[[tasks]]
+id = "libero/libero-10-09"
+robot = "libero/libero-panda-kitchen"
+native_task = "libero-10-09"
+suite = "libero_10"
+task_index = 8
+task_name = "KITCHEN_SCENE8_put_both_moka_pots_on_the_stove"
+
+[[tasks]]
+id = "libero/libero-10-10"
+robot = "libero/libero-panda-kitchen"
+native_task = "libero-10-10"
+suite = "libero_10"
+task_index = 9
+task_name = "KITCHEN_SCENE6_put_the_yellow_and_white_mug_in_the_microwave_and_close_it"
+
+[[tasks]]
+id = "libero/libero-90-01"
+robot = "libero/libero-panda-kitchen"
+native_task = "libero-90-01"
+suite = "libero_90"
+task_index = 0
+task_name = "KITCHEN_SCENE10_close_the_top_drawer_of_the_cabinet"
+
+[[tasks]]
+id = "libero/libero-90-02"
+robot = "libero/libero-panda-kitchen"
+native_task = "libero-90-02"
+suite = "libero_90"
+task_index = 1
+task_name = "KITCHEN_SCENE10_close_the_top_drawer_of_the_cabinet_and_put_the_black_bowl_on_top_of_it"
+
+[[tasks]]
+id = "libero/libero-90-03"
+robot = "libero/libero-panda-kitchen"
+native_task = "libero-90-03"
+suite = "libero_90"
+task_index = 2
+task_name = "KITCHEN_SCENE10_put_the_black_bowl_in_the_top_drawer_of_the_cabinet"
+
+[[tasks]]
+id = "libero/libero-90-04"
+robot = "libero/libero-panda-kitchen"
+native_task = "libero-90-04"
+suite = "libero_90"
+task_index = 3
+task_name = "KITCHEN_SCENE10_put_the_butter_at_the_back_in_the_top_drawer_of_the_cabinet_and_close_it"
+
+[[tasks]]
+id = "libero/libero-90-05"
+robot = "libero/libero-panda-kitchen"
+native_task = "libero-90-05"
+suite = "libero_90"
+task_index = 4
+task_name = "KITCHEN_SCENE10_put_the_butter_at_the_front_in_the_top_drawer_of_the_cabinet_and_close_it"
+
+[[tasks]]
+id = "libero/libero-90-06"
+robot = "libero/libero-panda-kitchen"
+native_task = "libero-90-06"
+suite = "libero_90"
+task_index = 5
+task_name = "KITCHEN_SCENE10_put_the_chocolate_pudding_in_the_top_drawer_of_the_cabinet_and_close_it"
+
+[[tasks]]
+id = "libero/libero-90-07"
+robot = "libero/libero-panda-kitchen"
+native_task = "libero-90-07"
+suite = "libero_90"
+task_index = 6
+task_name = "KITCHEN_SCENE1_open_the_bottom_drawer_of_the_cabinet"
+
+[[tasks]]
+id = "libero/libero-90-08"
+robot = "libero/libero-panda-kitchen"
+native_task = "libero-90-08"
+suite = "libero_90"
+task_index = 7
+task_name = "KITCHEN_SCENE1_open_the_top_drawer_of_the_cabinet"
+
+[[tasks]]
+id = "libero/libero-90-09"
+robot = "libero/libero-panda-kitchen"
+native_task = "libero-90-09"
+suite = "libero_90"
+task_index = 8
+task_name = "KITCHEN_SCENE1_open_the_top_drawer_of_the_cabinet_and_put_the_bowl_in_it"
+
+[[tasks]]
+id = "libero/libero-90-10"
+robot = "libero/libero-panda-kitchen"
+native_task = "libero-90-10"
+suite = "libero_90"
+task_index = 9
+task_name = "KITCHEN_SCENE1_put_the_black_bowl_on_the_plate"
+
+[[tasks]]
+id = "libero/libero-90-11"
+robot = "libero/libero-panda-kitchen"
+native_task = "libero-90-11"
+suite = "libero_90"
+task_index = 10
+task_name = "KITCHEN_SCENE1_put_the_black_bowl_on_top_of_the_cabinet"
+
+[[tasks]]
+id = "libero/libero-90-12"
+robot = "libero/libero-panda-kitchen"
+native_task = "libero-90-12"
+suite = "libero_90"
+task_index = 11
+task_name = "KITCHEN_SCENE2_open_the_top_drawer_of_the_cabinet"
+
+[[tasks]]
+id = "libero/libero-90-13"
+robot = "libero/libero-panda-kitchen"
+native_task = "libero-90-13"
+suite = "libero_90"
+task_index = 12
+task_name = "KITCHEN_SCENE2_put_the_black_bowl_at_the_back_on_the_plate"
+
+[[tasks]]
+id = "libero/libero-90-14"
+robot = "libero/libero-panda-kitchen"
+native_task = "libero-90-14"
+suite = "libero_90"
+task_index = 13
+task_name = "KITCHEN_SCENE2_put_the_black_bowl_at_the_front_on_the_plate"
+
+[[tasks]]
+id = "libero/libero-90-15"
+robot = "libero/libero-panda-kitchen"
+native_task = "libero-90-15"
+suite = "libero_90"
+task_index = 14
+task_name = "KITCHEN_SCENE2_put_the_middle_black_bowl_on_the_plate"
+
+[[tasks]]
+id = "libero/libero-90-16"
+robot = "libero/libero-panda-kitchen"
+native_task = "libero-90-16"
+suite = "libero_90"
+task_index = 15
+task_name = "KITCHEN_SCENE2_put_the_middle_black_bowl_on_top_of_the_cabinet"
+
+[[tasks]]
+id = "libero/libero-90-17"
+robot = "libero/libero-panda-kitchen"
+native_task = "libero-90-17"
+suite = "libero_90"
+task_index = 16
+task_name = "KITCHEN_SCENE2_stack_the_black_bowl_at_the_front_on_the_black_bowl_in_the_middle"
+
+[[tasks]]
+id = "libero/libero-90-18"
+robot = "libero/libero-panda-kitchen"
+native_task = "libero-90-18"
+suite = "libero_90"
+task_index = 17
+task_name = "KITCHEN_SCENE2_stack_the_middle_black_bowl_on_the_back_black_bowl"
+
+[[tasks]]
+id = "libero/libero-90-19"
+robot = "libero/libero-panda-kitchen"
+native_task = "libero-90-19"
+suite = "libero_90"
+task_index = 18
+task_name = "KITCHEN_SCENE3_put_the_frying_pan_on_the_stove"
+
+[[tasks]]
+id = "libero/libero-90-20"
+robot = "libero/libero-panda-kitchen"
+native_task = "libero-90-20"
+suite = "libero_90"
+task_index = 19
+task_name = "KITCHEN_SCENE3_put_the_moka_pot_on_the_stove"
+
+[[tasks]]
+id = "libero/libero-90-21"
+robot = "libero/libero-panda-kitchen"
+native_task = "libero-90-21"
+suite = "libero_90"
+task_index = 20
+task_name = "KITCHEN_SCENE3_turn_on_the_stove"
+
+[[tasks]]
+id = "libero/libero-90-22"
+robot = "libero/libero-panda-kitchen"
+native_task = "libero-90-22"
+suite = "libero_90"
+task_index = 21
+task_name = "KITCHEN_SCENE3_turn_on_the_stove_and_put_the_frying_pan_on_it"
+
+[[tasks]]
+id = "libero/libero-90-23"
+robot = "libero/libero-panda-kitchen"
+native_task = "libero-90-23"
+suite = "libero_90"
+task_index = 22
+task_name = "KITCHEN_SCENE4_close_the_bottom_drawer_of_the_cabinet"
+
+[[tasks]]
+id = "libero/libero-90-24"
+robot = "libero/libero-panda-kitchen"
+native_task = "libero-90-24"
+suite = "libero_90"
+task_index = 23
+task_name = "KITCHEN_SCENE4_close_the_bottom_drawer_of_the_cabinet_and_open_the_top_drawer"
+
+[[tasks]]
+id = "libero/libero-90-25"
+robot = "libero/libero-panda-kitchen"
+native_task = "libero-90-25"
+suite = "libero_90"
+task_index = 24
+task_name = "KITCHEN_SCENE4_put_the_black_bowl_in_the_bottom_drawer_of_the_cabinet"
+
+[[tasks]]
+id = "libero/libero-90-26"
+robot = "libero/libero-panda-kitchen"
+native_task = "libero-90-26"
+suite = "libero_90"
+task_index = 25
+task_name = "KITCHEN_SCENE4_put_the_black_bowl_on_top_of_the_cabinet"
+
+[[tasks]]
+id = "libero/libero-90-27"
+robot = "libero/libero-panda-kitchen"
+native_task = "libero-90-27"
+suite = "libero_90"
+task_index = 26
+task_name = "KITCHEN_SCENE4_put_the_wine_bottle_in_the_bottom_drawer_of_the_cabinet"
+
+[[tasks]]
+id = "libero/libero-90-28"
+robot = "libero/libero-panda-kitchen"
+native_task = "libero-90-28"
+suite = "libero_90"
+task_index = 27
+task_name = "KITCHEN_SCENE4_put_the_wine_bottle_on_the_wine_rack"
+
+[[tasks]]
+id = "libero/libero-90-29"
+robot = "libero/libero-panda-kitchen"
+native_task = "libero-90-29"
+suite = "libero_90"
+task_index = 28
+task_name = "KITCHEN_SCENE5_close_the_top_drawer_of_the_cabinet"
+
+[[tasks]]
+id = "libero/libero-90-30"
+robot = "libero/libero-panda-kitchen"
+native_task = "libero-90-30"
+suite = "libero_90"
+task_index = 29
+task_name = "KITCHEN_SCENE5_put_the_black_bowl_in_the_top_drawer_of_the_cabinet"
+
+[[tasks]]
+id = "libero/libero-90-31"
+robot = "libero/libero-panda-kitchen"
+native_task = "libero-90-31"
+suite = "libero_90"
+task_index = 30
+task_name = "KITCHEN_SCENE5_put_the_black_bowl_on_the_plate"
+
+[[tasks]]
+id = "libero/libero-90-32"
+robot = "libero/libero-panda-kitchen"
+native_task = "libero-90-32"
+suite = "libero_90"
+task_index = 31
+task_name = "KITCHEN_SCENE5_put_the_black_bowl_on_top_of_the_cabinet"
+
+[[tasks]]
+id = "libero/libero-90-33"
+robot = "libero/libero-panda-kitchen"
+native_task = "libero-90-33"
+suite = "libero_90"
+task_index = 32
+task_name = "KITCHEN_SCENE5_put_the_ketchup_in_the_top_drawer_of_the_cabinet"
+
+[[tasks]]
+id = "libero/libero-90-34"
+robot = "libero/libero-panda-kitchen"
+native_task = "libero-90-34"
+suite = "libero_90"
+task_index = 33
+task_name = "KITCHEN_SCENE6_close_the_microwave"
+
+[[tasks]]
+id = "libero/libero-90-35"
+robot = "libero/libero-panda-kitchen"
+native_task = "libero-90-35"
+suite = "libero_90"
+task_index = 34
+task_name = "KITCHEN_SCENE6_put_the_yellow_and_white_mug_to_the_front_of_the_white_mug"
+
+[[tasks]]
+id = "libero/libero-90-36"
+robot = "libero/libero-panda-kitchen"
+native_task = "libero-90-36"
+suite = "libero_90"
+task_index = 35
+task_name = "KITCHEN_SCENE7_open_the_microwave"
+
+[[tasks]]
+id = "libero/libero-90-37"
+robot = "libero/libero-panda-kitchen"
+native_task = "libero-90-37"
+suite = "libero_90"
+task_index = 36
+task_name = "KITCHEN_SCENE7_put_the_white_bowl_on_the_plate"
+
+[[tasks]]
+id = "libero/libero-90-38"
+robot = "libero/libero-panda-kitchen"
+native_task = "libero-90-38"
+suite = "libero_90"
+task_index = 37
+task_name = "KITCHEN_SCENE7_put_the_white_bowl_to_the_right_of_the_plate"
+
+[[tasks]]
+id = "libero/libero-90-39"
+robot = "libero/libero-panda-kitchen"
+native_task = "libero-90-39"
+suite = "libero_90"
+task_index = 38
+task_name = "KITCHEN_SCENE8_put_the_right_moka_pot_on_the_stove"
+
+[[tasks]]
+id = "libero/libero-90-40"
+robot = "libero/libero-panda-kitchen"
+native_task = "libero-90-40"
+suite = "libero_90"
+task_index = 39
+task_name = "KITCHEN_SCENE8_turn_off_the_stove"
+
+[[tasks]]
+id = "libero/libero-90-41"
+robot = "libero/libero-panda-kitchen"
+native_task = "libero-90-41"
+suite = "libero_90"
+task_index = 40
+task_name = "KITCHEN_SCENE9_put_the_frying_pan_on_the_cabinet_shelf"
+
+[[tasks]]
+id = "libero/libero-90-42"
+robot = "libero/libero-panda-kitchen"
+native_task = "libero-90-42"
+suite = "libero_90"
+task_index = 41
+task_name = "KITCHEN_SCENE9_put_the_frying_pan_on_top_of_the_cabinet"
+
+[[tasks]]
+id = "libero/libero-90-43"
+robot = "libero/libero-panda-kitchen"
+native_task = "libero-90-43"
+suite = "libero_90"
+task_index = 42
+task_name = "KITCHEN_SCENE9_put_the_frying_pan_under_the_cabinet_shelf"
+
+[[tasks]]
+id = "libero/libero-90-44"
+robot = "libero/libero-panda-kitchen"
+native_task = "libero-90-44"
+suite = "libero_90"
+task_index = 43
+task_name = "KITCHEN_SCENE9_put_the_white_bowl_on_top_of_the_cabinet"
+
+[[tasks]]
+id = "libero/libero-90-45"
+robot = "libero/libero-panda-kitchen"
+native_task = "libero-90-45"
+suite = "libero_90"
+task_index = 44
+task_name = "KITCHEN_SCENE9_turn_on_the_stove"
+
+[[tasks]]
+id = "libero/libero-90-46"
+robot = "libero/libero-panda-kitchen"
+native_task = "libero-90-46"
+suite = "libero_90"
+task_index = 45
+task_name = "KITCHEN_SCENE9_turn_on_the_stove_and_put_the_frying_pan_on_it"
+
+[[tasks]]
+id = "libero/libero-90-47"
+robot = "libero/libero-panda-living-room"
+native_task = "libero-90-47"
+suite = "libero_90"
+task_index = 46
+task_name = "LIVING_ROOM_SCENE1_pick_up_the_alphabet_soup_and_put_it_in_the_basket"
+
+[[tasks]]
+id = "libero/libero-90-48"
+robot = "libero/libero-panda-living-room"
+native_task = "libero-90-48"
+suite = "libero_90"
+task_index = 47
+task_name = "LIVING_ROOM_SCENE1_pick_up_the_cream_cheese_box_and_put_it_in_the_basket"
+
+[[tasks]]
+id = "libero/libero-90-49"
+robot = "libero/libero-panda-living-room"
+native_task = "libero-90-49"
+suite = "libero_90"
+task_index = 48
+task_name = "LIVING_ROOM_SCENE1_pick_up_the_ketchup_and_put_it_in_the_basket"
+
+[[tasks]]
+id = "libero/libero-90-50"
+robot = "libero/libero-panda-living-room"
+native_task = "libero-90-50"
+suite = "libero_90"
+task_index = 49
+task_name = "LIVING_ROOM_SCENE1_pick_up_the_tomato_sauce_and_put_it_in_the_basket"
+
+[[tasks]]
+id = "libero/libero-90-51"
+robot = "libero/libero-panda-living-room"
+native_task = "libero-90-51"
+suite = "libero_90"
+task_index = 50
+task_name = "LIVING_ROOM_SCENE2_pick_up_the_alphabet_soup_and_put_it_in_the_basket"
+
+[[tasks]]
+id = "libero/libero-90-52"
+robot = "libero/libero-panda-living-room"
+native_task = "libero-90-52"
+suite = "libero_90"
+task_index = 51
+task_name = "LIVING_ROOM_SCENE2_pick_up_the_butter_and_put_it_in_the_basket"
+
+[[tasks]]
+id = "libero/libero-90-53"
+robot = "libero/libero-panda-living-room"
+native_task = "libero-90-53"
+suite = "libero_90"
+task_index = 52
+task_name = "LIVING_ROOM_SCENE2_pick_up_the_milk_and_put_it_in_the_basket"
+
+[[tasks]]
+id = "libero/libero-90-54"
+robot = "libero/libero-panda-living-room"
+native_task = "libero-90-54"
+suite = "libero_90"
+task_index = 53
+task_name = "LIVING_ROOM_SCENE2_pick_up_the_orange_juice_and_put_it_in_the_basket"
+
+[[tasks]]
+id = "libero/libero-90-55"
+robot = "libero/libero-panda-living-room"
+native_task = "libero-90-55"
+suite = "libero_90"
+task_index = 54
+task_name = "LIVING_ROOM_SCENE2_pick_up_the_tomato_sauce_and_put_it_in_the_basket"
+
+[[tasks]]
+id = "libero/libero-90-56"
+robot = "libero/libero-panda-living-room"
+native_task = "libero-90-56"
+suite = "libero_90"
+task_index = 55
+task_name = "LIVING_ROOM_SCENE3_pick_up_the_alphabet_soup_and_put_it_in_the_tray"
+
+[[tasks]]
+id = "libero/libero-90-57"
+robot = "libero/libero-panda-living-room"
+native_task = "libero-90-57"
+suite = "libero_90"
+task_index = 56
+task_name = "LIVING_ROOM_SCENE3_pick_up_the_butter_and_put_it_in_the_tray"
+
+[[tasks]]
+id = "libero/libero-90-58"
+robot = "libero/libero-panda-living-room"
+native_task = "libero-90-58"
+suite = "libero_90"
+task_index = 57
+task_name = "LIVING_ROOM_SCENE3_pick_up_the_cream_cheese_and_put_it_in_the_tray"
+
+[[tasks]]
+id = "libero/libero-90-59"
+robot = "libero/libero-panda-living-room"
+native_task = "libero-90-59"
+suite = "libero_90"
+task_index = 58
+task_name = "LIVING_ROOM_SCENE3_pick_up_the_ketchup_and_put_it_in_the_tray"
+
+[[tasks]]
+id = "libero/libero-90-60"
+robot = "libero/libero-panda-living-room"
+native_task = "libero-90-60"
+suite = "libero_90"
+task_index = 59
+task_name = "LIVING_ROOM_SCENE3_pick_up_the_tomato_sauce_and_put_it_in_the_tray"
+
+[[tasks]]
+id = "libero/libero-90-61"
+robot = "libero/libero-panda-living-room"
+native_task = "libero-90-61"
+suite = "libero_90"
+task_index = 60
+task_name = "LIVING_ROOM_SCENE4_pick_up_the_black_bowl_on_the_left_and_put_it_in_the_tray"
+
+[[tasks]]
+id = "libero/libero-90-62"
+robot = "libero/libero-panda-living-room"
+native_task = "libero-90-62"
+suite = "libero_90"
+task_index = 61
+task_name = "LIVING_ROOM_SCENE4_pick_up_the_chocolate_pudding_and_put_it_in_the_tray"
+
+[[tasks]]
+id = "libero/libero-90-63"
+robot = "libero/libero-panda-living-room"
+native_task = "libero-90-63"
+suite = "libero_90"
+task_index = 62
+task_name = "LIVING_ROOM_SCENE4_pick_up_the_salad_dressing_and_put_it_in_the_tray"
+
+[[tasks]]
+id = "libero/libero-90-64"
+robot = "libero/libero-panda-living-room"
+native_task = "libero-90-64"
+suite = "libero_90"
+task_index = 63
+task_name = "LIVING_ROOM_SCENE4_stack_the_left_bowl_on_the_right_bowl_and_place_them_in_the_tray"
+
+[[tasks]]
+id = "libero/libero-90-65"
+robot = "libero/libero-panda-living-room"
+native_task = "libero-90-65"
+suite = "libero_90"
+task_index = 64
+task_name = "LIVING_ROOM_SCENE4_stack_the_right_bowl_on_the_left_bowl_and_place_them_in_the_tray"
+
+[[tasks]]
+id = "libero/libero-90-66"
+robot = "libero/libero-panda-living-room"
+native_task = "libero-90-66"
+suite = "libero_90"
+task_index = 65
+task_name = "LIVING_ROOM_SCENE5_put_the_red_mug_on_the_left_plate"
+
+[[tasks]]
+id = "libero/libero-90-67"
+robot = "libero/libero-panda-living-room"
+native_task = "libero-90-67"
+suite = "libero_90"
+task_index = 66
+task_name = "LIVING_ROOM_SCENE5_put_the_red_mug_on_the_right_plate"
+
+[[tasks]]
+id = "libero/libero-90-68"
+robot = "libero/libero-panda-living-room"
+native_task = "libero-90-68"
+suite = "libero_90"
+task_index = 67
+task_name = "LIVING_ROOM_SCENE5_put_the_white_mug_on_the_left_plate"
+
+[[tasks]]
+id = "libero/libero-90-69"
+robot = "libero/libero-panda-living-room"
+native_task = "libero-90-69"
+suite = "libero_90"
+task_index = 68
+task_name = "LIVING_ROOM_SCENE5_put_the_yellow_and_white_mug_on_the_right_plate"
+
+[[tasks]]
+id = "libero/libero-90-70"
+robot = "libero/libero-panda-living-room"
+native_task = "libero-90-70"
+suite = "libero_90"
+task_index = 69
+task_name = "LIVING_ROOM_SCENE6_put_the_chocolate_pudding_to_the_left_of_the_plate"
+
+[[tasks]]
+id = "libero/libero-90-71"
+robot = "libero/libero-panda-living-room"
+native_task = "libero-90-71"
+suite = "libero_90"
+task_index = 70
+task_name = "LIVING_ROOM_SCENE6_put_the_chocolate_pudding_to_the_right_of_the_plate"
+
+[[tasks]]
+id = "libero/libero-90-72"
+robot = "libero/libero-panda-living-room"
+native_task = "libero-90-72"
+suite = "libero_90"
+task_index = 71
+task_name = "LIVING_ROOM_SCENE6_put_the_red_mug_on_the_plate"
+
+[[tasks]]
+id = "libero/libero-90-73"
+robot = "libero/libero-panda-living-room"
+native_task = "libero-90-73"
+suite = "libero_90"
+task_index = 72
+task_name = "LIVING_ROOM_SCENE6_put_the_white_mug_on_the_plate"
+
+[[tasks]]
+id = "libero/libero-90-74"
+robot = "libero/libero-panda-study"
+native_task = "libero-90-74"
+suite = "libero_90"
+task_index = 73
+task_name = "STUDY_SCENE1_pick_up_the_book_and_place_it_in_the_front_compartment_of_the_caddy"
+
+[[tasks]]
+id = "libero/libero-90-75"
+robot = "libero/libero-panda-study"
+native_task = "libero-90-75"
+suite = "libero_90"
+task_index = 74
+task_name = "STUDY_SCENE1_pick_up_the_book_and_place_it_in_the_left_compartment_of_the_caddy"
+
+[[tasks]]
+id = "libero/libero-90-76"
+robot = "libero/libero-panda-study"
+native_task = "libero-90-76"
+suite = "libero_90"
+task_index = 75
+task_name = "STUDY_SCENE1_pick_up_the_book_and_place_it_in_the_right_compartment_of_the_caddy"
+
+[[tasks]]
+id = "libero/libero-90-77"
+robot = "libero/libero-panda-study"
+native_task = "libero-90-77"
+suite = "libero_90"
+task_index = 76
+task_name = "STUDY_SCENE1_pick_up_the_yellow_and_white_mug_and_place_it_to_the_right_of_the_caddy"
+
+[[tasks]]
+id = "libero/libero-90-78"
+robot = "libero/libero-panda-study"
+native_task = "libero-90-78"
+suite = "libero_90"
+task_index = 77
+task_name = "STUDY_SCENE2_pick_up_the_book_and_place_it_in_the_back_compartment_of_the_caddy"
+
+[[tasks]]
+id = "libero/libero-90-79"
+robot = "libero/libero-panda-study"
+native_task = "libero-90-79"
+suite = "libero_90"
+task_index = 78
+task_name = "STUDY_SCENE2_pick_up_the_book_and_place_it_in_the_front_compartment_of_the_caddy"
+
+[[tasks]]
+id = "libero/libero-90-80"
+robot = "libero/libero-panda-study"
+native_task = "libero-90-80"
+suite = "libero_90"
+task_index = 79
+task_name = "STUDY_SCENE2_pick_up_the_book_and_place_it_in_the_left_compartment_of_the_caddy"
+
+[[tasks]]
+id = "libero/libero-90-81"
+robot = "libero/libero-panda-study"
+native_task = "libero-90-81"
+suite = "libero_90"
+task_index = 80
+task_name = "STUDY_SCENE2_pick_up_the_book_and_place_it_in_the_right_compartment_of_the_caddy"
+
+[[tasks]]
+id = "libero/libero-90-82"
+robot = "libero/libero-panda-study"
+native_task = "libero-90-82"
+suite = "libero_90"
+task_index = 81
+task_name = "STUDY_SCENE3_pick_up_the_book_and_place_it_in_the_front_compartment_of_the_caddy"
+
+[[tasks]]
+id = "libero/libero-90-83"
+robot = "libero/libero-panda-study"
+native_task = "libero-90-83"
+suite = "libero_90"
+task_index = 82
+task_name = "STUDY_SCENE3_pick_up_the_book_and_place_it_in_the_left_compartment_of_the_caddy"
+
+[[tasks]]
+id = "libero/libero-90-84"
+robot = "libero/libero-panda-study"
+native_task = "libero-90-84"
+suite = "libero_90"
+task_index = 83
+task_name = "STUDY_SCENE3_pick_up_the_book_and_place_it_in_the_right_compartment_of_the_caddy"
+
+[[tasks]]
+id = "libero/libero-90-85"
+robot = "libero/libero-panda-study"
+native_task = "libero-90-85"
+suite = "libero_90"
+task_index = 84
+task_name = "STUDY_SCENE3_pick_up_the_red_mug_and_place_it_to_the_right_of_the_caddy"
+
+[[tasks]]
+id = "libero/libero-90-86"
+robot = "libero/libero-panda-study"
+native_task = "libero-90-86"
+suite = "libero_90"
+task_index = 85
+task_name = "STUDY_SCENE3_pick_up_the_white_mug_and_place_it_to_the_right_of_the_caddy"
+
+[[tasks]]
+id = "libero/libero-90-87"
+robot = "libero/libero-panda-study"
+native_task = "libero-90-87"
+suite = "libero_90"
+task_index = 86
+task_name = "STUDY_SCENE4_pick_up_the_book_in_the_middle_and_place_it_on_the_cabinet_shelf"
+
+[[tasks]]
+id = "libero/libero-90-88"
+robot = "libero/libero-panda-study"
+native_task = "libero-90-88"
+suite = "libero_90"
+task_index = 87
+task_name = "STUDY_SCENE4_pick_up_the_book_on_the_left_and_place_it_on_top_of_the_shelf"
+
+[[tasks]]
+id = "libero/libero-90-89"
+robot = "libero/libero-panda-study"
+native_task = "libero-90-89"
+suite = "libero_90"
+task_index = 88
+task_name = "STUDY_SCENE4_pick_up_the_book_on_the_right_and_place_it_on_the_cabinet_shelf"
+
+[[tasks]]
+id = "libero/libero-90-90"
+robot = "libero/libero-panda-study"
+native_task = "libero-90-90"
+suite = "libero_90"
+task_index = 89
+task_name = "STUDY_SCENE4_pick_up_the_book_on_the_right_and_place_it_under_the_cabinet_shelf"

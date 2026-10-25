@@ -1,0 +1,4 @@
+# One git patch filename per line, applied in order to .runtime/abc.
+0001-complete-task-asset-map.patch
+0002-preserve-mounted-asset-paths.patch
+0003-unified-arm-mounts.patch

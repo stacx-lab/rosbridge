@@ -1,0 +1,81 @@
+name: torso
+runtime:
+  domain_id: 0
+  nodes:
+  - entry: links.py
+    factory: create
+  ready_timeout_s: 30
+operations:
+  joint_state:
+    description: Measured positions of mobilebase0_joint_torso_height in metres with velocities
+      and the world-clock acquisition stamp; do not infer motion completion from a sent command.
+    transport: topic
+    direction: output
+    endpoint: /torso/joint_state
+    type: sensor_msgs/msg/JointState
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: transient_local
+    timeout_s: 10
+  joint_target:
+    description: Joint trajectory over the torso joint in metres, timed from receipt by strictly
+      increasing time_from_start and finishing within 120 seconds; velocities, accelerations
+      and effort must be empty. A zero header stamp selects now; a nonzero stamp must not
+      start in the past. Points are absolute native joint positions, linearly interpolated
+      at the native control period. Replacement clears pending references; invalid trajectories
+      are ignored, so verify measured joint_state.
+    transport: topic
+    direction: input
+    endpoint: /torso/joint_target
+    type: trajectory_msgs/msg/JointTrajectory
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: volatile
+    timeout_s: 10
+  stop:
+    description: Stop torso motion and hold the measured posture.
+    transport: service
+    direction: input
+    endpoint: /torso/stop
+    type: std_srvs/srv/Trigger
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: volatile
+    timeout_s: 10
+loaded: false
+meta:
+  created_at: '2026-10-24T00:00:00Z'
+  updated_at: '2026-10-24T00:00:00Z'
+type: joint
+description: Prismatic lift of the Omron base. Geometry is the sibling torso.urdf with top,
+  the arm mount, as its tip link; commands are absolute native lift heights in metres.
+source: introspected
+calibrated_at: null
+method: introspection
+model:
+  format: urdf
+  path: torso.urdf
+  base_link: base_link
+  tip_link: top
+limits: native
+home:
+  mobilebase0_joint_torso_height: 0.0
+stop:
+  behavior: hold
+  affected_devices:
+  - torso
+frames:
+  base:
+    translation_m:
+    - 0.0
+    - 0.0
+    - 0.0
+    rotation_xyzw:
+    - 0.0
+    - 0.0
+    - 0.0
+    - 1.0
+    parent: base:base

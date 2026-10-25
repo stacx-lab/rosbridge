@@ -1,0 +1,90 @@
+name: right_arm
+runtime:
+  domain_id: 0
+  nodes:
+  - entry: links.py
+    factory: create
+  ready_timeout_s: 30
+operations:
+  joint_state:
+    description: Measured positions of right_joint1, right_joint2, right_joint3, right_joint4,
+      right_joint5, right_joint6 in radians with velocities and the world-clock acquisition
+      stamp; do not infer motion completion from a sent command.
+    transport: topic
+    direction: output
+    endpoint: /right_arm/joint_state
+    type: sensor_msgs/msg/JointState
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: transient_local
+    timeout_s: 10
+  joint_target:
+    description: Joint trajectory over all 6 arm joints in radians, timed from receipt by
+      strictly increasing time_from_start and finishing within 120 seconds; velocities, accelerations
+      and effort must be empty. A zero header stamp selects now; a nonzero stamp must not
+      start in the past. Points are absolute native joint positions, linearly interpolated
+      at the native control period. Replacement clears pending references; invalid trajectories
+      are ignored, so verify measured joint_state.
+    transport: topic
+    direction: input
+    endpoint: /right_arm/joint_target
+    type: trajectory_msgs/msg/JointTrajectory
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: volatile
+    timeout_s: 10
+  stop:
+    description: Stop arm motion and hold the measured posture.
+    transport: service
+    direction: input
+    endpoint: /right_arm/stop
+    type: std_srvs/srv/Trigger
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: volatile
+    timeout_s: 10
+loaded: false
+meta:
+  created_at: '2026-10-24T00:00:00Z'
+  updated_at: '2026-10-24T00:00:00Z'
+type: joint
+description: YAM six-joint right arm of the ABC station. Geometry is the sibling arm.urdf
+  with flange (link_6) as the tip link; measured links are on TF as right_arm/<link>, and
+  helpers.joint_model('right_arm') computes FK/IK from it. Commands are the native absolute
+  joint positions of upstream's 14-D policy action; rosbridge rejects targets outside the
+  native joint ranges.
+source: introspected
+calibrated_at: null
+method: introspection
+model:
+  format: urdf
+  path: arm.urdf
+  base_link: base_link
+  tip_link: flange
+limits: native
+home:
+  right_joint1: 0.20160982
+  right_joint2: 0.39005876
+  right_joint3: 1.1182956
+  right_joint4: -0.8726253
+  right_joint5: 0.13332571
+  right_joint6: 0.42629892
+stop:
+  behavior: hold
+  affected_devices:
+  - right_arm
+frames:
+  base:
+    translation_m:
+    - 0.2525
+    - -0.31
+    - 0.76
+    rotation_xyzw:
+    - 0.0
+    - 0.0
+    - 0.0
+    - 1.0
+    parent: world:base

@@ -1,0 +1,53 @@
+<?xml version="1.0"?>
+<!-- RoboTwin ALOHA AgileX left ARX5 arm from arx5_description_isaac.urdf: fl_base_link..fl_link6; flange is the fl_link6 frame. -->
+<robot name="aloha_left_arm">
+  <link name="base_link"/>
+  <link name="link1"/>
+  <link name="link2"/>
+  <link name="link3"/>
+  <link name="link4"/>
+  <link name="link5"/>
+  <link name="flange"/>
+  <joint name="fl_joint1" type="revolute">
+    <parent link="base_link"/>
+    <child link="link1"/>
+    <origin xyz="0 0 0.058" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-10" upper="10" effort="100" velocity="10"/>
+  </joint>
+  <joint name="fl_joint2" type="revolute">
+    <parent link="link1"/>
+    <child link="link2"/>
+    <origin xyz="0.025013 0.00060169 0.042" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-10" upper="10" effort="100" velocity="10"/>
+  </joint>
+  <joint name="fl_joint3" type="revolute">
+    <parent link="link2"/>
+    <child link="link3"/>
+    <origin xyz="-0.26396 0.0044548 0" rpy="3.14158530718 0 -0.015928"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-10" upper="10" effort="100" velocity="10"/>
+  </joint>
+  <joint name="fl_joint4" type="revolute">
+    <parent link="link3"/>
+    <child link="link4"/>
+    <origin xyz="0.246 -0.00025 -0.06" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-10" upper="10" effort="100" velocity="10"/>
+  </joint>
+  <joint name="fl_joint5" type="revolute">
+    <parent link="link4"/>
+    <child link="link5"/>
+    <origin xyz="0.06775 0.0015 -0.0855" rpy="0 0 -0.015928"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-10" upper="10" effort="100" velocity="10"/>
+  </joint>
+  <joint name="fl_joint6" type="revolute">
+    <parent link="link5"/>
+    <child link="flange"/>
+    <origin xyz="0.03095 0 0.0855" rpy="3.14158530718 0 0"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-10" upper="10" effort="100" velocity="10"/>
+  </joint>
+</robot>

@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<!-- RoboDojo ARX X5 left parallel gripper on the link6 flange. left_gripper is a geometry-less virtual drive joint carrying the native normalized opening (0 closed, 1 open); both fingers mimic it as -0.01 + 0.054 m per unit, upstream's gripper_scale. Closed targets lie below the finger stop to squeeze an object. -->
+<robot name="x5_left_gripper">
+  <link name="base_link"/>
+  <link name="drive"/>
+  <link name="finger_a"/>
+  <link name="finger_b"/>
+  <joint name="left_gripper" type="revolute">
+    <parent link="base_link"/>
+    <child link="drive"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="0" upper="1" effort="100" velocity="10"/>
+  </joint>
+  <joint name="joint7" type="prismatic">
+    <parent link="base_link"/>
+    <child link="finger_a"/>
+    <origin xyz="0.08657 0.024896 -0.0002436" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="0" upper="0.044" effort="100" velocity="10"/>
+    <mimic joint="left_gripper" multiplier="0.054" offset="-0.01"/>
+  </joint>
+  <joint name="joint8" type="prismatic">
+    <parent link="base_link"/>
+    <child link="finger_b"/>
+    <origin xyz="0.08657 -0.0249 -0.00024366" rpy="0 0 0"/>
+    <axis xyz="0 -1 0"/>
+    <limit lower="0" upper="0.044" effort="100" velocity="10"/>
+    <mimic joint="left_gripper" multiplier="0.054" offset="-0.01"/>
+  </joint>
+</robot>

@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<!-- RoboTwin ALOHA AgileX left parallel gripper on the fl_link6 flange. left_gripper is a geometry-less virtual drive joint carrying the native normalized opening (0 closed, 1 open); both fingers mimic it as -0.01 + 0.055 m per unit, upstream's gripper_scale. Closed targets lie below the finger stop to squeeze an object. -->
+<robot name="aloha_left_gripper">
+  <link name="base_link"/>
+  <link name="drive"/>
+  <link name="finger_a"/>
+  <link name="finger_b"/>
+  <joint name="left_gripper" type="revolute">
+    <parent link="base_link"/>
+    <child link="drive"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="0" upper="1" effort="100" velocity="10"/>
+  </joint>
+  <joint name="fl_joint7" type="prismatic">
+    <parent link="base_link"/>
+    <child link="finger_a"/>
+    <origin xyz="0.08457 0.024493 -0.00010349" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="0" upper="0.04765" effort="100" velocity="10"/>
+    <mimic joint="left_gripper" multiplier="0.055" offset="-0.01"/>
+  </joint>
+  <joint name="fl_joint8" type="prismatic">
+    <parent link="base_link"/>
+    <child link="finger_b"/>
+    <origin xyz="0.08457 -0.024496 -0.00010354" rpy="0 0 0"/>
+    <axis xyz="0 -1 0"/>
+    <limit lower="0" upper="0.04765" effort="100" velocity="10"/>
+    <mimic joint="left_gripper" multiplier="0.055" offset="-0.01"/>
+  </joint>
+</robot>

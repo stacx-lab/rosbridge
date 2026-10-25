@@ -1,0 +1,10 @@
+# ABC runtime dependencies for the system-ROS fallback.
+# The preferred locked environment is the abc feature in pixi.toml.
+mujoco~=3.8.0
+numpy
+gymnasium>=1.1
+imageio
+pyyaml
+# prepare.py (asset download)
+tyro
+pytest

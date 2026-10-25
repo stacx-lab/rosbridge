@@ -1,0 +1,256 @@
+# RoboDojo simulation tasks on the dual ARX X5 rig with saved evaluation layouts, as
+# cataloged by RoboEnv (the *_random variants are excluded). Three competition tasks
+# (imitate_sorting_sequence, make_kong, play_tic_tac_toe) add a Franka support arm
+# that the native environment drives; it is not a device.
+
+[[tasks]]
+id = "robodojo/align-blocks"
+robot = "robodojo/robodojo-arx-x5"
+native_task = "align_blocks"
+env_cfg_type = "arx_x5"
+
+[[tasks]]
+id = "robodojo/arrange-largest-number"
+robot = "robodojo/robodojo-arx-x5"
+native_task = "arrange_largest_number"
+env_cfg_type = "arx_x5"
+
+[[tasks]]
+id = "robodojo/build-tower"
+robot = "robodojo/robodojo-arx-x5"
+native_task = "build_tower"
+env_cfg_type = "arx_x5"
+
+[[tasks]]
+id = "robodojo/classify-objects"
+robot = "robodojo/robodojo-arx-x5"
+native_task = "classify_objects"
+env_cfg_type = "arx_x5"
+
+[[tasks]]
+id = "robodojo/classify-objects-by-language"
+robot = "robodojo/robodojo-arx-x5"
+native_task = "classify_objects_by_language"
+env_cfg_type = "arx_x5"
+
+[[tasks]]
+id = "robodojo/cover-blocks"
+robot = "robodojo/robodojo-arx-x5"
+native_task = "cover_blocks"
+env_cfg_type = "arx_x5"
+
+[[tasks]]
+id = "robodojo/deposit-coin"
+robot = "robodojo/robodojo-arx-x5"
+native_task = "deposit_coin"
+env_cfg_type = "arx_x5"
+
+[[tasks]]
+id = "robodojo/fasten-screws"
+robot = "robodojo/robodojo-arx-x5"
+native_task = "fasten_screws"
+env_cfg_type = "arx_x5"
+
+[[tasks]]
+id = "robodojo/fill-egg-holder"
+robot = "robodojo/robodojo-arx-x5"
+native_task = "fill_egg_holder"
+env_cfg_type = "arx_x5"
+
+[[tasks]]
+id = "robodojo/fill-pen-holder"
+robot = "robodojo/robodojo-arx-x5"
+native_task = "fill_pen_holder"
+env_cfg_type = "arx_x5"
+
+[[tasks]]
+id = "robodojo/fold-clothes"
+robot = "robodojo/robodojo-arx-x5"
+native_task = "fold_clothes"
+env_cfg_type = "arx_x5"
+
+[[tasks]]
+id = "robodojo/general-pickup"
+robot = "robodojo/robodojo-arx-x5"
+native_task = "general_pickup"
+env_cfg_type = "arx_x5"
+
+[[tasks]]
+id = "robodojo/hang-mugs"
+robot = "robodojo/robodojo-arx-x5"
+native_task = "hang_mugs"
+env_cfg_type = "arx_x5"
+
+[[tasks]]
+id = "robodojo/imitate-sorting-sequence"
+robot = "robodojo/robodojo-arx-x5"
+native_task = "imitate_sorting_sequence"
+env_cfg_type = "arx_x5"
+
+[[tasks]]
+id = "robodojo/insert-key"
+robot = "robodojo/robodojo-arx-x5"
+native_task = "insert_key"
+env_cfg_type = "arx_x5"
+
+[[tasks]]
+id = "robodojo/insert-tubes"
+robot = "robodojo/robodojo-arx-x5"
+native_task = "insert_tubes"
+env_cfg_type = "arx_x5"
+
+[[tasks]]
+id = "robodojo/make-kong"
+robot = "robodojo/robodojo-arx-x5"
+native_task = "make_kong"
+env_cfg_type = "arx_x5"
+
+[[tasks]]
+id = "robodojo/make-toast"
+robot = "robodojo/robodojo-arx-x5"
+native_task = "make_toast"
+env_cfg_type = "arx_x5"
+
+[[tasks]]
+id = "robodojo/match-and-pick-from-conveyor"
+robot = "robodojo/robodojo-arx-x5"
+native_task = "match_and_pick_from_conveyor"
+env_cfg_type = "arx_x5"
+
+[[tasks]]
+id = "robodojo/organize-table"
+robot = "robodojo/robodojo-arx-x5"
+native_task = "organize_table"
+env_cfg_type = "arx_x5"
+
+[[tasks]]
+id = "robodojo/pack-objects-into-box"
+robot = "robodojo/robodojo-arx-x5"
+native_task = "pack_objects_into_box"
+env_cfg_type = "arx_x5"
+
+[[tasks]]
+id = "robodojo/pick-from-conveyor-by-image"
+robot = "robodojo/robodojo-arx-x5"
+native_task = "pick_from_conveyor_by_image"
+env_cfg_type = "arx_x5"
+
+[[tasks]]
+id = "robodojo/play-stacking-toy"
+robot = "robodojo/robodojo-arx-x5"
+native_task = "play_stacking_toy"
+env_cfg_type = "arx_x5"
+
+[[tasks]]
+id = "robodojo/play-tic-tac-toe"
+robot = "robodojo/robodojo-arx-x5"
+native_task = "play_tic_tac_toe"
+env_cfg_type = "arx_x5"
+
+[[tasks]]
+id = "robodojo/play-xylophone"
+robot = "robodojo/robodojo-arx-x5"
+native_task = "play_Xylophone"
+env_cfg_type = "arx_x5"
+
+[[tasks]]
+id = "robodojo/plug-in-charger"
+robot = "robodojo/robodojo-arx-x5"
+native_task = "plug_in_charger"
+env_cfg_type = "arx_x5"
+
+[[tasks]]
+id = "robodojo/pour-balls-into-vase"
+robot = "robodojo/robodojo-arx-x5"
+native_task = "pour_balls_into_vase"
+env_cfg_type = "arx_x5"
+
+[[tasks]]
+id = "robodojo/pour-by-language"
+robot = "robodojo/robodojo-arx-x5"
+native_task = "pour_by_language"
+env_cfg_type = "arx_x5"
+
+[[tasks]]
+id = "robodojo/pour-liquid-into-cup"
+robot = "robodojo/robodojo-arx-x5"
+native_task = "pour_liquid_into_cup"
+env_cfg_type = "arx_x5"
+
+[[tasks]]
+id = "robodojo/press-by-number"
+robot = "robodojo/robodojo-arx-x5"
+native_task = "press_by_number"
+env_cfg_type = "arx_x5"
+
+[[tasks]]
+id = "robodojo/push-t"
+robot = "robodojo/robodojo-arx-x5"
+native_task = "push_T"
+env_cfg_type = "arx_x5"
+
+[[tasks]]
+id = "robodojo/put-bottles-into-dustbin"
+robot = "robodojo/robodojo-arx-x5"
+native_task = "put_bottles_into_dustbin"
+env_cfg_type = "arx_x5"
+
+[[tasks]]
+id = "robodojo/solve-equation"
+robot = "robodojo/robodojo-arx-x5"
+native_task = "solve_equation"
+env_cfg_type = "arx_x5"
+
+[[tasks]]
+id = "robodojo/sort-nesting-dolls-by-size"
+robot = "robodojo/robodojo-arx-x5"
+native_task = "sort_nesting_dolls_by_size"
+env_cfg_type = "arx_x5"
+
+[[tasks]]
+id = "robodojo/stack-blocks"
+robot = "robodojo/robodojo-arx-x5"
+native_task = "stack_blocks"
+env_cfg_type = "arx_x5"
+
+[[tasks]]
+id = "robodojo/stack-blocks-by-language"
+robot = "robodojo/robodojo-arx-x5"
+native_task = "stack_blocks_by_language"
+env_cfg_type = "arx_x5"
+
+[[tasks]]
+id = "robodojo/stack-bowls"
+robot = "robodojo/robodojo-arx-x5"
+native_task = "stack_bowls"
+env_cfg_type = "arx_x5"
+
+[[tasks]]
+id = "robodojo/store-laptop-and-headphones"
+robot = "robodojo/robodojo-arx-x5"
+native_task = "store_laptop_and_headphones"
+env_cfg_type = "arx_x5"
+
+[[tasks]]
+id = "robodojo/store-tools-in-toolbox"
+robot = "robodojo/robodojo-arx-x5"
+native_task = "store_tools_in_toolbox"
+env_cfg_type = "arx_x5"
+
+[[tasks]]
+id = "robodojo/swap-blocks"
+robot = "robodojo/robodojo-arx-x5"
+native_task = "swap_blocks"
+env_cfg_type = "arx_x5"
+
+[[tasks]]
+id = "robodojo/swap-t"
+robot = "robodojo/robodojo-arx-x5"
+native_task = "swap_T"
+env_cfg_type = "arx_x5"
+
+[[tasks]]
+id = "robodojo/sweep-blocks"
+robot = "robodojo/robodojo-arx-x5"
+native_task = "sweep_blocks"
+env_cfg_type = "arx_x5"

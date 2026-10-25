@@ -1,0 +1,209 @@
+[workspace]
+name = "rosbridge"
+channels = ["https://prefix.dev/robostack-jazzy", "https://prefix.dev/conda-forge"]
+platforms = ["linux-64"]
+
+[dependencies]
+python = "3.12.*"
+ros-jazzy-ros-base = "*"
+ros-jazzy-sensor-msgs = "*"
+ros-jazzy-control-msgs = "*"
+pillow = "*"
+ros-jazzy-trajectory-msgs = "*"
+ros-jazzy-tf2-ros-py = "*"
+ros-jazzy-rosgraph-msgs = "*"
+ros-jazzy-rosidl-default-generators = "*"
+colcon-common-extensions = "*"
+compilers = "*"
+cmake = "<4"
+ninja = "*"
+pkg-config = "*"
+numpy = "*"
+pytest = "*"
+uv = "*"
+pip = "*"
+setuptools = "<80"
+ffmpeg = ">=9.0.1,<10"
+
+[pypi-dependencies]
+rosbridge = { path = ".", editable = true }
+
+[activation.env]
+MUJOCO_GL = "egl"
+
+[tasks]
+test = "python -m pytest -q tests/unit simulators/abc/tests/unit simulators/libero/tests/unit simulators/robotwin/tests/unit simulators/robodojo/tests/unit simulators/robocasa/tests/unit"
+
+[feature.abc.pypi-dependencies]
+mujoco = "~=3.8.0"
+gymnasium = ">=1.1"
+imageio = "*"
+pyyaml = "*"
+tyro = "*"
+
+[feature.abc.tasks]
+build = "python -m rosbridge.provisioning.workspace --simulator abc"
+test-ros = "bash -c 'source .workspaces/abc/install/local_setup.bash && python -m pytest -q tests/ros simulators/abc/tests/ros'"
+smoke = "python -m pytest -q simulators/abc/tests/native"
+
+[feature.libero.dependencies]
+numpy = "1.26.4.*"
+
+[feature.libero.pypi-dependencies]
+robosuite = "==1.4.0"
+mujoco = "==3.2.3"
+numba = "==0.60.0"
+scipy = "==1.13.1"
+matplotlib = "==3.9.2"
+opencv-python = "==4.10.0.84"
+bddl = "==1.0.1"
+easydict = "==1.13"
+h5py = "==3.11.0"
+torch = { version = "==2.5.1+cpu", index = "https://download.pytorch.org/whl/cpu" }
+termcolor = "==2.4.0"
+future = "==1.0.0"
+cloudpickle = "==2.1.0"
+gym = "==0.25.2"
+
+[feature.libero.tasks]
+build = "python -m rosbridge.provisioning.workspace --simulator libero"
+test-ros = "bash -c 'source .workspaces/libero/install/local_setup.bash && python -m pytest -q simulators/libero/tests/ros'"
+smoke = "python -m pytest -q simulators/libero/tests/native"
+
+# RoboEnv's RoboTwin device recipe on Python 3.12: scipy 1.10 and open3d 0.18 have no
+# cp312 wheels, so their nearest cp312 releases replace them.
+[feature.robotwin.dependencies]
+numpy = "1.26.4.*"
+
+# open3d 0.19 publishes manylinux_2_31 wheels only. Pixi prefers a workspace-level glibc
+# virtual package, but that would re-solve the other environments.
+[feature.robotwin.system-requirements]
+libc = "2.31"
+
+[feature.robotwin.pypi-dependencies]
+sapien = "==3.0.0b1"
+mplib = "==0.2.1"
+toppra = "==0.6.9"
+torch = { version = "==2.4.1+cpu", index = "https://download.pytorch.org/whl/cpu" }
+scipy = "==1.13.1"
+transforms3d = "==0.4.2"
+trimesh = "==4.4.3"
+open3d = "==0.19.0"
+opencv-python = "==4.10.0.84"
+gymnasium = "==0.29.1"
+imageio = "==2.34.2"
+h5py = "==3.16.0"
+pyyaml = "*"
+jsonschema = "*"
+
+[feature.robotwin.tasks]
+build = "python -m rosbridge.provisioning.workspace --simulator robotwin"
+test-ros = "bash -c 'source .workspaces/robotwin/install/local_setup.bash && python -m pytest -q simulators/robotwin/tests/ros'"
+smoke = "python -m pytest -q simulators/robotwin/tests/native"
+
+# RoboEnv's RoboCasa recipe (runtime/locks/robocasa-resolved.txt) on Python 3.12, without
+# its learning and teleoperation extras (torch, lerobot, tianshou, pygame, pynput, hidapi):
+# prepare installs robocasa and robosuite with --no-deps and the simulator never imports
+# them. robocasa asserts these exact numpy and MuJoCo versions on import; lxml and
+# PyYAML come from the ROS solve.
+[feature.robocasa.dependencies]
+numpy = "2.2.5.*"
+
+[feature.robocasa.pypi-dependencies]
+mujoco = "==3.3.1"
+numba = "==0.61.2"
+scipy = "==1.15.3"
+opencv-python = "==4.10.0.84"
+gymnasium = "==0.29.1"
+imageio = "==2.37.4"
+h5py = "==3.16.0"
+termcolor = "==3.3.0"
+tqdm = "==4.70.0"
+pyyaml = "*"
+
+[feature.robocasa.tasks]
+build = "python -m rosbridge.provisioning.workspace --simulator robocasa"
+test-ros = "bash -c 'source .workspaces/robocasa/install/local_setup.bash && python -m pytest -q simulators/robocasa/tests/ros'"
+smoke = "python -m pytest -q simulators/robocasa/tests/native"
+
+# RoboDojo's world node: the shared ROS environment plus its tasks. The simulator
+# itself runs in robodojo-native, a separate interpreter (rosbridge.core.worker).
+[feature.robodojo.tasks]
+build = "python -m rosbridge.provisioning.workspace --simulator robodojo"
+test-ros = "bash -c 'source .workspaces/robodojo/install/local_setup.bash && python -m pytest -q simulators/robodojo/tests/ros'"
+
+# Isaac Sim 5.1 ships Python 3.11 wheels only, while RoboStack Jazzy is Python 3.12.
+# Direct requirements of RoboDojo, its Isaac Lab fork and its cuRobo fork, pinned to
+# RoboEnv's resolved robodojo-devices lock; prepare installs the forks with --no-deps.
+[feature.robodojo-native.dependencies]
+python = "3.11.*"
+uv = "*"
+
+# Isaac Sim 5.1 publishes manylinux_2_35 Linux wheels; other platforms add pywin32.
+[feature.robodojo-native.system-requirements]
+libc = "2.35"
+
+[feature.robodojo-native.pypi-options]
+extra-index-urls = ["https://pypi.nvidia.com", "https://download.pytorch.org/whl/cu128"]
+index-strategy = "unsafe-best-match"
+
+[feature.robodojo-native.pypi-dependencies]
+isaacsim = { version = "==5.1.0.0", extras = ["all", "extscache"] }
+torch = { version = "==2.7.0+cu128", index = "https://download.pytorch.org/whl/cu128" }
+torchvision = { version = "==0.22.0+cu128", index = "https://download.pytorch.org/whl/cu128" }
+numpy = "==1.26.0"
+scipy = "==1.15.3"
+warp-lang = "==1.11.0"
+setuptools = "==80.9.0"
+huggingface-hub = "==0.36.2"
+h5py = "==3.16.0"
+transforms3d = "==0.4.2"
+open3d = "==0.19.0"
+msgpack-numpy = "==0.4.8"
+omegaconf = "==2.3.1"
+opencv-python = "==4.11.0.86"
+onnx = "==1.21.0"
+prettytable = "==3.3.0"
+toml = "==0.10.2"
+hidapi = "==0.14.0.post2"
+gymnasium = "==1.2.1"
+trimesh = "==4.5.1"
+pyglet = "==1.5.31"
+transformers = "==4.57.6"
+einops = "==0.8.2"
+pillow = "==11.3.0"
+pin-pink = "==3.1.0"
+daqp = "==0.7.2"
+dex-retargeting = "==0.4.6"
+pytest = "==9.1.1"
+pytest-mock = "==3.15.1"
+junitparser = "==5.0.3"
+flatdict = "==4.0.0"
+flaky = "==3.8.1"
+packaging = "==23.0"
+protobuf = "==7.36.1"
+tensorboard = "==2.21.0"
+numba = "==0.59.1"
+importlib-resources = "==7.1.0"
+matplotlib = "==3.10.3"
+networkx = "==3.3"
+numpy-quaternion = "==2024.0.13"
+pyyaml = "==6.0.2"
+tqdm = "==4.70.0"
+viser = "==0.2.11"
+yourdfpy = "==0.0.60"
+nvidia-cuda-runtime-cu12 = "==12.8.57"
+setuptools-scm = "==10.2.1"
+wheel = "==0.45.1"
+
+[feature.robodojo-native.tasks]
+smoke = "env PYTHONPATH=src:simulators/robodojo:.runtime/robodojo python -m pytest -q -p no:cacheprovider simulators/robodojo/tests/native"
+
+[environments]
+default = { features = [], solve-group = "jazzy" }
+abc = { features = ["abc"] }
+libero = { features = ["libero"] }
+robotwin = { features = ["robotwin"] }
+robocasa = { features = ["robocasa"] }
+robodojo = { features = ["robodojo"], solve-group = "jazzy" }
+robodojo-native = { features = ["robodojo-native"], no-default-feature = true }

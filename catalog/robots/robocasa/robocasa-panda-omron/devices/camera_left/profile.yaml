@@ -1,0 +1,111 @@
+name: camera_left
+runtime:
+  domain_id: 0
+  nodes: []
+  ready_timeout_s: 30
+operations:
+  image:
+    description: RGB image measurements with encoding, dimensions, row stride and acquisition
+      timestamp in the Image header. The frame_id identifies the calibrated optical frame;
+      use its stamp for tf2 lookup. Subscription does not advance world time.
+    transport: topic
+    direction: output
+    endpoint: /camera_left/image
+    type: sensor_msgs/msg/Image
+    qos:
+      depth: 1
+      reliability: best_effort
+      durability: volatile
+    timeout_s: 10
+  depth:
+    description: 16UC1 depth registered to image in millimetres along the optical axis; 0
+      marks missing or out-of-range samples. Same stamp and frame_id as the paired image.
+    transport: topic
+    direction: output
+    endpoint: /camera_left/depth
+    type: sensor_msgs/msg/Image
+    qos:
+      depth: 1
+      reliability: best_effort
+      durability: volatile
+    timeout_s: 10
+  camera_info:
+    description: Projection and distortion calibration for the image stream, including K,
+      D, image size and optical frame. Use the declared distortion model and raw/rectified
+      image space when projecting pixels; intrinsics are not TF transforms.
+    transport: topic
+    direction: output
+    endpoint: /camera_left/camera_info
+    type: sensor_msgs/msg/CameraInfo
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: transient_local
+    timeout_s: 10
+  capture:
+    description: Return the current image and registered depth in CaptureRGBD.response image
+      and depth_image from one acquisition without advancing world time. Preserve the header
+      acquisition stamp and frame_id.
+    transport: service
+    direction: input
+    endpoint: /camera_left/capture
+    type: kinex_interfaces/srv/CaptureRGBD
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: volatile
+    timeout_s: 10
+loaded: false
+meta:
+  created_at: '2026-10-24T00:00:00Z'
+  updated_at: '2026-10-24T00:00:00Z'
+type: rgbd
+description: RGB-D camera on the torso lift, behind and above the robot's left side, looking
+  forward and down past the arm (upstream robot0_agentview_left). Image and registered depth
+  calibration and the optical-frame mount are in the profile; the depth near plane scales
+  with each kitchen's extent.
+source: introspected
+calibrated_at: null
+method: introspection
+color:
+  width: 256
+  height: 256
+  fps: null
+  projection:
+    model: pinhole
+    fx: 221.702503368816
+    fy: 221.702503368816
+    cx: 127.5
+    cy: 127.5
+    skew: 0
+  distortion:
+    model: none
+  fov:
+    horizontal_deg: 60.0
+    vertical_deg: 60.0
+depth:
+  width: 256
+  height: 256
+  fps: null
+  quantity: z
+  scale_m_per_unit: 0.001
+  invalid_value: 0
+  valid_range_m:
+    min: 0.028899
+    max: 65.535
+  reliable_range_m:
+    min: 0.028899
+    max: 65.535
+  registration: color
+frames:
+  base:
+    translation_m:
+    - -0.5
+    - 0.35
+    - 1.05
+    rotation_xyzw:
+    - -0.556238492405
+    - 0.677509154208
+    - -0.376786624534
+    - 0.299352509767
+    parent: torso:top

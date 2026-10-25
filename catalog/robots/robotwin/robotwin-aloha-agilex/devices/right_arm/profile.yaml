@@ -1,0 +1,90 @@
+name: right_arm
+runtime:
+  domain_id: 0
+  nodes:
+  - entry: links.py
+    factory: create
+  ready_timeout_s: 30
+operations:
+  joint_state:
+    description: Measured positions of fr_joint1, fr_joint2, fr_joint3, fr_joint4, fr_joint5,
+      fr_joint6 in radians with velocities and the world-clock acquisition stamp; do not infer
+      motion completion from a sent command.
+    transport: topic
+    direction: output
+    endpoint: /right_arm/joint_state
+    type: sensor_msgs/msg/JointState
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: transient_local
+    timeout_s: 10
+  joint_target:
+    description: Joint trajectory over all 6 arm joints in radians, timed from receipt by
+      strictly increasing time_from_start and finishing within 120 seconds; velocities, accelerations
+      and effort must be empty. A zero header stamp selects now; a nonzero stamp must not
+      start in the past. Points are absolute native joint positions, linearly interpolated
+      at the native control period. Replacement clears pending references; invalid trajectories
+      are ignored, so verify measured joint_state.
+    transport: topic
+    direction: input
+    endpoint: /right_arm/joint_target
+    type: trajectory_msgs/msg/JointTrajectory
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: volatile
+    timeout_s: 10
+  stop:
+    description: Stop arm motion and hold the measured posture.
+    transport: service
+    direction: input
+    endpoint: /right_arm/stop
+    type: std_srvs/srv/Trigger
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: volatile
+    timeout_s: 10
+loaded: false
+meta:
+  created_at: '2026-10-24T00:00:00Z'
+  updated_at: '2026-10-24T00:00:00Z'
+type: joint
+description: ARX5 six-joint right arm of the RoboTwin ALOHA AgileX. Geometry is the sibling
+  arm.urdf with flange (fr_link6) as the tip link; measured links are on TF as right_arm/<link>,
+  and helpers.joint_model('right_arm') computes FK/IK from it. Commands are upstream's absolute
+  joint positions (the arm part of its 14-D qpos action), applied as native drive targets
+  once per 0.04 s frame. The native URDF limits are +/-10 rad placeholders.
+source: introspected
+calibrated_at: null
+method: introspection
+model:
+  format: urdf
+  path: arm.urdf
+  base_link: base_link
+  tip_link: flange
+limits: native
+home:
+  fr_joint1: 0.0
+  fr_joint2: 0.0
+  fr_joint3: 0.0
+  fr_joint4: 0.0
+  fr_joint5: 0.0
+  fr_joint6: 0.0
+stop:
+  behavior: hold
+  affected_devices:
+  - right_arm
+frames:
+  base:
+    translation_m:
+    - 0.306300014257
+    - -0.418499916792
+    - 0.78100001812
+    rotation_xyzw:
+    - -2.9802e-08
+    - 5.9605e-08
+    - 0.71063355368
+    - 0.703562409721
+    parent: world:base

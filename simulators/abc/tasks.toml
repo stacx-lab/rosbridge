@@ -1,0 +1,167 @@
+# Task IDs mapped to names from the pinned ABC task catalog; every task runs on the
+# abc/abc-yam rig (arm mounts unified at z=0.76 by patches/abc/0003).
+
+[[tasks]]
+id = "abc/throw-plastic-bottles-in-bin"
+robot = "abc/abc-yam"
+native_task = "throw_plastic_bottles_in_bin"
+
+[[tasks]]
+id = "abc/put-plastic-bottles-in-bin"
+robot = "abc/abc-yam"
+native_task = "put_plastic_bottles_in_bin"
+
+[[tasks]]
+id = "abc/conveyor-pick"
+robot = "abc/abc-yam"
+native_task = "conveyor_pick"
+
+[[tasks]]
+id = "abc/count-into-opaque-box"
+robot = "abc/abc-yam"
+native_task = "count_into_opaque_box"
+
+[[tasks]]
+id = "abc/count-one-into-opaque-box"
+robot = "abc/abc-yam"
+native_task = "count_one_into_opaque_box"
+
+[[tasks]]
+id = "abc/count-two-into-opaque-box"
+robot = "abc/abc-yam"
+native_task = "count_two_into_opaque_box"
+
+[[tasks]]
+id = "abc/count-three-into-opaque-box"
+robot = "abc/abc-yam"
+native_task = "count_three_into_opaque_box"
+
+[[tasks]]
+id = "abc/count-four-into-opaque-box"
+robot = "abc/abc-yam"
+native_task = "count_four_into_opaque_box"
+
+[[tasks]]
+id = "abc/put-relative"
+robot = "abc/abc-yam"
+native_task = "put_relative"
+
+[[tasks]]
+id = "abc/grab-specific-object-from-clutter"
+robot = "abc/abc-yam"
+native_task = "grab_specific_object_from_clutter"
+
+[[tasks]]
+id = "abc/ball-tray-balancing"
+robot = "abc/abc-yam"
+native_task = "ball_tray_balancing"
+
+[[tasks]]
+id = "abc/inhand-transfer-item-to-other-side"
+robot = "abc/abc-yam"
+native_task = "inhand_transfer_item_to_other_side"
+
+[[tasks]]
+id = "abc/multi-drawer-search"
+robot = "abc/abc-yam"
+native_task = "multi_drawer_search"
+
+[[tasks]]
+id = "abc/put-markers-in-top-drawer"
+robot = "abc/abc-yam"
+native_task = "put_markers_in_top_drawer"
+
+[[tasks]]
+id = "abc/put-markers-in-middle-drawer"
+robot = "abc/abc-yam"
+native_task = "put_markers_in_middle_drawer"
+
+[[tasks]]
+id = "abc/put-markers-in-bottom-drawer"
+robot = "abc/abc-yam"
+native_task = "put_markers_in_bottom_drawer"
+
+[[tasks]]
+id = "abc/pouring"
+robot = "abc/abc-yam"
+native_task = "pouring"
+
+[[tasks]]
+id = "abc/hang-mug-on-mug-rack"
+robot = "abc/abc-yam"
+native_task = "hang_mug_on_mug_rack"
+
+[[tasks]]
+id = "abc/turn-mug-right-side-up"
+robot = "abc/abc-yam"
+native_task = "turn_mug_right_side_up"
+
+[[tasks]]
+id = "abc/sweep-away-paper-scraps-from-table"
+robot = "abc/abc-yam"
+native_task = "sweep_away_paper_scraps_from_table"
+
+[[tasks]]
+id = "abc/sort-nuts-and-bolts"
+robot = "abc/abc-yam"
+native_task = "sort_nuts_and_bolts"
+
+[[tasks]]
+id = "abc/sort-lego-blocks"
+robot = "abc/abc-yam"
+native_task = "sort_lego_blocks"
+
+[[tasks]]
+id = "abc/load-plates-into-dish-rack"
+robot = "abc/abc-yam"
+native_task = "load_plates_into_dish_rack"
+
+[[tasks]]
+id = "abc/set-up-chess-pieces-on-board"
+robot = "abc/abc-yam"
+native_task = "set_up_chess_pieces_on_board"
+
+[[tasks]]
+id = "abc/build-wood-block-tower"
+robot = "abc/abc-yam"
+native_task = "build_wood_block_tower"
+
+[[tasks]]
+id = "abc/spell-cat"
+robot = "abc/abc-yam"
+native_task = "spell_cat"
+
+[[tasks]]
+id = "abc/spell-dog"
+robot = "abc/abc-yam"
+native_task = "spell_dog"
+
+[[tasks]]
+id = "abc/spell-fish"
+robot = "abc/abc-yam"
+native_task = "spell_fish"
+
+[[tasks]]
+id = "abc/spell-bair"
+robot = "abc/abc-yam"
+native_task = "spell_bair"
+
+[[tasks]]
+id = "abc/spell-xdof"
+robot = "abc/abc-yam"
+native_task = "spell_xdof"
+
+[[tasks]]
+id = "abc/spell-abc"
+robot = "abc/abc-yam"
+native_task = "spell_abc"
+
+[[tasks]]
+id = "abc/spell-yam"
+robot = "abc/abc-yam"
+native_task = "spell_yam"
+
+[[tasks]]
+id = "abc/spell-agi"
+robot = "abc/abc-yam"
+native_task = "spell_agi"

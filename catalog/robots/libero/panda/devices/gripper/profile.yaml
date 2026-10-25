@@ -1,0 +1,96 @@
+name: gripper
+runtime:
+  domain_id: 0
+  nodes:
+  - entry: links.py
+    factory: create
+  ready_timeout_s: 30
+  observation: joint_state
+operations:
+  joint_state:
+    description: Measured finger_joint1 in metres, half the summed finger travel,
+      stamped at acquisition; Kinex publishes the URDF finger and pad links from it.
+    transport: topic
+    direction: output
+    endpoint: /gripper/joint_state
+    type: sensor_msgs/msg/JointState
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: transient_local
+    timeout_s: 10
+  target:
+    description: finger_joint1 position (data) from 0 (closed) to 0.04 m (open). rosbridge
+      steers LIBERO's integrated direction command toward it every control step with
+      1 mm tolerance, so open and closed are reached reliably while intermediate targets
+      oscillate by a few millimetres. A target persists until replaced or stopped;
+      out-of-range targets are ignored, so verify joint_state.
+    transport: topic
+    direction: input
+    endpoint: /gripper/target
+    type: std_msgs/msg/Float64
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: volatile
+    timeout_s: 10
+  stop:
+    description: Hold the measured finger position; the fingers may settle briefly
+      after the stop.
+    transport: service
+    direction: input
+    endpoint: /gripper/stop
+    type: std_srvs/srv/Trigger
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: volatile
+    timeout_s: 10
+loaded: false
+meta:
+  created_at: '2026-10-19T00:00:00Z'
+  updated_at: '2026-10-20T17:24:01.455Z'
+type: gripper
+description: Panda parallel two-finger gripper on the arm flange. Fingers close along
+  the gripper base x axis; the URDF pad links mark the 16 by 16 mm inner pad faces,
+  3.6 mm below the TCP. finger_joint1 is half of LIBERO's summed finger travel, so
+  the inner pad gap is 2 * finger_joint1 - 1 mm. A closed or stalled grip alone does
+  not prove a successful grasp.
+source: introspected
+calibrated_at: null
+method: introspection
+stop:
+  behavior: hold
+  affected_devices:
+  - gripper
+frames:
+  base:
+    translation_m:
+    - 0
+    - 0
+    - 0
+    rotation_xyzw:
+    - 0
+    - 0
+    - -0.707106781187
+    - 0.707106781187
+    parent: arm:flange
+  tcp:
+    translation_m:
+    - 0
+    - 0
+    - 0.097
+    rotation_xyzw:
+    - 0
+    - 0
+    - 0
+    - 1
+    parent: gripper:base
+model:
+  format: urdf
+  path: gripper.urdf
+  base_link: base_link
+grip:
+  joint: finger_joint1
+  open: 0.04
+  closed: 0.0

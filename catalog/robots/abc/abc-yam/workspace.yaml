@@ -1,0 +1,16 @@
+identity:
+  id: abc-yam
+  name: ABC bimanual YAM
+  kind: arm
+  model: YAM
+  source: user
+devices:
+  source: user
+safety:
+  source: user
+  max_joint_velocity: null
+  max_cartesian_velocity: null
+  keep_out_zones: []
+meta:
+  created_at: '2026-10-24T00:00:00Z'
+  updated_at: '2026-10-24T00:00:00Z'

@@ -1,0 +1,82 @@
+name: head_camera
+runtime:
+  domain_id: 0
+  nodes: []
+  ready_timeout_s: 30
+operations:
+  image:
+    description: RGB image measurements with encoding, dimensions, row stride and acquisition
+      timestamp in the Image header. The frame_id identifies the calibrated optical frame;
+      use its stamp for tf2 lookup. Subscription does not advance world time.
+    transport: topic
+    direction: output
+    endpoint: /head_camera/image
+    type: sensor_msgs/msg/Image
+    qos:
+      depth: 1
+      reliability: best_effort
+      durability: volatile
+    timeout_s: 10
+  camera_info:
+    description: Projection and distortion calibration for the image stream, including K,
+      D, image size and optical frame. Use the declared distortion model and raw/rectified
+      image space when projecting pixels; intrinsics are not TF transforms.
+    transport: topic
+    direction: output
+    endpoint: /head_camera/camera_info
+    type: sensor_msgs/msg/CameraInfo
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: transient_local
+    timeout_s: 10
+  capture:
+    description: Return the current image in Capture.response.image without advancing world
+      time. Preserve the header acquisition stamp and frame_id.
+    transport: service
+    direction: input
+    endpoint: /head_camera/capture
+    type: kinex_interfaces/srv/Capture
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: volatile
+    timeout_s: 10
+loaded: false
+meta:
+  created_at: '2026-10-24T00:00:00Z'
+  updated_at: '2026-10-24T00:00:00Z'
+type: rgb
+description: Fixed RGB head camera (Gemini 345Lg model) above the table, rendered by RoboDojo's
+  tiled Isaac renderer. Calibration and the optical-frame mount are in the profile.
+source: introspected
+calibrated_at: null
+method: introspection
+color:
+  width: 640
+  height: 480
+  fps: null
+  projection:
+    model: pinhole
+    fx: 288.132547302797
+    fy: 288.132547302797
+    cx: 319.5
+    cy: 239.5
+    skew: 0
+  distortion:
+    model: none
+  fov:
+    horizontal_deg: 95.999356648298
+    vertical_deg: 79.58521206593
+frames:
+  base:
+    translation_m:
+    - 0.0
+    - -0.409999996424
+    - 1.307999968529
+    rotation_xyzw:
+    - -0.965925818296
+    - 0.0
+    - 0.0
+    - 0.258819074932
+    parent: world:base

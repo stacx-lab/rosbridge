@@ -1,0 +1,19 @@
+name = "libero"
+source = "third_party/libero"
+source_url = "https://github.com/Lifelong-Robot-Learning/LIBERO.git"
+source_revision = "8f1084e3132a39270c3a13ebe37270a43ece2a01"
+patches = "patches/libero"
+python_path = "simulators/libero"
+asset_preparer = "rosbridge_libero.assets:prepare"
+default_task = "libero-spatial-01"
+ros_package = "rosbridge_libero"
+environment = "libero"
+task_catalog = "tasks.toml"
+asset_checker = "rosbridge_libero.assets:check_task"
+
+# The backend's device inventory; catalog rigs must declare exactly these devices.
+[devices]
+arm = "joint"
+gripper = "gripper"
+camera_agentview = "rgb"
+camera_wrist = "rgb"

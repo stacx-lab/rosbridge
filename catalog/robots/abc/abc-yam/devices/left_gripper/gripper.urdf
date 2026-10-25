@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<!-- ABC YAM left parallel gripper on the link_6 flange. left_gripper is a geometry-less virtual drive joint carrying the native normalized opening (0 closed, 1 open); the sliding fingers mimic it at +/-0.0475 m per unit, as upstream's position actuator does. -->
+<robot name="yam_left_gripper">
+  <link name="base_link"/>
+  <link name="drive"/>
+  <link name="left_finger"/>
+  <link name="right_finger"/>
+  <joint name="left_gripper" type="revolute">
+    <parent link="base_link"/>
+    <child link="drive"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="0" upper="1" effort="100" velocity="10"/>
+  </joint>
+  <joint name="left_left_finger" type="prismatic">
+    <parent link="base_link"/>
+    <child link="left_finger"/>
+    <origin xyz="-0.037 0.0392 0.0605" rpy="0 1.5707963268 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-0.00205" upper="0.0475" effort="100" velocity="10"/>
+    <mimic joint="left_gripper" multiplier="0.0475" offset="0"/>
+  </joint>
+  <joint name="left_right_finger" type="prismatic">
+    <parent link="base_link"/>
+    <child link="right_finger"/>
+    <origin xyz="0.037 -0.0392 0.0605" rpy="0 1.5707963268 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-0.0475" upper="0.00205" effort="100" velocity="10"/>
+    <mimic joint="left_gripper" multiplier="-0.0475" offset="0"/>
+  </joint>
+</robot>

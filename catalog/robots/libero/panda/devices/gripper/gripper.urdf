@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<!-- LIBERO Panda hand (robosuite panda_gripper.xml). finger_joint1 slides the left finger
+     along -x and its mimic the right finger along +x, so it is half the summed finger travel.
+     Pad links mark the inner pad faces, 0.5 mm inside each finger, so the pad gap is
+     2 * finger_joint1 - 1 mm; pads sit 3.6 mm below the TCP; +z approaches. -->
+<robot name="panda_hand">
+  <link name="base_link"/>
+  <link name="left_finger"/>
+  <link name="right_finger"/>
+  <link name="left_pad"/>
+  <link name="right_pad"/>
+  <joint name="finger_joint1" type="prismatic">
+    <parent link="base_link"/>
+    <child link="left_finger"/>
+    <origin xyz="0 0 0.0524"/>
+    <axis xyz="-1 0 0"/>
+    <limit lower="0" upper="0.04" effort="20" velocity="0.2"/>
+  </joint>
+  <joint name="finger_joint2" type="prismatic">
+    <parent link="base_link"/>
+    <child link="right_finger"/>
+    <origin xyz="0 0 0.0524"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="0" upper="0.04" effort="20" velocity="0.2"/>
+    <mimic joint="finger_joint1"/>
+  </joint>
+  <joint name="left_pad_joint" type="fixed">
+    <parent link="left_finger"/>
+    <child link="left_pad"/>
+    <origin xyz="0.0005 0 0.041"/>
+  </joint>
+  <joint name="right_pad_joint" type="fixed">
+    <parent link="right_finger"/>
+    <child link="right_pad"/>
+    <origin xyz="-0.0005 0 0.041"/>
+  </joint>
+</robot>

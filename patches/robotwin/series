@@ -1,0 +1,5 @@
+# One git patch filename per line, applied in order to .runtime/robotwin.
+# 0001 is RoboEnv's runtime patch without its unused YAM embodiment hunks: explicit
+# SAPIEN render device, optional cuRobo with mplib planning, verified grasp candidates
+# behind an embodiment flag, and planner effort/seed from ROBOENV_PLANNER_*.
+0001-runtime.patch

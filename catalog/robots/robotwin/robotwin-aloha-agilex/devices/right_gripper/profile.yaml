@@ -1,0 +1,94 @@
+name: right_gripper
+runtime:
+  domain_id: 0
+  observation: joint_state
+  nodes:
+  - entry: links.py
+    factory: create
+  ready_timeout_s: 30
+operations:
+  joint_state:
+    description: Measured right_gripper, the native normalized gripper opening (0 closed,
+      1 open), stamped at acquisition; Kinex publishes the URDF finger links from it.
+    transport: topic
+    direction: output
+    endpoint: /right_gripper/joint_state
+    type: sensor_msgs/msg/JointState
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: transient_local
+    timeout_s: 10
+  target:
+    description: Native normalized opening (data) from 0 (closed) to 1 (open), the gripper
+      entry of upstream's 14-D qpos action. The native setter runs on every 250 Hz substep
+      and moves the drive target at most 0.1 per call toward it. A target persists until replaced
+      or stopped; out-of-range targets are ignored, so verify joint_state.
+    transport: topic
+    direction: input
+    endpoint: /right_gripper/target
+    type: std_msgs/msg/Float64
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: volatile
+    timeout_s: 10
+  stop:
+    description: Hold the measured opening; fingers may settle briefly after the stop.
+    transport: service
+    direction: input
+    endpoint: /right_gripper/stop
+    type: std_srvs/srv/Trigger
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: volatile
+    timeout_s: 10
+loaded: false
+meta:
+  created_at: '2026-10-24T00:00:00Z'
+  updated_at: '2026-10-24T00:00:00Z'
+type: gripper
+description: 'ALOHA AgileX right parallel two-finger gripper on the right_arm flange. The
+  grip joint right_gripper is upstream''s normalized gripper value (0 closed, 1 open): finger
+  targets are -0.01 + 0.055 m per unit, so a closed command squeezes past the finger stop.
+  The TCP is upstream''s tcp pose, gripper_bias ahead of the wrist joint with +x approaching.
+  A closed or stalled grip alone does not prove a successful grasp.'
+source: introspected
+calibrated_at: null
+method: introspection
+stop:
+  behavior: hold
+  affected_devices:
+  - right_gripper
+frames:
+  base:
+    translation_m:
+    - 0.0
+    - 0.0
+    - 0.0
+    rotation_xyzw:
+    - 0.0
+    - 0.0
+    - 0.0
+    - 1.0
+    parent: right_arm:flange
+  tcp:
+    translation_m:
+    - 0.119999992883
+    - -9.757e-09
+    - -7.153e-09
+    rotation_xyzw:
+    - 1.0e-12
+    - 2.9802e-08
+    - -6.4393e-08
+    - 0.999999973161
+    parent: right_gripper:base
+model:
+  format: urdf
+  path: gripper.urdf
+  base_link: base_link
+grip:
+  joint: right_gripper
+  open: 1.0
+  closed: 0.0

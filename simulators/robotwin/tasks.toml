@@ -1,0 +1,361 @@
+# RoboTwin 2.0 evaluation tasks (env_cfg/eval/all_tasks.yml) on the ALOHA AgileX
+# embodiment with the clean-background demo_clean configuration, as cataloged by RoboEnv.
+# `seed` is the default episode seed when launch omits --seed.
+
+[[tasks]]
+id = "robotwin/adjust-bottle-aloha-agilex"
+robot = "robotwin/robotwin-aloha-agilex"
+native_task = "adjust_bottle"
+embodiment = "aloha-agilex"
+task_config = "demo_clean"
+
+[[tasks]]
+id = "robotwin/beat-block-hammer-aloha-agilex"
+robot = "robotwin/robotwin-aloha-agilex"
+native_task = "beat_block_hammer"
+embodiment = "aloha-agilex"
+task_config = "demo_clean"
+
+[[tasks]]
+id = "robotwin/blocks-ranking-rgb-aloha-agilex"
+robot = "robotwin/robotwin-aloha-agilex"
+native_task = "blocks_ranking_rgb"
+embodiment = "aloha-agilex"
+task_config = "demo_clean"
+
+[[tasks]]
+id = "robotwin/blocks-ranking-size-aloha-agilex"
+robot = "robotwin/robotwin-aloha-agilex"
+native_task = "blocks_ranking_size"
+embodiment = "aloha-agilex"
+task_config = "demo_clean"
+
+[[tasks]]
+id = "robotwin/click-alarmclock-aloha-agilex"
+robot = "robotwin/robotwin-aloha-agilex"
+native_task = "click_alarmclock"
+embodiment = "aloha-agilex"
+task_config = "demo_clean"
+
+[[tasks]]
+id = "robotwin/click-bell-aloha-agilex"
+robot = "robotwin/robotwin-aloha-agilex"
+native_task = "click_bell"
+embodiment = "aloha-agilex"
+task_config = "demo_clean"
+
+[[tasks]]
+id = "robotwin/dump-bin-bigbin-aloha-agilex"
+# Upstream rejects seed 0 of this scene as unstable; RoboEnv starts from seed 5.
+seed = 5
+robot = "robotwin/robotwin-aloha-agilex"
+native_task = "dump_bin_bigbin"
+embodiment = "aloha-agilex"
+task_config = "demo_clean"
+
+[[tasks]]
+id = "robotwin/grab-roller-aloha-agilex"
+robot = "robotwin/robotwin-aloha-agilex"
+native_task = "grab_roller"
+embodiment = "aloha-agilex"
+task_config = "demo_clean"
+
+[[tasks]]
+id = "robotwin/handover-block-aloha-agilex"
+robot = "robotwin/robotwin-aloha-agilex"
+native_task = "handover_block"
+embodiment = "aloha-agilex"
+task_config = "demo_clean"
+
+[[tasks]]
+id = "robotwin/handover-mic-aloha-agilex"
+robot = "robotwin/robotwin-aloha-agilex"
+native_task = "handover_mic"
+embodiment = "aloha-agilex"
+task_config = "demo_clean"
+
+[[tasks]]
+id = "robotwin/hanging-mug-aloha-agilex"
+robot = "robotwin/robotwin-aloha-agilex"
+native_task = "hanging_mug"
+embodiment = "aloha-agilex"
+task_config = "demo_clean"
+
+[[tasks]]
+id = "robotwin/lift-pot-aloha-agilex"
+robot = "robotwin/robotwin-aloha-agilex"
+native_task = "lift_pot"
+embodiment = "aloha-agilex"
+task_config = "demo_clean"
+
+[[tasks]]
+id = "robotwin/move-can-pot-aloha-agilex"
+robot = "robotwin/robotwin-aloha-agilex"
+native_task = "move_can_pot"
+embodiment = "aloha-agilex"
+task_config = "demo_clean"
+
+[[tasks]]
+id = "robotwin/move-pillbottle-pad-aloha-agilex"
+robot = "robotwin/robotwin-aloha-agilex"
+native_task = "move_pillbottle_pad"
+embodiment = "aloha-agilex"
+task_config = "demo_clean"
+
+[[tasks]]
+id = "robotwin/move-playingcard-away-aloha-agilex"
+robot = "robotwin/robotwin-aloha-agilex"
+native_task = "move_playingcard_away"
+embodiment = "aloha-agilex"
+task_config = "demo_clean"
+
+[[tasks]]
+id = "robotwin/move-stapler-pad-aloha-agilex"
+robot = "robotwin/robotwin-aloha-agilex"
+native_task = "move_stapler_pad"
+embodiment = "aloha-agilex"
+task_config = "demo_clean"
+
+[[tasks]]
+id = "robotwin/open-laptop-aloha-agilex"
+robot = "robotwin/robotwin-aloha-agilex"
+native_task = "open_laptop"
+embodiment = "aloha-agilex"
+task_config = "demo_clean"
+
+[[tasks]]
+id = "robotwin/open-microwave-aloha-agilex"
+robot = "robotwin/robotwin-aloha-agilex"
+native_task = "open_microwave"
+embodiment = "aloha-agilex"
+task_config = "demo_clean"
+
+[[tasks]]
+id = "robotwin/pick-diverse-bottles-aloha-agilex"
+# Upstream rejects seed 0 of this scene as unstable; RoboEnv starts from seed 1.
+seed = 1
+robot = "robotwin/robotwin-aloha-agilex"
+native_task = "pick_diverse_bottles"
+embodiment = "aloha-agilex"
+task_config = "demo_clean"
+
+[[tasks]]
+id = "robotwin/pick-dual-bottles-aloha-agilex"
+robot = "robotwin/robotwin-aloha-agilex"
+native_task = "pick_dual_bottles"
+embodiment = "aloha-agilex"
+task_config = "demo_clean"
+
+[[tasks]]
+id = "robotwin/place-a2b-left-aloha-agilex"
+robot = "robotwin/robotwin-aloha-agilex"
+native_task = "place_a2b_left"
+embodiment = "aloha-agilex"
+task_config = "demo_clean"
+
+[[tasks]]
+id = "robotwin/place-a2b-right-aloha-agilex"
+robot = "robotwin/robotwin-aloha-agilex"
+native_task = "place_a2b_right"
+embodiment = "aloha-agilex"
+task_config = "demo_clean"
+
+[[tasks]]
+id = "robotwin/place-bread-basket-aloha-agilex"
+robot = "robotwin/robotwin-aloha-agilex"
+native_task = "place_bread_basket"
+embodiment = "aloha-agilex"
+task_config = "demo_clean"
+
+[[tasks]]
+id = "robotwin/place-bread-skillet-aloha-agilex"
+robot = "robotwin/robotwin-aloha-agilex"
+native_task = "place_bread_skillet"
+embodiment = "aloha-agilex"
+task_config = "demo_clean"
+
+[[tasks]]
+id = "robotwin/place-burger-fries-aloha-agilex"
+robot = "robotwin/robotwin-aloha-agilex"
+native_task = "place_burger_fries"
+embodiment = "aloha-agilex"
+task_config = "demo_clean"
+
+[[tasks]]
+id = "robotwin/place-can-basket-aloha-agilex"
+robot = "robotwin/robotwin-aloha-agilex"
+native_task = "place_can_basket"
+embodiment = "aloha-agilex"
+task_config = "demo_clean"
+
+[[tasks]]
+id = "robotwin/place-cans-plasticbox-aloha-agilex"
+robot = "robotwin/robotwin-aloha-agilex"
+native_task = "place_cans_plasticbox"
+embodiment = "aloha-agilex"
+task_config = "demo_clean"
+
+[[tasks]]
+id = "robotwin/place-container-plate-aloha-agilex"
+robot = "robotwin/robotwin-aloha-agilex"
+native_task = "place_container_plate"
+embodiment = "aloha-agilex"
+task_config = "demo_clean"
+
+[[tasks]]
+id = "robotwin/place-dual-shoes-aloha-agilex"
+robot = "robotwin/robotwin-aloha-agilex"
+native_task = "place_dual_shoes"
+embodiment = "aloha-agilex"
+task_config = "demo_clean"
+
+[[tasks]]
+id = "robotwin/place-empty-cup-aloha-agilex"
+robot = "robotwin/robotwin-aloha-agilex"
+native_task = "place_empty_cup"
+embodiment = "aloha-agilex"
+task_config = "demo_clean"
+
+[[tasks]]
+id = "robotwin/place-fan-aloha-agilex"
+robot = "robotwin/robotwin-aloha-agilex"
+native_task = "place_fan"
+embodiment = "aloha-agilex"
+task_config = "demo_clean"
+
+[[tasks]]
+id = "robotwin/place-mouse-pad-aloha-agilex"
+robot = "robotwin/robotwin-aloha-agilex"
+native_task = "place_mouse_pad"
+embodiment = "aloha-agilex"
+task_config = "demo_clean"
+
+[[tasks]]
+id = "robotwin/place-object-basket-aloha-agilex"
+robot = "robotwin/robotwin-aloha-agilex"
+native_task = "place_object_basket"
+embodiment = "aloha-agilex"
+task_config = "demo_clean"
+
+[[tasks]]
+id = "robotwin/place-object-scale-aloha-agilex"
+robot = "robotwin/robotwin-aloha-agilex"
+native_task = "place_object_scale"
+embodiment = "aloha-agilex"
+task_config = "demo_clean"
+
+[[tasks]]
+id = "robotwin/place-object-stand-aloha-agilex"
+robot = "robotwin/robotwin-aloha-agilex"
+native_task = "place_object_stand"
+embodiment = "aloha-agilex"
+task_config = "demo_clean"
+
+[[tasks]]
+id = "robotwin/place-phone-stand-aloha-agilex"
+robot = "robotwin/robotwin-aloha-agilex"
+native_task = "place_phone_stand"
+embodiment = "aloha-agilex"
+task_config = "demo_clean"
+
+[[tasks]]
+id = "robotwin/place-shoe-aloha-agilex"
+robot = "robotwin/robotwin-aloha-agilex"
+native_task = "place_shoe"
+embodiment = "aloha-agilex"
+task_config = "demo_clean"
+
+[[tasks]]
+id = "robotwin/press-stapler-aloha-agilex"
+robot = "robotwin/robotwin-aloha-agilex"
+native_task = "press_stapler"
+embodiment = "aloha-agilex"
+task_config = "demo_clean"
+
+[[tasks]]
+id = "robotwin/put-bottles-dustbin-aloha-agilex"
+robot = "robotwin/robotwin-aloha-agilex"
+native_task = "put_bottles_dustbin"
+embodiment = "aloha-agilex"
+task_config = "demo_clean"
+
+[[tasks]]
+id = "robotwin/put-object-cabinet-aloha-agilex"
+robot = "robotwin/robotwin-aloha-agilex"
+native_task = "put_object_cabinet"
+embodiment = "aloha-agilex"
+task_config = "demo_clean"
+
+[[tasks]]
+id = "robotwin/rotate-qrcode-aloha-agilex"
+robot = "robotwin/robotwin-aloha-agilex"
+native_task = "rotate_qrcode"
+embodiment = "aloha-agilex"
+task_config = "demo_clean"
+
+[[tasks]]
+id = "robotwin/scan-object-aloha-agilex"
+robot = "robotwin/robotwin-aloha-agilex"
+native_task = "scan_object"
+embodiment = "aloha-agilex"
+task_config = "demo_clean"
+
+[[tasks]]
+id = "robotwin/shake-bottle-aloha-agilex"
+# Upstream rejects seed 0 of this scene as unstable; RoboEnv starts from seed 2.
+seed = 2
+robot = "robotwin/robotwin-aloha-agilex"
+native_task = "shake_bottle"
+embodiment = "aloha-agilex"
+task_config = "demo_clean"
+
+[[tasks]]
+id = "robotwin/shake-bottle-horizontally-aloha-agilex"
+# Upstream rejects seed 0 of this scene as unstable; RoboEnv starts from seed 2.
+seed = 2
+robot = "robotwin/robotwin-aloha-agilex"
+native_task = "shake_bottle_horizontally"
+embodiment = "aloha-agilex"
+task_config = "demo_clean"
+
+[[tasks]]
+id = "robotwin/stack-blocks-three-aloha-agilex"
+robot = "robotwin/robotwin-aloha-agilex"
+native_task = "stack_blocks_three"
+embodiment = "aloha-agilex"
+task_config = "demo_clean"
+
+[[tasks]]
+id = "robotwin/stack-blocks-two-aloha-agilex"
+robot = "robotwin/robotwin-aloha-agilex"
+native_task = "stack_blocks_two"
+embodiment = "aloha-agilex"
+task_config = "demo_clean"
+
+[[tasks]]
+id = "robotwin/stack-bowls-three-aloha-agilex"
+robot = "robotwin/robotwin-aloha-agilex"
+native_task = "stack_bowls_three"
+embodiment = "aloha-agilex"
+task_config = "demo_clean"
+
+[[tasks]]
+id = "robotwin/stack-bowls-two-aloha-agilex"
+robot = "robotwin/robotwin-aloha-agilex"
+native_task = "stack_bowls_two"
+embodiment = "aloha-agilex"
+task_config = "demo_clean"
+
+[[tasks]]
+id = "robotwin/stamp-seal-aloha-agilex"
+robot = "robotwin/robotwin-aloha-agilex"
+native_task = "stamp_seal"
+embodiment = "aloha-agilex"
+task_config = "demo_clean"
+
+[[tasks]]
+id = "robotwin/turn-switch-aloha-agilex"
+robot = "robotwin/robotwin-aloha-agilex"
+native_task = "turn_switch"
+embodiment = "aloha-agilex"
+task_config = "demo_clean"

@@ -1,0 +1,10 @@
+# One git patch filename per line, applied in order to .runtime/robodojo after the
+# nested Isaac Lab and cuRobo forks are exported into third_party/. Ported from RoboEnv:
+# 0001 success no longer ends an episode unless eval_cfg.stop_on_success, with completed[];
+# 0002 create_eval_env accepts an injected model client (no policy server or XPolicyLab);
+# 0003 optional predicate measurement hooks for diagnostics;
+# 0004 Isaac Lab's starlette livestream dependency becomes an extra.
+0001-success-policy.patch
+0002-optional-policy-client.patch
+0003-predicate-diagnostics.patch
+0004-isaaclab-optional-streaming.patch

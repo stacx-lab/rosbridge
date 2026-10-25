@@ -1,0 +1,16 @@
+identity:
+  id: robodojo-arx-x5
+  name: RoboDojo dual ARX X5
+  kind: arm
+  model: ARX X5 (dual)
+  source: user
+devices:
+  source: user
+safety:
+  source: user
+  max_joint_velocity: null
+  max_cartesian_velocity: null
+  keep_out_zones: []
+meta:
+  created_at: '2026-10-24T00:00:00Z'
+  updated_at: '2026-10-24T00:00:00Z'
