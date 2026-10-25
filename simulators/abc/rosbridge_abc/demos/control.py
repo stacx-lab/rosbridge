@@ -1,4 +1,4 @@
-"""ABC control acceptance: both YAM arms, a gripper cycle and an RGB-D top-camera capture."""
+"""ABC control acceptance: both YAM arms, a gripper cycle and an RGB-D top-camera frame."""
 from rosbridge_runtime import dual_arm_demo
 
 

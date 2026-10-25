@@ -113,7 +113,6 @@ def test_prepare_builds_once_and_checks_every_selected_task(project, monkeypatch
     monkeypatch.setattr("rosbridge.provisioning.source.sync_source", lambda *args: None)
     monkeypatch.setattr(setup, "activated", lambda *args: (sys.executable, {}))
     monkeypatch.setattr(setup, "build_identity", lambda *args: {"test": True})
-    monkeypatch.setattr(setup, "kinex_packages", lambda: project)
     monkeypatch.setattr(setup.subprocess, "check_output", lambda *args, **kw: '{}')
 
     def run(command, **kwargs):

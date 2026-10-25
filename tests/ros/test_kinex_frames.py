@@ -13,6 +13,12 @@ pytest.importorskip("kinex.node")
 from kinex import helpers
 from kinex.communication import communication, qos
 from kinex.host.device import DeviceHost
+from kinex_interfaces import srv as kinex_srv
+
+# Kinex's frame host serves its LookupTransform; rosbridge's own copy of kinex_interfaces
+# has only Wait. Source a Kinex workspace's .kinex/python/ros/install to run these.
+pytestmark = pytest.mark.skipif(not hasattr(kinex_srv, "LookupTransform"),
+                                reason="needs Kinex's kinex_interfaces with LookupTransform")
 
 
 async def until(predicate):

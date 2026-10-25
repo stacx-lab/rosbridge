@@ -87,6 +87,29 @@ class Graph:
         self.until(future.done, timeout)
         return future.result()
 
+    def frame(self, camera, depth=False, timeout=15.):
+        """A camera's current frame as a Kinex reader takes it: subscribe, then the first
+        image and, with depth, the equally stamped depth. Returns (image, depth or None)."""
+        from sensor_msgs.msg import Image
+        from rosbridge_runtime.devices import FRAME_QOS
+        received = {"image": [], "depth": []}
+        names = ("image", "depth") if depth else ("image",)
+        subscriptions = [self.node.create_subscription(Image, f"{camera}/{name}",
+                                                       lambda msg, name=name: received[name].append(msg),
+                                                       FRAME_QOS) for name in names]
+
+        def pair():
+            depths = {seconds(m.header.stamp): m for m in received["depth"]}
+            for image in received["image"]:
+                if not depth or seconds(image.header.stamp) in depths:
+                    return image, depths.get(seconds(image.header.stamp))
+        try:
+            self.until(lambda: pair() is not None, timeout)
+            return pair()
+        finally:
+            for subscription in subscriptions:
+                self.node.destroy_subscription(subscription)
+
     def wait(self, duration):
         return self.call(self.wait_client, Wait.Request(duration_s=float(duration)))
 

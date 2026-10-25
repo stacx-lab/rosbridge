@@ -47,7 +47,7 @@ The simulator hosts these devices on one `world` node:
 | `world` | `/clock`, `world/wait`, `world/stop`, `world/reset`, `world/spectator/*` while recording |
 | `left_arm`, `right_arm` | `<arm>/joint_state`, `<arm>/joint_target`, `<arm>/stop` |
 | `left_gripper`, `right_gripper` | `<gripper>/joint_state`, `<gripper>/target`, `<gripper>/stop` |
-| `camera_top`, `camera_left`, `camera_right` | `<camera>/image`, `<camera>/depth`, `<camera>/camera_info`, `<camera>/capture` |
+| `camera_top`, `camera_left`, `camera_right` | `<camera>/image`, `<camera>/depth`, `<camera>/camera_info` |
 
 Every task runs on the Kinex rig `abc/abc-yam`; `rosbridge setup abc/abc-yam`
 exports its workspace (arm URDFs measured from the MuJoCo model, mounts at
@@ -64,7 +64,7 @@ the measured position.
 
 The cameras are Kinex `rgbd` devices, as in RoboEnv: `<camera>/depth` publishes
 16UC1 millimetres along the optical axis, registered to the image (0 where nothing
-lies within MuJoCo's clip range), and `capture` is `kinex_interfaces/srv/CaptureRGBD`.
+lies within MuJoCo's clip range), with the same stamp as its image.
 
 ```bash
 rosbridge exec RUN_ID -- ros2 topic pub --once /left_gripper/target \
@@ -75,8 +75,8 @@ rosbridge exec RUN_ID -- ros2 service call /world/wait \
 
 In stepped mode, follow commands with a positive wait to advance physics. Use a
 spinning controller and wait for subscription discovery before publishing.
-A stepped wait renders camera frames back to back; best-effort subscribers of the
-640×480 image streams may lose such bursts, so use `capture` for reliable frames.
+Camera frames are reliable, and a new subscriber receives the current frame at
+once, so subscribing reads a camera even while the stepped world is paused.
 
 ## Native behavior and defaults
 
@@ -121,7 +121,7 @@ rosbridge demo abc --execution-mode realtime
 ```
 
 The finite demo checks arm trajectories and return, gripper close/open,
-invalid-target rejection, an RGB-D capture and advancing simulation time. It
+invalid-target rejection, an RGB-D frame read and advancing simulation time. It
 reports measured realtime factor; this is an actuation check, not a task-success
 benchmark. Native tests additionally compare a wrapped rollout to upstream and
 check that 960×720 spectator capture leaves physics and observation images intact,

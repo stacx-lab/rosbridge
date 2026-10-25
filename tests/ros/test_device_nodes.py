@@ -100,7 +100,6 @@ def test_two_devices_can_borrow_endpoints_from_one_node():
 
 
 def test_catalog_camera_borrows_rosbridge_endpoints_and_checks_readiness():
-    from kinex_interfaces.srv import Capture
     from sensor_msgs.msg import CameraInfo, Image
 
     profile = Path(__file__).resolve().parents[2] / "catalog/robots/libero/libero-panda-tabletop/devices/camera_agentview/profile.yaml"
@@ -121,12 +120,6 @@ def test_catalog_camera_borrows_rosbridge_endpoints_and_checks_readiness():
             image.header.frame_id = "camera_agentview/base"
             publisher = backend.node.create_publisher(Image, operations["image"]["endpoint"], qos(operations["image"]))
             backend.node.create_publisher(CameraInfo, operations["camera_info"]["endpoint"], qos(operations["camera_info"]))
-
-            def capture(request, response):
-                response.image = image
-                return response
-
-            backend.node.create_service(Capture, operations["capture"]["endpoint"], capture)
             definition["runtime"]["ready_timeout_s"] = 5
             host = DeviceHost()
             try:
@@ -137,8 +130,18 @@ def test_catalog_camera_borrows_rosbridge_endpoints_and_checks_readiness():
                         await asyncio.sleep(.02)
                 publisher.publish(image)
                 assert list((await observation.next(timeout_s=3)).data) == [1, 2, 3]
-                response = await host.io.request("camera_agentview.capture")
-                assert response.image.header.frame_id == "camera_agentview/base"
+
+                async def stream():  # frames for the snapshot's own subscription
+                    while True:
+                        publisher.publish(image)
+                        await asyncio.sleep(.05)
+                streaming = asyncio.create_task(stream())
+                try:
+                    sample = await host.run("$sample", {})
+                finally:
+                    streaming.cancel()
+                assert (sample["frame_id"], sample["width"]) == ("camera_agentview/base", 1)
+                assert Path(sample["file"]).is_file() and "depth_file" not in sample
             finally:
                 await host.run("unload", {})
             assert backend.context.ok()

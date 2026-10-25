@@ -1,9 +1,9 @@
-"""Device endpoints on the world node; commands and captures run on the simulator owner thread."""
+"""Device endpoints on the world node; commands and renders run on the simulator owner thread."""
 from geometry_msgs.msg import Twist
-from kinex_interfaces.srv import Capture, CaptureRGBD
 from nav_msgs.msg import Odometry
 from rclpy.callback_groups import ReentrantCallbackGroup
-from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy, qos_profile_sensor_data
+from rclpy.event_handler import PublisherEventCallbacks
+from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy
 from sensor_msgs.msg import CameraInfo, Image, JointState
 from std_msgs.msg import Float64
 from std_srvs.srv import Trigger
@@ -14,6 +14,9 @@ from . import conversions as conv
 # Retain the latest sample even when DDS discovery completes after publication.
 STREAM_QOS = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL,
                         reliability=ReliabilityPolicy.RELIABLE)
+# Camera frames: the one rendered for a new subscriber must arrive, and none goes stale.
+FRAME_QOS = QoSProfile(depth=1, durability=DurabilityPolicy.VOLATILE,
+                       reliability=ReliabilityPolicy.RELIABLE)
 
 
 class Actuator:
@@ -108,21 +111,24 @@ class Base(Actuator):
 
 
 class Camera:
-    """`image` while subscribed, `camera_info` and on-demand `capture`, in frame `<name>/base`.
+    """`image` and `camera_info` in frame `<name>/base`; RGB-D cameras add registered `depth`
+    (16UC1 mm) with the same stamp.
 
-    RGB-D cameras add registered `depth` (16UC1 mm) and capture both with CaptureRGBD.
+    Frames render only for subscribers: at each camera sample, and at once for a new
+    subscriber, so a reader receives the current frame even while the world is paused.
     """
 
     def __init__(self, spec, node):
         self.spec, self.node = spec, node
         self.frame = f'{spec.name}/base'
         self.latest = self.latest_depth = None
-        self.image = node.create_publisher(Image, f'{spec.name}/image', qos_profile_sensor_data)
-        self.depth = (node.create_publisher(Image, f'{spec.name}/depth', qos_profile_sensor_data)
+        events = PublisherEventCallbacks(matched=self.matched)
+        self.image = node.create_publisher(Image, f'{spec.name}/image', FRAME_QOS,
+                                           event_callbacks=events)
+        self.depth = (node.create_publisher(Image, f'{spec.name}/depth', FRAME_QOS,
+                                            event_callbacks=events)
                       if spec.kind == 'rgbd' else None)
         self.info = node.create_publisher(CameraInfo, f'{spec.name}/camera_info', STREAM_QOS)
-        node.create_service(CaptureRGBD if self.depth else Capture, f'{spec.name}/capture',
-                            self.capture, callback_group=ReentrantCallbackGroup())
 
     def reset(self):
         self.latest = self.latest_depth = None
@@ -138,32 +144,28 @@ class Camera:
                                                  self.node.sim.render_depth(self.spec.source))
         return self.latest_depth
 
-    def publish(self, stamp):
-        sim = self.node.sim
-        self.info.publish(conv.camera_info(stamp, self.frame, sim.width, sim.height,
-                                           *sim.intrinsics(self.spec.source)))
+    def send(self, stamp):
+        """Render and publish the subscribed streams; image and depth share one stamp."""
         if self.image.get_subscription_count():
             self.image.publish(self.render(stamp))
         if self.depth is not None and self.depth.get_subscription_count():
             self.depth.publish(self.render_depth(stamp))
 
-    async def capture(self, request, response):
-        def capture():
-            stamp = conv.stamp(self.node.world.time_s)
-            image = self.render(stamp)
-            self.image.publish(image)
-            if self.depth is None:
-                return image, None
-            depth = self.render_depth(stamp)
-            self.depth.publish(depth)
-            return image, depth
+    def publish(self, stamp):
+        sim = self.node.sim
+        self.info.publish(conv.camera_info(stamp, self.frame, sim.width, sim.height,
+                                           *sim.intrinsics(self.spec.source)))
+        self.send(stamp)
+
+    def matched(self, status):
+        if status.current_count_change > 0:
+            self.node.world.submit(self.send_current)
+
+    def send_current(self):
         try:
-            response.image, depth = await self.node.request(capture)
-            if depth is not None:
-                response.depth_image = depth
+            self.send(conv.stamp(self.node.world.time_s))
         except Exception as error:
-            self.node.get_logger().error(f'{self.spec.name} capture failed: {error}')
-        return response
+            self.node.get_logger().error(f'{self.spec.name} render failed: {error}')
 
 
 def device(spec, node):

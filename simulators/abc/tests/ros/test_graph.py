@@ -1,7 +1,6 @@
 """ABC observations and spectator streams on the world node; motion is tested by the demo."""
 import pytest
 import numpy as np
-from kinex_interfaces.srv import CaptureRGBD
 from sensor_msgs.msg import CameraInfo, Image, JointState
 
 from rosbridge_runtime.devices import STREAM_QOS
@@ -15,15 +14,13 @@ def test_abc_observations_without_spectators(tmp_path):
         for kind, topic, key in ((JointState, "left_arm/joint_state", "joints"),
                                  (CameraInfo, "camera_top/camera_info", "info")):
             node.create_subscription(kind, topic, lambda msg, k=key: last.update({k: msg}), STREAM_QOS)
-        capture = node.create_client(CaptureRGBD, "camera_top/capture")
         assert graph.reset().success
         assert graph.wait(.34).success
-        graph.until(lambda: all(k in last for k in ("joints", "info")) and capture.service_is_ready())
+        graph.until(lambda: all(k in last for k in ("joints", "info")))
         assert last["joints"].name == [f"left_joint{i}" for i in range(1, 7)]
-        # Full-size frames are checked through the reliable capture service; best-effort
-        # streams of large images may drop fragments on a loaded host.
-        response, info = graph.call(capture, CaptureRGBD.Request()), last["info"]
-        image, depth = response.image, response.depth_image
+        # A new subscriber receives the current frame although the stepped world is paused.
+        (image, depth), info = graph.frame("camera_top", depth=True), last["info"]
+        assert seconds(image.header.stamp) == seconds(graph.last["clock"].clock)
         assert image.encoding == "rgb8" and len(image.data) == image.width * image.height * 3
         assert (image.width, image.height) == (info.width, info.height) == (640, 480)
         assert image.header.frame_id == info.header.frame_id == "camera_top/base"

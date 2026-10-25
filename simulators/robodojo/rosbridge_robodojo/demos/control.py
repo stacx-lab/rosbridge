@@ -1,4 +1,4 @@
-"""RoboDojo control acceptance: both ARX X5 arms, a gripper cycle and an RGB head-camera capture."""
+"""RoboDojo control acceptance: both ARX X5 arms, a gripper cycle and an RGB head-camera frame."""
 from rosbridge_runtime import dual_arm_demo
 
 

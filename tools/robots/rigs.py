@@ -169,28 +169,21 @@ def camera(name, description, width, height, intrinsics, base, depth_range=None)
         "image": operation(
             "RGB image measurements with encoding, dimensions, row stride and acquisition "
             "timestamp in the Image header. The frame_id identifies the calibrated optical frame; "
-            "use its stamp for tf2 lookup. Subscription does not advance world time.",
-            "topic", "output", f"/{name}/image", "sensor_msgs/msg/Image",
-            qos(reliability="best_effort")),
+            "use its stamp for tf2 lookup. A new subscriber receives the current frame at once, "
+            "also while the world is paused, then one per camera sample; reading never "
+            "advances world time.", "topic", "output", f"/{name}/image", "sensor_msgs/msg/Image"),
     }
     if rgbd:
         ops["depth"] = operation(
             "16UC1 depth registered to image in millimetres along the optical axis; 0 marks "
-            "missing or out-of-range samples. Same stamp and frame_id as the paired image.",
-            "topic", "output", f"/{name}/depth", "sensor_msgs/msg/Image",
-            qos(reliability="best_effort"))
+            "missing or out-of-range samples. Rendered with its image: same stamp and frame_id, "
+            "so pair the two by stamp.", "topic", "output", f"/{name}/depth",
+            "sensor_msgs/msg/Image")
     ops["camera_info"] = operation(
         "Projection and distortion calibration for the image stream, including K, D, image size "
         "and optical frame. Use the declared distortion model and raw/rectified image space when "
         "projecting pixels; intrinsics are not TF transforms.", "topic", "output",
         f"/{name}/camera_info", "sensor_msgs/msg/CameraInfo", qos(durability="transient_local"))
-    ops["capture"] = operation(
-        ("Return the current image and registered depth in CaptureRGBD.response image and "
-         "depth_image from one acquisition" if rgbd else
-         "Return the current image in Capture.response.image") +
-        " without advancing world time. Preserve the header acquisition stamp and frame_id.",
-        "service", "input", f"/{name}/capture",
-        "kinex_interfaces/srv/CaptureRGBD" if rgbd else "kinex_interfaces/srv/Capture")
     facts = {"color": color}
     if rgbd:
         near, far = depth_range

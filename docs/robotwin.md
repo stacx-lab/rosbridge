@@ -46,7 +46,7 @@ the store instead of being downloaded.
 | `world` | `/clock`, `world/wait`, `world/stop`, `world/reset`, `world/spectator/*` while recording |
 | `left_arm`, `right_arm` | `<arm>/joint_state`, `<arm>/joint_target`, `<arm>/stop` |
 | `left_gripper`, `right_gripper` | `<gripper>/joint_state`, `<gripper>/target`, `<gripper>/stop` |
-| `head_camera`, `left_camera`, `right_camera` | `<camera>/image`, `<camera>/depth`, `<camera>/camera_info`, `<camera>/capture` |
+| `head_camera`, `left_camera`, `right_camera` | `<camera>/image`, `<camera>/depth`, `<camera>/camera_info` |
 
 Arm targets name the native joints `fl_joint1..6` (left) and `fr_joint1..6`
 (right) in radians: the arm entries of upstream's 14-D `qpos` action. The native
@@ -59,8 +59,8 @@ position.
 
 Cameras are D435 models at 320×240 (fx = fy ≈ 358.64 px, principal point at the
 image center). RGB is upstream's ray-traced render; registered depth comes from a
-raster twin of each camera at pixel centers, as in RoboEnv, and `capture` is
-`kinex_interfaces/srv/CaptureRGBD`. The rig `robotwin/robotwin-aloha-agilex` holds
+raster twin of each camera at pixel centers, as in RoboEnv, with the same stamp as
+its image. The rig `robotwin/robotwin-aloha-agilex` holds
 the arm chains from `arx5_description_isaac.urdf`, the measured mounts, the TCP
 (upstream's tcp pose, 0.12 m ahead of each wrist flange) and the camera mounts.
 

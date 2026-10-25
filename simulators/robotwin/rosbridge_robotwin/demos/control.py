@@ -1,4 +1,4 @@
-"""RoboTwin control acceptance: both ARX5 arms, a gripper cycle and an RGB-D head-camera capture."""
+"""RoboTwin control acceptance: both ARX5 arms, a gripper cycle and an RGB-D head-camera frame."""
 from rosbridge_runtime import dual_arm_demo
 
 

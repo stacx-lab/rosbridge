@@ -3,7 +3,6 @@ import numpy as np
 import psutil
 import pytest
 from builtin_interfaces.msg import Duration
-from kinex_interfaces.srv import Capture
 from sensor_msgs.msg import CameraInfo, Image, JointState
 from std_msgs.msg import Float64
 from std_srvs.srv import Trigger
@@ -44,10 +43,9 @@ def test_robodojo_graph_serves_the_kinex_devices_from_a_native_worker(tmp_path, 
             node.create_subscription(kind, topic, lambda msg, k=key: last.update({k: msg}), STREAM_QOS)
         joint_target = node.create_publisher(JointTrajectory, "left_arm/joint_target", 1)
         gripper_target = node.create_publisher(Float64, "left_gripper/target", 1)
-        capture = node.create_client(Capture, "left_camera/capture")
         stop = node.create_client(Trigger, "left_arm/stop")
         graph.until(lambda: joint_target.get_subscription_count() and gripper_target.get_subscription_count()
-                    and capture.service_is_ready() and stop.service_is_ready())
+                    and stop.service_is_ready())
         assert graph.wait(.2).success
         graph.until(lambda: all(k in last for k in ("arm", "right", "gripper", "info", "spectator")))
         # Both arms keep the native joint names; devices disambiguate them.
@@ -71,7 +69,7 @@ def test_robodojo_graph_serves_the_kinex_devices_from_a_native_worker(tmp_path, 
         assert graph.wait(1.).success
         graph.spin(.1)
         assert last["gripper"].position[0] < opened - .5
-        image = graph.call(capture, Capture.Request(), 60.).image
+        image, _ = graph.frame("left_camera", timeout=60.)
         assert image.header.frame_id == "left_camera/base" and (image.width, image.height) == (640, 480)
         assert np.frombuffer(bytes(image.data), np.uint8).std() > 1
         before = seconds(last["spectator"].header.stamp)

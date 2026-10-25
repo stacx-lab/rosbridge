@@ -16,11 +16,9 @@ OPERATIONS = {
                 "stop": "std_srvs/srv/Trigger"},
     "locomotion": {"velocity": "geometry_msgs/msg/Twist", "odometry": "nav_msgs/msg/Odometry",
                    "stop": "std_srvs/srv/Trigger"},
-    "rgb": {"image": "sensor_msgs/msg/Image", "camera_info": "sensor_msgs/msg/CameraInfo",
-            "capture": "kinex_interfaces/srv/Capture"},
+    "rgb": {"image": "sensor_msgs/msg/Image", "camera_info": "sensor_msgs/msg/CameraInfo"},
     "rgbd": {"image": "sensor_msgs/msg/Image", "depth": "sensor_msgs/msg/Image",
-             "camera_info": "sensor_msgs/msg/CameraInfo",
-             "capture": "kinex_interfaces/srv/CaptureRGBD"},
+             "camera_info": "sensor_msgs/msg/CameraInfo"},
 }
 WORLD = {"time": ("/clock", "rosgraph_msgs/msg/Clock"),
          "wait": ("/world/wait", "kinex_interfaces/srv/Wait"),

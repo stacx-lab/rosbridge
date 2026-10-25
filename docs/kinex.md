@@ -2,11 +2,11 @@
 
 rosbridge speaks Kinex's device contract directly: every device of a run is a set
 of endpoints on the single `world` node, using standard ROS types,
-`std_srvs/srv/Trigger` stops and the `kinex_interfaces` Wait and Capture services.
+`std_srvs/srv/Trigger` stops and Kinex's `kinex_interfaces/srv/Wait` world service.
 Exported Kinex profiles point straight at those endpoints, so Kinex borrows the
 simulator instead of relaying it; only the URDF link publishers (`links.py`) of the
-joint and gripper devices run in Kinex. Builds require `KINEX_ROS_PACKAGES`, pointing to
-Kinex core's `packages/core/assets/ros`.
+joint and gripper devices run in Kinex. rosbridge builds `Wait` from its own copy
+(`ros2/kinex_interfaces`, byte-identical to Kinex's), so builds need no Kinex checkout.
 
 ## Device contract
 
@@ -16,8 +16,8 @@ Kinex core's `packages/core/assets/ros`.
 | `joint` (arm, torso) | `joint_state` (`/<arm>/joint_state`, JointState), `joint_target` (`/<arm>/joint_target`, JointTrajectory), `stop` |
 | `gripper` | `joint_state`, `target` (`/<gripper>/target`, Float64 position), `stop` |
 | `locomotion` (base) | `velocity` (`/<base>/velocity`, Twist), `odometry` (`/<base>/odometry`, Odometry), `stop` |
-| `rgb` (camera) | `image` (`/<camera>/image`), `camera_info`, `capture` (Capture), in frame `<camera>/base` |
-| `rgbd` (camera) | `image`, `depth` (`/<camera>/depth`, 16UC1 mm), `camera_info`, `capture` (CaptureRGBD) |
+| `rgb` (camera) | `image` (`/<camera>/image`), `camera_info`, in frame `<camera>/base` |
+| `rgbd` (camera) | `image`, `depth` (`/<camera>/depth`, 16UC1 mm, same stamp as its image), `camera_info` |
 
 A gripper's `target` is the URDF position of its `grip` joint, in the simulator's
 native command units. LIBERO's grip joint is `finger_joint1` in metres. ABC,
@@ -44,8 +44,10 @@ validated on the simulator owner thread; invalid ones are logged and keep the he
 target. A device's `stop` holds the measured position (a base commands zero
 velocity) and is created after its command subscription, so a Kinex client that
 discovered `stop` reaches the device.
-Joint states and CameraInfo use transient-local reliable QoS; images use
-sensor-data QoS and are rendered only while subscribed or captured.
+Joint states and CameraInfo use transient-local reliable QoS. Images are reliable
+and volatile and render only for subscribers: once per camera sample, and at once
+for each new subscriber, so a Kinex read (`helpers.camera_frame`, snapshots) gets
+the current frame even in a paused stepped world.
 
 The simulator publishes state and measurements without TF. Kinex computes FK/IK
 from the arm URDF, publishes calibrated mounts and fixed frames such as

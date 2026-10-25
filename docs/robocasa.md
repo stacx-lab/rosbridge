@@ -47,7 +47,7 @@ ROSBRIDGE_ASSET_SEED=../RoboEnv/.cache/roboenv/assets rosbridge prepare robocasa
 | `torso` | joint | `torso/joint_state`, `torso/joint_target`, `torso/stop` |
 | `arm` | joint | `arm/joint_state`, `arm/joint_target`, `arm/stop` |
 | `gripper` | gripper | `gripper/joint_state`, `gripper/target`, `gripper/stop` |
-| `camera_left`, `camera_right`, `camera_wrist` | rgbd | `<camera>/{image,depth,camera_info,capture}` |
+| `camera_left`, `camera_right`, `camera_wrist` | rgbd | `<camera>/{image,depth,camera_info}` |
 
 The cameras are upstream's `robot0_agentview_left`, `robot0_agentview_right` (on
 the torso lift) and `robot0_eye_in_hand`. The rig's frames chain the robot:

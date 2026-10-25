@@ -15,14 +15,6 @@ def interpreter():
             "version": list(sys.version_info[:3])}
 
 
-def kinex_packages():
-    """Kinex core's ROS packages; every graph serves kinex_interfaces services."""
-    packages = os.environ.get("KINEX_ROS_PACKAGES")
-    if not packages or not (Path(packages) / "kinex_interfaces/package.xml").is_file():
-        raise ValueError("set KINEX_ROS_PACKAGES to Kinex core's packages/core/assets/ros directory")
-    return Path(packages).resolve()
-
-
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--simulator", required=True)
@@ -35,7 +27,8 @@ def main():
     command = [sys.executable, "-m", "colcon", "--log-base", str(workspace / "log"),
                "build", "--symlink-install", "--build-base", str(workspace / "build"),
                "--install-base", str(workspace / "install"),
-               "--base-paths", str(root / "ros2"), str(directory), str(kinex_packages()),
+               # ros2/ includes rosbridge's copy of Kinex's Wait interface.
+               "--base-paths", str(root / "ros2"), str(directory),
                "--packages-up-to", config["ros_package"], "--cmake-args",
                f"-DPython3_EXECUTABLE={sys.executable}", f"-DPYTHON_EXECUTABLE={sys.executable}"]
     raise SystemExit(subprocess.call(command, cwd=root))

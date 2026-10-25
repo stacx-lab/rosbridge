@@ -8,16 +8,15 @@ import time
 
 import rclpy
 from builtin_interfaces.msg import Duration
-from kinex_interfaces.srv import Capture, CaptureRGBD
 from rclpy.node import Node
 from rosgraph_msgs.msg import Clock
-from sensor_msgs.msg import CameraInfo, JointState
+from sensor_msgs.msg import CameraInfo, Image, JointState
 from std_msgs.msg import Float64
 from std_srvs.srv import Trigger
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 
 from rosbridge.clients import WorldClockClient
-from rosbridge_runtime.devices import STREAM_QOS
+from rosbridge_runtime.devices import FRAME_QOS, STREAM_QOS
 
 
 class ControlDemo(Node):
@@ -29,10 +28,7 @@ class ControlDemo(Node):
         for device in ("left_arm", "right_arm", "right_gripper"):
             self.create_subscription(JointState, f"{device}/joint_state",
                                      lambda msg, d=device: self.last.update({d: msg}), STREAM_QOS)
-        # Full-size frames are checked through capture; best-effort image bursts may drop.
         self.create_subscription(CameraInfo, f"{camera}/camera_info", self.on_info, STREAM_QOS)
-        self.service = CaptureRGBD if depth else Capture
-        self.capture = self.create_client(self.service, f"{camera}/capture")
         self.targets = {side: self.create_publisher(JointTrajectory, f"{side}_arm/joint_target", 1)
                         for side in ("left", "right")}
         self.gripper = self.create_publisher(Float64, "right_gripper/target", 1)
@@ -41,6 +37,28 @@ class ControlDemo(Node):
 
     def on_info(self, msg):
         self.info_count += 1
+
+    def frame(self):
+        """The camera's current frame as a Kinex reader takes it: subscribe, then the first
+        image and, for RGB-D, the equally stamped depth."""
+        received = {"image": [], "depth": []}
+        names = ("image", "depth") if self.depth else ("image",)
+        subscriptions = [self.create_subscription(Image, f"{self.camera}/{name}",
+                                                  lambda msg, name=name: received[name].append(msg),
+                                                  FRAME_QOS) for name in names]
+
+        def pair():
+            depths = {(m.header.stamp.sec, m.header.stamp.nanosec): m for m in received["depth"]}
+            for image in received["image"]:
+                stamp = image.header.stamp.sec, image.header.stamp.nanosec
+                if not self.depth or stamp in depths:
+                    return image, depths.get(stamp)
+        try:
+            self.wait(pair)
+            return pair()
+        finally:
+            for subscription in subscriptions:
+                self.destroy_subscription(subscription)
 
     def wait(self, predicate, timeout=30):
         end = time.monotonic() + timeout
@@ -107,12 +125,9 @@ class ControlDemo(Node):
             raise AssertionError("right gripper did not close")
         if self.info_count <= infos_start:
             raise AssertionError("top camera did not publish during motion")
-        future = self.capture.call_async(self.service.Request())
-        self.wait(future.done)
-        image = future.result().image
+        image, depth = self.frame()
         if image.encoding != "rgb8" or len(image.data) != image.width * image.height * 3:
             raise AssertionError("invalid camera image")
-        depth = future.result().depth_image if self.depth else None
         if depth is not None and (depth.encoding != "16UC1" or depth.header != image.header
                                   or (depth.width, depth.height) != (image.width, image.height)):
             raise AssertionError("invalid registered depth image")
@@ -135,7 +150,7 @@ class ControlDemo(Node):
             raise AssertionError("return motion or gripper opening failed")
         print(json.dumps({"result": "PASS",
                           "control_test": "arm trajectories, gripper cycle, target rejection, "
-                                          + ("RGB-D capture" if self.depth else "RGB capture"),
+                                          + ("RGB-D frame" if self.depth else "RGB frame"),
                           "real_time_factor": round(rtf, 3),
                           "measured_sim_seconds": round(elapsed_sim, 3),
                           "measured_wall_seconds": round(elapsed_wall, 3),

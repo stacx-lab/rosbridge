@@ -2,7 +2,6 @@
 import numpy as np
 import pytest
 from builtin_interfaces.msg import Duration
-from kinex_interfaces.srv import CaptureRGBD
 from sensor_msgs.msg import CameraInfo, Image, JointState
 from std_msgs.msg import Float64
 from std_srvs.srv import Trigger
@@ -27,10 +26,9 @@ def test_robotwin_graph_serves_the_kinex_devices(tmp_path, mode):
             node.create_subscription(kind, topic, lambda msg, k=key: last.update({k: msg}), STREAM_QOS)
         joint_target = node.create_publisher(JointTrajectory, "left_arm/joint_target", 1)
         gripper_target = node.create_publisher(Float64, "left_gripper/target", 1)
-        capture = node.create_client(CaptureRGBD, "left_camera/capture")
         stop = node.create_client(Trigger, "left_arm/stop")
         graph.until(lambda: joint_target.get_subscription_count() and gripper_target.get_subscription_count()
-                    and capture.service_is_ready() and stop.service_is_ready())
+                    and stop.service_is_ready())
         assert graph.wait(.2).success
         graph.until(lambda: all(k in last for k in ("arm", "gripper", "info", "spectator")))
         assert last["arm"].name == [f"fl_joint{i}" for i in range(1, 7)]
@@ -53,8 +51,7 @@ def test_robotwin_graph_serves_the_kinex_devices(tmp_path, mode):
         assert graph.wait(1.5).success
         graph.spin(.1)
         assert last["gripper"].position[0] < opened - .5
-        response = graph.call(capture, CaptureRGBD.Request())
-        image, depth = response.image, response.depth_image
+        image, depth = graph.frame("left_camera", depth=True)
         assert image.header.frame_id == depth.header.frame_id == "left_camera/base"
         assert (depth.encoding, depth.width, depth.height) == ("16UC1", 320, 240)
         assert (np.frombuffer(bytes(depth.data), np.uint16) > 0).mean() > .9

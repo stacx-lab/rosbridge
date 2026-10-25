@@ -54,7 +54,8 @@ assert set(runtime.describe('world.wait')['request']) == {'duration_s'}
 assert all(not name.endswith(('/task/status','/task/instruction')) for name,_ in io.node.get_topic_names_and_types())
 state = await io.subscribe('arm.joint_state').next(timeout_s=5)
 tf = await helpers.lookup_transform(io,'world:base','gripper:tcp',state.header.stamp)
-image = (await io.request('camera_agentview.capture')).image
+image, depth = await helpers.camera_frame(io,'camera_agentview')
+assert depth is None and image.header.frame_id == 'camera_agentview/base'
 finish({'time':await clock(io),'stamp':{'sec':state.header.stamp.sec,'nanosec':state.header.stamp.nanosec},'camera':[image.width,image.height],'tcp_z':tf.transform.translation.z})`)
   await exec(`await io.publish('gripper.target',{'data':0.})
 finish({'sent':True})`)

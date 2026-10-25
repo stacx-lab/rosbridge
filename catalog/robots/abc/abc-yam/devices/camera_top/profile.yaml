@@ -7,26 +7,29 @@ operations:
   image:
     description: RGB image measurements with encoding, dimensions, row stride and acquisition
       timestamp in the Image header. The frame_id identifies the calibrated optical frame;
-      use its stamp for tf2 lookup. Subscription does not advance world time.
+      use its stamp for tf2 lookup. A new subscriber receives the current frame at once, also
+      while the world is paused, then one per camera sample; reading never advances world
+      time.
     transport: topic
     direction: output
     endpoint: /camera_top/image
     type: sensor_msgs/msg/Image
     qos:
       depth: 1
-      reliability: best_effort
+      reliability: reliable
       durability: volatile
     timeout_s: 10
   depth:
-    description: 16UC1 depth registered to image in millimetres along the optical axis; 0
-      marks missing or out-of-range samples. Same stamp and frame_id as the paired image.
+    description: '16UC1 depth registered to image in millimetres along the optical axis; 0
+      marks missing or out-of-range samples. Rendered with its image: same stamp and frame_id,
+      so pair the two by stamp.'
     transport: topic
     direction: output
     endpoint: /camera_top/depth
     type: sensor_msgs/msg/Image
     qos:
       depth: 1
-      reliability: best_effort
+      reliability: reliable
       durability: volatile
     timeout_s: 10
   camera_info:
@@ -41,19 +44,6 @@ operations:
       depth: 1
       reliability: reliable
       durability: transient_local
-    timeout_s: 10
-  capture:
-    description: Return the current image and registered depth in CaptureRGBD.response image
-      and depth_image from one acquisition without advancing world time. Preserve the header
-      acquisition stamp and frame_id.
-    transport: service
-    direction: input
-    endpoint: /camera_top/capture
-    type: kinex_interfaces/srv/CaptureRGBD
-    qos:
-      depth: 1
-      reliability: reliable
-      durability: volatile
     timeout_s: 10
 loaded: false
 meta:

@@ -2,7 +2,6 @@
 from contextlib import contextmanager
 import hashlib
 import json
-from pathlib import Path
 import shutil
 import subprocess
 import sys
@@ -11,7 +10,6 @@ from rosbridge.assets import file_lock
 from rosbridge.catalog import preparation_tasks, resolve
 from rosbridge.storage import local_environment
 from .environment import activated, native_activated, overlay_command
-from .workspace import kinex_packages
 
 
 @contextmanager
@@ -24,11 +22,11 @@ def workspace_lock(root, name, *, shared=False):
                          "or wait for preparation to finish before launching") from None
 
 
-def build_identity(root, config, kinex):
-    """Inputs of a simulator's ROS build, including the Kinex packages it was built with."""
+def build_identity(root, config):
+    """Inputs of a simulator's ROS build."""
     files = [(root, root / name) for name in
              ("pyproject.toml", "pixi.toml", "pixi.lock", f"simulators/{config['name']}/simulator.toml")]
-    for base in (root / "ros2", root / "simulators" / config["name"], kinex):
+    for base in (root / "ros2", root / "simulators" / config["name"]):
         files += [(base, p) for p in base.rglob("*") if p.name in
                   ("setup.py", "setup.cfg", "package.xml", "CMakeLists.txt")
                   or p.suffix in (".msg", ".srv")
@@ -37,8 +35,7 @@ def build_identity(root, config, kinex):
     for base, path in sorted(files):
         digest.update(str(path.relative_to(base)).encode())
         digest.update(path.read_bytes())
-    return {"schema": 2, "package": config["ros_package"], "kinex_packages": str(kinex),
-            "build_hash": digest.hexdigest()}
+    return {"schema": 3, "package": config["ros_package"], "build_hash": digest.hexdigest()}
 
 
 def native(config):
@@ -81,7 +78,7 @@ def doctor(selection, *, project=None, task=None, all_tasks=False):
     workspace = root / ".workspaces" / config["name"]
     try:
         built = json.loads((workspace / "project.json").read_text())
-        if built != build_identity(root, config, Path(built["kinex_packages"])):
+        if built != build_identity(root, config):
             issues.append("ROS build is stale")
     except (OSError, ValueError, KeyError):
         issues.append("ROS build is missing")
@@ -137,7 +134,7 @@ def prepare(selection, *, project=None, task=None):
         run(command, env=source_env)
         workspace = root / ".workspaces" / config["name"]
         marker = workspace / "project.json"
-        identity = build_identity(root, config, kinex_packages())
+        identity = build_identity(root, config)
         previous = json.loads(marker.read_text()) if marker.is_file() else None
         interpreter_marker = workspace / "interpreter.json"
         old_interpreter = json.loads(interpreter_marker.read_text()) if interpreter_marker.exists() else None

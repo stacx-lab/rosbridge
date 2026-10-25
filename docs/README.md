@@ -9,14 +9,13 @@ separate from simulator environments.
 
 Linux x86-64, Git, uv, Pixi, and an EGL-capable graphics driver are required.
 ROS Jazzy and Python 3.12 come from the locked RoboStack/Pixi environment; a system
-ROS installation is not required. Every graph serves `kinex_interfaces`, so
-preparation needs `KINEX_ROS_PACKAGES` pointing to Kinex core's
-`packages/core/assets/ros`.
+ROS installation is not required. Every graph serves Kinex's world service
+`kinex_interfaces/srv/Wait`; rosbridge builds it from its own identical copy in
+`ros2/kinex_interfaces`, so preparation needs no Kinex checkout.
 
 ```bash
 bash tools/bootstrap.sh
 source .venv/bin/activate
-export KINEX_ROS_PACKAGES=../kinex2.0/packages/core/assets/ros
 rosbridge prepare abc
 rosbridge tasks list --simulator abc
 rosbridge launch abc/put-plastic-bottles-in-bin --execution-mode stepped --detach
@@ -134,11 +133,12 @@ and rejected without clamping; the latest valid target is held until replaced,
 stopped or reset. `<device>/stop` holds the measured position; a base's stop
 commands zero velocity. Each command
 subscription is created before its device's stop service. Cameras publish RGB8
-`Image` (`<camera>/image`, rendered only while subscribed) and `CameraInfo`, and
-serve `kinex_interfaces/srv/Capture`; frames are `<camera>/base`. RGB-D cameras
-(Kinex `rgbd`) add registered `<camera>/depth` (16UC1 millimetres along the optical
-axis, 0 invalid, also rendered only while subscribed) and serve
-`kinex_interfaces/srv/CaptureRGBD` with the image and depth of one acquisition. All observations
+`Image` on `<camera>/image` and `CameraInfo`; frames are `<camera>/base`. RGB-D
+cameras (Kinex `rgbd`) add registered `<camera>/depth` (16UC1 millimetres along the
+optical axis, 0 invalid) with the same stamp as its image. Frames are reliable and
+render only for subscribers: once per camera sample, and at once for each new
+subscriber, so subscribing reads the current frame even while a stepped world is
+paused, without advancing time. There is no capture service. All observations
 use simulation timestamps and ROS optical frame conventions, with the principal
 point at `(width-1)/2, (height-1)/2`.
 
@@ -255,6 +255,9 @@ need `KINEX_PYTHON=../kinex2.0/packages/core/assets/python`; without it they are
 skipped while the remaining tests still run. The Kinex schema and readiness check
 of every rig also needs `KINEX_PYTHON_PROJECT`, one prepared `.kinex/python`
 directory, because Kinex provisions a multi-gigabyte environment per workspace.
+The Kinex frame-host tests (`tests/ros/test_kinex_frames.py`) also need Kinex's full
+`kinex_interfaces`, which rosbridge does not build: source that directory's
+`ros/install/local_setup.bash` after the simulator overlay, or they are skipped.
 
 Unit tests cover the command buffer, scheduling, the robot catalog, source
 preparation and caches. Native checks compare actions and timing with upstream and

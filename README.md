@@ -10,7 +10,6 @@ ROS node.
 ```bash
 bash tools/bootstrap.sh
 source .venv/bin/activate
-export KINEX_ROS_PACKAGES=../kinex2.0/packages/core/assets/ros
 rosbridge prepare abc
 rosbridge launch abc --execution-mode stepped --record ./recordings/abc
 ```

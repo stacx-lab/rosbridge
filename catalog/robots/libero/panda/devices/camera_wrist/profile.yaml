@@ -5,17 +5,17 @@ runtime:
   ready_timeout_s: 30
 operations:
   image:
-    description: RGB image measurements with encoding, dimensions, row stride and
-      acquisition timestamp in the Image header. The frame_id identifies the calibrated
-      optical frame; use its stamp for tf2 lookup. Subscription does not advance world
-      time.
+    description: RGB image measurements with encoding, dimensions, row stride and acquisition
+      timestamp in the Image header. The frame_id identifies the calibrated optical frame; use
+      its stamp for tf2 lookup. A new subscriber receives the current frame at once, also while
+      the world is paused, then one per camera sample; reading never advances world time.
     transport: topic
     direction: output
     endpoint: /camera_wrist/image
     type: sensor_msgs/msg/Image
     qos:
       depth: 1
-      reliability: best_effort
+      reliability: reliable
       durability: volatile
     timeout_s: 10
   camera_info:
@@ -30,19 +30,6 @@ operations:
       depth: 1
       reliability: reliable
       durability: transient_local
-    timeout_s: 10
-  capture:
-    description: Return the current image in Capture.response.image without advancing
-      world time. Preserve the image header acquisition stamp and frame_id; request
-      fields and response status are available through runtime.describe.
-    transport: service
-    direction: input
-    endpoint: /camera_wrist/capture
-    type: kinex_interfaces/srv/Capture
-    qos:
-      depth: 1
-      reliability: reliable
-      durability: volatile
     timeout_s: 10
 loaded: false
 meta:

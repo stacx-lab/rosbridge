@@ -28,8 +28,8 @@ the [robot catalog](kinex.md).
 | `world` | `/clock`, `world/wait`, `world/stop`, `world/reset`, `world/spectator/*` while recording |
 | `arm` | `arm/joint_state`, `arm/joint_target`, `arm/stop` |
 | `gripper` | `gripper/joint_state`, `gripper/target`, `gripper/stop` |
-| `camera_agentview` | `camera_agentview/{image,camera_info,capture}` |
-| `camera_wrist` | `camera_wrist/{image,camera_info,capture}` (native `robot0_eye_in_hand`) |
+| `camera_agentview` | `camera_agentview/{image,camera_info}` |
+| `camera_wrist` | `camera_wrist/{image,camera_info}` (native `robot0_eye_in_hand`) |
 
 Managed runs lease separate ROS domains; use `rosbridge exec RUN_ID -- ...` to join
 a run's environment and domain.
@@ -78,8 +78,9 @@ on success. A failed reset preserves the previous live environment.
 
 Observation cameras are 256×256 RGB in frames `camera_agentview/base` and
 `camera_wrist/base`, with principal point `(width-1)/2, (height-1)/2`. Images are
-rendered at 30 Hz of simulation time only while subscribed; `capture` renders
-on demand without advancing time. Kinex owns the calibrated camera frames and TF.
+rendered at 30 Hz of simulation time only while subscribed, and at once for a new
+subscriber, also while the world is paused; reading never advances time. Kinex owns
+the calibrated camera frames and TF.
 
 With `--record`, spectator views render the native `agentview` and
 `robot0_eye_in_hand` cameras at 960×720 and 10 Hz into `third_person.mp4` and

@@ -58,7 +58,7 @@ once at a polite request rate.
 | `world` | `/clock`, `world/wait`, `world/stop`, `world/reset`, `world/spectator/*` while recording |
 | `left_arm`, `right_arm` | `<arm>/joint_state`, `<arm>/joint_target`, `<arm>/stop` |
 | `left_gripper`, `right_gripper` | `<gripper>/joint_state`, `<gripper>/target`, `<gripper>/stop` |
-| `head_camera`, `left_camera`, `right_camera` | `<camera>/image`, `<camera>/camera_info`, `<camera>/capture` |
+| `head_camera`, `left_camera`, `right_camera` | `<camera>/image`, `<camera>/camera_info` |
 
 Both arms keep upstream's joint names `joint1..joint6` (radians; native limits
 ±10 rad for joints 1–5 and ±3.14 for joint 6); the device disambiguates them.

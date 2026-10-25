@@ -1,7 +1,6 @@
 """The Kinex-facing RoboCasa graph: base velocity and odometry, torso, arm, gripper and RGB-D."""
 from builtin_interfaces.msg import Duration
 from geometry_msgs.msg import Twist
-from kinex_interfaces.srv import CaptureRGBD
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import JointState
 from std_msgs.msg import Float64
@@ -9,7 +8,7 @@ from std_srvs.srv import Trigger
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 
 from rosbridge_runtime.devices import STREAM_QOS
-from tests.ros.support import Graph
+from tests.ros.support import Graph, seconds
 
 
 def test_robocasa_graph_serves_the_mobile_kinex_devices(tmp_path):
@@ -24,11 +23,9 @@ def test_robocasa_graph_serves_the_mobile_kinex_devices(tmp_path):
         torso = node.create_publisher(JointTrajectory, 'torso/joint_target', 1)
         gripper = node.create_publisher(Float64, 'gripper/target', 1)
         velocity = node.create_publisher(Twist, 'base/velocity', 1)
-        capture = node.create_client(CaptureRGBD, 'camera_wrist/capture')
         stop = node.create_client(Trigger, 'base/stop')
         graph.until(lambda: torso.get_subscription_count() and gripper.get_subscription_count()
-                    and velocity.get_subscription_count() and capture.service_is_ready()
-                    and stop.service_is_ready())
+                    and velocity.get_subscription_count() and stop.service_is_ready())
         assert graph.wait(.1).success
         graph.until(lambda: all(k in last for k in ('arm', 'torso', 'gripper', 'base')))
         assert last['arm'].name == [f'robot0_joint{i}' for i in range(1, 8)]
@@ -64,9 +61,10 @@ def test_robocasa_graph_serves_the_mobile_kinex_devices(tmp_path):
         velocity.publish(twist)
         moved(.3)
         assert abs(last['base'].twist.twist.angular.z) < .05
-        response = graph.call(capture, CaptureRGBD.Request())
-        assert response.image.header.frame_id == 'camera_wrist/base' and response.depth_image.encoding == '16UC1'
-        assert len(response.image.data) == 256 * 256 * 3
+        image, depth = graph.frame('camera_wrist', depth=True)  # the paused world's current frame
+        assert image.header.frame_id == 'camera_wrist/base' and depth.encoding == '16UC1'
+        assert len(image.data) == 256 * 256 * 3
+        assert seconds(image.header.stamp) == seconds(graph.last['clock'].clock)
         assert graph.reset(120.).success
     finally:
         graph.close()
