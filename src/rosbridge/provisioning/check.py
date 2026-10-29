@@ -22,6 +22,8 @@ def main():
         from kinex_interfaces.srv import Wait  # noqa: F401
         from rosbridge.core import load_backend
         load_backend(config["name"])
+        if config.get("native_environment"):
+            return  # the native worker reads the assets, so its interpreter checks them
     module, function = config["asset_checker"].split(":")
     checker = getattr(importlib.import_module(module), function)
     for _, _, task in selected:

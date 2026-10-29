@@ -112,7 +112,7 @@ def main():
              f"RGB-D camera on the Panda hand looking along the fingers (upstream {camera})") +
             ". Image and registered depth calibration and the optical-frame mount are in the "
             "profile; the depth near plane scales with each kitchen's extent.",
-            sim.width, sim.height, sim.intrinsics(camera),
+            sim.intrinsics(camera),
             rigs.pose_frame(parent, rigs.relative(frame, optical(camera))), (near, far))
     files = {
         "devices/torso/torso.urdf": rigs.mujoco_chain(

@@ -59,9 +59,9 @@ def test_rig_intrinsics_and_depth_range_match_rendering(tmp_path):
         sim.reset(sim.default_task, 0, False)
         for camera in sim.cameras:
             profile = rig.profiles[f"camera_{camera}"]
-            projection = profile["color"]["projection"]
-            assert (profile["color"]["width"], profile["color"]["height"]) == (sim.width, sim.height)
-            assert [projection[k] for k in ("fx", "fy", "cx", "cy")] == pytest.approx(sim.intrinsics(camera))
+            color = profile["color"]
+            pinhole = [color["projection"][k] for k in ("fx", "fy", "cx", "cy")]
+            assert [color["width"], color["height"], *pinhole] == pytest.approx(sim.intrinsics(camera))
             depth = sim.render_depth(camera)
             valid = depth[depth > 0]
             span = profile["depth"]["valid_range_m"]

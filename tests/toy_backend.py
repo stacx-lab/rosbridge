@@ -14,7 +14,6 @@ class ToyBackend:
     devices = device_inventory(layout, {})
     default_task = "toy"
     cameras = spectators = ()
-    width = height = 1
     reward = 0.
     success = False
     period = 0.1

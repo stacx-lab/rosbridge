@@ -87,8 +87,7 @@ def main():
             f"{side}_camera",
             f"RGB-D camera (D435 model) on the {side} wrist. Native ray-traced RGB with "
             "pixel-center depth from a raster twin; calibration and the optical-frame mount on "
-            f"the {side}_arm flange are in the profile.", sim.width, sim.height,
-            sim.intrinsics(f"{side}_camera"),
+            f"the {side}_arm flange are in the profile.", sim.intrinsics(f"{side}_camera"),
             rigs.pose_frame(f"{side}_arm:flange", rigs.relative(flange, optical)),
             (camera.get_near(), camera.get_far()))
     camera = sim._camera("head_camera")
@@ -98,7 +97,7 @@ def main():
         "head_camera",
         "Fixed RGB-D head camera (D435 model) above the table. Native ray-traced RGB with "
         "pixel-center depth from a raster twin; calibration and the optical-frame mount are in "
-        "the profile.", sim.width, sim.height, sim.intrinsics("head_camera"),
+        "the profile.", sim.intrinsics("head_camera"),
         rigs.pose_frame("world:base", optical), (camera.get_near(), camera.get_far()))
     order = ["world", "left_arm", "left_gripper", "right_arm", "right_gripper",
              "head_camera", "left_camera", "right_camera"]

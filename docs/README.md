@@ -1,7 +1,7 @@
 # Design and usage
 
 rosbridge exposes public robotics simulators, currently ABC, LIBERO, RoboTwin,
-RoboDojo and RoboCasa, as managed ROS 2 graphs that speak Kinex's device contract. It uses native ROS topics and
+RoboDojo, RoboCasa and BEHAVIOR, as managed ROS 2 graphs that speak Kinex's device contract. It uses native ROS topics and
 services, with no HTTP or WebSocket bridge. The command-line environment stays
 separate from simulator environments.
 
@@ -125,7 +125,8 @@ position-only points over every arm joint, strictly increasing times ending with
 device; two arms may keep the same native names. Grippers accept a
 `std_msgs/msg/Float64` position on `<gripper>/target`, in each simulator's native
 command units (LIBERO's finger metres; the normalized 0..1 opening of ABC, RoboTwin
-and RoboDojo; RoboCasa's integrated -1..1 command). Mobile bases (Kinex
+and RoboDojo; RoboCasa's integrated -1..1 command; BEHAVIOR's smooth -1..1 R1Pro command).
+Mobile bases (Kinex
 `locomotion`) accept a body-frame `geometry_msgs/msg/Twist` on `<base>/velocity`,
 held for 0.5 s of world time after the last one, and publish `nav_msgs/msg/Odometry`
 on `<base>/odometry`. Invalid targets are logged
@@ -224,8 +225,11 @@ and register a lazy `rosbridge.backends` entry point (a `WorkerBackend` subclass
 for a native worker). Supply an `ActionLayout` whose commands are positions in
 feedback units (or, for a base's velocity group, body velocities whose feedback is
 odometry), a `device_inventory` naming its devices by Kinex device type (`joint`,
-`gripper`, `locomotion`, `rgb`, `rgbd`), camera intrinsics and `SpectatorView` settings, and declare the inventory
-in the manifest's `[devices]` table.
+`gripper`, `locomotion`, `rgb`, `rgbd`), each camera's image size and intrinsics
+(`intrinsics(camera)`: width, height, fx, fy, cx, cy) and `SpectatorView` settings, and
+declare the inventory in the manifest's `[devices]` table. A manifest's `install`
+lists the generated tree's directories installed editable without dependencies
+(default `["."]`; `[]` imports the tree in place).
 Native methods run only on the owner thread; reset must preserve the previous
 episode on failure. New device kinds require an explicit contract and endpoint
 implementation. Provide a manifest, task catalog, independent Pixi environment,
@@ -242,12 +246,16 @@ pixi run -e libero test-ros
 pixi run -e robotwin smoke && pixi run -e robotwin test-ros
 pixi run -e robodojo-native smoke && pixi run -e robodojo test-ros
 pixi run -e robocasa smoke && pixi run -e robocasa test-ros
+pixi run -e behavior-native smoke && pixi run -e behavior test-ros
+pixi run -e behavior-g1-native smoke && pixi run -e behavior-g1 test-ros
 pixi run -e abc python -m pytest -q tests/integration
 rosbridge demo abc
 rosbridge demo libero --execution-mode realtime
 rosbridge demo robotwin
 rosbridge demo robodojo
 rosbridge demo robocasa
+rosbridge demo behavior --timeout 1800
+rosbridge demo behavior-g1 --timeout 1800
 ```
 
 Kinex-backed checks (rig geometry against each simulator, Kinex client tests)
@@ -263,7 +271,8 @@ Unit tests cover the command buffer, scheduling, the robot catalog, source
 preparation and caches. Native checks compare actions and timing with upstream and
 verify spectator state/image isolation. ROS checks verify the device endpoints,
 waits, stops, reset and spectator streams in both modes on the synthetic backend,
-ABC, LIBERO, RoboTwin and RoboCasa, and RoboDojo through its native worker. Integration checks exercise actual CLI runs, two domains, failure
+ABC, LIBERO, RoboTwin and RoboCasa, and RoboDojo and BEHAVIOR through their native workers.
+Integration checks exercise actual CLI runs, two domains, failure
 cleanup, foreground/detached shutdown and MP4/MCAP recording. Skipped checks are
 not validation evidence. See [ABC](abc.md), [LIBERO](libero.md), [RoboTwin](robotwin.md),
-[RoboDojo](robodojo.md) and [RoboCasa](robocasa.md) for device maps.
+[RoboDojo](robodojo.md), [RoboCasa](robocasa.md) and [BEHAVIOR](behavior.md) for device maps.

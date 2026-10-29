@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<!-- Unitree G1 waist from g1_29dof_rev_1_0.urdf: pelvis..torso_link; top is the torso_link frame. -->
+<robot name="g1_torso">
+  <link name="base_link"/>
+  <link name="link1"/>
+  <link name="link2"/>
+  <link name="top"/>
+  <joint name="waist_yaw_joint" type="revolute">
+    <parent link="base_link"/>
+    <child link="link1"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-2.618" upper="2.618" effort="100" velocity="10"/>
+  </joint>
+  <joint name="waist_roll_joint" type="revolute">
+    <parent link="link1"/>
+    <child link="link2"/>
+    <origin xyz="-0.0039635 0 0.044" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-0.52" upper="0.52" effort="100" velocity="10"/>
+  </joint>
+  <joint name="waist_pitch_joint" type="revolute">
+    <parent link="link2"/>
+    <child link="top"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-0.52" upper="0.52" effort="100" velocity="10"/>
+  </joint>
+</robot>

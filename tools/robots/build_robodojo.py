@@ -80,14 +80,14 @@ def main():
             f"{side}_camera",
             f"RGB camera (D435 model) on the {side} wrist, rendered by RoboDojo's tiled Isaac "
             f"renderer. Calibration and the optical-frame mount on the {side}_arm flange are in "
-            "the profile.", sim.width, sim.height, sim.intrinsics(f"{side}_camera"),
+            "the profile.", sim.intrinsics(f"{side}_camera"),
             rigs.pose_frame(f"{side}_arm:flange", rigs.relative(flange, optical)))
     position, quaternion = sim.camera_pose("head_camera")
     devices["head_camera"] = rigs.camera(
         "head_camera",
         "Fixed RGB head camera (Gemini 345Lg model) above the table, rendered by RoboDojo's "
         "tiled Isaac renderer. Calibration and the optical-frame mount are in the profile.",
-        sim.width, sim.height, sim.intrinsics("head_camera"),
+        sim.intrinsics("head_camera"),
         rigs.pose_frame("world:base", rigs.transform(position, rigs.quat_matrix(quaternion))))
     order = ["world", "left_arm", "left_gripper", "right_arm", "right_gripper",
              "head_camera", "left_camera", "right_camera"]

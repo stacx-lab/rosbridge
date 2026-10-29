@@ -1,0 +1,92 @@
+name: left_gripper
+runtime:
+  domain_id: 0
+  observation: joint_state
+  nodes:
+  - entry: links.py
+    factory: create
+  ready_timeout_s: 30
+operations:
+  joint_state:
+    description: The smooth command the mean finger opening reaches, -1 (closed) to 1 (open),
+      stamped at acquisition; Kinex publishes the URDF finger links from it.
+    transport: topic
+    direction: output
+    endpoint: /left_gripper/joint_state
+    type: sensor_msgs/msg/JointState
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: transient_local
+    timeout_s: 10
+  target:
+    description: Smooth native gripper command (data) from -1 (closed) to 1 (open), held until
+      replaced or stopped; out-of-range targets are ignored, so verify joint_state.
+    transport: topic
+    direction: input
+    endpoint: /left_gripper/target
+    type: std_msgs/msg/Float64
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: volatile
+    timeout_s: 10
+  stop:
+    description: Hold the commanded opening, keeping any grasp.
+    transport: service
+    direction: input
+    endpoint: /left_gripper/stop
+    type: std_srvs/srv/Trigger
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: volatile
+    timeout_s: 10
+loaded: false
+meta:
+  created_at: '2026-10-24T00:00:00Z'
+  updated_at: '2026-10-24T00:00:00Z'
+type: gripper
+description: 'R1Pro left parallel two-finger gripper on the left_arm flange. The grip joint
+  left_gripper is the evaluator''s smooth gripper command (-1 closed, 1 open): both fingers
+  target 0.0 + 0.025 (v + 1) m. Grasping is assisted: an object between closing fingers is
+  held by a constraint. The TCP is the native eef frame between the fingertips, +z approaching.
+  A closed grip alone does not prove a grasp.'
+source: introspected
+calibrated_at: null
+method: introspection
+stop:
+  behavior: hold
+  affected_devices:
+  - left_gripper
+frames:
+  base:
+    translation_m:
+    - -0.029499660478
+    - -3.45045e-07
+    - -0.160649996272
+    rotation_xyzw:
+    - -1.9473e-08
+    - 8.912e-09
+    - -4.4e-10
+    - 1.0
+    parent: left_arm:flange
+  tcp:
+    translation_m:
+    - -4.23435e-07
+    - 3.6464e-08
+    - -0.059999978503
+    rotation_xyzw:
+    - 1.8e-11
+    - 1.0
+    - -7.75e-10
+    - 1.693e-09
+    parent: left_gripper:base
+model:
+  format: urdf
+  path: gripper.urdf
+  base_link: base_link
+grip:
+  joint: left_gripper
+  open: 1.0
+  closed: -1.0

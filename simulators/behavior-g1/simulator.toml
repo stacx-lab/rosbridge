@@ -1,0 +1,49 @@
+name = "behavior-g1"
+source = "third_party/behavior"
+source_url = "https://github.com/StanfordVL/BEHAVIOR-1K.git"
+source_revision = "a8247a8cc1633fe1ca0cc66aa07243d46c64f155"
+patches = "patches/behavior-g1"
+# The shared BEHAVIOR adapter (simulators/behavior) serves this embodiment too.
+python_path = "simulators/behavior"
+install = ["bddl3", "OmniGibson"]
+asset_preparer = "rosbridge_behavior.assets:prepare_g1"
+asset_checker = "rosbridge_behavior.assets:check_g1_task"
+default_task = "turning_on_radio"
+ros_package = "rosbridge_behavior_g1"
+task_catalog = "tasks.toml"
+# The world node runs in the ROS environment; OmniGibson (Isaac Sim 5.1, Python 3.11) with the
+# composed G1 and GR00T's lower-body policy runs in a separate worker (rosbridge.core.worker).
+environment = "behavior-g1"
+native_environment = "behavior-g1-native"
+native_backend = "rosbridge_behavior.backend:G1SharpaSim"
+
+# Sources of the G1 with Sharpa hands and of its lower-body controller, exported into the
+# generated tree; prepare composes and imports the robot into OmniGibson from them.
+[[nested_sources]]
+path = "third_party/unitree_ros"
+source = "third_party/behavior-g1-unitree-ros"
+source_url = "https://github.com/unitreerobotics/unitree_ros.git"
+source_revision = "deeb607f3a8945a394f53068c28b3a88dde7ff06"
+
+[[nested_sources]]
+path = "third_party/sharpa"
+source = "third_party/behavior-g1-sharpa"
+source_url = "https://github.com/sharpa-robotics/sharpa-urdf-usd-xml.git"
+source_revision = "0d19cac602f46456b819e4b6a2c09a74982c9a3e"
+
+# GR00T WholeBodyControl's decoupled lower-body policy, as RoboEnv pins it for SIMPLE.
+[[nested_sources]]
+path = "third_party/decoupled_wbc"
+source = "third_party/behavior-g1-decoupled-wbc"
+source_url = "https://github.com/songlin/decoupled_wbc.git"
+source_revision = "5b304e4d643fe89cd000068dcbba7e7519539caa"
+
+# The backend's device inventory; catalog rigs must declare exactly these devices.
+[devices]
+base = "locomotion"
+torso = "joint"
+left_arm = "joint"
+right_arm = "joint"
+left_hand = "joint"
+right_hand = "joint"
+head_camera = "rgbd"

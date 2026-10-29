@@ -92,15 +92,14 @@ def main():
             f"camera_{side}",
             f"RGB-D camera (D405 model) on the {side} wrist, tilted 50 degrees toward the "
             "fingers. Image and registered depth calibration and the optical-frame mount on the "
-            f"{side}_arm flange are in the profile.", sim.width, sim.height,
-            sim.intrinsics(side), rigs.pose_frame(f"{side}_arm:flange",
-                                                  rigs.relative(flange, optical(side))),
+            f"{side}_arm flange are in the profile.", sim.intrinsics(side),
+            rigs.pose_frame(f"{side}_arm:flange", rigs.relative(flange, optical(side))),
             (near, far))
     devices["camera_top"] = rigs.camera(
         "camera_top",
         "Fixed RGB-D camera (D405 model) on the overhead gate, looking down at the table. Image "
         "and registered depth calibration and the optical-frame mount are in the profile.",
-        sim.width, sim.height, sim.intrinsics("top"),
+        sim.intrinsics("top"),
         rigs.pose_frame("world:base", optical("top")), (near, far))
     order = ["world", "left_arm", "left_gripper", "right_arm", "right_gripper",
              "camera_top", "camera_left", "camera_right"]

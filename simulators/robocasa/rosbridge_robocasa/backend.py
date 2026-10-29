@@ -218,7 +218,8 @@ class RoboCasaSim:
 
     def intrinsics(self, camera):
         focal = .5 * self.height / np.tan(np.deg2rad(self.model.camera(camera).fovy[0]) / 2)
-        return float(focal), float(focal), (self.width - 1) / 2., (self.height - 1) / 2.
+        w, h = self.width, self.height
+        return w, h, float(focal), float(focal), (w - 1) / 2., (h - 1) / 2.
 
     def render(self, camera):
         if camera not in self.cameras:

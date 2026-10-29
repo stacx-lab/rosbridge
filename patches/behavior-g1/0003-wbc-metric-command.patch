@@ -1,0 +1,56 @@
+diff --git a/third_party/decoupled_wbc/control/policy/g1_gear_wbc_policy.py b/third_party/decoupled_wbc/control/policy/g1_gear_wbc_policy.py
+index 42a6ebf..fed540e 100644
+--- a/third_party/decoupled_wbc/control/policy/g1_gear_wbc_policy.py
++++ b/third_party/decoupled_wbc/control/policy/g1_gear_wbc_policy.py
+@@ -52,6 +52,7 @@ class G1GearWbcPolicy(Policy):
+         self.pitch_cmd = self.config["rpy_cmd"][1]
+         self.yaw_cmd = self.config["rpy_cmd"][2]
+         self.target_yaw_cmd = 0
++        self.metric_velocity = None
+         self.gait_indices = torch.zeros((1), dtype=torch.float32)
+         # self.control_dt = 1.0 / 50.0  # Control frequency at 50Hz
+ 
+@@ -77,6 +78,7 @@ class G1GearWbcPolicy(Policy):
+         self.pitch_cmd = self.config["rpy_cmd"][1]
+         self.yaw_cmd = self.config["rpy_cmd"][2]
+         self.target_yaw_cmd = 0
++        self.metric_velocity = None
+         # Gait state
+         self.gait_indices = torch.zeros((1), dtype=torch.float32)
+ 
+@@ -195,6 +197,23 @@ class G1GearWbcPolicy(Policy):
+ 
+         assert self.obs_tensor.shape[1] == self.config["num_obs"]
+ 
++    def set_metric_command(self, velocity, height, torso_rpy):
++        """Opt-in metric command path for simulation-owned device control.
++
++        Call before set_observation so this interval's command enters history.
++        The legacy heading/turn-flag path remains unchanged when not selected.
++        """
++        velocity = np.asarray(velocity, dtype=float)
++        torso_rpy = np.asarray(torso_rpy, dtype=float)
++        if velocity.shape != (3,) or torso_rpy.shape != (3,):
++            raise ValueError("Expected three velocity and torso components")
++        if not np.isfinite(np.r_[velocity, height, torso_rpy]).all():
++            raise ValueError("Metric command must be finite")
++        self.metric_velocity = velocity.copy()
++        self.cmd[:3] = velocity
++        self.height_cmd = float(height)
++        self.roll_cmd, self.pitch_cmd, self.yaw_cmd = torso_rpy
++
+     def set_use_teleop_policy_cmd(self, use_teleop_policy_cmd: bool):
+         self.use_teleop_policy_cmd = use_teleop_policy_cmd
+         # Safety: When teleop is disabled, reset navigation to stop
+@@ -245,7 +264,10 @@ class G1GearWbcPolicy(Policy):
+                 else base_height_command
+             )
+ 
+-        if interpolated_navigate_cmd is not None and self.use_teleop_policy_cmd:
++        if self.metric_velocity is not None:
++            self.cmd[:3] = self.metric_velocity
++            vyaw_flag = self.metric_velocity[2]
++        elif interpolated_navigate_cmd is not None and self.use_teleop_policy_cmd:
+             self.cmd[0:2] = interpolated_navigate_cmd[0:2]  # vx, vy unchanged
+             vyaw_flag = interpolated_navigate_cmd[2]  # Turning flag (raw controller input)
+             target_yaw = interpolated_navigate_cmd[3]  # Integrated target yaw

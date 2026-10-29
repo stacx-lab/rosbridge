@@ -182,13 +182,13 @@ class AbcSim:
         return d.cam_xpos[cid].copy(), quat
 
     def intrinsics(self, camera):
-        """fx, fy, cx, cy in pixels."""
+        """width, height, fx, fy, cx, cy in pixels."""
         m, cid = self.env.model, self._camera_ids[camera]
         if m.cam_sensorsize[cid].any():
             raise NotImplementedError("cameras with sensorsize are not supported")
         w, h = self.width, self.height
         fy = (h / 2) / math.tan(math.radians(m.cam_fovy[cid]) / 2)
-        return fy, fy, (w - 1) / 2, (h - 1) / 2
+        return w, h, fy, fy, (w - 1) / 2, (h - 1) / 2
 
     def _scene(self, camera):
         if camera not in self.cameras:

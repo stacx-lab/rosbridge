@@ -1,0 +1,30 @@
+name = "behavior"
+source = "third_party/behavior"
+source_url = "https://github.com/StanfordVL/BEHAVIOR-1K.git"
+source_revision = "a8247a8cc1633fe1ca0cc66aa07243d46c64f155"
+patches = "patches/behavior"
+python_path = "simulators/behavior"
+# BEHAVIOR-1K is a monorepo; OmniGibson and BDDL are its packages.
+install = ["bddl3", "OmniGibson"]
+asset_preparer = "rosbridge_behavior.assets:prepare"
+asset_checker = "rosbridge_behavior.assets:check_task"
+default_task = "turning_on_radio"
+ros_package = "rosbridge_behavior"
+task_catalog = "tasks.toml"
+# The world node runs in the ROS environment; OmniGibson (Isaac Sim 5.1, Python 3.11) runs
+# the native backend in a separate worker process (rosbridge.core.worker).
+environment = "behavior"
+native_environment = "behavior-native"
+native_backend = "rosbridge_behavior.backend:R1ProSim"
+
+# The backend's device inventory; catalog rigs must declare exactly these devices.
+[devices]
+base = "locomotion"
+torso = "joint"
+left_arm = "joint"
+left_gripper = "gripper"
+right_arm = "joint"
+right_gripper = "gripper"
+head_camera = "rgbd"
+left_camera = "rgbd"
+right_camera = "rgbd"

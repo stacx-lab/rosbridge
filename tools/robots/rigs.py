@@ -79,6 +79,7 @@ def world(description):
 
 def joint(name, description, joints, home, base, *, units="radians", part="arm", tip="flange",
           model="arm.urdf"):
+    """A joint device; tip is its FK/IK link, None for trees such as hands."""
     count = len(joints)
     over = f"all {count} {part} joints" if count > 1 else f"the {part} joint"
     ops = {
@@ -125,15 +126,18 @@ def gripper(name, description, joint, target, base, tcp, *, state=None, hold=Non
                   grip={"joint": joint, "open": opened, "closed": closed})
 
 
-def locomotion(name, description, axes, base, *, timeout_s):
-    """A velocity-driven base: axes maps vx, vy, ... to native normalized {min, max} bounds."""
+def locomotion(name, description, axes, base, *, timeout_s, units="normalized"):
+    """A velocity-driven base: axes maps vx, vy, ... to native (min, max) bounds, in [-1, 1] of
+    the controller range (normalized) or m/s and rad/s (si)."""
     named = ", ".join(f"{field} ({axis})" for axis, field in (
         ("vx", "linear.x"), ("vy", "linear.y"), ("vz", "linear.z"), ("wx", "angular.x"),
         ("wy", "angular.y"), ("wz", "angular.z")) if axis in axes)
+    scale = ("each normalized to [-1, 1] of the native controller range" if units == "normalized"
+             else "in m/s and rad/s within the declared bounds")
     ops = {
         "velocity": operation(
-            f"Body velocity in {name}/base axes as {named}, each normalized to [-1, 1] of the "
-            "native controller range; other fields must be zero. The body follows the latest "
+            f"Body velocity in {name}/base axes as {named}, {scale}; other fields must be "
+            "zero. The body follows the latest "
             f"twist and stops {timeout_s:g} s of world time after the last one, so re-send to "
             "keep moving; out-of-range twists are ignored, so verify with odometry.",
             "topic", "input", f"/{name}/velocity", "geometry_msgs/msg/Twist"),
@@ -146,7 +150,7 @@ def locomotion(name, description, axes, base, *, timeout_s):
                           "std_srvs/srv/Trigger"),
     }
     return device(name, "locomotion", description, ops, observation="odometry",
-                  velocity={"units": "normalized",
+                  velocity={"units": units,
                             "axes": {axis: {"min": clean(low), "max": clean(high)}
                                      for axis, (low, high) in axes.items()}},
                   posture=None,
@@ -156,8 +160,9 @@ def locomotion(name, description, axes, base, *, timeout_s):
                   frames={"base": base})
 
 
-def camera(name, description, width, height, intrinsics, base, depth_range=None):
-    fx, fy, cx, cy = map(float, intrinsics)
+def camera(name, description, intrinsics, base, depth_range=None):
+    width, height, *pinhole = intrinsics
+    fx, fy, cx, cy = map(float, pinhole)
     # Undistorted pinhole: Kinex derives FOV and rays from the profile, so cameras serve no
     # geometry services. fps is null: frames render on demand at camera samples.
     color = {"width": width, "height": height, "fps": None,
@@ -346,12 +351,12 @@ def _motion(joint):
             "limits": (float(limit.get("lower")), float(limit.get("upper")))}
 
 
-def source_arm(source, joint_names, name, comment):
-    """A kinematic-only serial arm from a native URDF: base_link, link1.., flange."""
+def source_arm(source, joint_names, name, comment, tip="flange"):
+    """A kinematic-only serial chain from a native URDF: base_link, link1.., tip."""
     links, chain, previous = ["base_link"], [], "base_link"
     for index, joint_name in enumerate(joint_names, 1):
         joint = source[joint_name]
-        child = "flange" if index == len(joint_names) else f"link{index}"
+        child = tip if index == len(joint_names) else f"link{index}"
         links.append(child)
         chain.append({"name": joint_name, "type": "revolute", "parent": previous, "child": child,
                       "origin": urdf_origin(joint), **_motion(joint)})
@@ -359,18 +364,48 @@ def source_arm(source, joint_names, name, comment):
     return urdf(name, comment, links, chain)
 
 
-def source_gripper(source, drive, fingers, lower, upper, name, comment):
-    """A normalized virtual drive joint whose native finger joints mimic it at lower + v (upper - lower)."""
+def source_gripper(source, drive, fingers, lower, upper, name, comment, limits=(0, 1)):
+    """A virtual drive joint over limits (open..closed command range) whose native finger joints
+    mimic it linearly, from lower at limits[0] to upper at limits[1]."""
+    low, high = limits
+    scale = (upper - lower) / (high - low)
     chain = [{"name": drive, "type": "revolute", "parent": "base_link", "child": "drive",
-              "axis": (0, 0, 1), "limits": (0, 1)}]
+              "axis": (0, 0, 1), "limits": limits}]
     links = ["base_link", "drive"]
     for finger, link in zip(fingers, ("finger_a", "finger_b")):
         joint = source[finger]
         links.append(link)
         chain.append({"name": finger, "type": "prismatic", "parent": "base_link", "child": link,
                       "origin": urdf_origin(joint), **_motion(joint),
-                      "mimic": (drive, upper - lower, lower)})
+                      "mimic": (drive, scale, lower - low * scale)})
     return urdf(name, comment, links, chain)
+
+
+def source_tree(source, root, name, comment):
+    """A kinematic-only copy of the native URDF subtree below link root, renamed base_link, with
+    the native joint order."""
+    subtree, grown = {root}, True
+    while grown:
+        children = {joint.find("child").get("link") for joint in source.values()
+                    if joint.find("parent").get("link") in subtree}
+        grown = not children <= subtree
+        subtree |= children
+    links, joints = ["base_link"], []
+    for joint in source.values():
+        parent = joint.find("parent").get("link")
+        if parent not in subtree:
+            continue
+        child = joint.find("child").get("link")
+        entry = {"name": joint.get("name"), "type": joint.get("type"), "child": child,
+                 "parent": "base_link" if parent == root else parent, "origin": urdf_origin(joint)}
+        if entry["type"] != "fixed":
+            entry.update(_motion(joint))
+        if (mimic := joint.find("mimic")) is not None:
+            entry["mimic"] = (mimic.get("joint"), float(mimic.get("multiplier", 1)),
+                              float(mimic.get("offset", 0)))
+        links.append(child)
+        joints.append(entry)
+    return urdf(name, comment, links, joints)
 
 
 def write_rig(directory, manifest, devices, files=None):

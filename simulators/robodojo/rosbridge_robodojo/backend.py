@@ -44,8 +44,8 @@ def boot():
     os.environ.setdefault("OMNI_KIT_ACCEPT_EULA", "YES")
     # EvalEnv keys resume state and temporary video directories by this ID.
     os.environ.setdefault("ROBODOJO_RUN_ID", f"rosbridge-{secrets.token_hex(8)}")
-    from rosbridge.core.gpu import vulkan_index
-    renderer = vulkan_index(0)
+    from rosbridge.core.gpu import single_gpu
+    renderer = single_gpu()
     from isaaclab.app import AppLauncher
 
     class SingleGPU(AppLauncher):
@@ -294,7 +294,7 @@ class RoboDojoSim:
         native = self._camera(camera)
         width, height = native.get_resolution()
         fx = float(native.get_focal_length()) * width / float(native.get_horizontal_aperture())
-        return fx, fx, (width - 1) / 2., (height - 1) / 2.
+        return width, height, fx, fx, (width - 1) / 2., (height - 1) / 2.
 
     def camera_pose(self, camera):
         """Optical-frame pose (pos, quat_wxyz) in the world frame."""

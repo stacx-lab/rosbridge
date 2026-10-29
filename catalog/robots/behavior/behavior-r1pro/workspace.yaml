@@ -1,0 +1,14 @@
+identity:
+  id: behavior-r1pro
+  name: BEHAVIOR R1Pro
+  kind: mobile
+  model: Galaxea R1 Pro (wheeled dual-arm mobile manipulator)
+  source: user
+devices:
+  source: user
+safety:
+  source: user
+  keep_out_zones: []
+meta:
+  created_at: '2026-10-24T00:00:00Z'
+  updated_at: '2026-10-24T00:00:00Z'

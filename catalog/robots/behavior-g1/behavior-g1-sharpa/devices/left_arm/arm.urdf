@@ -1,0 +1,61 @@
+<?xml version="1.0"?>
+<!-- Unitree G1 left arm from g1_29dof_rev_1_0.urdf: torso_link..left_wrist_yaw_link; flange is the wrist_yaw_link frame. -->
+<robot name="g1_left_arm">
+  <link name="base_link"/>
+  <link name="link1"/>
+  <link name="link2"/>
+  <link name="link3"/>
+  <link name="link4"/>
+  <link name="link5"/>
+  <link name="link6"/>
+  <link name="flange"/>
+  <joint name="left_shoulder_pitch_joint" type="revolute">
+    <parent link="base_link"/>
+    <child link="link1"/>
+    <origin xyz="0.0039563 0.10022 0.24778" rpy="0.27931 5.4949e-05 -0.00019159"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-3.0892" upper="2.6704" effort="100" velocity="10"/>
+  </joint>
+  <joint name="left_shoulder_roll_joint" type="revolute">
+    <parent link="link1"/>
+    <child link="link2"/>
+    <origin xyz="0 0.038 -0.013831" rpy="-0.27925 0 0"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-1.5882" upper="2.2515" effort="100" velocity="10"/>
+  </joint>
+  <joint name="left_shoulder_yaw_joint" type="revolute">
+    <parent link="link2"/>
+    <child link="link3"/>
+    <origin xyz="0 0.00624 -0.1032" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-2.618" upper="2.618" effort="100" velocity="10"/>
+  </joint>
+  <joint name="left_elbow_joint" type="revolute">
+    <parent link="link3"/>
+    <child link="link4"/>
+    <origin xyz="0.015783 0 -0.080518" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-1.0472" upper="2.0944" effort="100" velocity="10"/>
+  </joint>
+  <joint name="left_wrist_roll_joint" type="revolute">
+    <parent link="link4"/>
+    <child link="link5"/>
+    <origin xyz="0.1 0.00188791 -0.01" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-1.972222054" upper="1.972222054" effort="100" velocity="10"/>
+  </joint>
+  <joint name="left_wrist_pitch_joint" type="revolute">
+    <parent link="link5"/>
+    <child link="link6"/>
+    <origin xyz="0.038 0 0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-1.614429558" upper="1.614429558" effort="100" velocity="10"/>
+  </joint>
+  <joint name="left_wrist_yaw_joint" type="revolute">
+    <parent link="link6"/>
+    <child link="flange"/>
+    <origin xyz="0.046 0 0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-1.614429558" upper="1.614429558" effort="100" velocity="10"/>
+  </joint>
+</robot>

@@ -59,9 +59,9 @@ def test_rig_intrinsics_match_rendering(tmp_path, sim):
     rig = Rig("robotwin/robotwin-aloha-agilex", tmp_path)
     for camera in sim.cameras:
         profile = rig.profiles[camera]
-        projection = profile["color"]["projection"]
-        assert (profile["color"]["width"], profile["color"]["height"]) == (sim.width, sim.height)
-        assert [projection[k] for k in ("fx", "fy", "cx", "cy")] == pytest.approx(sim.intrinsics(camera))
+        color = profile["color"]
+        pinhole = [color["projection"][k] for k in ("fx", "fy", "cx", "cy")]
+        assert [color["width"], color["height"], *pinhole] == pytest.approx(sim.intrinsics(camera))
         depth = sim.render_depth(camera)
         span = profile["depth"]["valid_range_m"]
         assert (depth > 0).mean() > .9 and span["min"] <= depth[depth > 0].min()

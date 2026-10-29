@@ -136,7 +136,7 @@ def main():
     with file_lock(root / ".runtime" / f"{args.simulator}.lock"):
         destination, config = materialize(root, args.simulator)
         # Exclude upstream policy/training extras; the environment owns dependencies.
-        editables = [(destination, {})] if config.get("install_source", True) else []
+        editables = [(destination / package, {}) for package in config.get("install", ["."])]
         # Exported trees carry no git metadata; a nested source may pin its build version.
         editables += [(destination / nested["path"] / package, nested.get("build_environment", {}))
                       for nested in nested_sources(config) for package in nested.get("install", [])]

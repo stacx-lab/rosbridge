@@ -1,0 +1,7 @@
+# One git patch filename per line, applied in order to .runtime/behavior-g1 after the G1, Sharpa
+# and GR00T WholeBodyControl sources are exported into third_party/. BEHAVIOR's own patches come
+# first (patches/behavior). Ported from RoboEnv:
+# 0003 GR00T's lower-body policy takes metric base velocities, including a turning rate alone.
+../behavior/0001-optional-workflows.patch
+../behavior/0002-gpu-selection.patch
+0003-wbc-metric-command.patch

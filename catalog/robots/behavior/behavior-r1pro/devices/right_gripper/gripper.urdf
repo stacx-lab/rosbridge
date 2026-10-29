@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<!-- BEHAVIOR R1Pro right gripper on the link7 flange. right_gripper is a geometry-less virtual drive joint carrying the evaluator's smooth command (-1 closed, 1 open); both fingers mimic it from 0.0 to 0.05 m. -->
+<robot name="r1pro_right_gripper">
+  <link name="base_link"/>
+  <link name="drive"/>
+  <link name="finger_a"/>
+  <link name="finger_b"/>
+  <joint name="right_gripper" type="revolute">
+    <parent link="base_link"/>
+    <child link="drive"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-1" upper="1" effort="100" velocity="10"/>
+  </joint>
+  <joint name="right_gripper_finger_joint1" type="prismatic">
+    <parent link="base_link"/>
+    <child link="finger_a"/>
+    <origin xyz="-8.8709e-05 0.013453 -0.03689" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="0" upper="0.05" effort="100" velocity="10"/>
+    <mimic joint="right_gripper" multiplier="0.025" offset="0.025"/>
+  </joint>
+  <joint name="right_gripper_finger_joint2" type="prismatic">
+    <parent link="base_link"/>
+    <child link="finger_b"/>
+    <origin xyz="8.9046e-05 -0.013453 -0.03689" rpy="0 0 0"/>
+    <axis xyz="0 -1 0"/>
+    <limit lower="0" upper="0.05" effort="100" velocity="10"/>
+    <mimic joint="right_gripper" multiplier="0.025" offset="0.025"/>
+  </joint>
+</robot>

@@ -1,0 +1,14 @@
+identity:
+  id: behavior-g1-sharpa
+  name: BEHAVIOR G1 with Sharpa hands
+  kind: humanoid
+  model: Unitree G1 (29 DoF) with SharpaWave hands
+  source: user
+devices:
+  source: user
+safety:
+  source: user
+  keep_out_zones: []
+meta:
+  created_at: '2026-10-24T00:00:00Z'
+  updated_at: '2026-10-24T00:00:00Z'

@@ -5,7 +5,7 @@ source_revision = "ea8b21121ebb3cd201ff5b3fe361944ac94eda3f"
 patches = "patches/robotwin"
 python_path = "simulators/robotwin"
 # RoboTwin is a source tree, not an installable package; the backend imports it in place.
-install_source = false
+install = []
 asset_preparer = "rosbridge_robotwin.assets:prepare"
 asset_checker = "rosbridge_robotwin.assets:check_task"
 default_task = "handover_block"

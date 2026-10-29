@@ -265,9 +265,11 @@ class RoboTwinSim:
         return matrix[:3, 3].copy(), wxyz(matrix[:3, :3] @ OPTICAL)
 
     def intrinsics(self, camera):
-        """fx, fy, cx, cy with ROS pixel-center coordinates (SAPIEN uses pixel corners)."""
+        """width, height, fx, fy, cx, cy with ROS pixel-center coordinates (SAPIEN uses pixel
+        corners)."""
         k = self._camera(camera).get_intrinsic_matrix()
-        return float(k[0, 0]), float(k[1, 1]), float(k[0, 2]) - .5, float(k[1, 2]) - .5
+        return (self.width, self.height, float(k[0, 0]), float(k[1, 1]), float(k[0, 2]) - .5,
+                float(k[1, 2]) - .5)
 
     def render(self, camera):
         if camera not in self.cameras:

@@ -5,6 +5,7 @@ the two enumerations need not agree on multi-GPU hosts. Discovery creates no
 CUDA context and no Vulkan logical device.
 """
 import ctypes as c
+import os
 import uuid
 
 
@@ -80,3 +81,13 @@ def vulkan_index(ordinal=0):
     if len(matches) != 1:
         raise RuntimeError(f"CUDA GPU {target} has no unique Vulkan device")
     return matches[0]
+
+
+def single_gpu():
+    """Expose only the first visible CUDA device to this process; returns its Vulkan index.
+
+    Call before CUDA initializes. On IOMMU hosts Kit otherwise validates peer-to-peer
+    access between every visible GPU, holding a context on each for minutes.
+    """
+    os.environ["CUDA_VISIBLE_DEVICES"] = os.environ.get("CUDA_VISIBLE_DEVICES", "0").split(",")[0]
+    return vulkan_index(0)

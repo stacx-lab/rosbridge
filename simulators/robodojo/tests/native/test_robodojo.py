@@ -59,8 +59,8 @@ def test_rendering_and_spectators_leave_physics_unchanged(sim):
     for camera in sim.cameras:
         image = sim.render(camera)
         assert image.shape == (480, 640, 3) and image.std() > 1
-        fx, fy, cx, cy = sim.intrinsics(camera)
-        assert fx == fy and (cx, cy) == (319.5, 239.5)
+        width, height, fx, fy, cx, cy = sim.intrinsics(camera)
+        assert (width, height, cx, cy) == (640, 480, 319.5, 239.5) and fx == fy
     for view in sim.spectators:
         assert sim.render_spectator(view.name).shape == (720, 960, 3)
         assert sim.spectator_intrinsics(view.name)[2:] == (479.5, 359.5)

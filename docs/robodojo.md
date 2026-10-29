@@ -28,8 +28,10 @@ shared ROS environment) and proxies `rosbridge_robodojo.backend.RoboDojoSim`,
 which runs on the main thread of a worker process in `robodojo-native` (Python
 3.11, Isaac Sim 5.1, CUDA 12.8 torch 2.7, RoboEnv's pins). Calls are sequential
 over a private socket, so the ROS clock, waits and device semantics are the same
-as for in-process simulators; a dead worker stops the graph. The worker renders
-on the Vulkan device of CUDA device 0 and imports torch before Kit starts, since
+as for in-process simulators; a dead worker stops the graph. The worker sees
+only one GPU, the first in `CUDA_VISIBLE_DEVICES` (default 0), and renders on its
+Vulkan device: on IOMMU hosts Kit otherwise validates peer-to-peer access between
+every GPU, holding each for minutes. It imports torch before Kit starts, since
 torch's bundled OpenMP needs static TLS that Kit's plugins would otherwise use up.
 
 Isaac starts, compiles shaders and builds the scene before the first reset: allow

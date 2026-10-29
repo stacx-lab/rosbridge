@@ -73,8 +73,6 @@ class SimulatorBackend(Protocol):
     layout: ActionLayout
     devices: tuple[DeviceSpec, ...]
     cameras: tuple[str, ...]
-    width: int
-    height: int
     period: float
     time_s: float
     task: str
@@ -90,6 +88,7 @@ class SimulatorBackend(Protocol):
     def reset(self, task: str, seed: int, randomize: bool = True) -> None: ...
     def state(self) -> tuple[np.ndarray, np.ndarray]: ...
     def step(self, action: np.ndarray) -> None: ...
+    # A camera's image size and pinhole: width, height, fx, fy, cx, cy (ROS pixel centers).
     def intrinsics(self, camera: str) -> tuple: ...
     def render(self, camera: str) -> np.ndarray: ...
     # RGB-D cameras only: float32 (H, W) metres along the optical axis; 0 or nonfinite is invalid.

@@ -1,0 +1,86 @@
+name: base
+runtime:
+  domain_id: 0
+  observation: odometry
+  nodes: []
+  ready_timeout_s: 30
+operations:
+  velocity:
+    description: Body velocity in base/base axes as linear.x (vx), linear.y (vy), angular.z
+      (wz), in m/s and rad/s within the declared bounds; other fields must be zero. The body
+      follows the latest twist and stops 0.5 s of world time after the last one, so re-send
+      to keep moving; out-of-range twists are ignored, so verify with odometry.
+    transport: topic
+    direction: input
+    endpoint: /base/velocity
+    type: geometry_msgs/msg/Twist
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: volatile
+    timeout_s: 10
+  odometry:
+    description: Measured body twist in base/base (m/s and rad/s at the body origin) and the
+      planar pose in base/odom, the body frame at episode start; never a global pose.
+    transport: topic
+    direction: output
+    endpoint: /base/odometry
+    type: nav_msgs/msg/Odometry
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: transient_local
+    timeout_s: 10
+  stop:
+    description: Command zero velocity.
+    transport: service
+    direction: input
+    endpoint: /base/stop
+    type: std_srvs/srv/Trigger
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: volatile
+    timeout_s: 10
+loaded: false
+meta:
+  created_at: '2026-10-24T00:00:00Z'
+  updated_at: '2026-10-24T00:00:00Z'
+type: locomotion
+description: Unitree G1 legs walking on GR00T WholeBodyControl's balance and walking policies,
+  which own the legs and waist at 50 Hz. Commands are a body twist (vx, vy in m/s, wz in rad/s)
+  within GR00T's navigation limits of 0.5; the gait balances the body while the arms and hands
+  move. The base frame is the pelvis; odometry starts at the episode-start pose. A fall is
+  not recovered; reset the world.
+source: introspected
+calibrated_at: null
+method: introspection
+velocity:
+  units: si
+  axes:
+    vx:
+      min: -0.5
+      max: 0.5
+    vy:
+      min: -0.5
+      max: 0.5
+    wz:
+      min: -0.5
+      max: 0.5
+posture: null
+modes:
+  drive:
+    description: Drives on velocity commands.
+    accepts:
+    - velocity
+    transitions: []
+limits: strict
+stop:
+  behavior: halt
+  affected_devices:
+  - base
+frames:
+  base:
+    parent: null
+    translation_m: null
+    rotation_xyzw: null
