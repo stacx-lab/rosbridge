@@ -33,9 +33,9 @@ operations:
       durability: volatile
     timeout_s: 10
   camera_info:
-    description: Projection and distortion calibration for the image stream, including K,
-      D, image size and optical frame. Use the declared distortion model and raw/rectified
-      image space when projecting pixels; intrinsics are not TF transforms.
+    description: CameraInfo mirroring the profile, with K and P from color.projection, zero
+      plumb_bob distortion, image size and optical frame. Kinex reads camera geometry from
+      the profile, not from this topic; intrinsics are not TF transforms.
     transport: topic
     direction: output
     endpoint: /right_camera/camera_info
@@ -69,9 +69,6 @@ color:
     skew: 0
   distortion:
     model: none
-  fov:
-    horizontal_deg: 48.085891406656
-    vertical_deg: 37.000001358777
 depth:
   width: 320
   height: 240

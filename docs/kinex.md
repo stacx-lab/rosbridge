@@ -49,6 +49,11 @@ and volatile and render only for subscribers: once per camera sample, and at onc
 for each new subscriber, so a Kinex read (`helpers.camera_frame`, snapshots) gets
 the current frame even in a paused stepped world.
 
+Camera profiles declare undistorted pinhole intrinsics (`distortion: {model: none}`),
+so Kinex derives FOV and computes rays locally; cameras serve no geometry
+services. `camera_info` mirrors the profile and is not a geometry source. `fps` is
+null because frames render on demand rather than at a fixed rate.
+
 The simulator publishes state and measurements without TF. Kinex computes FK/IK
 from the arm URDF, publishes calibrated mounts and fixed frames such as
 `gripper/tcp`, and owns tf2 lookup through `kinex.helpers.lookup_transform`.

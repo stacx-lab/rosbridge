@@ -158,12 +158,12 @@ def locomotion(name, description, axes, base, *, timeout_s):
 
 def camera(name, description, width, height, intrinsics, base, depth_range=None):
     fx, fy, cx, cy = map(float, intrinsics)
+    # Undistorted pinhole: Kinex derives FOV and rays from the profile, so cameras serve no
+    # geometry services. fps is null: frames render on demand at camera samples.
     color = {"width": width, "height": height, "fps": None,
              "projection": {"model": "pinhole", "fx": clean(fx), "fy": clean(fy), "cx": clean(cx),
                             "cy": clean(cy), "skew": 0},
-             "distortion": {"model": "none"},
-             "fov": {"horizontal_deg": clean(math.degrees(2 * math.atan(width / 2 / fx))),
-                     "vertical_deg": clean(math.degrees(2 * math.atan(height / 2 / fy)))}}
+             "distortion": {"model": "none"}}
     rgbd = depth_range is not None
     ops = {
         "image": operation(
@@ -180,9 +180,9 @@ def camera(name, description, width, height, intrinsics, base, depth_range=None)
             "so pair the two by stamp.", "topic", "output", f"/{name}/depth",
             "sensor_msgs/msg/Image")
     ops["camera_info"] = operation(
-        "Projection and distortion calibration for the image stream, including K, D, image size "
-        "and optical frame. Use the declared distortion model and raw/rectified image space when "
-        "projecting pixels; intrinsics are not TF transforms.", "topic", "output",
+        "CameraInfo mirroring the profile, with K and P from color.projection, zero plumb_bob "
+        "distortion, image size and optical frame. Kinex reads camera geometry from the profile, "
+        "not from this topic; intrinsics are not TF transforms.", "topic", "output",
         f"/{name}/camera_info", "sensor_msgs/msg/CameraInfo", qos(durability="transient_local"))
     facts = {"color": color}
     if rgbd:
@@ -199,8 +199,7 @@ def workspace(identifier, name, kind, model):
     return {"identity": {"id": identifier, "name": name, "kind": kind, "model": model,
                          "source": "user"},
             "devices": {"source": "user"},
-            "safety": {"source": "user", "max_joint_velocity": None,
-                       "max_cartesian_velocity": None, "keep_out_zones": []},
+            "safety": {"source": "user", "keep_out_zones": []},
             "meta": {"created_at": CREATED, "updated_at": CREATED}}
 
 
