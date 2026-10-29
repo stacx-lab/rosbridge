@@ -43,8 +43,9 @@ task entities still, and restarts the clock, as the evaluator's `load_batch` doe
 Success is the activity's BDDL goal predicate, evaluated every step; the reward is
 1 while it holds. `--stop-on-success` ends the episode at the first success, as the
 evaluator's termination does. The default horizon is the evaluator's timeout, 1.5
-average human demonstrations (`task.jsonl`), for example 3224 steps for
-`turning_on_radio`; `--max-steps` overrides it.
+average human demonstrations (`task.jsonl`), for example 3224 steps (107 s) for
+`turning_on_radio`. The G1 steps at 50 Hz instead of the evaluator's 30 Hz and gets the
+same time, 5374 steps. The world node's `max_steps` parameter overrides the horizon.
 
 Isaac hosts one environment per process: a worker serves the one activity it was
 launched with, and a reset reloads the instance in the live environment (seconds).

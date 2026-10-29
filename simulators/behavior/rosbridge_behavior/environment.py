@@ -67,6 +67,8 @@ class Episode:
         task_cfg = yaml.safe_load((metadata / "available_tasks.yaml").read_text())[task][0]
         cfg = generate_basic_environment_config(task_name=task, task_cfg=task_cfg)
         cfg["scene"]["load_room_instances"] = TASK_NAMES_TO_ROOMS[task]  # partial_scene_load
+        # The evaluator's timeout counts its own steps; an embodiment at another rate gets the same time.
+        rate = embodiment.frequencies["action_frequency"] / cfg["env"]["action_frequency"]
         cfg["env"].update(embodiment.frequencies)
         robot = embodiment.robot_config()
         position, orientation = embodiment.start_pose({"position": task_cfg["robot_start_position"],
@@ -77,7 +79,7 @@ class Episode:
         # load() places the robot at the instance's presampled pose, as the evaluator does, and the
         # scene's initial state keeps it; the task must not move a pelvis-rooted G1 to the floor.
         cfg["task"]["use_presampled_robot_pose"] = False
-        self.max_steps = max_steps or int(load_human_stats(task)["length"] * EVAL_TIMEOUT_MULTIPLIER)
+        self.max_steps = max_steps or int(load_human_stats(task)["length"] * EVAL_TIMEOUT_MULTIPLIER * rate)
         cfg["task"]["termination_config"]["max_steps"] = self.max_steps
         self.task, self.embodiment = task, embodiment
         with capture_launch_settings():

@@ -45,6 +45,7 @@ def run(sim, command, seconds):
 
 def test_layout_period_and_head_camera(sim):
     assert sim.period == pytest.approx(.02)
+    assert sim.max_steps == 5374  # the evaluator's 3224 steps at 30 Hz, in time
     assert [d.name for d in sim.devices] == ["base", "torso", "left_arm", "right_arm", "left_hand",
                                              "right_hand", "head_camera"]
     assert [len(channels(sim, d)) for d in ("base", "torso", "left_arm", "left_hand")] == [3, 3, 7, 22]
