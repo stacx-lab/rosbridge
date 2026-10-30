@@ -43,7 +43,7 @@ def test_behavior_graph_serves_the_r1pro_from_a_native_worker(tmp_path, mode):
                                  (Odometry, "base/odometry", "base"),
                                  (CameraInfo, "head_camera/camera_info", "head"),
                                  (CameraInfo, "left_camera/camera_info", "wrist"),
-                                 (Image, "world/spectator/third_person/image_raw", "spectator")):
+                                 (Image, "world/spectator/front_left/image_raw", "spectator")):
             node.create_subscription(kind, topic, lambda msg, k=key: last.update({k: msg}), STREAM_QOS)
         joint_target = node.create_publisher(JointTrajectory, "left_arm/joint_target", 1)
         gripper_target = node.create_publisher(Float64, "right_gripper/target", 1)

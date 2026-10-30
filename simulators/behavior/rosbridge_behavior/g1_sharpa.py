@@ -31,10 +31,8 @@ ARM_POSE = {"left_shoulder_roll_joint": .2, "right_shoulder_roll_joint": -.2}
 # floating base is still, outside the episode. GR00T's standing sway in PhysX stays near 0.02 m/s
 # and rad/s, above SIMPLE's MuJoCo threshold of 1e-3.
 STABILIZE_STEPS, SETTLE_STEPS, STILL = 300, 100, .05
-# The overview spectator stands front-left or front-right of the G1, near its head height and
-# aimed at its hands, and turns after it; it takes another bearing only where walls crowd those.
+# The overview spectators stand near the G1's head height and aim at its hands.
 OVERVIEW_DISTANCE, OVERVIEW_EYE, OVERVIEW_TARGET = 1.8, 1.4, .8  # metres; heights above the floor
-OVERVIEW_BEARINGS = tuple(np.deg2rad([45, -45, 90, -90, 0, 135, -135, 180]))
 
 
 class Body:
@@ -75,8 +73,7 @@ class G1Sharpa:
         self.pose = {**dict(zip(LOWER, self.wbc["default_angles"], strict=True)), **ARM_POSE}
         self.height = standing_height(self.source, self.pose)
         pelvis = self.wbc["height_cmd"]  # GR00T holds the pelvis this high above the floor
-        self.overview = Overview(OVERVIEW_DISTANCE, OVERVIEW_EYE - pelvis, OVERVIEW_TARGET - pelvis,
-                                 OVERVIEW_BEARINGS, follow=True)
+        self.overview = Overview(OVERVIEW_DISTANCE, OVERVIEW_EYE - pelvis, OVERVIEW_TARGET - pelvis)
         self.arm_links = arm_links(self.source)
 
     def _controller(self, joints):

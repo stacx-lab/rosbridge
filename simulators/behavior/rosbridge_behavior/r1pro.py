@@ -25,9 +25,8 @@ EVAL_HEAD_HORIZONTAL_APERTURE = 40.
 class R1Pro:
     pose_key = None
     frequencies = {"action_frequency": 30, "rendering_frequency": 30, "physics_frequency": 120}
-    # RoboEnv's BEHAVIOR overview: 2.6 m out on eight world bearings from the southwest, the eye
-    # 2.4 m and the target 0.9 m above the floor.
-    overview = Overview(2.6, 2.4, .9, tuple(np.arange(8) * np.pi / 4 + 5 * np.pi / 4))
+    # RoboEnv's BEHAVIOR overview: 2.6 m out, the eye 2.4 m and the target 0.9 m above the floor.
+    overview = Overview(2.6, 2.4, .9)
 
     def __init__(self):
         # Read without importing OmniGibson, which fixes its data path on import (environment.boot).

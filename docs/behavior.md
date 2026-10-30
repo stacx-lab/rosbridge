@@ -188,14 +188,14 @@ resolution instead of OmniGibson's DLSS Performance upscaling, which cuts the
 frame-to-frame noise of on-demand captures by a third. A house's physics dominates the
 step time; stepping is slower than real time.
 
-With `--record`, spectators `third_person` and `head` (the head camera's optics)
-render at 960×720. For the R1Pro, `third_person` is RoboEnv's BEHAVIOR overview: 2.6 m
-out and 1.5 m above a point 0.9 m over the base, on the world bearing with the most
-clearance from walls. For the G1 it stands 1.8 m out at the front left or front right,
-its eye 1.4 m above the floor and aimed at 0.8 m, so the whole body and the hands stay
-in view. It turns after the G1's heading with a one-second lag, so gait sway does not
-shake it, and moves to the sides, front or rear only where walls crowd the front
-corners; such a move is a cut.
+With `--record`, spectators `front_left`, `rear_left` and `head` (the head camera's
+optics) render at 960×720. The two overviews stand 45° and 135° to the left of the
+robot's heading and keep those bearings. They turn after the robot with a one-second
+lag, so gait sway does not shake them, and an overview moves in only when something
+stands between it and the robot. For the R1Pro they keep the distance and heights of
+RoboEnv's BEHAVIOR overview: 2.6 m out, the eye 2.4 m above the floor and aimed at
+0.9 m. For the G1 they stand 1.8 m out, the eye 1.4 m above the floor and aimed at
+0.8 m, so the whole body and the hands stay in view.
 
 ```bash
 pixi run -e behavior-native smoke        # R1Pro: controls, cameras, reset, rig geometry

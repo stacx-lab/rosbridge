@@ -22,19 +22,18 @@ OVERVIEW_FOV_Y = 65.
 # cameras move between them, two renders clean a capture. After a longer gap (a reset, or
 # cameras unrendered since moving), sixteen bring the path tracer to the same noise.
 HISTORY_S, CUT_DELIVERIES = .25, 16
-FOLLOW_S = 1.  # a following overview turns after the robot this slowly, so gait sway does not shake it
+# Overview spectators keep these bearings from the robot's heading (radians counterclockwise).
+OVERVIEWS = {"front_left": np.pi / 4, "rear_left": 3 * np.pi / 4}
+FOLLOW_S = 1.  # the overviews turn after the robot this slowly, so gait sway does not shake them
 
 
 class Overview(NamedTuple):
-    """An embodiment's third-person spectator: `distance` m out horizontally from the base, with
-    its eye and the point it looks at `eye` and `target` m above the base's height at the episode
-    start. It takes the first of `bearings` (radians counterclockwise from the world's +x, or from
-    the robot's heading when it follows the robot) with the most clearance from walls."""
+    """An embodiment's overview spectators: `distance` m out horizontally from the base, with
+    their eye and the point they look at `eye` and `target` m above the base's height at the
+    episode start."""
     distance: float
     eye: float
     target: float
-    bearings: tuple
-    follow: bool = False
 
 
 def pose_matrix(position, quaternion_xyzw):
@@ -65,8 +64,8 @@ class BehaviorSim:
         return device_inventory(self.layout, {name: name for name in self.cameras}, depth=self.cameras)
 
     def configure_spectators(self, width=960, height=720):
-        # A wall-aware view that follows the base, and the head camera's view.
-        self.spectators = (SpectatorView("third_person", "base", width, height),
+        # Overviews that follow the base, and the head camera's view.
+        self.spectators = (*(SpectatorView(name, "base", width, height) for name in OVERVIEWS),
                            SpectatorView("head", "head_camera", width, height))
 
     # Episode lifecycle ------------------------------------------------------------------
@@ -94,7 +93,7 @@ class BehaviorSim:
         self.seed, self.steps, self.done = seed, 0, False
         self.success = bool(self.episode.env.task.success[0])
         self.reward, self._frames, self._rendered_s = float(self.success), {}, None
-        self._bearing, self._followed = 0, None
+        self._followed = None
         if self.spectators and not self._spectators:
             self._open_spectators()
 
@@ -209,38 +208,29 @@ class BehaviorSim:
                 rgb.attach(product)
                 self._spectators[view.name] = (view, camera, UsdGeom.Xformable(camera).AddTransformOp(), rgb)
 
-    def _overview(self):
-        """The embodiment's overview camera (4x4), kept on its bearing until another offers
-        materially more room."""
+    def _overview(self, bearing):
+        """An overview camera (4x4) on `bearing` from the base's heading, pulled in front of
+        anything between it and the robot."""
         from omnigibson.utils.sampling_utils import raytest
 
         view, robot = self.embodiment.overview, self.episode.robot
         position, quaternion = robot.base_footprint_link.get_position_orientation()
         target = np.r_[values(position)[:2], self.episode.origin[0][2] + view.target]
-        angles = np.asarray(view.bearings) + (self._heading(quaternion) if view.follow else 0.)
-        offsets = np.column_stack((view.distance * np.cos(angles), view.distance * np.sin(angles),
-                                   np.full(len(angles), view.eye - view.target)))
-        radius = np.linalg.norm(offsets[0])
-        ignore = [link.prim_path for link in robot.links.values()]
-
-        def clearance(direction):
-            hit = raytest(target.tolist(), (target + direction * radius).tolist(), ignore_bodies=ignore)
-            return max(0.01, float(hit["distance"]) - 0.2) if hit["hit"] else radius
-        directions = offsets / radius
-        distances = np.array([clearance(direction) for direction in directions])
-        best = int(np.argmax(distances))
-        if distances[best] > distances[self._bearing] + 0.5:
-            self._bearing, self._rendered_s = best, None  # a cut leaves no usable render history
-        eye = target + directions[self._bearing] * distances[self._bearing]
-        backward = (eye - target) / np.linalg.norm(eye - target)
+        angle = bearing + self._heading(quaternion)
+        offset = np.array([view.distance * np.cos(angle), view.distance * np.sin(angle), view.eye - view.target])
+        hit = raytest(target.tolist(), (target + offset).tolist(),
+                      ignore_bodies=[link.prim_path for link in robot.links.values()])
+        if hit["hit"]:
+            offset *= max(0.01, float(hit["distance"]) - 0.2) / np.linalg.norm(offset)
+        backward = offset / np.linalg.norm(offset)
         right = np.cross([0, 0, 1], backward)
         right /= np.linalg.norm(right)
         matrix = np.eye(4)
-        matrix[:3, :3], matrix[:3, 3] = np.column_stack((right, np.cross(backward, right), backward)), eye
+        matrix[:3, :3], matrix[:3, 3] = np.column_stack((right, np.cross(backward, right), backward)), target + offset
         return matrix
 
     def _heading(self, quaternion):
-        """The base's yaw, smoothed while the overview streams."""
+        """The base's yaw, smoothed while the overviews stream."""
         frame = rotation(quaternion)
         yaw = np.arctan2(frame[1, 0], frame[0, 0])
         if self._followed is not None and self.time_s - self._followed[0] <= HISTORY_S:
@@ -255,7 +245,7 @@ class BehaviorSim:
         from pxr import Gf
 
         view, _, transform, rgb = self._spectators[name]
-        matrix = self._overview() if view.source == "base" else self._camera_frame(view.source)
+        matrix = self._overview(OVERVIEWS[name]) if view.source == "base" else self._camera_frame(view.source)
         with og.sim.editing_usd():
             transform.Set(Gf.Matrix4d(matrix.T.tolist()))
         self._render()
