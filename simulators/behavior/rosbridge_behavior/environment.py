@@ -53,6 +53,10 @@ def boot(simulator):
         rule.ENABLED = False
 
 
+def no_observations(*args, **kwargs):
+    return [{}], [{}]
+
+
 class Episode:
     """One activity's environment; Isaac hosts one per process."""
 
@@ -168,8 +172,14 @@ class Episode:
         import omnigibson as og
         import torch
 
-        with og.sim.render_on_step(False):
-            self.env.step(torch.as_tensor(action))
+        # env.step assembles every observation (the head camera's buffers, proprioception) each period; nothing here
+        # reads it (cameras are captured on demand), and it cost about 1 of 13-19 ms per period. Reset keeps them.
+        self.env.get_obs = no_observations
+        try:
+            with og.sim.render_on_step(False):
+                self.env.step(torch.as_tensor(action))
+        finally:
+            del self.env.get_obs
         if self.lights:
             # Toggles drive lights that are not serialized; re-derive their visibility.
             self.lights.sync_from_current_state()
