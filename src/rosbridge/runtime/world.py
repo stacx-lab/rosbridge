@@ -63,6 +63,11 @@ class WorldRuntime:
         try:
             self.sim.reset(task, seed, randomize)
         except Exception:
+            if self.sim.done:
+                # The backend lost the episode in the attempt (BEHAVIOR reloads its one scene in place). Its outcome was
+                # measured before; record it, or the episode would go unjudged although it ended normally.
+                self.commands.close()
+                self._record_terminal(result=dict(previous, reason="reset_failed"))
             return ResetResult(False, "reset failed")
         self._record_terminal(result=previous)
         self.commands.close()
