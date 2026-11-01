@@ -31,8 +31,24 @@ def test_non_abc_layout_and_atomic_rejection():
     commands.stop("arm", [5., 5.])  # a measured hold may lie outside command limits
     assert commands.action(21).tolist() == [-0.5, 5., 5.]
     commands.close()
-    with pytest.raises(CommandError, match="world/reset"):
+    with pytest.raises(CommandError, match="episode is done"):
         commands.set_group("finger", [0.])
+
+
+def test_targets_within_a_rounding_tolerance_of_a_limit_are_clipped():
+    """Interpolation rounding (0.2 - 1e-17) and a measured position a soft limit lets slightly past its bound are
+    valid targets, held at the limit; anything further out is still refused whole."""
+    layout = ActionLayout(("pelvis", "pinky"), (CommandGroup("pelvis", (0,), (.2,), (.78,)),
+                                                CommandGroup("pinky", (1,), (0.,), (1.6,))))
+    commands = CommandBuffer(layout, [.74, 0.])
+    commands.set_group("pelvis", [0.19999999999999996])
+    commands.set_group("pinky", [-0.0005])
+    assert commands.action(0).tolist() == [.2, 0.]
+    commands.set_trajectory("pelvis", 0, [1.], [[.78 + 1e-12]])
+    assert commands.action(1.).tolist() == [.78, 0.]
+    with pytest.raises(CommandError, match="outside"):
+        commands.set_group("pinky", [-0.01])
+    assert commands.action(2.).tolist() == [.78, 0.]
 
 
 @pytest.mark.parametrize("indices,lower,upper", [

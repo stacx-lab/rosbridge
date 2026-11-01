@@ -57,7 +57,7 @@ type: joint
 description: Sharpa Wave 22-joint left hand on the left_arm flange, palm toward the body's
   midline. Geometry is the sibling hand.urdf from the flange to the fingertips, with no single
   tip link; commands are absolute native joint positions on Sharpa's calibrated position drives,
-  and contact is physical.
+  and contact is physical unless the task says grasping is assisted.
 source: introspected
 calibrated_at: null
 method: introspection

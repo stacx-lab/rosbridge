@@ -56,7 +56,7 @@ description: Unitree G1 legs walking on GR00T WholeBodyControl's balance and wal
   move. The base frame is the pelvis; odometry starts at the episode-start pose and is on TF
   (base/odom -> base/base). The legs walk only with the pelvis at 0.70 m or higher (the pelvis
   device); lower, a twist does not move the body. Heights in other devices' frames are relative
-  to the pelvis. A fall is not recovered; reset the world.
+  to the pelvis. A fall is not recovered within the episode.
 source: introspected
 calibrated_at: null
 method: introspection

@@ -44,7 +44,8 @@ operations:
   reset:
     description: Reset the configured episode and clock. Invalidates old observations and
       the pending wait; observe fresh state afterward. Task selection and judging belong to
-      the external environment operator.
+      the external environment operator; a reset ends the current episode, which is judged
+      as it stands.
     transport: service
     direction: input
     endpoint: /world/reset
