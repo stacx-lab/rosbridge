@@ -57,6 +57,9 @@ launched with, and a reset reloads the instance in the live environment (seconds
 A reset that fails after the reload starts leaves the episode done until a reset
 succeeds.
 
+Episode records add BEHAVIOR's partial credit, `goal_satisfied` of `goal_total` grounded goal
+predicates.
+
 ## Native worker
 
 Isaac Sim 5.1 publishes Python 3.11 wheels only, so the world node runs in the

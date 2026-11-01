@@ -140,6 +140,14 @@ class BehaviorSim:
     def state(self):
         return self.embodiment.state(self.episode)
 
+    def outcome_extra(self):
+        """BEHAVIOR's own partial credit for the episode record: the activity's grounded goal predicates that hold
+        now, out of all of them (the evaluator's success score)."""
+        task = self.episode.env.task
+        _, status = task.compiled_task.check_goal(lambda name, *entities: task._evaluate_predicate(0, name, *entities))
+        satisfied = len(status["satisfied"])
+        return {"goal_satisfied": satisfied, "goal_total": satisfied + len(status["unsatisfied"])}
+
     def step(self, action):
         if self.done:
             raise RuntimeError("episode is done")
