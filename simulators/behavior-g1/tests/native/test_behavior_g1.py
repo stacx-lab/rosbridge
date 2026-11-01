@@ -149,3 +149,10 @@ def test_rig_matches_native_chains_hands_and_head_camera(tmp_path, sim):
         for link in (f"{side}_index_DP", f"{side}_thumb_DP"):
             fingers = q[channels(sim, f"{side}_hand")]
             close(compose(hand, rig.link(f"{side}_hand", fingers, link)), measured(link), atol=2e-3)
+
+
+def test_status_and_episode_counts_reach_the_world_through_the_worker(sim):
+    """The native worker's snapshot carries the status texts the world publishes, and the record's counts."""
+    assert sim.status == {"left_hand/attachment": "none", "right_hand/attachment": "none", "base/fall": "upright"}
+    extra = sim.outcome_extra()
+    assert (extra["attachments"], extra["falls"], extra["fall_time_s"]) == (0, 0, None)

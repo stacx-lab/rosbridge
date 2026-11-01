@@ -48,6 +48,12 @@ GRASPING_MODES = ("physical", "assisted")
 # A hand applies a grasp while its flexion joints are commanded past this fraction of their closing range; the
 # abduction joints (_AA) do not count. OmniGibson's own test (any joint off its open limit) is for parallel grippers.
 GRASP_CLOSURE = .3
+# A fall: FALL_HOLD_S of world time in all with the pelvis tilted more than FALL_TILT from upright or lower than
+# FALL_HEIGHT above the floor, counted since it was last within FALL_UPRIGHT of upright. GR00T does not get up again,
+# and its policies kept acting on the fallen body: walking slid and spun it ~0.5 m on its back, and the
+# balance policy alone moved it 0.3-0.6 m in 3 s. From then on the legs and waist hold the joint
+# positions they had when it fell, as a real G1's damping mode stops its legs.
+FALL_TILT, FALL_UPRIGHT, FALL_HEIGHT, FALL_HOLD_S = np.deg2rad(45.), np.deg2rad(30.), .15, 1.
 # The overview spectators stand near the G1's head height and aim at its hands.
 OVERVIEW_DISTANCE, OVERVIEW_EYE, OVERVIEW_TARGET = 1.8, 1.4, .8  # metres; heights above the floor
 
@@ -155,6 +161,8 @@ def torso_rpy(yaw, roll, pitch):
 class G1Sharpa:
     pose_key = "r1pro"  # the presampled R1Pro start of each task instance
     rendering = "on_demand"  # DLAA captures (backend.HISTORY_S, CUT_DELIVERIES)
+    # This episode: periods since it started, how long the body has looked fallen, and whether (and when) it fell.
+    ticks, lying_s, fallen, fall_time_s, frozen = 0, 0., False, None, None
     frequencies = {"action_frequency": 50, "rendering_frequency": 50, "physics_frequency": 200}
     cameras = {"head_camera": f"{NAME}:{CAMERA}:Camera:0"}
 
@@ -207,12 +215,17 @@ class G1Sharpa:
         self.attachments += 1
 
     def status(self, episode):
-        """Whether each hand holds something (assisted grasping), for the hand devices' attachment topics."""
-        return {f"{side}_hand/attachment": attachment(episode.robot, side) for side in SIDES}
+        """Whether each hand holds something (assisted grasping), for the hand devices' attachment topics, and
+        whether the body has fallen, for the base's."""
+        return {**{f"{side}_hand/attachment": attachment(episode.robot, side) for side in SIDES},
+                "base/fall": "fallen" if self.fallen else "upright"}
 
     def counts(self):
-        """The episode's attachments (assisted grasping: objects or furniture parts a hand attached)."""
-        return {"attachments": self.attachments}
+        """The episode's attachments (assisted grasping: objects or furniture parts a hand attached) and fall."""
+        return {"attachments": self.attachments, "falls": int(self.fallen), "fall_time_s": self.fall_time_s}
+
+    def _start_episode(self):
+        self.attachments, self.ticks, self.lying_s, self.fallen, self.fall_time_s, self.frozen = 0, 0, 0., False, None, None
 
     def weigh(self, robot):
         """OmniGibson makes every link below a moving joint weightless, as ideal gravity compensation. GR00T balances a
@@ -269,12 +282,13 @@ class G1Sharpa:
         self.policy = G1GearWbcPolicy(Body(), str(self.config), POLICIES)
         self.policy.use_policy_action = True
         base, home = episode.robot.base_footprint_link, np.asarray(self.home)
+        self._start_episode()
         for step in range(STABILIZE_STEPS):
             episode.step(self.action(episode, home))
             twist = np.r_[values(base.get_linear_velocity()), values(base.get_angular_velocity())]
             speed = np.abs(twist).max()
             if step >= SETTLE_STEPS and speed < STILL:
-                self.attachments = 0
+                self._start_episode()
                 return
         raise RuntimeError("the G1 did not stand still within its standing initialization")
 
@@ -305,13 +319,27 @@ class G1Sharpa:
         frame = rotation(quaternion)
         # MuJoCo's free joint, which GR00T observes, reports angular velocity in the body frame.
         angular = frame.T @ values(robot.get_angular_velocity())
-        yaw, roll, pitch = targets["torso"]
-        self.policy.set_metric_command(command[:3], command[3], torso_rpy(
-            TORSO_GAIN["yaw"] * yaw, TORSO_GAIN["roll"] * roll, TORSO_GAIN["pitch"] * pitch))
-        self.policy.set_observation({
-            "q": q[self.body], "dq": dq[self.body],
-            "floating_base_pose": np.r_[values(position), w, x, y, z],
-            "floating_base_vel": np.r_[frame.T @ values(robot.get_linear_velocity()), angular]})
-        lower = self.policy.get_action()["body_action"][0][:len(LOWER)]
+        period = 1. / self.frequencies["action_frequency"]
+        self.ticks += 1
+        if not self.fallen:
+            low = values(position)[2] - self.floor < FALL_HEIGHT
+            if frame[2, 2] < np.cos(FALL_TILT) or low:  # frame[2, 2]: the cosine of the pelvis's tilt
+                self.lying_s += period
+            elif frame[2, 2] > np.cos(FALL_UPRIGHT):
+                self.lying_s = 0.
+            if self.lying_s >= FALL_HOLD_S - 1e-9:
+                self.fallen, self.fall_time_s = True, round(self.ticks * period, 6)
+                self.frozen = q[self.body][:len(LOWER)].copy()
+        if self.fallen:
+            lower = self.frozen  # the legs and waist hold still after a fall
+        else:
+            yaw, roll, pitch = targets["torso"]
+            self.policy.set_metric_command(command[:3], command[3], torso_rpy(
+                TORSO_GAIN["yaw"] * yaw, TORSO_GAIN["roll"] * roll, TORSO_GAIN["pitch"] * pitch))
+            self.policy.set_observation({
+                "q": q[self.body], "dq": dq[self.body],
+                "floating_base_pose": np.r_[values(position), w, x, y, z],
+                "floating_base_vel": np.r_[frame.T @ values(robot.get_linear_velocity()), angular]})
+            lower = self.policy.get_action()["body_action"][0][:len(LOWER)]
         native = [lower, *(targets[f"{side}_{part}"] for side in SIDES for part in ("arm", "hand"))]
         return np.hstack(native).astype(np.float32)

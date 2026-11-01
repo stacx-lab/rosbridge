@@ -253,3 +253,57 @@ def test_a_hand_reports_what_an_assisted_grasp_holds():
     assert attachment(robot("assisted", "FixedJoint", released=True), "right") == "none"
     assert attachment(robot("assisted"), "right") == "none"
     assert attachment(robot("physical"), "right") == "none"
+
+
+def test_a_fall_stops_the_legs_until_the_next_episode():
+    """1 s of world time in all tilted past 45 degrees (or the pelvis below 0.15 m), counted since the body was last
+    within 30 degrees of upright, is a fall: from then on the legs and waist hold the joint positions they had (GR00T
+    is no longer consulted), status reads fallen and the episode's counts carry it; a shorter stumble changes
+    nothing."""
+    from rosbridge_behavior.g1_sharpa import FALL_HOLD_S
+    hands = {side: [f"{side}_finger{i}" for i in range(22)] for side in g1_model.SIDES}
+    names = [*g1_model.BODY, *hands["left"], *hands["right"]]
+    pose = {"quaternion": [0., 0., 0., 1.], "z": .8, "q": np.zeros(len(names))}
+    robot = SimpleNamespace(
+        dof_names_ordered=names, joint_lower_limits=-np.ones(len(names)), joint_upper_limits=np.ones(len(names)),
+        controller_order=["trunk", "arm_left", "gripper_left", "arm_right", "gripper_right"],
+        get_joint_positions=lambda: pose["q"], get_joint_velocities=lambda: np.zeros(len(names)),
+        get_position_orientation=lambda: ([0., 0., pose["z"]], pose["quaternion"]),
+        get_linear_velocity=lambda: [0., 0., 0.], get_angular_velocity=lambda: [0., 0., 0.],
+        grasping_mode="physical", _ag_obj_in_hand={"left": None, "right": None})
+    embodiment = G1Sharpa.__new__(G1Sharpa)
+    embodiment.hands, embodiment.wbc, embodiment.policy, embodiment.pose = hands, {"height_cmd": .74}, Policy(), {}
+    embodiment.floor = .05
+    layout = embodiment.layout(robot)
+    episode = SimpleNamespace(robot=robot)
+    command = np.zeros(len(layout.joint_names))
+    command[:4] = .3, 0., .2, .74
+    lower = len(LOWER)
+
+    def run(seconds, angle=0., z=.8):
+        pose["quaternion"], pose["z"] = [0., np.sin(angle / 2), 0., np.cos(angle / 2)], z
+        calls = len(embodiment.policy.calls)
+        for _ in range(round(seconds * 50)):
+            native = embodiment.action(episode, command)
+            pose["q"] = pose["q"] + .01  # the body keeps moving
+        return native[:lower], len(embodiment.policy.calls) > calls
+
+    embodiment._start_episode()
+    gr00t = np.arange(lower) / 100.
+    assert np.allclose(run(.5, np.deg2rad(70))[0], gr00t)  # a stumble: GR00T drives the legs
+    assert np.allclose(run(.5)[0], gr00t) and not embodiment.fallen  # upright again: the count starts over
+    run(.6, np.deg2rad(50)), run(.3, np.deg2rad(40))  # between 30 and 45 degrees the count holds
+    assert np.allclose(run(.3, np.deg2rad(50))[0], gr00t) and not embodiment.fallen
+    run(.5), run(.5)
+    assert np.allclose(run(FALL_HOLD_S - .1, np.deg2rad(65))[0], gr00t)
+    held = pose["q"][[names.index(j) for j in g1_model.BODY[:lower]]] + .01 * 4  # positions when the fall registers
+    legs, consulted = run(.1, np.deg2rad(65))
+    assert embodiment.fallen and np.allclose(legs, held)
+    legs, consulted = run(1.)  # upright again: still held, GR00T not consulted
+    assert np.allclose(legs, held) and not consulted
+    assert embodiment.status(episode)["base/fall"] == "fallen"
+    assert embodiment.counts() == {"attachments": 0, "falls": 1, "fall_time_s": pytest.approx(4.2)}
+    embodiment._start_episode()
+    assert run(.2)[1] and embodiment.status(episode)["base/fall"] == "upright"
+    run(FALL_HOLD_S, 0., z=.05 + .14)  # the pelvis 0.14 m above the floor
+    assert embodiment.fallen and not run(.1)[1]

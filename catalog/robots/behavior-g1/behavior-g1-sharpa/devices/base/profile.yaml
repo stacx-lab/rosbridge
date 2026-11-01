@@ -35,6 +35,18 @@ operations:
       reliability: reliable
       durability: transient_local
     timeout_s: 10
+  fall:
+    description: upright, or fallen once the body has fallen (latched, republished when it changes); after a fall
+      the body does not walk again within the episode, whatever twist is sent.
+    transport: topic
+    direction: output
+    endpoint: /base/fall
+    type: std_msgs/msg/String
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: transient_local
+    timeout_s: 10
   stop:
     description: Command zero velocity.
     transport: service
@@ -61,7 +73,11 @@ description: Unitree G1 legs walking on GR00T WholeBodyControl's balance and wal
   the floor (pelvis/floor) and its tilt (pelvis/pelvis, which the torso and everything on it
   follow). The legs walk only with the pelvis at 0.70 m or higher (the pelvis device); lower, a
   twist does not move the body. Heights in other devices' frames are relative to the pelvis. A
-  fall is not recovered within the episode.
+  fall is not recovered within the episode; once the pelvis has
+  spent 1 s in all tilted more than 45 degrees from upright or below 0.15 m above the floor (since it was last back
+  within 30 degrees of upright), the legs and waist hold still until the episode ends (GR00T's policies slid fallen
+  bodies across the floor), twists are ignored, and fall reads fallen; the arms and hands still follow their
+  commands. Squats and walking stay within about 17 degrees.
 source: introspected
 calibrated_at: null
 method: introspection

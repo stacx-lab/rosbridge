@@ -207,7 +207,15 @@ not load the torso). Each reset places the pelvis at standing height above the
 instance's R1Pro start pose and runs GR00T's standing initialization outside the
 episode, as RoboEnv's SIMPLE G1 does, until the base is still (within 6 s). The
 policies were trained for a G1 with Dex3 hands in MuJoCo; here they balance the
-heavier Sharpa hands in PhysX. A fall is not recovered; reset the world.
+heavier Sharpa hands in PhysX. A fall is not recovered within the episode: once the pelvis has spent 1 s of world
+time in all tilted more than 45° from upright or below 0.15 m above the floor (counted since it was last within 30°
+of upright; squats, reaching and walking stay within 33°, recovered pushes within 24°), the legs and waist hold
+the joint positions they had then and GR00T is no longer stepped until the next reset (its walking and balance
+policies otherwise slid the fallen body across the floor, 0.3-0.6 m in 3 s), the arms and hands still follow their
+commands,
+`base/fall` (std_msgs/String, latched) changes from `upright` to `fallen`, and the episode record carries
+`falls` (0 or 1) and `fall_time_s`. Falls do not end the episode, as in BEHAVIOR's evaluator (its tasks
+terminate on the goal or the timeout only).
 
 The head camera is an RGB-D camera on the G1's D435 mount with the R1Pro head
 camera's optics (720×720, fx = 306). The rig `behavior-g1/behavior-g1-sharpa` chains
