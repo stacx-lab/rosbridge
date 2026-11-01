@@ -157,3 +157,27 @@ def test_trajectory_conversion_without_ros():
     msg.joint_names = ["a", "a"]
     with pytest.raises(ValueError):
         trajectory(msg, ["a", "b"])
+
+
+def test_status_texts_are_latched_and_published_when_they_change_and_on_reset():
+    from rosbridge.core.worker import DYNAMIC
+    from rosbridge_runtime.publishing import StatusPublisher
+
+    class Node:
+        def __init__(self):
+            self.sent = []
+
+        def create_publisher(self, kind, topic, qos):
+            assert qos.durability.name == "TRANSIENT_LOCAL"
+            return type("Publisher", (), {"publish": lambda _, msg: self.sent.append((topic, msg.data))})()
+
+    assert "status" in DYNAMIC  # the native worker's snapshot carries it after every call
+    node = Node()
+    status = StatusPublisher(node, ["left_hand/attachment", "right_hand/attachment"])
+    status.publish({"left_hand/attachment": "none", "right_hand/attachment": "none"}, reset=True)
+    status.publish({"left_hand/attachment": "none", "right_hand/attachment": "held"})
+    status.publish({"left_hand/attachment": "none", "right_hand/attachment": "held"})
+    status.publish({"left_hand/attachment": "none", "right_hand/attachment": "held"}, reset=True)
+    assert node.sent == [("left_hand/attachment", "none"), ("right_hand/attachment", "none"),
+                         ("right_hand/attachment", "held"),
+                         ("left_hand/attachment", "none"), ("right_hand/attachment", "held")]

@@ -100,6 +100,11 @@ class SimulatorBackend(Protocol):
     preserve the previous episode. Every step advances exactly one `period`.
     A backend whose native command is not a position, such as a gripper
     direction, converts the position target inside step().
+
+    Optionally, `status` maps "<device>/<name>" to a short text the world
+    publishes as std_msgs/String on that topic whenever it changes (latched):
+    states a joint position cannot carry, such as whether a hand holds an
+    object. Its keys stay fixed across resets.
     """
 
     default_task: str

@@ -8,7 +8,7 @@ import yaml
 
 from rosbridge.catalog import simulator, tasks
 from rosbridge_behavior import g1_model
-from rosbridge_behavior.g1_sharpa import LOWER, G1Sharpa, axis_rotation as R, tilt, torso_rpy
+from rosbridge_behavior.g1_sharpa import LOWER, G1Sharpa, attachment, axis_rotation as R, tilt, torso_rpy
 
 PROJECT = Path(__file__).resolve().parents[4]
 
@@ -221,3 +221,35 @@ def test_the_pelvis_tilt_is_its_pitch_and_roll_from_the_yaw_only_base_frame():
     frame, quaternion = R(2, yaw) @ R(1, pitch), product(turn(2, yaw), turn(1, pitch))
     assert tilt(quaternion, frame @ [0., .2, 0.])[1] == pytest.approx((.2, 0.))
     assert tilt(quaternion, [0., 0., .3])[1] == pytest.approx((0., 0.), abs=1e-12)
+
+
+PROFILES = PROJECT / "catalog/robots/behavior-g1/behavior-g1-sharpa/devices"
+
+
+def profile(device):
+    return yaml.safe_load((PROFILES / device / "profile.yaml").read_text())
+
+
+def test_the_g1_status_topics_are_the_string_outputs_its_profiles_declare():
+    """Each status text the world publishes is a declared device output (Kinex loads a device only when every declared
+    output has a publisher), and every declared String output is published."""
+    robot = SimpleNamespace(grasping_mode="physical", _ag_obj_in_hand={"left": None, "right": None})
+    embodiment = G1Sharpa.__new__(G1Sharpa)
+    embodiment.attachments = 0
+    keys = set(embodiment.status(SimpleNamespace(robot=robot)))
+    declared = {f"{device}/{name}" for device in (p.name for p in PROFILES.iterdir())
+                for name, op in profile(device)["operations"].items() if op["type"] == "std_msgs/msg/String"}
+    assert keys == declared
+
+
+def test_a_hand_reports_what_an_assisted_grasp_holds():
+    def robot(mode, joint_type=None, released=False):
+        held = object() if joint_type else None
+        params = None if released or not joint_type else {"joint_type": joint_type}
+        return SimpleNamespace(grasping_mode=mode, _ag_obj_in_hand={"right": held}, _ag_obj_constraint_params={"right": params})
+
+    assert attachment(robot("assisted", "FixedJoint"), "right") == "held"
+    assert attachment(robot("assisted", "SphericalJoint"), "right") == "tethered"
+    assert attachment(robot("assisted", "FixedJoint", released=True), "right") == "none"
+    assert attachment(robot("assisted"), "right") == "none"
+    assert attachment(robot("physical"), "right") == "none"

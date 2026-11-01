@@ -65,7 +65,10 @@ success, else the largest fraction, over the goal's grounded options (quantifier
 one literal per object), of literals that hold at the end and did not hold when the
 instance loaded; and `goal_satisfied` of `goal_total`, the goal's top-level conditions that
 hold at the end (a `forall` over six objects is one condition, and conditions that held
-from the start count).
+from the start count). Every record also counts the episode's device commands the world
+clipped to a limit (`commands_clipped`) or refused (`commands_refused`), both silent to a
+client publishing on a topic, and, for the G1, the objects or furniture parts a hand
+attached under assisted grasping (`attachments`).
 
 ## Native worker
 
@@ -191,6 +194,10 @@ position targets. Physics runs at GR00T's 200 Hz. Commands:
   challenge's R1Pro uses: an object touched by two fingers and crossed by a ray from
   the thumb tip or the palm to a finger pad, while the flexion joints are commanded
   past 30% of their closing range, is attached to the hand until it opens.
+  `<side>_hand/attachment` (std_msgs/String, latched, republished on change) says what
+  each hand holds: `none`, `held` (an object fixed to the hand) or `tethered` (a door,
+  drawer or lid of a piece of furniture, through a pivot); always `none` when grasping is
+  physical.
 
 OmniGibson makes the links below a robot's moving joints weightless, as ideal gravity
 compensation. The G1 needs its weight to walk, so gravity acts on the pelvis, legs

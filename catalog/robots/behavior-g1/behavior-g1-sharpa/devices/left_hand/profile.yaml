@@ -38,6 +38,19 @@ operations:
       reliability: reliable
       durability: volatile
     timeout_s: 10
+  attachment:
+    description: What the hand holds under assisted grasping, latched and republished whenever it changes - none,
+      held (an object attached to the hand, which moves with it) or tethered (a door, drawer or lid of a piece of
+      furniture, attached through a pivot). Always none under physical grasping, where nothing attaches.
+    transport: topic
+    direction: output
+    endpoint: /left_hand/attachment
+    type: std_msgs/msg/String
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: transient_local
+    timeout_s: 10
   stop:
     description: Stop hand motion and hold the measured posture.
     transport: service
@@ -57,7 +70,8 @@ type: joint
 description: Sharpa Wave 22-joint left hand on the left_arm flange, palm toward the body's
   midline. Geometry is the sibling hand.urdf from the flange to the fingertips, with no single
   tip link; commands are absolute native joint positions on Sharpa's calibrated position drives,
-  and contact is physical unless the task says grasping is assisted.
+  and contact is physical unless the task says grasping is assisted; attachment reports what an
+  assisted grasp holds.
 source: introspected
 calibrated_at: null
 method: introspection

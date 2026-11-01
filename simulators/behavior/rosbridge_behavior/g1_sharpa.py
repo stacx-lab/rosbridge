@@ -66,8 +66,20 @@ def grasping_mode():
     return mode
 
 
-def assisted_grasping(robot, hands):
-    """The G1's assisted grasp test, on finger flexion (its ray points are in the robot definition, g1_model)."""
+def attachment(robot, arm):
+    """What a hand holds: "none", "held" (an object fixed to the hand) or "tethered" (a door, drawer or lid of a piece
+    of furniture, on a pivot). Physical grasping never attaches."""
+    if robot.grasping_mode != "assisted" or robot._ag_obj_in_hand[arm] is None:
+        return "none"
+    params = robot._ag_obj_constraint_params[arm]
+    if params is None:  # released; the release window has not ended
+        return "none"
+    return "tethered" if params["joint_type"] == "SphericalJoint" else "held"
+
+
+def assisted_grasping(robot, hands, attached=lambda arm: None):
+    """The G1's assisted grasp test, on finger flexion (its ray points are in the robot definition, g1_model).
+    attached(arm) is called when a hand attaches an object."""
     import types
     import omnigibson as og
     import torch as th
@@ -105,6 +117,8 @@ def assisted_grasping(robot, hands):
                         if self._ag_grasp_counter[arm] * og.sim.get_physics_dt() >= m.GRASP_WINDOW:
                             self._maybe_establish_grasp(target_obj=target[0], target_link_name=target[1], arm=arm)
                             self._ag_grasp_counter[arm] = None
+                            if self._ag_obj_in_hand[arm] is not None:
+                                attached(arm)
                 elif target is not None:
                     self._ag_grasp_counter[arm] = 0
             else:
@@ -186,7 +200,19 @@ class G1Sharpa:
         # Stand in GR00T's default posture with open hands.
         robot.reset_joint_pos = torch.tensor([self.pose.get(name, 0.) for name in robot.dof_names_ordered])
         if robot.grasping_mode == "assisted":
-            assisted_grasping(robot, self.hands)
+            assisted_grasping(robot, self.hands, self._attached)
+        self.attachments = 0
+
+    def _attached(self, arm):
+        self.attachments += 1
+
+    def status(self, episode):
+        """Whether each hand holds something (assisted grasping), for the hand devices' attachment topics."""
+        return {f"{side}_hand/attachment": attachment(episode.robot, side) for side in SIDES}
+
+    def counts(self):
+        """The episode's attachments (assisted grasping: objects or furniture parts a hand attached)."""
+        return {"attachments": self.attachments}
 
     def weigh(self, robot):
         """OmniGibson makes every link below a moving joint weightless, as ideal gravity compensation. GR00T balances a
@@ -248,6 +274,7 @@ class G1Sharpa:
             twist = np.r_[values(base.get_linear_velocity()), values(base.get_angular_velocity())]
             speed = np.abs(twist).max()
             if step >= SETTLE_STEPS and speed < STILL:
+                self.attachments = 0
                 return
         raise RuntimeError("the G1 did not stand still within its standing initialization")
 

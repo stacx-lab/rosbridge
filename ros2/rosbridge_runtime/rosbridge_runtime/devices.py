@@ -53,10 +53,12 @@ class Actuator:
             try:
                 clipped = apply()
             except ValueError as error:
+                self.node.world.count('commands_refused')
                 self.node.get_logger().error(f'{self.spec.name} rejected a command: {error}',
                                              throttle_duration_sec=1.)
                 return
             if clipped:
+                self.node.world.count('commands_clipped')
                 limits = ', '.join(f'{joint}={target:.4f} to {limit:.4f}' for joint, (target, limit) in clipped.items())
                 self.node.get_logger().warning(f'{self.spec.name} clipped a command to its limits: {limits}',
                                                throttle_duration_sec=1.)
