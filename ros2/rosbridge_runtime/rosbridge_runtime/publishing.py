@@ -38,12 +38,12 @@ class Spectator:
 
 
 class ObservationPublisher:
-    def __init__(self, node, spectator_rate_hz):
+    def __init__(self, node, spectator_rate_hz, views=None):
         self.node, self.sim = node, node.sim
         self.clock = node.create_publisher(Clock, '/clock', STREAM_QOS)
         self.cameras = SampleSchedule(CAMERA_RATE_HZ)
         self.spectator_schedule = SampleSchedule(spectator_rate_hz)
-        self.spectators = [Spectator(node, view) for view in self.sim.spectators]
+        self.spectators = [Spectator(node, view) for view in (self.sim.spectators if views is None else views)]
 
     def publish(self, reset=False):
         time_s = self.node.world.time_s
