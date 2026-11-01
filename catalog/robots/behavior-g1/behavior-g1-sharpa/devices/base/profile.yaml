@@ -23,8 +23,8 @@ operations:
     timeout_s: 10
   odometry:
     description: Measured body twist in base/base (m/s and rad/s at the body origin) and the
-      planar pose in base/odom, the body frame at episode start; never a global pose. The pose is
-      also on TF as base/odom -> base/base.
+      planar pose (x, y, yaw) in base/odom, the body frame at episode start; never a global pose.
+      The pose is also on TF as base/odom -> base/base.
     transport: topic
     direction: output
     endpoint: /base/odometry
@@ -53,10 +53,14 @@ type: locomotion
 description: Unitree G1 legs walking on GR00T WholeBodyControl's balance and walking policies,
   which own the legs and waist at 50 Hz. Commands are a body twist (vx, vy in m/s, wz in rad/s)
   within GR00T's navigation limits of 0.5; the gait balances the body while the arms and hands
-  move. The base frame is the pelvis; odometry starts at the episode-start pose and is on TF
-  (base/odom -> base/base). The legs walk only with the pelvis at 0.70 m or higher (the pelvis
-  device); lower, a twist does not move the body. Heights in other devices' frames are relative
-  to the pelvis. A fall is not recovered within the episode.
+  move. The base frame base/base is at the pelvis, level, with the pelvis's heading; odometry
+  starts at the episode-start pose and is on TF (base/odom -> base/base). Odometry is planar, so
+  base/base keeps its episode-start height in base/odom, also while the pelvis is lowered (in a
+  squat, base/odom heights are off by the drop). The pelvis device has the pelvis height above
+  the floor (pelvis/floor) and its tilt (pelvis/pelvis, which the torso and everything on it
+  follow). The legs walk only with the pelvis at 0.70 m or higher (the pelvis device); lower, a
+  twist does not move the body. Heights in other devices' frames are relative to the pelvis. A
+  fall is not recovered within the episode.
 source: introspected
 calibrated_at: null
 method: introspection

@@ -121,6 +121,15 @@ def axis_rotation(axis, angle):
     return matrix
 
 
+def tilt(quaternion, angular_velocity):
+    """The pelvis's pitch and roll from level (R = Rz(yaw) Ry(pitch) Rx(roll), the yaw-only base frame times the tilt)
+    and their rates, from its world orientation and angular velocity."""
+    matrix = rotation(quaternion)
+    pitch, roll = np.arctan2(-matrix[2, 0], np.hypot(matrix[0, 0], matrix[1, 0])), np.arctan2(matrix[2, 1], matrix[2, 2])
+    p, q, r = matrix.T @ values(angular_velocity)  # body rates
+    return (pitch, roll), (q * np.cos(roll) - r * np.sin(roll), p + (q * np.sin(roll) + r * np.cos(roll)) * np.tan(pitch))
+
+
 def torso_rpy(yaw, roll, pitch):
     """The torso orientation of waist joints (yaw about z, roll about x, pitch about y, in
     chain order) as roll, pitch, yaw with R = Rz(yaw) Ry(pitch) Rx(roll)."""
@@ -218,7 +227,9 @@ class G1Sharpa:
         order = list(robot.controller_order)
         if order != ["trunk", "arm_left", "gripper_left", "arm_right", "gripper_right"]:
             raise ValueError(f"unexpected G1 controllers: {order}")
-        return ActionLayout(tuple(channels), tuple(groups))
+        # GR00T pitches the pelvis forward as it lowers (about 6 degrees at 0.62 m, 27 below 0.40): the pelvis device
+        # reports that tilt from the yaw-only base frame, so frames on the pelvis can follow it.
+        return ActionLayout(tuple(channels), tuple(groups), measured=(("pelvis", ("pelvis_pitch", "pelvis_roll")),))
 
     def reset(self, episode):
         """A fresh lower-body policy that stands the G1 still before the episode starts."""
@@ -240,13 +251,16 @@ class G1Sharpa:
 
     def state(self, episode):
         """The base as odometry (x, y, yaw) and body twist (vx, vy, wz); the pelvis height above the floor
-        (m, m/s); joints in radians."""
+        (m, m/s); joints in radians; then the measured pelvis pitch and roll (rad, rad/s)."""
         robot = episode.robot
         q, dq = values(robot.get_joint_positions()), values(robot.get_joint_velocities())
         pose, twist = episode.odometry()
-        height = values(robot.get_position_orientation()[0])[2] - self.floor
-        positions = [*pose, height, *(q[self.dofs[device]] for device in self.devices)]
-        velocities = [*twist, values(robot.get_linear_velocity())[2], *(dq[self.dofs[device]] for device in self.devices)]
+        position, quaternion = robot.get_position_orientation()
+        height = values(position)[2] - self.floor
+        angles, rates = tilt(quaternion, robot.get_angular_velocity())
+        positions = [*pose, height, *(q[self.dofs[device]] for device in self.devices), *angles]
+        velocities = [*twist, values(robot.get_linear_velocity())[2], *(dq[self.dofs[device]] for device in self.devices),
+                      *rates]
         return np.hstack(positions), np.hstack(velocities)
 
     def action(self, episode, command):

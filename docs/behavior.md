@@ -176,7 +176,11 @@ position targets. Physics runs at GR00T's 200 Hz. Commands:
   falling, keeping the torso level while the pelvis pitches forward, and stands back up
   in one command; in a full squat the fingertips reach the floor about 0.25 m in front
   of the pelvis. It walks only with the pelvis at about 0.65 m or higher. The base
-  device publishes its odometry on TF (`base/odom -> base/base`).
+  device publishes its odometry on TF (`base/odom -> base/base`), which is planar:
+  `base/base` is level at the pelvis. `pelvis/joint_state` also reports the measured
+  pelvis tilt from that level frame, `pelvis_pitch` and `pelvis_roll` (read-only; about
+  26 degrees forward in a full squat, and several degrees while standing as the body
+  balances the arms and waist), which the rig puts on TF as `pelvis/pelvis`.
 - `left_arm`, `right_arm` (7 joints) and `left_hand`, `right_hand` (22 joints) take
   absolute joint positions on position drives. Grasping is physical by default;
   `ROSBRIDGE_GRASPING=assisted` selects OmniGibson's assisted grasping, as the BEHAVIOR
@@ -196,7 +200,7 @@ heavier Sharpa hands in PhysX. A fall is not recovered; reset the world.
 
 The head camera is an RGB-D camera on the G1's D435 mount with the R1Pro head
 camera's optics (720×720, fx = 306). The rig `behavior-g1/behavior-g1-sharpa` chains
-`torso` from the base (the pelvis), the arms and head camera from `torso:top`
+`torso` from the tilted pelvis (`pelvis:pelvis`), the arms and head camera from `torso:top`
 (`torso_link`) and each hand from its arm's flange (`<side>_wrist_yaw_link`); hands
 are `joint` devices without a tip link.
 

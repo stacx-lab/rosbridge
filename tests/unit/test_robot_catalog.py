@@ -64,7 +64,9 @@ def test_every_rig_exports_unloaded_profiles_on_rosbridge_endpoints(tmp_path, id
         if profile["type"] in ("joint", "gripper"):
             assert nodes == [{"entry": "links.py", "factory": "create"}]
             exported = root / "devices" / name / "links.py"
-            assert not exported.is_symlink() and "LinkPublisher(profile, context" in exported.read_text()
+            text = exported.read_text()
+            assert not exported.is_symlink() and ("LinkPublisher(profile, context" in text
+                                                  or "(LinkPublisher):" in text)
             assert (root / "devices" / name / profile["model"]["path"]).is_file()
         elif profile["type"] == "locomotion" and nodes:
             assert nodes == [{"entry": "odom.py", "factory": "create"}]
