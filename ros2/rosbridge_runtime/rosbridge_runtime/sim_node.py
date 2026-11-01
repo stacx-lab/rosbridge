@@ -4,8 +4,10 @@ import math
 import os
 from pathlib import Path
 import signal
+import sys
 import threading
 import time
+import traceback
 
 import rclpy
 from kinex_interfaces.srv import Wait
@@ -150,7 +152,7 @@ def main():
     rclpy.init()
     node = SimNode.__new__(SimNode)
     executor = MultiThreadedExecutor(num_threads=4)
-    spinner = None
+    spinner, error = None, None
     try:
         node.__init__()
         executor.add_node(node)
@@ -167,9 +169,15 @@ def main():
         node.run()
     except (KeyboardInterrupt, ExternalShutdownException):
         pass
+    except Exception as failure:
+        # A world that stops on an error says why in its log (graph.log, an operator artifact) and in the episode's
+        # record; a worker only sees its pending wait end with "runtime stopped".
+        error = f"{type(failure).__name__}: {failure}"[:500]
+        print(f"world stopped by an error: {error}\n{traceback.format_exc()}", file=sys.stderr, flush=True)
+        raise
     finally:
         if hasattr(node, 'world'):
-            node.world.close()
+            node.world.close(error=error)
         elif getattr(node, 'sim', None) is not None:
             node.sim.close()
         executor.shutdown(timeout_sec=5.)
