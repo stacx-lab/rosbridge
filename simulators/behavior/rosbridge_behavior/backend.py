@@ -4,6 +4,7 @@ OmniGibson needs Isaac Sim 5.1 on Python 3.11, so the world node proxies this cl
 rosbridge.core.worker. The episode follows the official evaluator (environment.py); an
 embodiment maps rosbridge channels to native actions (r1pro.py, r1pro_sharpa.py, g1_sharpa.py).
 """
+import os
 import secrets
 from typing import NamedTuple
 
@@ -28,7 +29,10 @@ RERENDERS = 3
 # this close in world time: as cameras move between them, two renders clean a capture. After a
 # longer gap (a reset, or cameras unrendered since moving), sixteen bring the path tracer to
 # the same noise.
-HISTORY_S, CUT_DELIVERIES = .25, 16
+HISTORY_S, CUT_DELIVERIES = .25, int(os.environ.get("ROSBRIDGE_BEHAVIOR_CUT_RENDERS", 16))
+# (After a gap, depth is exact from the first render; RGB keeps converging: mean absolute difference from a 48-render
+# image, 0-255 scale, 6.0 after 1 render, 2.9 after 4, 1.2 after 16; a render costs about 20 ms, so a capture after a
+# gap costs 0.5-0.9 s at 16. ROSBRIDGE_BEHAVIOR_CUT_RENDERS trades that noise for time.)
 # Overview spectators keep these bearings from the robot's heading (radians counterclockwise).
 OVERVIEWS = {"front_left": np.pi / 4, "rear_left": 3 * np.pi / 4}
 FOLLOW_S = 1.  # the overviews turn after the robot this slowly, so gait sway does not shake them
