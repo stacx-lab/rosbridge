@@ -54,6 +54,46 @@ TOES_M, KNEES_SQUAT_M = (.15, .20), (.29, .36)  # how far the toes and (squattin
 SQUAT_SHIFT_M = .045  # the pelvis moves back this far in a squat to 0.30 (the feet stay)
 HEADING_PRECISION_RAD = .04  # what a turn on odometry yaw can reach (smallest lasting turn, residual after a loop)
 NORMAL_TILT_DEG = 33  # the largest pelvis tilt of normal postures (deep-squat arm sweeps 32.3)
+# The waist pitch GR00T settles at (rad, steady over 1-5 s) for a target: with the pelvis at 0.60, a 0.52 target; in a
+# squat (pelvis command 0.45 and below, the arm not raised overhead), targets 0, 0.3 and 0.52. The pelvis pitches
+# forward instead (reach2_postures.json, reach_conditions.json).
+WAIST_AT_060 = (.20, .34)
+WAIST_SQUAT = {0.: (-.39, -.16), .3: (.08, .18), .52: (.15, .25)}
+
+
+def _nearest(value, step):
+    return round(round(value / step) * step, 6)
+
+
+def _waist_squat(postures, conditions):
+    out = {}
+    for target in WAIST_SQUAT:
+        seen = [p["waist"] for c in postures["conditions"] if c["pelvis_cmd"] <= .45 and c["waist_cmd"] == target
+                for p in c["postures"] if p["shoulder_pitch"] > -2.6]
+        seen += [c["waist_pitch_measured"] for c in conditions["conditions"]
+                 if c["pelvis_cmd"] <= .45 and c["waist_pitch_cmd"] == target]
+        out[target] = (round(min(seen), 2), round(max(seen), 2))
+    return out
+
+
+# Each measured value with the stored measurement it comes from (simulators/behavior-g1/measurements/, copies of the
+# probes' outputs cited above) and how it is read from it; the unit tests recompute every value from its files, so a
+# text cannot state a value its measurement does not support.
+MEASURED = {
+    "FLOOR_PELVIS_COMMAND": (("floor_band.json",), lambda band: max(
+        c["pelvis_cmd"] for c in band if c["lowest_tip_z"] <= .005)),
+    "FLOOR_FORWARD_M": (("floor_band.json",), lambda band: _nearest(max(
+        c["tip_within_2cm_max_x"] or 0. for c in band if c["waist_cmd"] == 0.), .05)),
+    "FLOOR_WRIST_M": (("floor_band.json",), lambda band: round(min(c["lowest_flange_z"] for c in band), 2)),
+    "SQUAT_SHIFT_M": (("locomotion_summary.json",), lambda loco: _nearest(-sum(
+        r["squat"][0] for r in loco["m3"] if r["pelvis_cmd"] == .3) / sum(r["pelvis_cmd"] == .3 for r in loco["m3"]), .005)),
+    "NORMAL_TILT_DEG": (("reach_conditions.json",), lambda reach: -int(-max(
+        c["sweep_tilt_max_deg"] for c in reach["conditions"]) // 1)),
+    "WAIST_AT_060": (("reach2_postures.json",), lambda postures: (lambda seen: (round(min(seen), 2), round(max(seen), 2)))(
+        [p["waist"] for c in postures["conditions"] if c["pelvis_cmd"] == .6 and c["waist_cmd"] == .52
+         for p in c["postures"]])),
+    "WAIST_SQUAT": (("reach2_postures.json", "reach_conditions.json"), _waist_squat),
+}
 
 
 class Rule(NamedTuple):
@@ -128,6 +168,10 @@ def rules():
         Rule("HEADING_PRECISION_RAD", "base.description", f"Heading can be set to about {HEADING_PRECISION_RAD:g} rad"),
         Rule("NORMAL_TILT_DEG", "base.description", f"Normal postures stay within about {NORMAL_TILT_DEG:g} degrees"),
         Rule("HEIGHTS", "head_camera.description", "pelvis/floor gives heights above the floor"),
+        Rule("WAIST_AT_060", "torso.description",
+             f"with the pelvis at 0.60 a 0.52 target reaches only {WAIST_AT_060[0]:.2f}-{WAIST_AT_060[1]:.2f}"),
+        *(Rule("WAIST_SQUAT", "torso.description", f"{target:g} at {low:.2f} to {high:.2f}")
+          for target, (low, high) in WAIST_SQUAT.items()),
         Rule("GRASP_CLOSURE", "instruction.assisted", f"above {percent(GRASP_CLOSURE)} of their closing range"),
         Rule("GRASP_CLOSURE", "instruction.assisted", f"falls back to {percent(GRASP_CLOSURE)} or below"),
         Rule("GRASP_WINDOW_S", "instruction.assisted", f"for {GRASP_WINDOW_S:g} s while the hand is closed"),

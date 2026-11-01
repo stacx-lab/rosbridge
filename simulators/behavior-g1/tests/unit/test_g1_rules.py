@@ -1,4 +1,5 @@
 """The values that decide a worker's outcomes are stated in the texts it reads (g1_rules)."""
+import json
 from pathlib import Path
 import re
 import xml.etree.ElementTree as ET
@@ -12,6 +13,7 @@ from rosbridge_behavior.g1_rules import assisted_note, rules
 PROJECT = Path(__file__).resolve().parents[4]
 PROFILES = PROJECT / "catalog/robots/behavior-g1/behavior-g1-sharpa/devices"
 RUNTIME = PROJECT / ".runtime/behavior-g1"
+MEASUREMENTS = PROJECT / "simulators/behavior-g1/measurements"
 
 
 def words(text):
@@ -100,3 +102,25 @@ def test_upstream_values_match_their_sources():
                            r"\[vyaw_flag\]\]\)\) < ([\d.]+)", policy)[1]) == g1_rules.WALK_DEAD_ZONE
     wbc = yaml.safe_load(source("third_party/decoupled_wbc/sim2mujoco/resources/robots/g1/g1_gear_wbc.yaml"))
     assert wbc["height_cmd"] == g1_rules.STANDING_PELVIS
+
+
+def measured(name):
+    files, derive = g1_rules.MEASURED[name]
+    return derive(*(json.loads((MEASUREMENTS / file).read_text()) for file in files))
+
+
+def test_measured_values_are_what_their_stored_measurements_show():
+    """A stated measured value must be the one its measurement file gives, not only the constant the text follows."""
+    assert {name: measured(name) for name in g1_rules.MEASURED} == {
+        name: getattr(g1_rules, name) for name in g1_rules.MEASURED}
+    stated = {rule.name for rule in rules()}
+    assert set(g1_rules.MEASURED) <= stated  # each is stated somewhere the worker reads
+
+
+def test_a_measured_value_its_file_does_not_support_fails(monkeypatch):
+    # An earlier text said the waist holds its target in a squat; the measurement shows it settles behind it.
+    monkeypatch.setattr(g1_rules, "WAIST_SQUAT", {0.: (0., 0.), .3: (.3, .3), .52: (.52, .52)})
+    assert measured("WAIST_SQUAT") != g1_rules.WAIST_SQUAT
+    assert "WAIST_SQUAT" in {rule.name for rule in missing(rules())}
+    monkeypatch.setattr(g1_rules, "FLOOR_WRIST_M", .1)
+    assert measured("FLOOR_WRIST_M") != g1_rules.FLOOR_WRIST_M

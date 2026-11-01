@@ -58,7 +58,9 @@ description: G1 three-joint waist (yaw, roll, pitch) on the pelvis; its base fra
   Targets set the torso orientation that GR00T's lower-body policy tracks while it balances,
   so verify the measured joint_state. Standing with an arm reaching forward, a waist pitch near its 0.52 limit is not
   held; the body settles either leaning back with the waist near 0.25 or forward at 0.52, and can switch after several
-  seconds; with the pelvis at 0.60 the waist reaches only 0.20-0.34; at 0.45 and below it holds its target.
+  seconds; with the pelvis at 0.60 a 0.52 target reaches only 0.20-0.34. In a squat (pelvis 0.45 and below) the waist
+  settles behind its target while the pelvis pitches forward (a target of 0 at -0.39 to -0.16, 0.3 at 0.08 to 0.18
+  and 0.52 at 0.15 to 0.25; only an arm raised overhead brings it to 0.52), so in a squat the waist adds little reach.
 source: introspected
 calibrated_at: null
 method: introspection
