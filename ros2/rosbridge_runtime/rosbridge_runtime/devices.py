@@ -28,6 +28,8 @@ class Actuator:
         self.group = next(g for g in node.sim.layout.groups if g.name == spec.source)
         self.indices = list(self.group.indices)
         self.names = [node.sim.layout.joint_names[i] for i in self.indices]
+        # The joint state adds the group's measured joints, which are never commanded.
+        self.state_names, self.state_indices = node.sim.layout.joint_state(self.group.name)
         callbacks = ReentrantCallbackGroup()
         self._endpoints(callbacks)
         # Kinex discovers stop before commanding, so it must follow the command subscription.
@@ -43,7 +45,8 @@ class Actuator:
                                      callback_group=callbacks)
 
     def publish(self, stamp, positions, velocities):
-        self.state.publish(conv.joint_state(stamp, self.names, positions[self.indices], velocities[self.indices]))
+        self.state.publish(conv.joint_state(stamp, self.state_names, positions[self.state_indices],
+                                            velocities[self.state_indices]))
 
     def _admit(self, apply):
         def run():

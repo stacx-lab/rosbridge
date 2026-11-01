@@ -60,6 +60,23 @@ def test_invalid_layout(indices, lower, upper):
         ActionLayout(("q",), (CommandGroup("arm", indices, lower, upper),))
 
 
+def test_measured_joints_extend_a_groups_joint_state_but_never_its_commands():
+    groups = (CommandGroup("base", (0, 1, 2), (-1.,) * 3, (1.,) * 3, velocity=True),
+              CommandGroup("pelvis", (3,), (.2,), (.78,)), CommandGroup("arm", (4, 5), (-1.,) * 2, (1.,) * 2))
+    names = ("x", "y", "yaw", "pelvis_height", "a", "b")
+    layout = ActionLayout(names, groups, measured=(("pelvis", ("pelvis_pitch", "pelvis_roll")),))
+    assert layout.joint_state("pelvis") == (["pelvis_height", "pelvis_pitch", "pelvis_roll"], [3, 6, 7])
+    assert layout.joint_state("arm") == (["a", "b"], [4, 5])
+    assert ActionLayout(names, groups).joint_state("pelvis") == (["pelvis_height"], [3])
+    commands = CommandBuffer(layout, [0, 0, 0, .74, 0, 0])  # commands span the action channels only
+    with pytest.raises(CommandError):
+        commands.set_group("pelvis", [.5, .1, 0.])
+    for measured in ((("base", ("tilt",)),), (("pelvis", ("pelvis_height",)),), (("hand", ("q",)),),
+                     (("pelvis", ()),), (("pelvis", ("p",)), ("pelvis", ("r",)))):
+        with pytest.raises(ValueError):
+            ActionLayout(names, groups, measured=measured)
+
+
 @pytest.mark.parametrize("start,times", [(float("nan"), [1]), (0, [float("inf")]),
                                          (0, [-1]), (0, [2, 1]), (0, [])])
 def test_invalid_trajectory_is_atomic(start, times):

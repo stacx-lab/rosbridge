@@ -224,7 +224,8 @@ To add a simulator, implement `SimulatorBackend` (`src/rosbridge/core/backend.py
 and register a lazy `rosbridge.backends` entry point (a `WorkerBackend` subclass
 for a native worker). Supply an `ActionLayout` whose commands are positions in
 feedback units (or, for a base's velocity group, body velocities whose feedback is
-odometry), a `device_inventory` naming its devices by Kinex device type (`joint`,
+odometry; `measured` adds read-only joints to a group's joint state, which follow the
+action channels in `state()`), a `device_inventory` naming its devices by Kinex device type (`joint`,
 `gripper`, `locomotion`, `rgb`, `rgbd`), each camera's image size and intrinsics
 (`intrinsics(camera)`: width, height, fx, fy, cx, cy) and `SpectatorView` settings, and
 declare the inventory in the manifest's `[devices]` table. A manifest's `install`

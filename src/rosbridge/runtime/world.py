@@ -43,7 +43,7 @@ class WorldRuntime:
         self.episode += 1
         self.time_s, self.steps = self.sim.time_s, self.sim.steps
         self._judged = False
-        self.commands = CommandBuffer(self.sim.layout, self.sim.state()[0])
+        self.commands = CommandBuffer(self.sim.layout, self.sim.state()[0][:len(self.sim.layout.joint_names)])
         self.pacer.reset(self.sim.period)
 
     def submit(self, request):

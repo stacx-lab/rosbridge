@@ -31,10 +31,15 @@ class ActionLayout:
     hold target. Joint names are unique within a group; separate devices may
     share native names such as joint1. A velocity group's channels are the
     planar odometry pose (x, y, yaw) and body twist (vx, vy, wz).
+
+    measured names joints a group reports in its joint state but never
+    commands, as (group, joint names) pairs; their positions and velocities
+    follow the action channels in state(), in this order.
     """
 
     joint_names: tuple[str, ...]
     groups: tuple[CommandGroup, ...]
+    measured: tuple[tuple[str, tuple[str, ...]], ...] = ()
 
     def __post_init__(self):
         if not self.joint_names or not all(self.joint_names):
@@ -58,6 +63,29 @@ class ActionLayout:
             indices.extend(group.indices)
         if sorted(indices) != list(range(len(self.joint_names))):
             raise ValueError("groups must partition the action indices exactly once")
+        groups = {g.name: g for g in self.groups}
+        for name, joints in self.measured:
+            group = groups.get(name)
+            if group is None or group.velocity or not joints or not all(joints):
+                raise ValueError(f"invalid measured joints: {name}")
+            reported = [self.joint_names[i] for i in group.indices] + list(joints)
+            if len(set(reported)) != len(reported):
+                raise ValueError(f"joint names must be unique within {name}")
+        if len({name for name, _ in self.measured}) != len(self.measured):
+            raise ValueError("measured joints must name each group once")
+
+    def joint_state(self, group):
+        """A group's reported joint names and their state() indices: its action channels, then its measured
+        joints."""
+        command = next(g for g in self.groups if g.name == group)
+        names, indices = [self.joint_names[i] for i in command.indices], list(command.indices)
+        start = len(self.joint_names)
+        for name, joints in self.measured:
+            if name == group:
+                names += joints
+                indices += range(start, start + len(joints))
+            start += len(joints)
+        return names, indices
 
 
 class SimulatorBackend(Protocol):
