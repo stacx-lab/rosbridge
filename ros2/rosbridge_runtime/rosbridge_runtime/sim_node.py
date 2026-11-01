@@ -1,7 +1,9 @@
 """The world node: ROS callbacks queue work; the main thread owns the simulator and publishers."""
+import faulthandler
 import math
 import os
 from pathlib import Path
+import signal
 import threading
 import time
 
@@ -143,6 +145,8 @@ class SimNode(Node):
 
 
 def main():
+    # SIGUSR1 writes every thread's Python stack to stderr (graph.log): a world that stops answering can be located.
+    faulthandler.register(signal.SIGUSR1, all_threads=True)
     rclpy.init()
     node = SimNode.__new__(SimNode)
     executor = MultiThreadedExecutor(num_threads=4)
