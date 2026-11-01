@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<!-- G1 pelvis height: the pelvis (base_link, the base device's frame) above the floor point below it (floor). The
+     prismatic joint is GR00T's base height command; it points down, so floor sits pelvis_height below the pelvis. -->
+<robot name="g1_pelvis">
+  <link name="base_link"/>
+  <link name="floor"/>
+  <joint name="pelvis_height" type="prismatic">
+    <parent link="base_link"/>
+    <child link="floor"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="0 0 -1"/>
+    <limit lower="0.20" upper="0.78" effort="1000" velocity="0.5"/>
+  </joint>
+</robot>

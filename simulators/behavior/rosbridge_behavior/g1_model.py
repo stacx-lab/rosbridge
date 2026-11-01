@@ -137,6 +137,14 @@ def definition(source):
             "eef_link_names": {side: f"{side}_eef_link" for side in SIDES},
             "finger_link_names": {side: hands[side][1] for side in SIDES},
             "finger_joint_names": {side: hands[side][0] for side in SIDES},
+            # For assisted grasping (unused when grasping is physical): rays from just beyond the thumb's tip and from
+            # the palm's face (hand_C_MC: z toward the fingers, x out of the palm) to the pads of the four fingers
+            # (distal links: x along the finger, the tip at 0.026 m, z out of the pad); a ray must start outside the
+            # hand, since only its closest hit counts and the hand itself is ignored.
+            "assisted_grasp_start_points": {side: [[f"{side}_thumb_DP", [.032, 0., 0.]], [f"{side}_hand_C_MC", [.03, 0., .07]],
+                                                   [f"{side}_hand_C_MC", [.03, 0., .04]]] for side in SIDES},
+            "assisted_grasp_end_points": {side: [[f"{side}_{finger}_DP", [.016, 0., .008]]
+                                                 for finger in ("index", "middle", "ring", "pinky")] for side in SIDES},
         },
     }
 

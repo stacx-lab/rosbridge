@@ -7,6 +7,7 @@ on position drives. The policies were trained for a G1 with Dex3 hands in MuJoCo
 in PhysX, at their 200 Hz physics, with the heavier Sharpa hands.
 """
 import json
+import os
 import sys
 
 import numpy as np
@@ -21,6 +22,10 @@ NAME = "robot_g1"
 LOWER = LEGS + WAIST
 # GR00T's keyboard navigation limits for vx, vy (m/s) and wz (rad/s).
 VELOCITY_LIMIT = 0.5
+# The pelvis height command (m above the floor) GR00T's balance policy takes. Its own teleoperation clamps it to
+# 0.20-0.74; the policy squats to 0.20 without falling and stands back up in one command. It does not walk below
+# about 0.65.
+PELVIS_LIMITS = (.20, .78)
 HEAD_RESOLUTION = 720
 HEAD_HORIZONTAL_APERTURE = 40.  # the evaluator's R1Pro head optics
 POLICIES = "policy/GR00T-WholeBodyControl-Balance.onnx,policy/GR00T-WholeBodyControl-Walk.onnx"
@@ -31,6 +36,13 @@ ARM_POSE = {"left_shoulder_roll_joint": .2, "right_shoulder_roll_joint": -.2}
 # floating base is still, outside the episode. GR00T's standing sway in PhysX stays near 0.02 m/s
 # and rad/s, above SIMPLE's MuJoCo threshold of 1e-3.
 STABILIZE_STEPS, SETTLE_STEPS, STILL = 300, 100, .05
+# How objects are held: "physical" (contact and friction only, as the hands are) or "assisted" (OmniGibson's assisted
+# grasping, as the BEHAVIOR challenge's R1Pro uses: an object between the thumb and the other fingers, touched by two
+# of them while the hand closes, is attached to the hand until it opens). ROSBRIDGE_GRASPING selects it.
+GRASPING_MODES = ("physical", "assisted")
+# A hand applies a grasp while its flexion joints are commanded past this fraction of their closing range; the
+# abduction joints (_AA) do not count. OmniGibson's own test (any joint off its open limit) is for parallel grippers.
+GRASP_CLOSURE = .3
 # The overview spectators stand near the G1's head height and aim at its hands.
 OVERVIEW_DISTANCE, OVERVIEW_EYE, OVERVIEW_TARGET = 1.8, 1.4, .8  # metres; heights above the floor
 
@@ -40,6 +52,60 @@ class Body:
 
     def get_joint_group_indices(self, group):
         return list(range({"body": len(BODY), "lower_body": len(LOWER)}[group]))
+
+
+def grasping_mode():
+    mode = os.environ.get("ROSBRIDGE_GRASPING", "physical")
+    if mode not in GRASPING_MODES:
+        raise ValueError(f"ROSBRIDGE_GRASPING must be one of {GRASPING_MODES}, not {mode!r}")
+    return mode
+
+
+def assisted_grasping(robot, hands):
+    """The G1's assisted grasp test, on finger flexion (its ray points are in the robot definition, g1_model)."""
+    import types
+    import omnigibson as og
+    import torch as th
+    from omnigibson.controllers import ControllerView
+    from omnigibson.robots.robot import m
+
+    names = list(robot.dof_names_ordered)
+    flexion = {side: th.tensor([i for i, joint in enumerate(hands[side]) if "_AA" not in joint]) for side in hands}
+
+    def closure(arm):
+        group_key, index = robot._controllers[f"gripper_{arm}"]
+        control = ControllerView.get_control(group_key, index)
+        if control is None:
+            return 0.
+        joints = th.tensor([names.index(joint) for joint in hands[arm]])[flexion[arm]]
+        lower, upper = robot.joint_lower_limits[joints], robot.joint_upper_limits[joints]
+        return float(((control[flexion[arm]] - lower) / (upper - lower).clamp(min=1e-6)).clamp(0, 1).mean())
+
+    def handle(self):
+        # OmniGibson's _handle_assisted_grasping with the closure test above.
+        for arm in self.arm_names:
+            applying = closure(arm) > GRASP_CLOSURE
+            if self._ag_obj_in_hand[arm]:
+                if self._ag_release_counter[arm] is not None:
+                    self._handle_release_window(arm=arm)
+                elif not applying:
+                    self._release_grasp(arm=arm)
+            elif applying:
+                target = self._calculate_in_hand_object(arm=arm)
+                if self._ag_grasp_counter[arm] is not None:
+                    if target is None:
+                        self._ag_grasp_counter[arm] = None
+                    else:
+                        self._ag_grasp_counter[arm] += 1
+                        if self._ag_grasp_counter[arm] * og.sim.get_physics_dt() >= m.GRASP_WINDOW:
+                            self._maybe_establish_grasp(target_obj=target[0], target_link_name=target[1], arm=arm)
+                            self._ag_grasp_counter[arm] = None
+                elif target is not None:
+                    self._ag_grasp_counter[arm] = 0
+            else:
+                self._ag_grasp_counter[arm] = None
+
+    robot._handle_assisted_grasping = types.MethodType(handle, robot)
 
 
 def axis_rotation(axis, angle):
@@ -87,7 +153,7 @@ class G1Sharpa:
         parts = {"trunk": LOWER, **{f"arm_{side}": ARMS[side] for side in SIDES},
                  **{f"gripper_{side}": self.hands[side] for side in SIDES}}
         return {"model": MODEL, "name": NAME, "fixed_base": False, "self_collisions": False,
-                "action_normalize": False, "action_type": "continuous", "grasping_mode": "physical",
+                "action_normalize": False, "action_type": "continuous", "grasping_mode": grasping_mode(),
                 "obs_modalities": ["rgb", "depth_linear"],
                 "sensor_config": {"VisionSensor": {"sensor_kwargs": {
                     "image_height": HEAD_RESOLUTION, "image_width": HEAD_RESOLUTION}}},
@@ -106,16 +172,19 @@ class G1Sharpa:
                 link.enable_gravity()
         # Stand in GR00T's default posture with open hands.
         robot.reset_joint_pos = torch.tensor([self.pose.get(name, 0.) for name in robot.dof_names_ordered])
+        if robot.grasping_mode == "assisted":
+            assisted_grasping(robot, self.hands)
 
     def start_pose(self, pose):
         """The pelvis, the robot's root, above the floor-level start pose at standing height."""
         import torch
 
         position = values(pose["position"]) + [0., 0., self.height]
+        self.floor = float(values(pose["position"])[2])  # the pelvis device measures its height from here
         return torch.as_tensor(position, dtype=torch.float32), pose["orientation"]
 
     def layout(self, robot):
-        """The base twist, then the waist, arm and hand joints of each device."""
+        """The base twist, the pelvis height, then the waist, arm and hand joints of each device."""
         names = list(robot.dof_names_ordered)
         lower, upper = values(robot.joint_lower_limits), values(robot.joint_upper_limits)
         self.devices = {"torso": WAIST, **{f"{side}_arm": ARMS[side] for side in SIDES},
@@ -123,10 +192,11 @@ class G1Sharpa:
         self.dofs = {device: np.array([names.index(joint) for joint in joints])
                      for device, joints in self.devices.items()}
         self.body = np.array([names.index(joint) for joint in BODY])
-        channels = ["vx", "vy", "wz"]
-        self.home = [0.] * 3
+        channels = ["vx", "vy", "wz", "pelvis_height"]
+        self.home = [0.] * 3 + [self.wbc["height_cmd"]]
         limit = (VELOCITY_LIMIT,) * 3
-        groups = [CommandGroup("base", (0, 1, 2), tuple(-v for v in limit), limit, velocity=True)]
+        groups = [CommandGroup("base", (0, 1, 2), tuple(-v for v in limit), limit, velocity=True),
+                  CommandGroup("pelvis", (3,), PELVIS_LIMITS[:1], PELVIS_LIMITS[1:])]
         for device, joints in self.devices.items():
             dofs = self.dofs[device]
             groups.append(CommandGroup(device, tuple(range(len(channels), len(channels) + len(joints))),
@@ -157,17 +227,20 @@ class G1Sharpa:
         raise RuntimeError("the G1 did not stand still within its standing initialization")
 
     def state(self, episode):
-        """The base as odometry (x, y, yaw) and body twist (vx, vy, wz); joints in radians."""
-        q, dq = values(episode.robot.get_joint_positions()), values(episode.robot.get_joint_velocities())
+        """The base as odometry (x, y, yaw) and body twist (vx, vy, wz); the pelvis height above the floor
+        (m, m/s); joints in radians."""
+        robot = episode.robot
+        q, dq = values(robot.get_joint_positions()), values(robot.get_joint_velocities())
         pose, twist = episode.odometry()
-        positions = [*pose, *(q[self.dofs[device]] for device in self.devices)]
-        velocities = [*twist, *(dq[self.dofs[device]] for device in self.devices)]
+        height = values(robot.get_position_orientation()[0])[2] - self.floor
+        positions = [*pose, height, *(q[self.dofs[device]] for device in self.devices)]
+        velocities = [*twist, values(robot.get_linear_velocity())[2], *(dq[self.dofs[device]] for device in self.devices)]
         return np.hstack(positions), np.hstack(velocities)
 
     def action(self, episode, command):
         """GR00T's lower-body targets for this period, then the arm and hand targets, in the
         native controller order."""
-        robot, start = episode.robot, 3
+        robot, start = episode.robot, 4
         targets = {}
         for device, joints in self.devices.items():
             targets[device], start = command[start:start + len(joints)], start + len(joints)
@@ -177,7 +250,7 @@ class G1Sharpa:
         frame = rotation(quaternion)
         # MuJoCo's free joint, which GR00T observes, reports angular velocity in the body frame.
         angular = frame.T @ values(robot.get_angular_velocity())
-        self.policy.set_metric_command(command[:3], self.wbc["height_cmd"], torso_rpy(*targets["torso"]))
+        self.policy.set_metric_command(command[:3], command[3], torso_rpy(*targets["torso"]))
         self.policy.set_observation({
             "q": q[self.body], "dq": dq[self.body],
             "floating_base_pose": np.r_[values(position), w, x, y, z],

@@ -171,8 +171,18 @@ position targets. Physics runs at GR00T's 200 Hz. Commands:
   every base.
 - `torso/joint_target` sets the waist (yaw, roll, pitch); its torso orientation is
   GR00T's torso command, which the lower body tracks while it balances.
+- `pelvis/joint_target` sets `pelvis_height`, GR00T's base height command: the pelvis
+  above the floor, 0.20-0.78 m (standing 0.74). The policy squats to 0.20 without
+  falling, keeping the torso level while the pelvis pitches forward, and stands back up
+  in one command; in a full squat the fingertips reach the floor about 0.25 m in front
+  of the pelvis. It walks only with the pelvis at about 0.65 m or higher. The base
+  device publishes its odometry on TF (`base/odom -> base/base`).
 - `left_arm`, `right_arm` (7 joints) and `left_hand`, `right_hand` (22 joints) take
-  absolute joint positions on position drives; grasping is physical.
+  absolute joint positions on position drives. Grasping is physical by default;
+  `ROSBRIDGE_GRASPING=assisted` selects OmniGibson's assisted grasping, as the BEHAVIOR
+  challenge's R1Pro uses: an object touched by two fingers and crossed by a ray from
+  the thumb tip or the palm to a finger pad, while the flexion joints are commanded
+  past 30% of their closing range, is attached to the hand until it opens.
 
 OmniGibson makes the links below a robot's moving joints weightless, as ideal gravity
 compensation. The G1 needs its weight to walk, so gravity acts on the pelvis, legs

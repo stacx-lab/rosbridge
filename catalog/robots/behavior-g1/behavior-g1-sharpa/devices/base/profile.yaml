@@ -2,7 +2,9 @@ name: base
 runtime:
   domain_id: 0
   observation: odometry
-  nodes: []
+  nodes:
+  - entry: odom.py
+    factory: create
   ready_timeout_s: 30
 operations:
   velocity:
@@ -21,7 +23,8 @@ operations:
     timeout_s: 10
   odometry:
     description: Measured body twist in base/base (m/s and rad/s at the body origin) and the
-      planar pose in base/odom, the body frame at episode start; never a global pose.
+      planar pose in base/odom, the body frame at episode start; never a global pose. The pose is
+      also on TF as base/odom -> base/base.
     transport: topic
     direction: output
     endpoint: /base/odometry
@@ -50,8 +53,10 @@ type: locomotion
 description: Unitree G1 legs walking on GR00T WholeBodyControl's balance and walking policies,
   which own the legs and waist at 50 Hz. Commands are a body twist (vx, vy in m/s, wz in rad/s)
   within GR00T's navigation limits of 0.5; the gait balances the body while the arms and hands
-  move. The base frame is the pelvis; odometry starts at the episode-start pose. A fall is
-  not recovered; reset the world.
+  move. The base frame is the pelvis; odometry starts at the episode-start pose and is on TF
+  (base/odom -> base/base). The legs walk only with the pelvis at 0.70 m or higher (the pelvis
+  device); lower, a twist does not move the body. Heights in other devices' frames are relative
+  to the pelvis. A fall is not recovered; reset the world.
 source: introspected
 calibrated_at: null
 method: introspection

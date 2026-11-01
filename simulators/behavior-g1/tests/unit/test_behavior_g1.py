@@ -134,6 +134,7 @@ class Policy:
 
 
 def test_g1_channels_command_the_lower_body_through_the_policy_and_the_rest_directly():
+    """The base twist and the pelvis height go to GR00T's lower-body policy; arm and hand targets go to their drives."""
     hands = {side: [f"{side}_finger{i}" for i in range(22)] for side in g1_model.SIDES}
     names = [*g1_model.BODY, *hands["left"], *hands["right"]][::-1]  # any native dof order
     q = np.arange(len(names), dtype=float)
@@ -146,25 +147,29 @@ def test_g1_channels_command_the_lower_body_through_the_policy_and_the_rest_dire
     embodiment = G1Sharpa.__new__(G1Sharpa)
     embodiment.hands, embodiment.wbc, embodiment.policy = hands, {"height_cmd": .74}, Policy()
     embodiment.pose = {"left_knee_joint": .3, "left_shoulder_roll_joint": .2}
+    embodiment.floor = .05
     layout = embodiment.layout(robot)
     home = dict(zip(layout.joint_names, embodiment.home))
     assert home["vx"] == 0 and home["left_shoulder_roll_joint"] == .2 and home["right_finger3"] == 0
-    assert len(layout.joint_names) == 3 + 3 + 14 + 44
+    assert home["pelvis_height"] == .74
+    assert len(layout.joint_names) == 3 + 1 + 3 + 14 + 44
     groups = {g.name: g for g in layout.groups}
     assert groups["base"].velocity and groups["base"].upper == (.5, .5, .5)
     assert [layout.joint_names[i] for i in groups["torso"].indices] == g1_model.WAIST
+    assert groups["pelvis"].indices == (3,) and (groups["pelvis"].lower, groups["pelvis"].upper) == ((.2,), (.78,))
     episode = SimpleNamespace(robot=robot, odometry=lambda: ((1., 2., .5), (.1, 0., .2)))
     positions, _ = embodiment.state(episode)
-    assert positions[3] == names.index("waist_yaw_joint") and positions[:3].tolist() == [1., 2., .5]
+    assert positions[:3].tolist() == [1., 2., .5] and positions[3] == pytest.approx(.75)  # pelvis 0.8, floor 0.05
+    assert positions[4] == names.index("waist_yaw_joint")
     command = np.zeros(len(layout.joint_names))
-    command[:3] = .2, 0., .1
+    command[:4] = .2, 0., .1, .45
     command[list(groups["left_hand"].indices)] = .5
     native = embodiment.action(episode, command)
     assert native.shape == (15 + 7 + 22 + 7 + 22,)
     np.testing.assert_allclose(native[:15], np.arange(15) / 100., atol=1e-7)
     assert (native[22:44] == .5).all() and not native[44:].any()
     (_, velocity, height, rpy), (_, observation) = embodiment.policy.calls
-    assert velocity == pytest.approx([.2, 0., .1]) and height == .74 and rpy == (0., 0., 0.)
+    assert velocity == pytest.approx([.2, 0., .1]) and height == .45 and rpy == (0., 0., 0.)
     assert observation["q"].tolist() == [names.index(joint) for joint in g1_model.BODY]
     np.testing.assert_allclose(observation["floating_base_pose"][3:], [np.cos(.25), 0, 0, np.sin(.25)])
     np.testing.assert_allclose(observation["floating_base_vel"][3:], [0, 0, 2], atol=1e-12)

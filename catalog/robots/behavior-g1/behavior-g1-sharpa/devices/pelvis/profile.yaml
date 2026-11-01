@@ -1,0 +1,85 @@
+name: pelvis
+runtime:
+  domain_id: 0
+  nodes:
+  - entry: links.py
+    factory: create
+  ready_timeout_s: 30
+operations:
+  joint_state:
+    description: Measured pelvis_height, the pelvis above the floor in metres, with its vertical velocity and
+      the world-clock acquisition stamp; do not infer motion completion from a sent command.
+    transport: topic
+    direction: output
+    endpoint: /pelvis/joint_state
+    type: sensor_msgs/msg/JointState
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: transient_local
+    timeout_s: 10
+  joint_target:
+    description: Trajectory of pelvis_height in metres (0.20 to 0.78), timed from receipt by strictly increasing
+      time_from_start and finishing within 120 seconds; velocities, accelerations and effort must be empty. A
+      zero header stamp selects now; a nonzero stamp must not start in the past. Points are absolute heights,
+      linearly interpolated at the native control period. Replacement clears pending references; invalid
+      trajectories are ignored, so verify measured joint_state.
+    transport: topic
+    direction: input
+    endpoint: /pelvis/joint_target
+    type: trajectory_msgs/msg/JointTrajectory
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: volatile
+    timeout_s: 10
+  stop:
+    description: Hold the measured pelvis height.
+    transport: service
+    direction: input
+    endpoint: /pelvis/stop
+    type: std_srvs/srv/Trigger
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: volatile
+    timeout_s: 10
+loaded: false
+meta:
+  created_at: '2026-11-01T00:00:00Z'
+  updated_at: '2026-11-01T00:00:00Z'
+type: joint
+description: G1 pelvis height, the base height command of GR00T's balance policy. One prismatic joint,
+  pelvis_height, the pelvis (the base frame) above the floor in metres; standing is 0.74, and the policy squats
+  down to 0.20 and stands back up in one command, keeping the torso level while the pelvis pitches forward. The
+  hands reach lower as the pelvis goes down (the fingertips get within a few centimetres of the floor in a full
+  squat, about 0.25 m in front of the pelvis). The legs walk only with the pelvis at 0.70 or higher, so stand up
+  before walking. The measured height trails the command by a few centimetres; verify joint_state. Geometry is
+  the sibling pelvis.urdf, whose tip link floor is the floor point below the pelvis.
+source: introspected
+calibrated_at: null
+method: introspection
+model:
+  format: urdf
+  path: pelvis.urdf
+  base_link: base_link
+  tip_link: floor
+limits: native
+home:
+  pelvis_height: 0.74
+stop:
+  behavior: hold
+  affected_devices:
+  - pelvis
+frames:
+  base:
+    translation_m:
+    - 0.0
+    - 0.0
+    - 0.0
+    rotation_xyzw:
+    - 0.0
+    - 0.0
+    - 0.0
+    - 1.0
+    parent: base:base

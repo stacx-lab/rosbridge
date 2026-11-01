@@ -53,7 +53,8 @@ meta:
 type: joint
 description: G1 three-joint waist (yaw, roll, pitch) on the pelvis. Geometry is the sibling
   torso.urdf with top (torso_link), where the arms and head camera mount, as its tip link.
-  Targets set the torso orientation that GR00T's lower-body policy tracks while it balances,
+  Targets set the torso orientation that GR00T's lower-body policy tracks while it balances;
+  yaw is tracked, pitch and roll reach roughly half of their target and saturate near 0.35 rad,
   so verify the measured joint_state.
 source: introspected
 calibrated_at: null

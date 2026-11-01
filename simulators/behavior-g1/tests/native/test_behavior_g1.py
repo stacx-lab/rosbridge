@@ -46,9 +46,9 @@ def run(sim, command, seconds):
 def test_layout_period_and_head_camera(sim):
     assert sim.period == pytest.approx(.02)
     assert sim.max_steps == 5374  # the evaluator's 3224 steps at 30 Hz, in time
-    assert [d.name for d in sim.devices] == ["base", "torso", "left_arm", "right_arm", "left_hand",
+    assert [d.name for d in sim.devices] == ["base", "pelvis", "torso", "left_arm", "right_arm", "left_hand",
                                              "right_hand", "head_camera"]
-    assert [len(channels(sim, d)) for d in ("base", "torso", "left_arm", "left_hand")] == [3, 3, 7, 22]
+    assert [len(channels(sim, d)) for d in ("base", "pelvis", "torso", "left_arm", "left_hand")] == [3, 1, 3, 7, 22]
     width, height, fx, fy, cx, cy = sim.intrinsics("head_camera")
     assert (width, height, fx, cx) == (720, 720, pytest.approx(306.), 359.5)
     image, depth = sim.render("head_camera"), sim.render_depth("head_camera")
@@ -74,6 +74,24 @@ def test_stands_walks_and_turns_on_gr00t_without_falling(sim):
     assert sim.state()[0][2] - yaw > .5
     assert run(sim, hold, 2.) < FALL_M
     assert np.abs(sim.state()[1][:3]).max() < .1
+
+
+def test_squats_on_the_pelvis_height_command_and_stands_back_up(sim):
+    """GR00T takes the pelvis height as a command: it squats to 0.20 without falling (the pelvis pitches forward while
+    the torso stays level) and stands back up in one command; the pelvis device measures the height."""
+    hold = sim.state()[0]
+    hold[channels(sim, "base")] = 0.
+    pelvis = channels(sim, "pelvis")[0]
+    hold[pelvis] = .74
+    assert run(sim, hold, 2.) < FALL_M
+    assert sim.state()[0][pelvis] == pytest.approx(.75, abs=.04)
+    squat = hold.copy()
+    squat[pelvis] = .20
+    run(sim, squat, 6.)
+    assert sim.state()[0][pelvis] < .35
+    run(sim, hold, 6.)
+    assert sim.state()[0][pelvis] > .66
+    assert sim.native("link_pose", "pelvis")[2, 2] > .9  # upright again
 
 
 def test_arms_and_hands_track_joint_targets_while_balancing(sim):

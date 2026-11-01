@@ -58,14 +58,20 @@ def test_every_rig_exports_unloaded_profiles_on_rosbridge_endpoints(tmp_path, id
         assert all(isinstance(op["description"], str) and op["description"]
                    for op in profile["operations"].values())
         assert all("parent" in frame for frame in profile["frames"].values())
-        # Profiles borrow rosbridge's endpoints; only URDF link publishers run in Kinex.
-        nodes = ([{"entry": "links.py", "factory": "create"}]
-                 if profile["type"] in ("joint", "gripper") else [])
-        assert profile["runtime"]["nodes"] == nodes
-        for node in nodes:
-            exported = root / "devices" / name / node["entry"]
+        # Profiles borrow rosbridge's endpoints; only TF publishers run in Kinex: URDF links for joints and
+        # grippers, and optionally a base's odometry (base/odom -> base/base).
+        nodes = profile["runtime"]["nodes"]
+        if profile["type"] in ("joint", "gripper"):
+            assert nodes == [{"entry": "links.py", "factory": "create"}]
+            exported = root / "devices" / name / "links.py"
             assert not exported.is_symlink() and "LinkPublisher(profile, context" in exported.read_text()
             assert (root / "devices" / name / profile["model"]["path"]).is_file()
+        elif profile["type"] == "locomotion" and nodes:
+            assert nodes == [{"entry": "odom.py", "factory": "create"}]
+            exported = root / "devices" / name / "odom.py"
+            assert not exported.is_symlink() and "TransformBroadcaster" in exported.read_text()
+        else:
+            assert nodes == []
     assert not any(root.rglob("*.pyc")) and not any(path.is_symlink() for path in root.rglob("*"))
     with pytest.raises(ValueError, match="already contains"):
         setup(identifier, tmp_path, project=PROJECT)
