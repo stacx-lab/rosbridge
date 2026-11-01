@@ -22,7 +22,10 @@ operations:
   depth:
     description: '16UC1 depth registered to image in millimetres along the optical axis; 0
       marks missing or out-of-range samples. Rendered with its image: same stamp and frame_id,
-      so pair the two by stamp.'
+      so pair the two by stamp. Depth is the z coordinate in the optical frame, not the distance
+      along the pixel''s ray: the pixel (u, v) with depth z is the point ((u - cx) / fx * z, (v - cy)
+      / fy * z, z), with fx = fy = 306 and cx = cy = 359.5 (color.projection). Depth is current
+      and exact to the millimetre (no bias or scale to correct).'
     transport: topic
     direction: output
     endpoint: /head_camera/depth

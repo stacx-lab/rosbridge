@@ -8,7 +8,7 @@ import pytest
 import yaml
 
 from rosbridge_behavior import g1_rules
-from rosbridge_behavior.g1_rules import assisted_note, rules
+from rosbridge_behavior.g1_rules import assisted_note, physical_note, rules
 
 PROJECT = Path(__file__).resolve().parents[4]
 PROFILES = PROJECT / "catalog/robots/behavior-g1/behavior-g1-sharpa/devices"
@@ -23,7 +23,7 @@ def words(text):
 def text(place):
     device, *field = place.split(".")
     if device == "instruction":
-        return {"assisted": assisted_note()}[field[0]]
+        return {"assisted": assisted_note(), "physical": physical_note()}[field[0]]
     value = yaml.safe_load((PROFILES / device / "profile.yaml").read_text())
     for key in field:
         value = value[key]
@@ -124,3 +124,13 @@ def test_a_measured_value_its_file_does_not_support_fails(monkeypatch):
     assert "WAIST_SQUAT" in {rule.name for rule in missing(rules())}
     monkeypatch.setattr(g1_rules, "FLOOR_WRIST_M", .1)
     assert measured("FLOOR_WRIST_M") != g1_rules.FLOOR_WRIST_M
+
+
+def test_the_depth_text_states_the_profiles_own_intrinsics():
+    """Depth is planar z; the unprojection the text gives must use the projection the profile declares."""
+    camera = yaml.safe_load((PROFILES / "head_camera/profile.yaml").read_text())
+    k = camera["color"]["projection"] if "color" in camera else camera["projection"]
+    assert k["fx"] == k["fy"] and k["cx"] == k["cy"]
+    said = words(camera["operations"]["depth"]["description"])
+    assert f"fx = fy = {k['fx']:g} and cx = cy = {k['cx']:g}" in said
+    assert "((u - cx) / fx * z, (v - cy) / fy * z, z)" in said

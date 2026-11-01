@@ -130,6 +130,13 @@ fingertips, the other fingers curled, and keep it there while the hand closes; a
 pushes away does not stick."""
 
 
+def physical_note():
+    """The instruction's note for a task set with physical grasping."""
+    return """
+Grasping is physical: an object is held only by the contact and friction of the fingers and palm, as a real hand holds
+it; nothing attaches to a hand, and <side>_hand/attachment always reports none."""
+
+
 def rules():
     """Every rule-bearing value with the words its text must contain (imports the world's command buffer). Texts are
     compared with their whitespace collapsed."""
@@ -160,6 +167,8 @@ def rules():
         Rule("ATTACH_ANGLE_DEG", "world.description", f"and {ATTACH_ANGLE_DEG:g} degrees"),
         Rule("TOGGLE_HOLD_S", "world.description", f"held on the marker for {TOGGLE_HOLD_S:g} s toggles it"),
         Rule("FURNITURE_JOINT_STIFFNESS", "world.description", "have no spring"),
+        Rule("DOOR_RELEASE", "world.description", "if it moves, part of the robot is touching it"),
+        Rule("DOOR_PINCH", "world.description", "a pinch catches only a closed or held door"),
         Rule("DOOR_MOTION", "world.description", "move only along their joint, in one direction from closed"),
         Rule("HEIGHTS", "pelvis.description", "pelvis/floor, the floor point below the pelvis, gives heights above"),
         Rule("FLOOR_PELVIS_COMMAND", "pelvis.description", f"pelvis command {FLOOR_PELVIS_COMMAND:.2f} or lower"),
@@ -179,6 +188,7 @@ def rules():
         Rule("GRASP_WINDOW_S", "instruction.assisted", f"for {GRASP_WINDOW_S:g} s while the hand is closed"),
         Rule("ASSIST_MASS_KG", "instruction.assisted", f"heavier than {ASSIST_MASS_KG:g} kg does not stick"),
         Rule("FLEXION_JOINTS", "instruction.assisted", f"the hand's {FLEXION_JOINTS} flexion joints"),
+        Rule("PHYSICAL_GRASPING", "instruction.physical", "nothing attaches to a hand"),
     ]
     for side in ("left", "right"):
         out += [Rule("REACH_FORWARD_M", f"{side}_arm.description",

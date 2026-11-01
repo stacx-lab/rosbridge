@@ -25,7 +25,8 @@ operations:
   odometry:
     description: Measured body twist in base/base (m/s and rad/s at the body origin) and the
       planar pose (x, y, yaw) in base/odom, the body frame at episode start; never a global pose.
-      The pose is also on TF as base/odom -> base/base.
+      The pose is also on TF as base/odom -> base/base. It is the simulator's own pose of the body,
+      current at every step and exact (no drift, delay or noise).
     transport: topic
     direction: output
     endpoint: /base/odometry
