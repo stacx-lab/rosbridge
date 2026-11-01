@@ -66,7 +66,9 @@ type: locomotion
 description: Unitree G1 legs walking on GR00T WholeBodyControl's balance and walking policies,
   which own the legs and waist at 50 Hz. Commands are a body twist (vx, vy in m/s, wz in rad/s)
   within GR00T's navigation limits of 0.5; the gait balances the body while the arms and hands
-  move. The base frame base/base is at the pelvis, level, with the pelvis's heading; odometry
+  move. A twist whose norm sqrt(vx^2 + vy^2 + wz^2) is below 0.1 takes no step at all (GR00T then runs its
+  standing policy), so a slowing final approach stalls short of its goal; from 0.1 up the body moves at about
+  0.7 of vx (0.1 m/s gives 0.07, 0.3 gives 0.2), 0.6 to 0.9 of vy and 0.85 to 1.1 of wz. The base frame base/base is at the pelvis, level, with the pelvis's heading; odometry
   starts at the episode-start pose and is on TF (base/odom -> base/base). Odometry is planar, so
   base/base keeps its episode-start height in base/odom, also while the pelvis is lowered (in a
   squat, base/odom heights are off by the drop). The pelvis device has the pelvis height above
