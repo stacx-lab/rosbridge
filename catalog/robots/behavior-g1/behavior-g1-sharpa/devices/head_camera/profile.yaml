@@ -52,7 +52,8 @@ meta:
 type: rgbd
 description: RGB-D camera on the G1's head D435 mount, looking ahead and down, with the BEHAVIOR
   R1Pro head camera's optics. Image and registered depth calibration and the optical-frame
-  mount are in the profile.
+  mount are in the profile. Heights in its frames, as in every frame on the body, are relative to the pelvis (see the
+  pelvis device); pelvis/floor gives heights above the floor.
 source: introspected
 calibrated_at: null
 method: introspection

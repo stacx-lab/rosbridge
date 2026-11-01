@@ -6,6 +6,8 @@ import numpy as np
 
 # A base stops this long in world time after its last velocity command (Kinex locomotion watchdog).
 VELOCITY_TIMEOUT_S = 0.5
+# A trajectory must end within this many seconds of its start; a longer one is refused.
+TRAJECTORY_MAX_S = 120.
 # Targets this close outside a limit (rad or m) are clipped to it, not refused: interpolation rounding (0.2 - 1e-17) and
 # measured positions a joint's soft limit lets past its bound (-0.0005 rad) are valid targets.
 LIMIT_TOLERANCE = 1e-3

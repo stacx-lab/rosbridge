@@ -80,7 +80,11 @@ description: Unitree G1 legs walking on GR00T WholeBodyControl's balance and wal
   spent 1 s in all tilted more than 45 degrees from upright or below 0.15 m above the floor (since it was last back
   within 30 degrees of upright), the legs and waist hold still until the episode ends (GR00T's policies slid fallen
   bodies across the floor), twists are ignored, and fall reads fallen; the arms and hands still follow their
-  commands. Squats and walking stay within about 17 degrees.
+  commands. Normal postures stay within about 33 degrees (squats, reaching, walking). Heading can be set to about
+  0.04 rad; the smallest lasting turn is about 0.04 rad (wz 0.1 for 1 s), shorter pulses mostly spring back, and the
+  body keeps turning 0.05-0.09 rad for about 1.5 s after the last twist, so a loop on odometry yaw with |wz| of 0.1-0.3
+  that stops within 0.02 rad ends within about 0.04 rad (re-check 2 s later); standing still, the heading does not
+  drift.
 source: introspected
 calibrated_at: null
 method: introspection

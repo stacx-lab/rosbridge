@@ -9,6 +9,7 @@ from std_msgs.msg import Float64
 from std_srvs.srv import Trigger
 from trajectory_msgs.msg import JointTrajectory
 
+from rosbridge.core.commands import TRAJECTORY_MAX_S
 from . import conversions as conv
 
 # Retain the latest sample even when DDS discovery completes after publication.
@@ -79,8 +80,8 @@ class Actuator:
             if any(p.velocities or p.accelerations or p.effort for p in msg.points):
                 raise ValueError('only position trajectories are supported')
             start, times, points = conv.trajectory(msg, self.names, ignored=measured)
-            if not times or times[-1] > 120:
-                raise ValueError('trajectory must end within 120 seconds')
+            if not times or times[-1] > TRAJECTORY_MAX_S:
+                raise ValueError(f'trajectory must end within {TRAJECTORY_MAX_S:g} seconds')
             if start is not None and start < world.time_s:
                 raise ValueError('trajectory start is in the past')
             return world.commands.set_trajectory(self.group.name, world.time_s if start is None else start,

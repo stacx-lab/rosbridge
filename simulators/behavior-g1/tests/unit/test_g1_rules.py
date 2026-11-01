@@ -1,0 +1,102 @@
+"""The values that decide a worker's outcomes are stated in the texts it reads (g1_rules)."""
+from pathlib import Path
+import re
+import xml.etree.ElementTree as ET
+
+import pytest
+import yaml
+
+from rosbridge_behavior import g1_rules
+from rosbridge_behavior.g1_rules import assisted_note, rules
+
+PROJECT = Path(__file__).resolve().parents[4]
+PROFILES = PROJECT / "catalog/robots/behavior-g1/behavior-g1-sharpa/devices"
+RUNTIME = PROJECT / ".runtime/behavior-g1"
+
+
+def words(text):
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def text(place):
+    device, *field = place.split(".")
+    if device == "instruction":
+        return {"assisted": assisted_note()}[field[0]]
+    value = yaml.safe_load((PROFILES / device / "profile.yaml").read_text())
+    for key in field:
+        value = value[key]
+    return value
+
+
+def missing(entries):
+    return [rule for rule in entries if words(rule.phrase) not in words(text(rule.place))]
+
+
+def test_every_rule_bearing_value_is_stated_in_the_text_the_worker_reads():
+    assert missing(rules()) == []
+
+
+def test_a_value_changed_without_its_text_fails(monkeypatch):
+    for name, value in (("VELOCITY_LIMIT", .6), ("FALL_HOLD_S", 2.), ("TOGGLE_HOLD_S", .2), ("WALK_DEAD_ZONE", .05)):
+        with monkeypatch.context() as patch:
+            patch.setattr(g1_rules, name, value)
+            assert name in {rule.name for rule in missing(rules())}
+    # The note is rendered from the values, so it follows them.
+    monkeypatch.setattr(g1_rules, "GRASP_CLOSURE", .25)
+    assert missing(rules()) == [] and "above 25% of their closing range" in words(assisted_note())
+
+
+def test_the_code_and_the_structured_profiles_act_on_the_same_values():
+    from rosbridge_behavior import g1_sharpa
+    base = yaml.safe_load((PROFILES / "base/profile.yaml").read_text())
+    assert base["velocity"]["axes"] == {axis: {"min": -g1_rules.VELOCITY_LIMIT, "max": g1_rules.VELOCITY_LIMIT}
+                                        for axis in ("vx", "vy", "wz")}
+    limit = ET.parse(PROFILES / "pelvis/pelvis.urdf").getroot().find("joint[@name='pelvis_height']/limit")
+    assert (float(limit.get("lower")), float(limit.get("upper"))) == g1_rules.PELVIS_LIMITS
+    pelvis = yaml.safe_load((PROFILES / "pelvis/profile.yaml").read_text())
+    assert pelvis["home"] == {"pelvis_height": g1_rules.STANDING_PELVIS}
+    for side in ("left", "right"):
+        hand = yaml.safe_load((PROFILES / f"{side}_hand/profile.yaml").read_text())
+        assert sum("_AA" not in joint for joint in hand["home"]) == g1_rules.FLEXION_JOINTS
+    assert (g1_sharpa.GRASP_CLOSURE, g1_sharpa.VELOCITY_LIMIT, g1_sharpa.PELVIS_LIMITS) == (
+        g1_rules.GRASP_CLOSURE, g1_rules.VELOCITY_LIMIT, g1_rules.PELVIS_LIMITS)
+    assert g1_sharpa.FALL_TILT == pytest.approx(g1_rules.FALL_TILT_DEG * 3.141592653589793 / 180)
+    assert G1Sharpa_config()["self_collisions"] is g1_rules.SELF_COLLISIONS
+
+
+def G1Sharpa_config():
+    from rosbridge_behavior.g1_sharpa import G1Sharpa
+    embodiment = G1Sharpa.__new__(G1Sharpa)
+    from collections import defaultdict
+    embodiment.drives = defaultdict(lambda: {"stiffness": 1., "damping": 1.})
+    embodiment.hands = {"left": [], "right": []}
+    return embodiment.robot_config()
+
+
+def source(relative):
+    path = RUNTIME / relative
+    if not path.is_file():
+        pytest.skip(f"needs the prepared behavior-g1 runtime ({relative})")
+    return path.read_text()
+
+
+def test_upstream_values_match_their_sources():
+    """OmniGibson and GR00T act on these values; the texts state them."""
+    robot = source("OmniGibson/omnigibson/robots/robot.py")
+    assert float(re.search(r"^m\.GRASP_WINDOW = ([\d.]+)", robot, re.M)[1]) == g1_rules.GRASP_WINDOW_S
+    assert float(re.search(r"^m\.ASSIST_GRASP_MASS_THRESHOLD = ([\d.]+)", robot, re.M)[1]) == g1_rules.ASSIST_MASS_KG
+    attached = source("OmniGibson/omnigibson/object_states/attached_to.py")
+    assert float(re.search(r"^m\.DEFAULT_POSITION_THRESHOLD = ([\d.]+)", attached, re.M)[1]) == g1_rules.ATTACH_DISTANCE_M
+    assert float(re.search(r"^m\.DEFAULT_ORIENTATION_THRESHOLD = th\.deg2rad\(th\.tensor\(\[([\d.]+)\]\)\)",
+                           attached, re.M)[1]) == g1_rules.ATTACH_ANGLE_DEG
+    toggle = source("OmniGibson/omnigibson/object_states/toggle.py")
+    assert float(re.search(r"^m\.CAN_TOGGLE_SECONDS = ([\d.]+)", toggle, re.M)[1]) == g1_rules.TOGGLE_HOLD_S
+    assert "COLOR_ON = th.tensor([0, 1.0, 0])  # green" in toggle and "COLOR_OFF = th.tensor([1.0, 0, 0])  # red" in toggle
+    joints = source("OmniGibson/omnigibson/objects/dataset_object.py")
+    assert [float(v) for v in re.findall(r'drive:(?:linear|angular):physics:stiffness"\)\.Set\(([\d.]+)\)', joints)] == [
+        g1_rules.FURNITURE_JOINT_STIFFNESS] * 2
+    policy = source("third_party/decoupled_wbc/control/policy/g1_gear_wbc_policy.py")
+    assert float(re.search(r"switch_cond = np\.linalg\.norm\(np\.concatenate\(\[synced_navigate_cmd\[:2\], "
+                           r"\[vyaw_flag\]\]\)\) < ([\d.]+)", policy)[1]) == g1_rules.WALK_DEAD_ZONE
+    wbc = yaml.safe_load(source("third_party/decoupled_wbc/sim2mujoco/resources/robots/g1/g1_gear_wbc.yaml"))
+    assert wbc["height_cmd"] == g1_rules.STANDING_PELVIS

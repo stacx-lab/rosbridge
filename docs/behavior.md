@@ -177,8 +177,8 @@ position targets. Physics runs at GR00T's 200 Hz. Commands:
 - `pelvis/joint_target` sets `pelvis_height`, GR00T's base height command: the pelvis
   above the floor, 0.20-0.78 m (standing 0.74). The policy squats to 0.20 without
   falling, keeping the torso level while the pelvis pitches forward, and stands back up
-  in one command; in a full squat the fingertips reach the floor about 0.25 m in front
-  of the pelvis. It walks only with the pelvis at about 0.65 m or higher. The base
+  in one command; at a command of 0.30 or lower the fingertips reach the floor, up to about
+  0.35 m in front of the pelvis (0.50 m with the waist pitched forward). It walks only with the pelvis at about 0.65 m or higher. The base
   device publishes its odometry on TF (`base/odom -> base/base`), which is planar:
   `base/base` is level at the pelvis. `pelvis/joint_state` also reports the measured
   pelvis tilt from that level frame, `pelvis_pitch` and `pelvis_roll` (read-only; about

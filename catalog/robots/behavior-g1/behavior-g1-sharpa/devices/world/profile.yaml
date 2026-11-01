@@ -62,7 +62,16 @@ meta:
 type: world
 description: Simulation clock of the BEHAVIOR house. Furniture, objects and the activity's
   BDDL goal are not devices; the robot is not localized in this frame. This device exposes
-  no task instructions or evaluator results.
+  no task instructions or evaluator results. Furniture and room doors, drawers and lids move only along their joint,
+  in one direction from closed (a door turns open on its hinge, typically up to about 1.5 rad; a drawer slides out); a
+  push or pull toward the hinge line or past the closed position moves nothing, so a held handle opens a door only by
+  moving along the door's arc in the opening direction. They have no spring, so a released door stays at its angle,
+  and one that moves is being pushed by the robot or still has a hand attached. A switchable
+  object (a radio, a lamp, a stove) carries a small marker that is red while it is off and green while it is on; a
+  finger held on the marker for 0.15 s toggles it, once per touch, also while that hand holds something (some machines
+  with a door stay off while it is open). Objects made to be attached to another (a camera to a tripod, a picture to a
+  hook) attach by themselves as soon as their mounting points touch within 5 cm and 15 degrees, with nothing to press
+  or release.
 source: default
 calibrated_at: null
 method: unknown

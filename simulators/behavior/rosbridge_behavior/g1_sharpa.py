@@ -17,15 +17,12 @@ from rosbridge.core import ActionLayout, CommandGroup
 from .backend import Overview
 from .environment import data_root, rotation, values
 from .g1_model import ARMS, BODY, CAMERA, LEGS, MODEL, SIDES, WAIST, WBC, arm_links, standing_height
+# The values a worker's outcome depends on live in g1_rules, which the device texts and the task note state.
+from .g1_rules import (CLIP, FALL_HEIGHT, FALL_HOLD_S, FALL_TILT_DEG, FALL_UPRIGHT_DEG, GRASP_CLOSURE, PELVIS_LIMITS,
+                       SELF_COLLISIONS, VELOCITY_LIMIT)
 
 NAME = "robot_g1"
 LOWER = LEGS + WAIST
-# GR00T's keyboard navigation limits for vx, vy (m/s) and wz (rad/s).
-VELOCITY_LIMIT = 0.5
-# The pelvis height command (m above the floor) GR00T's balance policy takes. Its own teleoperation clamps it to
-# 0.20-0.74; the policy squats to 0.20 without falling and stands back up in one command. It does not walk below
-# about 0.65.
-PELVIS_LIMITS = (.20, .78)
 # GR00T's lower-body policy drives the waist itself from the torso orientation it is given, and realizes about half of
 # the pitch and roll (its own waist targets match the measured joints, so it is the policy's choice, not drive
 # tracking) while tracking yaw. Doubling pitch and roll before the policy makes the measured waist follow the device's
@@ -45,15 +42,12 @@ STABILIZE_STEPS, SETTLE_STEPS, STILL = 300, 100, .05
 # grasping, as the BEHAVIOR challenge's R1Pro uses: an object between the thumb and the other fingers, touched by two
 # of them while the hand closes, is attached to the hand until it opens). ROSBRIDGE_GRASPING selects it.
 GRASPING_MODES = ("physical", "assisted")
-# A hand applies a grasp while its flexion joints are commanded past this fraction of their closing range; the
-# abduction joints (_AA) do not count. OmniGibson's own test (any joint off its open limit) is for parallel grippers.
-GRASP_CLOSURE = .3
-# A fall: FALL_HOLD_S of world time in all with the pelvis tilted more than FALL_TILT from upright or lower than
-# FALL_HEIGHT above the floor, counted since it was last within FALL_UPRIGHT of upright. GR00T does not get up again,
-# and its policies kept acting on the fallen body: walking slid and spun it ~0.5 m on its back, and the
-# balance policy alone moved it 0.3-0.6 m in 3 s. From then on the legs and waist hold the joint
-# positions they had when it fell, as a real G1's damping mode stops its legs.
-FALL_TILT, FALL_UPRIGHT, FALL_HEIGHT, FALL_HOLD_S = np.deg2rad(45.), np.deg2rad(30.), .15, 1.
+# A hand applies a grasp while its flexion joints are commanded past GRASP_CLOSURE of their closing range on average;
+# the abduction joints (_AA) do not count. OmniGibson's own test (any joint off its open limit) is for parallel grippers.
+# A fall (FALL_*): GR00T does not get up again, and its policies kept acting on the fallen body: walking slid and spun
+# it ~0.5 m on its back, and the balance policy alone moved it 0.3-0.6 m in 3 s. From then
+# on the legs and waist hold the joint positions they had when it fell, as a real G1's damping mode stops its legs.
+FALL_TILT, FALL_UPRIGHT = np.deg2rad(FALL_TILT_DEG), np.deg2rad(FALL_UPRIGHT_DEG)
 # The overview spectators stand near the G1's head height and aim at its hands.
 OVERVIEW_DISTANCE, OVERVIEW_EYE, OVERVIEW_TARGET = 1.8, 1.4, .8  # metres; heights above the floor
 
@@ -188,7 +182,7 @@ class G1Sharpa:
     def robot_config(self):
         parts = {"trunk": LOWER, **{f"arm_{side}": ARMS[side] for side in SIDES},
                  **{f"gripper_{side}": self.hands[side] for side in SIDES}}
-        return {"model": MODEL, "name": NAME, "fixed_base": False, "self_collisions": False,
+        return {"model": MODEL, "name": NAME, "fixed_base": False, "self_collisions": SELF_COLLISIONS,
                 "action_normalize": False, "action_type": "continuous", "grasping_mode": grasping_mode(),
                 "obs_modalities": ["rgb", "depth_linear"],
                 "sensor_config": {"VisionSensor": {"sensor_kwargs": {
@@ -270,7 +264,7 @@ class G1Sharpa:
         # reports that tilt from the yaw-only base frame, so frames on the pelvis can follow it. Targets beyond a limit
         # are clipped to it: a refused command is silent to a worker, which publishes on a topic.
         return ActionLayout(tuple(channels), tuple(groups), measured=(("pelvis", ("pelvis_pitch", "pelvis_roll")),),
-                            clip=True)
+                            clip=CLIP)
 
     def reset(self, episode):
         """A fresh lower-body policy that stands the G1 still before the episode starts."""
