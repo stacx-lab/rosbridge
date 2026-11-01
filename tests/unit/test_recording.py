@@ -45,6 +45,25 @@ def test_video_simulation_timing_reset_segments_and_decoding(tmp_path):
     assert stream.snapshot()['dropped'] == 0
 
 
+def test_an_open_segment_is_readable_up_to_the_frame_before_the_latest(tmp_path):
+    """A stepped world sends nothing after its episode ends, and a harness may copy a step's artifacts before the
+    reset closes the segment: the open file must already hold the episode (it lacked 4-8 s at 5 Hz)."""
+    import shutil
+    stream = VideoStream(tmp_path, 'overview', 5., encoder_path())
+    pixels = [bytes([20 * i % 256, 40, 200 - 5 * i]) * (64 * 48) for i in range(30)]
+    for i, frame in enumerate(pixels):
+        stream.submit(i * 200_000_000, 64, 48, frame)
+        time.sleep(.02)  # within the 16-frame queue
+    deadline = time.monotonic() + 20
+    while time.monotonic() < deadline and sum(s['frames'] for s in stream.snapshot()['segments']) < 30:
+        time.sleep(.05)
+    time.sleep(.5)
+    shutil.copy(tmp_path / 'overview.mp4', tmp_path / 'copy.mp4')
+    assert int(frames(tmp_path / 'copy.mp4')['nb_read_frames']) >= 29
+    stream.close()
+    assert int(frames(tmp_path / 'overview.mp4')['nb_read_frames']) == 30
+
+
 def test_encoder_failure_is_reported(tmp_path):
     stream = VideoStream(tmp_path, 'overview', 10., '/bin/false')
     stream.submit(0, 16, 16, bytes(16 * 16 * 3))
