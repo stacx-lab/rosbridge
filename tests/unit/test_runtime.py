@@ -1,5 +1,7 @@
 """Backend conformance and shared timing without ROS, MuJoCo or ABC."""
-from concurrent.futures import Future, ThreadPoolExecutor
+from concurrent.futures import Future, ThreadPoolExecutor, TimeoutError as FutureTimeout
+import threading
+import time
 
 import pytest
 
@@ -125,6 +127,28 @@ def test_terminal_tick_completes_due_waits_then_fails_others():
     future = wait(runtime, .1)
     runtime.drain()
     assert zero.result().success and not future.result().success
+
+
+def test_every_wait_at_or_after_the_end_states_the_world_time_of_the_end():
+    """A worker tells an early end (the goal held) from its time limit by the world time of the end; the reply never
+    states the outcome. Pending waits keep the 'episode ended during wait' words workers' code looks for."""
+    runtime, _ = world(max_steps=3)
+    early = wait(runtime, .1)
+    runtime.drain()
+    runtime.tick()
+    assert early.result().message == "ok" and early.result().success
+    due, late = wait(runtime, .2), wait(runtime, 1.)
+    finish(runtime)
+    assert due.result().message == "ok; the episode ended at world time 0.30 s" and due.result().success
+    assert late.result().message == "episode ended during wait; the episode ended at world time 0.30 s"
+    assert not late.result().success and late.result().time_s == pytest.approx(.3)
+    after, zero = wait(runtime, .5), wait(runtime, 0.)
+    runtime.drain()
+    assert after.result().message == "the episode ended at world time 0.30 s" and not after.result().success
+    assert after.result().time_s == pytest.approx(.3) and after.result().waited_s == 0.
+    assert zero.result().message == "ok; the episode ended at world time 0.30 s" and zero.result().success
+    for result in (due, late, after, zero):
+        assert "success" not in result.result().message and "fail" not in result.result().message
 
 
 def test_realtime_runs_without_waits_and_wait_does_not_add_extra_ticks():
@@ -286,3 +310,51 @@ def test_a_world_stopped_by_an_error_records_it(tmp_path, monkeypatch):
     assert pending.result().message == "runtime stopped"  # all a worker sees
     outcome, = [json.loads(line) for line in (tmp_path / 'episode-results.jsonl').read_text().splitlines()]
     assert (outcome['reason'], outcome['error']) == ('stopped', "WorkerError: native worker exited (exit -9)")
+
+
+class SlowTerminal(ToyBackend):
+    """A terminal step that blocks its thread until released, as a cooking transition did (~130 s of wall
+    time in one step while 268 macro particles were replaced one at a time, each rebuilding OmniGibson's physics views)."""
+    def __init__(self, terminal, release):
+        self.terminal, self.release, self.entered = terminal, release, threading.Event()
+        super().__init__()
+
+    def step(self, action):
+        if self.steps + 1 == self.terminal:
+            self.entered.set()
+            self.release.wait()
+        super().step(action)
+        self.done = self.success = self.steps >= self.terminal
+
+
+def test_a_wait_queued_behind_a_slow_terminal_step_gets_the_end_time():
+    """A client that gave up on its wait during a long step finds out on its next wait when the episode ended."""
+    release, stop, ready, holder = threading.Event(), threading.Event(), threading.Event(), {}
+
+    def owner():  # the world node's main loop
+        holder["runtime"] = runtime = WorldRuntime(SlowTerminal(3, release), "stepped", lambda reset: None)
+        ready.set()
+        while not stop.is_set():
+            runtime.drain()
+            if not runtime.tick():
+                runtime.drain(runtime.idle_s())
+
+    thread = threading.Thread(target=owner, daemon=True)
+    thread.start()
+    assert ready.wait(5)
+    runtime = holder["runtime"]
+    try:
+        first = wait(runtime, 1.)
+        assert runtime.sim.entered.wait(5)
+        with pytest.raises(FutureTimeout):
+            first.result(timeout=.2)  # the client's own timeout fires while the step runs
+        second = wait(runtime, .1)
+        time.sleep(.1)
+        assert not second.done()
+        release.set()
+        assert first.result(timeout=5).message == "episode ended during wait; the episode ended at world time 0.30 s"
+        assert second.result(timeout=5).message == "the episode ended at world time 0.30 s"
+    finally:
+        release.set()
+        stop.set()
+        thread.join(5)

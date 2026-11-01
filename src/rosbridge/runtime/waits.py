@@ -3,6 +3,12 @@ from dataclasses import dataclass
 import math
 
 
+def ended(time_s):
+    """How a wait states that the episode has ended: the world time at the end, which a worker compares with the
+    episode's time limit to tell an early end (a stop on success) from running out of time; never the outcome."""
+    return f"the episode ended at world time {time_s:.2f} s"
+
+
 @dataclass(frozen=True)
 class WaitResult:
     success: bool
@@ -30,9 +36,9 @@ class WaitScheduler:
         if not math.isfinite(duration_s) or duration_s < 0:
             complete(WaitResult(False, "duration_s must be finite and nonnegative", 0., time_s))
         elif duration_s == 0:
-            complete(WaitResult(True, "ok", 0., time_s))
+            complete(WaitResult(True, f"ok; {ended(time_s)}" if done else "ok", 0., time_s))
         elif done:
-            complete(WaitResult(False, "episode is done", 0., time_s))
+            complete(WaitResult(False, ended(time_s), 0., time_s))
         else:
             # Integer deadlines avoid accumulated floating-point drift. Move one ULP
             # toward zero so e.g. 0.3 / 0.1 does not accidentally request an extra tick.
@@ -48,8 +54,8 @@ class WaitScheduler:
         for wait in self._pending:
             reached = step >= wait.end_step
             if reached or done:
-                wait.complete(WaitResult(reached, "ok" if reached else "episode ended during wait",
-                                         max(0., time_s - wait.start_s), time_s))
+                message = ("ok" if reached else "episode ended during wait") + (f"; {ended(time_s)}" if done else "")
+                wait.complete(WaitResult(reached, message, max(0., time_s - wait.start_s), time_s))
             else:
                 remaining.append(wait)
         self._pending = remaining

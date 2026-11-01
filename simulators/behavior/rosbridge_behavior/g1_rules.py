@@ -134,6 +134,7 @@ def rules():
     """Every rule-bearing value with the words its text must contain (imports the world's command buffer). Texts are
     compared with their whitespace collapsed."""
     from rosbridge.core.commands import TRAJECTORY_MAX_S, VELOCITY_TIMEOUT_S
+    from rosbridge.runtime.waits import ended
 
     low, high = (f"{v:.2f}" for v in PELVIS_LIMITS)
     clipped = "A target beyond a joint's limits is clipped to the limit" if CLIP else "A target beyond a joint's limits"
@@ -168,6 +169,7 @@ def rules():
         Rule("HEADING_PRECISION_RAD", "base.description", f"Heading can be set to about {HEADING_PRECISION_RAD:g} rad"),
         Rule("NORMAL_TILT_DEG", "base.description", f"Normal postures stay within about {NORMAL_TILT_DEG:g} degrees"),
         Rule("HEIGHTS", "head_camera.description", "pelvis/floor gives heights above the floor"),
+        Rule("WAIT_END", "world.operations.wait.description", ended(0.).replace("0.00", "T")),
         Rule("WAIST_AT_060", "torso.description",
              f"with the pelvis at 0.60 a 0.52 target reaches only {WAIST_AT_060[0]:.2f}-{WAIST_AT_060[1]:.2f}"),
         *(Rule("WAIST_SQUAT", "torso.description", f"{target:g} at {low:.2f} to {high:.2f}")
