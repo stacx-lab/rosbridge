@@ -51,6 +51,52 @@ def test_targets_within_a_rounding_tolerance_of_a_limit_are_clipped():
     assert commands.action(2.).tolist() == [.78, 0.]
 
 
+def test_a_clipping_layout_clips_targets_beyond_a_limit_and_reports_them():
+    """With clip, joint targets, trajectory points and twists beyond a limit act at the limit instead of being
+    refused whole; in-limit targets are untouched and nothing is reported."""
+    groups = (CommandGroup("base", (0, 1, 2), (-.5,) * 3, (.5,) * 3, velocity=True),
+              CommandGroup("torso", (3, 4), (-2.6, -.52), (2.6, .52)))
+    names = ("vx", "vy", "wz", "waist_yaw", "waist_pitch")
+    commands = CommandBuffer(ActionLayout(names, groups, clip=True), [0.] * 5)
+    assert commands.set_group("torso", [.3, .6]) == {"waist_pitch": (.6, .52)}
+    assert commands.action(0).tolist() == [0., 0., 0., .3, .52]
+    assert commands.set_trajectory("torso", 0, [1., 2.], [[-.1, .2], [-3., -.9]]) == {"waist_yaw": (-3., -2.6),
+                                                                                         "waist_pitch": (-.9, -.52)}
+    assert commands.action(2.).tolist() == [0., 0., 0., -2.6, -.52]
+    assert commands.set_group("base", [.8, 0., -.1], time_s=3.) == {"vx": (.8, .5)}
+    assert commands.action(3.).tolist() == [.5, 0., -.1, -2.6, -.52]
+    assert commands.set_group("torso", [.1, .52 + 1e-12]) == {}  # within the rounding tolerance: not reported
+    with pytest.raises(CommandError):
+        commands.set_group("torso", [float("nan"), 0.])  # malformed targets are still refused
+    with pytest.raises(CommandError, match="outside"):
+        CommandBuffer(ActionLayout(names, groups), [0.] * 5).set_group("torso", [.3, .6])
+    actions = []
+    for clip in (False, True):  # in-limit commands give the same actions either way
+        b = CommandBuffer(ActionLayout(names, groups, clip=clip), [0.] * 5)
+        assert b.set_group("base", [.5, -.2, .1], time_s=0.) == b.set_group("torso", [.2, .52 + 1e-4]) == {}
+        assert b.set_trajectory("torso", .1, [.3, .7], [[2.6, -.1], [-.4, -.52 - 1e-4]]) == {}
+        actions.append([b.action(t).tobytes() for t in np.arange(0., 1.2, .02)])
+    assert actions[0] == actions[1]
+
+
+def test_trajectory_conversion_ignores_named_measured_joints():
+    """A trajectory echoing a group's joint state names its measured joints too; their positions are dropped."""
+    msg = SimpleNamespace(
+        joint_names=["pelvis_pitch", "pelvis_height", "pelvis_roll"],
+        header=SimpleNamespace(stamp=SimpleNamespace(sec=0, nanosec=0)),
+        points=[SimpleNamespace(positions=[.4, .5, .01], time_from_start=SimpleNamespace(sec=2, nanosec=0))])
+    ignored = ("pelvis_pitch", "pelvis_roll")
+    assert trajectory(msg, ["pelvis_height"], ignored) == (None, [2.], [[.5]])
+    with pytest.raises(ValueError):
+        trajectory(msg, ["pelvis_height"])  # only declared measured joints may be named
+    msg.joint_names = ["pelvis_pitch", "pelvis_pitch", "pelvis_height"]
+    with pytest.raises(ValueError):
+        trajectory(msg, ["pelvis_height"], ignored)
+    msg.joint_names, msg.points[0].positions = ["pelvis_roll"], [.01]
+    with pytest.raises(ValueError):
+        trajectory(msg, ["pelvis_height"], ignored)  # the commanded joints must all be named
+
+
 @pytest.mark.parametrize("indices,lower,upper", [
     ((0, 0), (-1, -1), (1, 1)), ((1,), (-1,), (1,)),
     ((0,), (2,), (1,)), ((0,), (float("nan"),), (1,)),

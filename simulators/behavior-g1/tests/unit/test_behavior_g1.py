@@ -162,6 +162,7 @@ def test_g1_channels_command_the_lower_body_through_the_policy_and_the_rest_dire
     assert positions[:3].tolist() == [1., 2., .5] and positions[3] == pytest.approx(.75)  # pelvis 0.8, floor 0.05
     assert positions[4] == names.index("waist_yaw_joint")
     assert layout.joint_state("pelvis")[0] == ["pelvis_height", "pelvis_pitch", "pelvis_roll"]
+    assert layout.clip  # a target beyond a limit acts at the limit: a refusal is silent to a topic publisher
     assert len(positions) == len(layout.joint_names) + 2 and positions[-2:].tolist() == pytest.approx([0, 0])
     command = np.zeros(len(layout.joint_names))
     command[:4] = .2, 0., .1, .45

@@ -228,8 +228,10 @@ class G1Sharpa:
         if order != ["trunk", "arm_left", "gripper_left", "arm_right", "gripper_right"]:
             raise ValueError(f"unexpected G1 controllers: {order}")
         # GR00T pitches the pelvis forward as it lowers (about 6 degrees at 0.62 m, 27 below 0.40): the pelvis device
-        # reports that tilt from the yaw-only base frame, so frames on the pelvis can follow it.
-        return ActionLayout(tuple(channels), tuple(groups), measured=(("pelvis", ("pelvis_pitch", "pelvis_roll")),))
+        # reports that tilt from the yaw-only base frame, so frames on the pelvis can follow it. Targets beyond a limit
+        # are clipped to it: a refused command is silent to a worker, which publishes on a topic.
+        return ActionLayout(tuple(channels), tuple(groups), measured=(("pelvis", ("pelvis_pitch", "pelvis_roll")),),
+                            clip=True)
 
     def reset(self, episode):
         """A fresh lower-body policy that stands the G1 still before the episode starts."""

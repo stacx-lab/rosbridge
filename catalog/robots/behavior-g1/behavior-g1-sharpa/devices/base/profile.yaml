@@ -11,7 +11,8 @@ operations:
     description: Body velocity in base/base axes as linear.x (vx), linear.y (vy), angular.z
       (wz), in m/s and rad/s within the declared bounds; other fields must be zero. The body
       follows the latest twist and stops 0.5 s of world time after the last one, so re-send
-      to keep moving; out-of-range twists are ignored, so verify with odometry.
+      to keep moving. A component beyond its bound is clipped to it; a twist with other nonzero
+      fields is ignored, so verify with odometry.
     transport: topic
     direction: input
     endpoint: /base/velocity

@@ -34,12 +34,17 @@ class ActionLayout:
 
     measured names joints a group reports in its joint state but never
     commands, as (group, joint names) pairs; their positions and velocities
-    follow the action channels in state(), in this order.
+    follow the action channels in state(), in this order. A command may name
+    them too; they are ignored.
+
+    clip: targets outside a group's limits are clipped to them (and the
+    clipping reported) instead of refused.
     """
 
     joint_names: tuple[str, ...]
     groups: tuple[CommandGroup, ...]
     measured: tuple[tuple[str, tuple[str, ...]], ...] = ()
+    clip: bool = False
 
     def __post_init__(self):
         if not self.joint_names or not all(self.joint_names):

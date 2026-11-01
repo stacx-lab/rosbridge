@@ -181,6 +181,10 @@ position targets. Physics runs at GR00T's 200 Hz. Commands:
   pelvis tilt from that level frame, `pelvis_pitch` and `pelvis_roll` (read-only; about
   26 degrees forward in a full squat, and several degrees while standing as the body
   balances the arms and waist), which the rig puts on TF as `pelvis/pelvis`.
+- A G1 target beyond a joint's limits, in a joint target or a trajectory point, and a
+  twist component beyond its bound act at the limit: the world clips them (and logs it)
+  instead of refusing the command, which a client publishing on a topic would not see.
+  A command may also name the pelvis's read-only tilt joints, which are ignored.
 - `left_arm`, `right_arm` (7 joints) and `left_hand`, `right_hand` (22 joints) take
   absolute joint positions on position drives. Grasping is physical by default;
   `ROSBRIDGE_GRASPING=assisted` selects OmniGibson's assisted grasping, as the BEHAVIOR

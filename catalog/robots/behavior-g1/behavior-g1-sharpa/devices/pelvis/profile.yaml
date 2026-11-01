@@ -10,7 +10,7 @@ operations:
     description: Measured pelvis_height, the pelvis above the floor in metres, with its vertical velocity, then
       the measured pelvis_pitch and pelvis_roll, the pelvis's tilt from the level base frame in radians (positive
       pitch leans forward) with their rates, and the world-clock acquisition stamp. The tilt is read-only; commands
-      name pelvis_height alone. Do not infer motion completion from a sent command.
+      set pelvis_height alone. Do not infer motion completion from a sent command.
     transport: topic
     direction: output
     endpoint: /pelvis/joint_state
@@ -21,11 +21,12 @@ operations:
       durability: transient_local
     timeout_s: 10
   joint_target:
-    description: Trajectory of pelvis_height in metres (0.20 to 0.78), timed from receipt by strictly increasing
+    description: Trajectory of pelvis_height in metres (0.20 to 0.78); pelvis_pitch and pelvis_roll may be
+      named too and are ignored. Timed from receipt by strictly increasing
       time_from_start and finishing within 120 seconds; velocities, accelerations and effort must be empty. A
       zero header stamp selects now; a nonzero stamp must not start in the past. Points are absolute heights,
-      linearly interpolated at the native control period. Replacement clears pending references; invalid
-      trajectories are ignored, so verify measured joint_state.
+      linearly interpolated at the native control period. Replacement clears pending references. A height beyond
+      0.20 to 0.78 is clipped to it; other invalid trajectories are ignored, so verify measured joint_state.
     transport: topic
     direction: input
     endpoint: /pelvis/joint_target

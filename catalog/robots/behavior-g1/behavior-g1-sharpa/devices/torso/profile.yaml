@@ -24,8 +24,8 @@ operations:
       strictly increasing time_from_start and finishing within 120 seconds; velocities, accelerations
       and effort must be empty. A zero header stamp selects now; a nonzero stamp must not
       start in the past. Points are absolute native joint positions, linearly interpolated
-      at the native control period. Replacement clears pending references; invalid trajectories
-      are ignored, so verify measured joint_state.
+      at the native control period. Replacement clears pending references. A target beyond a joint's limits
+      is clipped to the limit; other invalid trajectories are ignored, so verify measured joint_state.
     transport: topic
     direction: input
     endpoint: /torso/joint_target
