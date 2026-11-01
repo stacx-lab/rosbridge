@@ -165,20 +165,27 @@ class G1Sharpa:
                 "controller_config": {part: self._controller(joints) for part, joints in parts.items()}}
 
     def configure(self, robot):
+        import omnigibson as og
         import torch
 
         robot.sensors[self.cameras["head_camera"]].horizontal_aperture = HEAD_HORIZONTAL_APERTURE
-        # OmniGibson makes every link below a moving joint weightless, as ideal gravity
-        # compensation. GR00T balances a body with weight: gravity acts on the pelvis, legs and
-        # torso, while the arms and hands stay compensated, as RoboEnv's SIMPLE G1 compensates
-        # its arms.
-        for name, link in robot.links.items():
-            if name not in self.arm_links:
-                link.enable_gravity()
+        self.weigh(robot)
+        # Gravity is set through physics views, and a simulator restart drops it: a reset whose scene restore adds or
+        # removes a particle system or an object (one a transition made, such as cooked popcorn or a diced onion)
+        # stops and plays the simulator, after which the weightless legs could not stand and every reset failed.
+        og.sim.add_callback_on_play(name=f"{NAME}_weight", callback=lambda: self.weigh(robot))
         # Stand in GR00T's default posture with open hands.
         robot.reset_joint_pos = torch.tensor([self.pose.get(name, 0.) for name in robot.dof_names_ordered])
         if robot.grasping_mode == "assisted":
             assisted_grasping(robot, self.hands)
+
+    def weigh(self, robot):
+        """OmniGibson makes every link below a moving joint weightless, as ideal gravity compensation. GR00T balances a
+        body with weight: gravity acts on the pelvis, legs and torso, while the arms and hands stay compensated, as
+        RoboEnv's SIMPLE G1 compensates its arms."""
+        for name, link in robot.links.items():
+            if name not in self.arm_links:
+                link.enable_gravity()
 
     def start_pose(self, pose):
         """The pelvis, the robot's root, above the floor-level start pose at standing height."""
