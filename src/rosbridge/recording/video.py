@@ -105,13 +105,17 @@ class VideoStream:
             self.segments.append(self.segment)
         log = self._files.enter_context((self.directory / f'{stem}.ffmpeg.log').open('wb'))
         self.journal = self._files.enter_context((self.directory / f'{stem}.frames.jsonl').open('x'))
+        # The file stays readable while the segment is open, up to the frame before the latest: no encoder lookahead
+        # or B-frames (zerolatency), a fragment per frame, flushed at once. A stepped world sends nothing after its
+        # episode ends, and a harness may copy the file before the reset that closes the segment (to score the
+        # step, for example); x264's lookahead and keyframe fragments held back 4-8 s there.
         command = [self.executable, '-hide_banner', '-loglevel', 'error', '-nostdin', '-n',
                    '-f', 'rawvideo', '-pixel_format', 'rgb24', '-video_size', f'{width}x{height}',
                    '-framerate', str(self.fps), '-i', 'pipe:0', '-an', '-c:v', 'libx264',
-                   '-preset', 'veryfast', '-crf', str(self.crf), '-threads', '2',
+                   '-preset', 'veryfast', '-tune', 'zerolatency', '-crf', str(self.crf), '-threads', '2',
                    '-vf', 'pad=ceil(iw/2)*2:ceil(ih/2)*2', '-pix_fmt', 'yuv420p',
-                   '-g', str(max(1, round(self.fps * 2))),
-                   '-movflags', '+frag_keyframe+empty_moov+default_base_moof', str(path)]
+                   '-g', str(max(1, round(self.fps * 2))), '-flush_packets', '1',
+                   '-movflags', '+frag_keyframe+frag_every_frame+empty_moov+default_base_moof', str(path)]
         process = subprocess.Popen(command, stdin=subprocess.PIPE,
                                    stdout=subprocess.DEVNULL, stderr=log)
         with self._lock:
