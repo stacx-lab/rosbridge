@@ -57,7 +57,10 @@ launched with, and a reset reloads the instance in the live environment (seconds
 A reset that fails after the reload starts leaves the episode done until a reset
 succeeds.
 
-Episode records add BEHAVIOR's partial credit, `goal_satisfied` of `goal_total` grounded goal
+Every episode's reset first restores the whole scene as it was loaded, then applies
+the instance: an instance holds only the task's own objects, so anything else a client
+moved, opened or switched on would otherwise carry into the next episode. Episode
+records add BEHAVIOR's partial credit, `goal_satisfied` of `goal_total` grounded goal
 predicates.
 
 ## Native worker

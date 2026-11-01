@@ -97,6 +97,10 @@ class Episode:
         # Physics views must exist before the first load reads or restores robot joint state.
         og.sim.update_handles()
         self.lights = None
+        # The whole scene as it was loaded: every reset starts from it. An instance restores only the task's own
+        # objects, and load() makes the result the scene's initial state, so without this anything else a worker
+        # moved, opened or switched on (a faucet, another machine, a cabinet door) carried into the next episode.
+        self.pristine, self.loaded = self.env.scene.save(as_dict=True), False
 
     def load(self, seed):
         """Load public test instance seed % 20, as the evaluator's load_batch does."""
@@ -112,6 +116,10 @@ class Episode:
         seed_everything(seed)
         instance = TEST_INSTANCE_IDS[seed % NUM_PUBLIC_TEST_INSTANCES]
         env, robot, task, scene = self.env, self.robot, self.env.task, self.env.scene
+        if self.loaded:
+            scene.restore(scene_file=self.pristine)
+            og.sim.update_handles()
+        self.loaded = True
         # The instance restores only the base pose; joints, controllers and grasps start clean.
         robot.reset()
         name = task.get_cached_activity_scene_filename(
