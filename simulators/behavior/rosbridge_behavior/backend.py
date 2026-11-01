@@ -113,6 +113,9 @@ class BehaviorSim:
             self.max_steps = self.episode.max_steps
         self.done = True
         self.episode.load(seed)
+        # The evaluator's TaskMetric takes the goal options' satisfaction here, after the instance loads and before
+        # the policy acts; its partial credit counts only what was not already satisfied.
+        self.initial_goal_options = self.episode.env.task.get_goal_option_satisfaction(0)
         self.embodiment.reset(self.episode)
         self.episode.origin = self.episode.base_pose()
         self.seed, self.steps, self.done = seed, 0, False
@@ -141,12 +144,20 @@ class BehaviorSim:
         return self.embodiment.state(self.episode)
 
     def outcome_extra(self):
-        """BEHAVIOR's own partial credit for the episode record: the activity's grounded goal predicates that hold
-        now, out of all of them (the evaluator's success score)."""
+        """Partial credit for the episode record.
+
+        q_score is the evaluator's (TaskMetric): 1 on success, else the largest fraction, over the goal's grounded
+        options (quantifiers expanded, one literal per object), of literals that hold now and did not hold at the
+        episode start. goal_satisfied of goal_total counts the goal's top-level conditions that hold now (a forall over
+        six objects is one condition), including any that held from the start."""
+        from omnigibson.metrics.task_metric import compute_q_score
+
         task = self.episode.env.task
         _, status = task.compiled_task.check_goal(lambda name, *entities: task._evaluate_predicate(0, name, *entities))
         satisfied = len(status["satisfied"])
-        return {"goal_satisfied": satisfied, "goal_total": satisfied + len(status["unsatisfied"])}
+        q_score = compute_q_score(self.success, task.get_goal_option_satisfaction(0), self.initial_goal_options)
+        return {"goal_satisfied": satisfied, "goal_total": satisfied + len(status["unsatisfied"]),
+                "q_score": float(q_score)}
 
     def step(self, action):
         if self.done:
