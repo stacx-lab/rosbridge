@@ -94,6 +94,21 @@ def test_squats_on_the_pelvis_height_command_and_stands_back_up(sim):
     assert sim.native("link_pose", "pelvis")[2, 2] > .9  # upright again
 
 
+def test_waist_follows_pitch_and_roll_targets_while_balancing(sim):
+    """GR00T realizes about half the torso pitch and roll it is given; the embodiment doubles them so the measured
+    waist follows the device's targets."""
+    target = sim.state()[0]
+    target[channels(sim, "base")] = 0.
+    torso = channels(sim, "torso")
+    for index, angle in ((2, .3), (1, .3)):
+        target[torso] = 0.
+        target[torso[index]] = angle
+        assert run(sim, target, 3.) < FALL_M
+        assert sim.state()[0][torso[index]] == pytest.approx(angle, abs=.07)
+    target[torso] = 0.
+    assert run(sim, target, 2.) < FALL_M
+
+
 def test_arms_and_hands_track_joint_targets_while_balancing(sim):
     target = sim.state()[0]
     target[channels(sim, "base")] = 0.

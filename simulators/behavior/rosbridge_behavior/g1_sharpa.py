@@ -26,6 +26,11 @@ VELOCITY_LIMIT = 0.5
 # 0.20-0.74; the policy squats to 0.20 without falling and stands back up in one command. It does not walk below
 # about 0.65.
 PELVIS_LIMITS = (.20, .78)
+# GR00T's lower-body policy drives the waist itself from the torso orientation it is given, and realizes about half of
+# the pitch and roll (its own waist targets match the measured joints, so it is the policy's choice, not drive
+# tracking) while tracking yaw. Doubling pitch and roll before the policy makes the measured waist follow the device's
+# targets (0.3 -> 0.34, 0.5 -> 0.51 pitch; standing and walking stay balanced); yaw is passed as is.
+TORSO_GAIN = {"yaw": 1., "roll": 2., "pitch": 2.}
 HEAD_RESOLUTION = 720
 HEAD_HORIZONTAL_APERTURE = 40.  # the evaluator's R1Pro head optics
 POLICIES = "policy/GR00T-WholeBodyControl-Balance.onnx,policy/GR00T-WholeBodyControl-Walk.onnx"
@@ -250,7 +255,9 @@ class G1Sharpa:
         frame = rotation(quaternion)
         # MuJoCo's free joint, which GR00T observes, reports angular velocity in the body frame.
         angular = frame.T @ values(robot.get_angular_velocity())
-        self.policy.set_metric_command(command[:3], command[3], torso_rpy(*targets["torso"]))
+        yaw, roll, pitch = targets["torso"]
+        self.policy.set_metric_command(command[:3], command[3], torso_rpy(
+            TORSO_GAIN["yaw"] * yaw, TORSO_GAIN["roll"] * roll, TORSO_GAIN["pitch"] * pitch))
         self.policy.set_observation({
             "q": q[self.body], "dq": dq[self.body],
             "floating_base_pose": np.r_[values(position), w, x, y, z],

@@ -164,12 +164,14 @@ def test_g1_channels_command_the_lower_body_through_the_policy_and_the_rest_dire
     command = np.zeros(len(layout.joint_names))
     command[:4] = .2, 0., .1, .45
     command[list(groups["left_hand"].indices)] = .5
+    command[list(groups["torso"].indices)] = .05, 0., .1  # yaw, roll, pitch: GR00T gets pitch and roll doubled
     native = embodiment.action(episode, command)
     assert native.shape == (15 + 7 + 22 + 7 + 22,)
     np.testing.assert_allclose(native[:15], np.arange(15) / 100., atol=1e-7)
     assert (native[22:44] == .5).all() and not native[44:].any()
     (_, velocity, height, rpy), (_, observation) = embodiment.policy.calls
-    assert velocity == pytest.approx([.2, 0., .1]) and height == .45 and rpy == (0., 0., 0.)
+    assert velocity == pytest.approx([.2, 0., .1]) and height == .45
+    np.testing.assert_allclose(rpy, torso_rpy(.05, 0., .2), atol=1e-12)
     assert observation["q"].tolist() == [names.index(joint) for joint in g1_model.BODY]
     np.testing.assert_allclose(observation["floating_base_pose"][3:], [np.cos(.25), 0, 0, np.sin(.25)])
     np.testing.assert_allclose(observation["floating_base_vel"][3:], [0, 0, 2], atol=1e-12)
