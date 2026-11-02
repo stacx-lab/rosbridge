@@ -40,10 +40,18 @@ TOGGLE_HOLD_S = .15  # object_states/toggle.py m.CAN_TOGGLE_SECONDS: a finger on
 # dataset_object.py: every revolute and prismatic joint of a dataset object (doors, drawers, lids) gets a drive of
 # stiffness 0 and damping only, so nothing springs back (a native probe: released fridge doors stay put)
 FURNITURE_JOINT_STIFFNESS = 0.
+# dataset_object.py also gives each of those joints PhysX's joint friction coefficient (constants.py: revolute 0.2,
+# prismatic 0.3), which PhysX applies to the joint's load, so the force that starts a door, drawer or lid moving grows
+# with the part's weight (the measured forces are below).
+FURNITURE_JOINT_FRICTION = (.2, .3)  # revolute, prismatic
 
 # Measured (native probes and the measurement files) -------------------------------------------------------------------
 WALK_MIN_PELVIS = .70  # no gait below a measured pelvis of ~0.68 m (native probes)
-PUSH_STEP_N = (20, 30)  # 30 N on the torso for 1 s: the body steps 0.36-0.56 m and turns (environment-limits)
+# A steady horizontal force at the hands (arms forward at about 1.07 m, held 2 s, standing;
+# furniture_forces.json "hands"): PUSH_STEP_N[0] pushing them back or [1] pulling them forward makes the body step away
+# (the next lower force tried did not, pulling); a steady PULL_FALL_N pull made it fall. (30 N on the torso for 1 s:
+# steps of 0.36-0.56 m.)
+PUSH_STEP_N, PULL_FALL_N = (10, 20), 30
 FLEXION_JOINTS = 16  # the Sharpa hand's 22 joints less its 6 abduction joints (_AA)
 # Native probes (turning_on_radio, collision geometry at the live physics poses): floor reach, reach envelope and
 # stand-off, squat shift and heading, postures.
@@ -64,6 +72,92 @@ WAIST_SQUAT = {0.: (-.39, -.16), .3: (.08, .18), .52: (.15, .25)}
 # (reach_envelope.json: IK targets 0.95 and 1.1 m, measured in the simulator).
 WAIST_REACH_M = {0.: .50, .3: .60, .52: .66}
 WAIST_REACH_AT_M = (.95, 1.15)
+# Furniture under OmniGibson's friction (furniture_forces.json; constant horizontal forces held 1 s at the handle with
+# the robot held still; force ramps along a sliding door's track;
+# hand pulls with GR00T). Held for 1 s at the handle, a hinged furniture door of DOOR_TURN_N[i][0]
+# to [i][1] kg turns 0.3 rad with [i][2] to [i][3] N (every measured door in a band; a handle point within 0.15 m of an
+# upright hinge, where the force grows as the lever shrinks, is left out); a drawer comes out 5 cm with DRAWER_PULL_N; a room
+# door of ROOM_DOOR_TURN_N[i][:2] kg needs [i][2:] N; an 18 kg sliding door starts along its track at SLIDING_DOOR_N[0]
+# and slides 0.1 m in 1 s with [1].
+DOOR_TURN_N = ((0, 1, 2, 5), (1, 4, 7, 20), (4, 7, 30, 50))
+DRAWER_PULL_N = (7, 15)
+ROOM_DOOR_TURN_N = ((7, 8.5, 30, 30), (9.5, 10.5, 30, 50), (11, 15, 80, 80))
+SLIDING_DOOR_N = (23, 80)
+# A heavy room door pulled toward the robot by a held handle (physical pinch or assisted attachment): the most it turned
+# while the robot walked backward, and while the arm pulled in (degrees).
+DOOR_PULL_DEG = (.4, 19)
+# Walking chest-first (forearms tucked, 0.25 m/s commanded, heading held) into a closed room door that swings away from
+# the robot (30 s): doors of CHEST_PUSH[0]-[1] kg reached 30 degrees in [2]-[3] s.
+CHEST_PUSH = (10, 15, 15, 29)
+# Parts on level hinges whose weight turns them: released part-way open, they fell open or shut within 3 s.
+LEVEL_HINGE_FALLS = ("oven", "dishwasher", "grill", "car")
+
+
+def _handle_rows(forces):
+    """One row per door joint: where two probes measured the same joint, the one with the finer force grid."""
+    best = {}
+    for row in forces["handle"]:
+        key = (row["task"], row["object"], row["joint"])
+        if key not in best or len(row["grid_N"]) > len(best[key]["grid_N"]):
+            best[key] = row
+    return list(best.values())
+
+
+def _span(values):
+    values = list(values)
+    return (min(values), max(values))
+
+
+def _furniture_doors(forces):
+    """Per stated weight band: the forces that turned the hinged furniture doors (not room doors) measured in it."""
+    rows = [(r["mass_kg"], r["turn_0.3_1s_N"]) for r in _handle_rows(forces) if r["type"].startswith("Revolute")
+            and r["kind"] not in ("room door", "garage door") and r["turn_0.3_1s_N"]
+            and (r["lever_m"] >= .15 or r["kind"].endswith("(level hinge)"))]
+    bands = tuple((lo, hi, *_span(f for m, f in rows if lo <= m < hi)) for lo, hi, _, _ in DOOR_TURN_N)
+    uncovered = [m for m, _ in rows if not any(lo <= m < hi for lo, hi, _, _ in DOOR_TURN_N)]
+    return bands + ((("not covered by a stated band", uncovered),) if uncovered else ())
+
+
+def _room_doors(forces):
+    """Per stated weight band (kg, to the nearest 0.5): the weights and forces of the room doors measured in it (handle
+    rows; the edge rows, whose free edge is within a few cm of a room door's handle)."""
+    rows = [(r["mass_kg"], r["turn_0.3_1s_N"]) for r in _handle_rows(forces) if r["kind"] == "room door" and r["turn_0.3_1s_N"]]
+    rows += [(r["mass"], r["force_0.3rad_1s_N"]) for r in forces["edge"] if "mass" in r]
+    bands = []
+    for lo, hi, _, _ in ROOM_DOOR_TURN_N:
+        seen = [(round(mass * 2) / 2, force) for mass, force in rows if lo <= round(mass * 2) / 2 <= hi]
+        bands.append((*_span(m for m, _ in seen), *_span(f for _, f in seen)))
+    uncovered = [m for m, _ in rows if not any(lo <= round(m * 2) / 2 <= hi for lo, hi, _, _ in ROOM_DOOR_TURN_N)]
+    return tuple(bands) + ((("not covered by a stated band", uncovered),) if uncovered else ())
+
+
+def _sliding(forces):
+    row = next(r for r in forces["edge"] if r["object"].startswith("sliding_door") and "force_0.1m_1s_N" in r)
+    return (int(row["breakaway_N"]), row["force_0.1m_1s_N"])
+
+
+def _hand_step(forces):
+    rows = forces["hands"]
+    push = min(-r["force_N"] for r in rows if r["force_N"] < 0 and r["stepped"])
+    pull = min(r["force_N"] for r in rows if r["force_N"] > 0 and r["stepped"])
+    held = max((r["force_N"] for r in rows if 0 < r["force_N"] and not r["stepped"]), default=0.)
+    return (round(push), round(pull)) if held < pull else ("a pull of", held, "did not step")
+
+
+def _chest_push(forces):
+    rows = [r for r in forces["push"] if r["probe"].startswith("pushdoor_long") and r["posture"] == "chest"]
+    reached = [r for r in rows if r["seconds_to_30deg"] is not None]
+    if len(reached) < len(rows) or not rows:
+        return ("did not reach 30 degrees", [r["door"] for r in rows if r not in reached])
+    return (round(min(r["mass_kg"] for r in rows)), round(max(r["mass_kg"] for r in rows)),
+            round(min(r["seconds_to_30deg"] for r in rows)), round(max(r["seconds_to_30deg"] for r in rows)))
+
+
+def _door_pull(forces):
+    rows = [r for r in forces["pulls"] if r["object"].startswith("door_")]
+    walk = [r["opened_deg"] for r in rows if r["pull"] in ("walk_back",)]
+    arm = [r["opened_deg"] for r in rows if r["pull"] in ("arm_retract", "arm_pull")]
+    return (round(max(walk), 1), round(max(arm)))
 
 
 def _nearest(value, step):
@@ -108,6 +202,18 @@ MEASURED = {
         waist: _nearest(max(g[0] for g in points), .01) for waist, points in _standing_reach(envelope).items()}),
     "WAIST_REACH_AT_M": (("reach_envelope.json",), lambda envelope: (lambda z: (_nearest(min(z), .05), _nearest(max(z), .05)))(
         [g[2] for points in _standing_reach(envelope).values() for g in points])),
+    "DOOR_TURN_N": (("furniture_forces.json",), _furniture_doors),
+    "DRAWER_PULL_N": (("furniture_forces.json",), lambda f: _span(
+        r["move_0.05_1s_N"] for r in _handle_rows(f) if r["kind"] == "drawer")),
+    "ROOM_DOOR_TURN_N": (("furniture_forces.json",), _room_doors),
+    "SLIDING_DOOR_N": (("furniture_forces.json",), _sliding),
+    "DOOR_PULL_DEG": (("furniture_forces.json",), _door_pull),
+    "PUSH_STEP_N": (("furniture_forces.json",), _hand_step),
+    "CHEST_PUSH": (("furniture_forces.json",), _chest_push),
+    "PULL_FALL_N": (("furniture_forces.json",), lambda f: round(min(r["force_N"] for r in f["hands"] if r["force_N"] > 0 and r["fell"]))),
+    "LEVEL_HINGE_FALLS": (("furniture_forces.json",), lambda f: tuple(
+        part for part in LEVEL_HINGE_FALLS if any(part in r["object"] and max(map(abs, r["drift_after_3s_deg_from"].values()))
+                                                  >= 10. for r in f["level"]))),
 }
 
 
@@ -117,6 +223,12 @@ class Rule(NamedTuple):
     name: str
     place: str
     phrase: str
+
+
+def _bands(bands):
+    """'30 N at 7-8.5 kg, 30-50 N at 9.5-10.5 kg and 80 N at 11-15 kg'"""
+    said = [(f"{f0:g}" if f0 == f1 else f"{f0:g}-{f1:g}") + f" N at {m0:g}-{m1:g} kg" for m0, m1, f0, f1 in bands]
+    return ", ".join(said[:-1]) + " and " + said[-1]
 
 
 def percent(fraction):
@@ -169,7 +281,10 @@ def rules():
         Rule("WALK_DEAD_ZONE", "base.description", f"is below {WALK_DEAD_ZONE:g} takes no step"),
         Rule("WALK_MIN_PELVIS", "base.description", f"pelvis at {WALK_MIN_PELVIS:.2f} m or higher"),
         Rule("WALK_MIN_PELVIS", "pelvis.description", f"walk only with the pelvis at {WALK_MIN_PELVIS:.2f} or higher"),
-        Rule("PUSH_STEP_N", "base.description", f"more than about {PUSH_STEP_N[0]}-{PUSH_STEP_N[1]} N"),
+        Rule("PUSH_STEP_N", "base.description",
+             f"a steady force at the hands of about {PUSH_STEP_N[0]} N pushing them back (pressing on furniture, a door or "
+             f"a wall) or {PUSH_STEP_N[1]} N pulling them forward makes the body step away"),
+        Rule("PULL_FALL_N", "base.description", f"a steady {PULL_FALL_N} N pull made it fall"),
         Rule("FALL_TILT_DEG", "base.description", f"tilted more than {FALL_TILT_DEG:g} degrees from upright"),
         Rule("FALL_UPRIGHT_DEG", "base.description", f"back within {FALL_UPRIGHT_DEG:g} degrees of upright"),
         Rule("FALL_HEIGHT", "base.description", f"below {FALL_HEIGHT:g} m above the floor"),
@@ -190,6 +305,32 @@ def rules():
         Rule("SCENE_EDGE", "world.description",
              "a door may open onto empty space (a room that is not loaded, or the outside), and walking through such a door "
              "drops the robot out of the world"),
+        Rule("FURNITURE_JOINT_FRICTION", "world.description", "resist with a friction that grows with the part's weight"),
+        Rule("DOOR_TURN_N", "world.description",
+             "Held for 1 s at the handle, a door of under {1} kg (most cabinet doors) turns 0.3 rad with about {f0}, one of "
+             "{2}-{3} kg (a fridge or microwave door, a large cabinet door) with {f1} and one of {4}-{5} kg (an oven's "
+             "drop-down door, a large fridge door) with {f2}".format(
+                 *(f"{x:g}" for x in (DOOR_TURN_N[0][0], DOOR_TURN_N[0][1], DOOR_TURN_N[1][0], DOOR_TURN_N[1][1],
+                                       DOOR_TURN_N[2][0], DOOR_TURN_N[2][1])),
+                 **{f"f{i}": f"{b[2]:g}-{b[3]:g} N" for i, b in enumerate(DOOR_TURN_N)})),
+        Rule("DRAWER_PULL_N", "world.description",
+             f"a drawer comes out 5 cm with about {DRAWER_PULL_N[0]:g}-{DRAWER_PULL_N[1]:g} N"),
+        Rule("ROOM_DOOR_TURN_N", "world.description", f"a room door needs about {_bands(ROOM_DOOR_TURN_N)}"),
+        Rule("SLIDING_DOOR_N", "world.description",
+             f"an 18 kg sliding door needs about {SLIDING_DOOR_N[0]:g} N along its track before it moves at all and "
+             f"{SLIDING_DOOR_N[1]:g} N to slide 0.1 m in 1 s"),
+        Rule("PUSH_STEP_N", "world.description",
+             f"a steady {PUSH_STEP_N[0]} N pushing back on its hands or {PUSH_STEP_N[1]} N pulling them forward makes it "
+             f"step away"),
+        Rule("DOOR_PULL_DEG", "world.description",
+             f"turned one at most {DOOR_PULL_DEG[0]:g} degrees as the robot walked backward and {DOOR_PULL_DEG[1]:g} "
+             f"degrees as the arm pulled in"),
+        Rule("CHEST_PUSH", "world.description",
+             f"while one that swings away from the robot opens slowly to a walk into it chest first, forearms tucked (doors "
+             f"of {CHEST_PUSH[0]}-{CHEST_PUSH[1]} kg turned 30 degrees in {CHEST_PUSH[2]}-{CHEST_PUSH[3]} s)"),
+        Rule("LEVEL_HINGE_FALLS", "world.description",
+             "(an oven's or a dishwasher's door, a grill lid, a car's trunk) carry their own weight, so released part-way "
+             "open they can fall open or shut"),
         Rule("HEIGHTS", "pelvis.description", "pelvis/floor, the floor point below the pelvis, gives heights above"),
         Rule("FLOOR_PELVIS_COMMAND", "pelvis.description", f"pelvis command {FLOOR_PELVIS_COMMAND:.2f} or lower"),
         Rule("FLOOR_FORWARD_M", "pelvis.description", f"out to about {FLOOR_FORWARD_M:g} m in front of the pelvis"),

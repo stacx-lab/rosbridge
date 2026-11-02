@@ -97,6 +97,13 @@ def test_upstream_values_match_their_sources():
     joints = source("OmniGibson/omnigibson/objects/dataset_object.py")
     assert [float(v) for v in re.findall(r'drive:(?:linear|angular):physics:stiffness"\)\.Set\(([\d.]+)\)', joints)] == [
         g1_rules.FURNITURE_JOINT_STIFFNESS] * 2
+    # the load-proportional joint friction the furniture forces were measured under (applied to every dataset object)
+    constants = source("OmniGibson/omnigibson/utils/constants.py")
+    assert (float(re.search(r"^DEFAULT_REVOLUTE_JOINT_FRICTION = ([\d.]+)$", constants, re.M)[1]),
+            float(re.search(r"^DEFAULT_PRISMATIC_JOINT_FRICTION = ([\d.]+)$", constants, re.M)[1])) == g1_rules.FURNITURE_JOINT_FRICTION
+    assert "joint.friction = DEFAULT_PRISMATIC_JOINT_FRICTION" in joints and "joint.friction = DEFAULT_REVOLUTE_JOINT_FRICTION" in joints
+    forces = json.loads((MEASUREMENTS / "furniture_forces.json").read_text())
+    assert forces["friction"] == {"revolute": g1_rules.FURNITURE_JOINT_FRICTION[0], "prismatic": g1_rules.FURNITURE_JOINT_FRICTION[1]}
     policy = source("third_party/decoupled_wbc/control/policy/g1_gear_wbc_policy.py")
     assert float(re.search(r"switch_cond = np\.linalg\.norm\(np\.concatenate\(\[synced_navigate_cmd\[:2\], "
                            r"\[vyaw_flag\]\]\)\) < ([\d.]+)", policy)[1]) == g1_rules.WALK_DEAD_ZONE
@@ -104,9 +111,9 @@ def test_upstream_values_match_their_sources():
     assert wbc["height_cmd"] == g1_rules.STANDING_PELVIS
 
 
-def measured(name):
+def measured(name, root=MEASUREMENTS):
     files, derive = g1_rules.MEASURED[name]
-    return derive(*(json.loads((MEASUREMENTS / file).read_text()) for file in files))
+    return derive(*(json.loads((root / file).read_text()) for file in files))
 
 
 def test_measured_values_are_what_their_stored_measurements_show():
@@ -153,4 +160,28 @@ def test_the_world_ends_at_the_loaded_rooms_walls():
     assert edges["summary"]["with_a_door_onto_no_floor"] == sum(1 for a in edges["activities"].values() if a["no_floor_beyond"])
     assert {"PARTIAL_SCENE", "SCENE_EDGE"} <= {rule.name for rule in rules()} and not missing(
         [rule for rule in rules() if rule.name in ("PARTIAL_SCENE", "SCENE_EDGE")])
-
+def test_a_furniture_force_its_file_does_not_support_fails(monkeypatch, tmp_path):
+    # An earlier constant-friction sentence ("5-10 N a room door") is not what OmniGibson's own friction gives.
+    with monkeypatch.context() as patch:
+        patch.setattr(g1_rules, "ROOM_DOOR_TURN_N", ((7, 15, 5, 10),))
+        assert measured("ROOM_DOOR_TURN_N") != g1_rules.ROOM_DOOR_TURN_N
+        assert "ROOM_DOOR_TURN_N" in {rule.name for rule in missing(rules())}
+    # A stored measurement that no longer shows a stated value: every furniture value is recomputed from the file.
+    forces = json.loads((MEASUREMENTS / "furniture_forces.json").read_text())
+    for row in forces["handle"]:
+        for key in ("turn_0.3_1s_N", "move_0.05_1s_N"):
+            row[key] = row[key] and row[key] + 1
+    for row in forces["edge"] + forces["pulls"]:
+        for key in ("breakaway_N", "force_0.3rad_1s_N", "force_0.1m_1s_N", "opened_deg"):
+            if key in row:
+                row[key] += 2
+    for row in forces["hands"]:
+        row["force_N"] *= 2
+    for row in forces["push"]:
+        row["seconds_to_30deg"] = row["seconds_to_30deg"] and row["seconds_to_30deg"] + 5
+    (tmp_path / "furniture_forces.json").write_text(json.dumps(forces))
+    furniture = [name for name, (files, _) in g1_rules.MEASURED.items() if files == ("furniture_forces.json",)
+                 and name != "LEVEL_HINGE_FALLS"]
+    assert len(furniture) >= 5
+    for name in furniture:
+        assert measured(name, tmp_path) != getattr(g1_rules, name), name
