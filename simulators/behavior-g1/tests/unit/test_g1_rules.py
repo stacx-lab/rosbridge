@@ -124,6 +124,10 @@ def test_a_measured_value_its_file_does_not_support_fails(monkeypatch):
     assert "WAIST_SQUAT" in {rule.name for rule in missing(rules())}
     monkeypatch.setattr(g1_rules, "FLOOR_WRIST_M", .1)
     assert measured("FLOOR_WRIST_M") != g1_rules.FLOOR_WRIST_M
+    # "Leaning adds little reach" is wrong: standing, the settled waist adds 0.1-0.16 m.
+    monkeypatch.setattr(g1_rules, "WAIST_REACH_M", {0.: .50, .3: .52, .52: .53})
+    assert measured("WAIST_REACH_M") != g1_rules.WAIST_REACH_M
+    assert "WAIST_REACH_M" in {rule.name for rule in missing(rules())}
 
 
 def test_the_depth_text_states_the_profiles_own_intrinsics():

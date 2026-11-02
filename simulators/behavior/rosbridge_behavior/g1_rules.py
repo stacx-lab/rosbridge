@@ -59,10 +59,21 @@ NORMAL_TILT_DEG = 33  # the largest pelvis tilt of normal postures (deep-squat a
 # forward instead (reach2_postures.json, reach_conditions.json).
 WAIST_AT_060 = (.20, .34)
 WAIST_SQUAT = {0.: (-.39, -.16), .3: (.08, .18), .52: (.15, .25)}
+# Standing (pelvis command 0.74), the forward reach of the palm (the grasp point between thumb and fingers) from the
+# point midway between the ankles, per waist pitch target once the waist has settled, at hand heights WAIST_REACH_AT_M
+# (reach_envelope.json: IK targets 0.95 and 1.1 m, measured in the simulator).
+WAIST_REACH_M = {0.: .50, .3: .60, .52: .66}
+WAIST_REACH_AT_M = (.95, 1.15)
 
 
 def _nearest(value, step):
     return round(round(value / step) * step, 6)
+
+
+def _standing_reach(envelope):
+    """Per waist pitch target, standing: the palm points measured for the 0.95 and 1.1 m targets."""
+    return {p["waist_pitch_cmd"]: [r["grasp"] for r in p["reach"] if r["z_target"] in (.95, 1.1)]
+            for p in envelope["postures"] if p["pelvis_cmd"] == STANDING_PELVIS and p["waist_pitch_cmd"] in WAIST_REACH_M}
 
 
 def _waist_squat(postures, conditions):
@@ -93,6 +104,10 @@ MEASURED = {
         [p["waist"] for c in postures["conditions"] if c["pelvis_cmd"] == .6 and c["waist_cmd"] == .52
          for p in c["postures"]])),
     "WAIST_SQUAT": (("reach2_postures.json", "reach_conditions.json"), _waist_squat),
+    "WAIST_REACH_M": (("reach_envelope.json",), lambda envelope: {
+        waist: _nearest(max(g[0] for g in points), .01) for waist, points in _standing_reach(envelope).items()}),
+    "WAIST_REACH_AT_M": (("reach_envelope.json",), lambda envelope: (lambda z: (_nearest(min(z), .05), _nearest(max(z), .05)))(
+        [g[2] for points in _standing_reach(envelope).values() for g in points])),
 }
 
 
@@ -183,6 +198,12 @@ def rules():
              f"with the pelvis at 0.60 a 0.52 target reaches only {WAIST_AT_060[0]:.2f}-{WAIST_AT_060[1]:.2f}"),
         *(Rule("WAIST_SQUAT", "torso.description", f"{target:g} at {low:.2f} to {high:.2f}")
           for target, (low, high) in WAIST_SQUAT.items()),
+        Rule("WAIST_REACH_M", "torso.description",
+             f"the palm reaches {WAIST_REACH_M[0.]:.2f} m ahead of the point midway between the ankles with the waist at 0, "
+             f"{WAIST_REACH_M[.3]:.2f} m at 0.3 and {WAIST_REACH_M[.52]:.2f} m at 0.52"),
+        Rule("WAIST_REACH_AT_M", "torso.description",
+             f"at hand heights of {WAIST_REACH_AT_M[0]:.2f}-{WAIST_REACH_AT_M[1]:.2f} m"),
+        Rule("WAIST_SETTLED", "torso.description", "once the measured waist pitch has settled at its target"),
         Rule("GRASP_CLOSURE", "instruction.assisted", f"above {percent(GRASP_CLOSURE)} of their closing range"),
         Rule("GRASP_CLOSURE", "instruction.assisted", f"falls back to {percent(GRASP_CLOSURE)} or below"),
         Rule("GRASP_WINDOW_S", "instruction.assisted", f"for {GRASP_WINDOW_S:g} s while the hand is closed"),
