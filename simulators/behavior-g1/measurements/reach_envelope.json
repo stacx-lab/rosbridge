@@ -1,5 +1,5 @@
 {
- "source": "Native probe (turning_on_radio, physical grasping): per posture (pelvis command x waist pitch command, held until settled), the right arm placed by IK at each target height and measured in the simulator; positions in the foot frame (origin the ankle midpoint on the floor, x the heading): grasp = the palm centre between thumb and fingers, tip = the middle fingertip.",
+ "source": "Native probe (turning_on_radio, physical grasping): per posture (pelvis command x waist pitch command; 3 s of settling, the measured waist joint not recorded), the right arm placed at each target height by the configuration FK says reaches farthest forward, held 1.5 s and measured in the simulator; positions in the foot frame (origin the ankle midpoint on the floor, x the heading): grasp = the palm centre between thumb and fingers, tip = the middle fingertip.",
  "task": "turning_on_radio",
  "postures": [
   {
