@@ -1,0 +1,94 @@
+name: gripper
+runtime:
+  domain_id: 0
+  observation: joint_state
+  nodes:
+  - entry: links.py
+    factory: create
+  ready_timeout_s: 30
+operations:
+  joint_state:
+    description: Integrated gripper command, -1 (open) to +1 (closed), stamped at acquisition;
+      Kinex publishes the URDF finger links from it. Fingers reach the commanded opening only
+      when unobstructed.
+    transport: topic
+    direction: output
+    endpoint: /gripper/joint_state
+    type: sensor_msgs/msg/JointState
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: transient_local
+    timeout_s: 10
+  target:
+    description: Integrated gripper command (data) from -1 (open) to +1 (closed). Every
+      control step the controller moves it by 0.2 toward the target while that gets
+      strictly closer, so -1 and +1 are reached exactly within 10 steps. A target persists
+      until replaced or stopped; out-of-range targets are ignored, so verify joint_state.
+    transport: topic
+    direction: input
+    endpoint: /gripper/target
+    type: std_msgs/msg/Float64
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: volatile
+    timeout_s: 10
+  stop:
+    description: Hold the integrated command, keeping any grip on an object.
+    transport: service
+    direction: input
+    endpoint: /gripper/stop
+    type: std_srvs/srv/Trigger
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: volatile
+    timeout_s: 10
+loaded: false
+meta:
+  created_at: '2026-10-24T00:00:00Z'
+  updated_at: '2026-10-24T00:00:00Z'
+type: gripper
+description: Panda parallel two-finger gripper on the arm flange. Fingers close along the
+  gripper base x axis; the TCP is the grip site between the pads and +z approaches.
+  The grip joint is the integrated gripper command, so a closed grip may be stalled
+  on an object; check cameras before assuming a grasp.
+source: introspected
+calibrated_at: null
+method: introspection
+stop:
+  behavior: hold
+  affected_devices:
+  - gripper
+frames:
+  base:
+    translation_m:
+    - 0.0
+    - 0.0
+    - 0.0
+    rotation_xyzw:
+    - 0.0
+    - 0.0
+    - -0.707106781187
+    - 0.707106781187
+    parent: arm:flange
+  tcp:
+    translation_m:
+    - 0.0
+    - 0.0
+    - 0.097
+    rotation_xyzw:
+    - 0.0
+    - 0.0
+    - 0.0
+    - 1.0
+    parent: gripper:base
+model:
+  format: urdf
+  path: gripper.urdf
+  base_link: base_link
+grip:
+  joint: gripper
+  open: -1.0
+  closed: 1.0

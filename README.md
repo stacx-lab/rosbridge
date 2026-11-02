@@ -21,4 +21,5 @@ rosbridge launch abc --execution-mode stepped --record ./recordings/abc
 - [RoboDojo devices, native worker and examples](docs/robodojo.md)
 - [RoboCasa mobile manipulator, assets and examples](docs/robocasa.md)
 - [BEHAVIOR household activities with the R1Pro or a G1 with Sharpa hands](docs/behavior.md)
+- [PSI kitchen: RoboCasa with evidence logging and offline re-rendering](docs/psi-kitchen.md)
 - [Kinex device contract and robot catalog](docs/kinex.md)

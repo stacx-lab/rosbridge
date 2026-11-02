@@ -1,0 +1,57 @@
+diff --git a/robocasa/models/objects/objects.py b/robocasa/models/objects/objects.py
+index 413e8aa..80dfa4d 100644
+--- a/robocasa/models/objects/objects.py
++++ b/robocasa/models/objects/objects.py
+@@ -1,5 +1,5 @@
+ import os
+-import time
++import tempfile
+ import xml.etree.ElementTree as ET
+ 
+ import numpy as np
+@@ -244,25 +244,26 @@ class MJCFObject(MujocoXMLObjectRobocasa):
+         # write modified xml (and make sure to postprocess any paths just in case)
+         xml_str = ET.tostring(root, encoding="utf8").decode("utf8")
+         xml_str = self.postprocess_model_xml(xml_str)
+-        time_str = str(time.time()).replace(".", "_")
+-        new_xml_path = os.path.join(folder, "{}_{}.xml".format(time_str, os.getpid()))
+-        f = open(new_xml_path, "w")
+-        f.write(xml_str)
+-        f.close()
+-
+-        # initialize object with new xml we wrote
+-        super().__init__(
+-            fname=new_xml_path,
+-            name=name,
+-            joints=[dict(type="free", damping="0.0005")],
+-            obj_type="all",
+-            duplicate_collision_geoms=False,
+-            scale=scale,
+-        )
+-
+-        # clean up xml - we don't need it anymore
+-        if os.path.exists(new_xml_path):
+-            os.remove(new_xml_path)
++        # write it to a private temporary folder rather than into the (shared, possibly
++        # read-only) asset folder; asset files stay resolved against the original folder
++        xml_root = ET.fromstring(xml_str)
++        for element in xml_root.findall("./asset/*[@file]"):
++            if not os.path.isabs(element.get("file")):
++                element.set("file", os.path.realpath(os.path.join(folder, element.get("file"))))
++        with tempfile.TemporaryDirectory(prefix="robocasa-object-") as temporary:
++            new_xml_path = os.path.join(temporary, "model.xml")
++            with open(new_xml_path, "w") as f:
++                f.write(ET.tostring(xml_root, encoding="unicode"))
++
++            # initialize object with new xml we wrote
++            super().__init__(
++                fname=new_xml_path,
++                name=name,
++                joints=[dict(type="free", damping="0.0005")],
++                obj_type="all",
++                duplicate_collision_geoms=False,
++                scale=scale,
++            )
+ 
+         self._regions = dict()
+         self._setup_region_dict()

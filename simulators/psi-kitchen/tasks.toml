@@ -1,0 +1,6 @@
+# PSI-Bench kitchen tasks (RoboCasa365 at robocasa 456174f6). split = "target" uses upstream's
+# evaluation split: held-out objects in kitchens 1-10.
+tasks = [
+  { id = "psi-kitchen/open-drawer", robot = "psi-kitchen/panda-omron", native_task = "OpenDrawer", split = "target" },
+  { id = "psi-kitchen/prepare-coffee", robot = "psi-kitchen/panda-omron", native_task = "PrepareCoffee", split = "target" },
+]

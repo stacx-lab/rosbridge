@@ -1,0 +1,32 @@
+# PSI-Bench's kitchen: RoboCasa365 with the PandaOmron, as simulators/robocasa, plus evidence
+# logging (per-step actions and states), offline re-rendering and a reset guard for graded runs.
+name = "psi-kitchen"
+source = "third_party/robocasa"
+source_url = "https://github.com/robocasa/robocasa.git"
+source_revision = "456174f62b89b8fca99eaaf33949c29fec9cfc2a"
+patches = "patches/psi-kitchen"
+python_path = "simulators/psi-kitchen"
+asset_preparer = "rosbridge_psi_kitchen.assets:prepare"
+asset_checker = "rosbridge_psi_kitchen.assets:check_task"
+default_task = "OpenDrawer"
+ros_package = "rosbridge_psi_kitchen"
+environment = "psi-kitchen"
+task_catalog = "tasks.toml"
+
+# RoboCasa365 requires robosuite 1.5.2; the pinned upstream is exported beside it.
+[[nested_sources]]
+path = "robosuite"
+source = "third_party/robocasa-robosuite"
+source_url = "https://github.com/ARISE-Initiative/robosuite"
+source_revision = "5ce6643f3092639d08f7b0f90ed1c6a84f50552c"
+install = ["."]
+
+# The backend's device inventory; catalog rigs must declare exactly these devices.
+[devices]
+base = "locomotion"
+torso = "joint"
+arm = "joint"
+gripper = "gripper"
+camera_left = "rgbd"
+camera_right = "rgbd"
+camera_wrist = "rgbd"

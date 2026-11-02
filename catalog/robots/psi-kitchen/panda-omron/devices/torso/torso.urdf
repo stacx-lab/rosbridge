@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<!-- Omron base lift, mobilebase0_base..mobilebase0_support; top is the support body frame, where the arm is mounted. -->
+<robot name="omron_torso">
+  <link name="base_link"/>
+  <link name="link1"/>
+  <link name="top"/>
+  <joint name="link1_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="link1"/>
+    <origin xyz="-0.05 0 0.5" rpy="0 0 0"/>
+  </joint>
+  <joint name="mobilebase0_joint_torso_height" type="prismatic">
+    <parent link="link1"/>
+    <child link="top"/>
+    <origin xyz="0.05 0 0.2" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="0" upper="0.34" effort="100" velocity="10"/>
+  </joint>
+</robot>
