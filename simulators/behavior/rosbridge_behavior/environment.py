@@ -53,6 +53,72 @@ def boot(simulator):
         rule.ENABLED = False
 
 
+def batch_particle_view_rebuilds():
+    """Rebuild OmniGibson's physics views once per batch of macro particles added or removed, not once per particle.
+
+    MacroPhysicalParticleSystem.add_particle and remove_particle_by_name each call og.sim.update_handles(), which rebuilds
+    every physics view of the scene (a removal twice, once more in og.sim.remove_prim). The cooking rule replaces a
+    system's particles one by one: 268 popcorn particles took one world step 130-177 s of wall time (a
+    worker's wait timed out at the success), and the reset that restores them 72-74 s. Inside a batch (remove_particles,
+    generate_particles' additions, _sync_particles) the rebuilds are deferred and one runs at its end; additions and
+    removals only edit USD, and generate_particles sets the new particles' poses after the rebuild. Measured:
+    cook 154 -> 18 s, reset 72 -> 23 s; success, goal and robot identical; the
+    cooked particles' resting positions differ from the original code's by 5 mm median, as two runs of the original code
+    differ from each other (5.6 mm)."""
+    import contextlib
+
+    import omnigibson as og
+    import omnigibson.utils.transform_utils as T
+    import torch as th
+    from omnigibson.systems.macro_particle_system import MacroParticleSystem, MacroPhysicalParticleSystem
+
+    if getattr(MacroParticleSystem, "_rosbridge_batched", False):
+        return
+
+    @contextlib.contextmanager
+    def one_rebuild():
+        sim = og.sim
+        if "update_handles" in vars(sim):  # already inside a batch
+            yield
+            return
+        pending = []
+        sim.update_handles = lambda: pending.append(True)
+        try:
+            yield
+        finally:
+            del sim.update_handles
+            if pending:
+                sim.update_handles()
+
+    remove, sync = MacroParticleSystem.remove_particles, MacroPhysicalParticleSystem._sync_particles
+
+    def remove_particles(self, idxs, **kwargs):
+        with one_rebuild():
+            return remove(self, idxs, **kwargs)
+
+    def _sync_particles(self, n_particles):
+        with one_rebuild():
+            return sync(self, n_particles)
+
+    def generate_particles(self, positions, orientations=None, scales=None, **kwargs):
+        # MacroParticleSystem.generate_particles, its additions in one batch
+        current_positions, current_orientations = self.get_particles_position_orientation()
+        n_particles = len(positions)
+        orientations = T.random_quaternion(n_particles) if orientations is None else orientations
+        scales = self.sample_scales(n=n_particles) if scales is None else scales
+        positions = th.cat([current_positions, positions], dim=0)
+        orientations = th.cat([current_orientations, orientations], dim=0)
+        with one_rebuild():
+            for scale in scales:
+                self.add_particle(relative_prim_path=f"{self.relative_prim_path}/particles", scale=scale)
+        self.set_particles_position_orientation(positions=positions, orientations=orientations)
+
+    MacroPhysicalParticleSystem.remove_particles = remove_particles
+    MacroPhysicalParticleSystem._sync_particles = _sync_particles
+    MacroParticleSystem.generate_particles = generate_particles
+    MacroParticleSystem._rosbridge_batched = True
+
+
 def no_observations(*args, **kwargs):
     return [{}], [{}]
 
@@ -90,6 +156,7 @@ class Episode:
             self.env = og.Environment(configs=cfg)
         if embodiment.rendering == "on_demand":
             apply_render_settings()  # DLAA; the R1Pro embodiments keep OmniGibson's anti-aliasing
+        batch_particle_view_rebuilds()
         if self.env.num_envs != 1 or len(self.env.scene.robots) != 1:
             raise ValueError("BEHAVIOR episodes hold one scene with one robot")
         self.robot = self.env.scene.robots[0]
