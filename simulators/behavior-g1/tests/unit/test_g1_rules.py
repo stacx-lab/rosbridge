@@ -138,3 +138,19 @@ def test_the_depth_text_states_the_profiles_own_intrinsics():
     said = words(camera["operations"]["depth"]["description"])
     assert f"fx = fy = {k['fx']:g} and cx = cy = {k['cx']:g}" in said
     assert "((u - cx) / fx * z, (v - cy) / fy * z, z)" in said
+
+
+def test_the_world_ends_at_the_loaded_rooms_walls():
+    """The episode loads only the activity's rooms (BEHAVIOR's evaluator: TASK_NAMES_TO_ROOMS), and doors in them open
+    onto empty space: the stored scan of the 100 activities' scenes (scene_edges.json) finds doors with floor on one side
+    and none on the other (a worker walked through one and fell to -27 m)."""
+    environment = (PROJECT / "simulators/behavior/rosbridge_behavior/environment.py").read_text()
+    assert 'cfg["scene"]["load_room_instances"] = TASK_NAMES_TO_ROOMS[task]' in environment
+    edges = json.loads((MEASUREMENTS / "scene_edges.json").read_text())
+    doors = [door for activity in edges["activities"].values() for door in activity["no_floor_beyond"]]
+    assert doors and all(min(s["floor"] for s in door["sides"].values()) == 0 and
+                         max(s["floor"] for s in door["sides"].values()) > 0 for door in doors)
+    assert edges["summary"]["with_a_door_onto_no_floor"] == sum(1 for a in edges["activities"].values() if a["no_floor_beyond"])
+    assert {"PARTIAL_SCENE", "SCENE_EDGE"} <= {rule.name for rule in rules()} and not missing(
+        [rule for rule in rules() if rule.name in ("PARTIAL_SCENE", "SCENE_EDGE")])
+

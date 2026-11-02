@@ -185,6 +185,11 @@ def rules():
         Rule("DOOR_RELEASE", "world.description", "if it moves, part of the robot is touching it"),
         Rule("DOOR_PINCH", "world.description", "a pinch catches only a closed or held door"),
         Rule("DOOR_MOTION", "world.description", "move only along their joint, in one direction from closed"),
+        Rule("PARTIAL_SCENE", "world.description",
+             "Only the rooms the activity uses are loaded, as in BEHAVIOR's own evaluation, and past them there may be no floor"),
+        Rule("SCENE_EDGE", "world.description",
+             "a door may open onto empty space (a room that is not loaded, or the outside), and walking through such a door "
+             "drops the robot out of the world"),
         Rule("HEIGHTS", "pelvis.description", "pelvis/floor, the floor point below the pelvis, gives heights above"),
         Rule("FLOOR_PELVIS_COMMAND", "pelvis.description", f"pelvis command {FLOOR_PELVIS_COMMAND:.2f} or lower"),
         Rule("FLOOR_FORWARD_M", "pelvis.description", f"out to about {FLOOR_FORWARD_M:g} m in front of the pelvis"),
