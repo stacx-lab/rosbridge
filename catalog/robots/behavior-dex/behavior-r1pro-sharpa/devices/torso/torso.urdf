@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<!-- BEHAVIOR R1Pro torso from models/r1pro/urdf/r1pro.urdf: base_link..torso_link4; top is the torso_link4 frame. -->
+<robot name="r1pro_torso">
+  <link name="base_link"/>
+  <link name="link1"/>
+  <link name="link2"/>
+  <link name="link3"/>
+  <link name="top"/>
+  <joint name="torso_joint1" type="revolute">
+    <parent link="base_link"/>
+    <child link="link1"/>
+    <origin xyz="-0.079032 0 0.34265" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-1.1345" upper="1.8326" effort="100" velocity="10"/>
+  </joint>
+  <joint name="torso_joint2" type="revolute">
+    <parent link="link1"/>
+    <child link="link2"/>
+    <origin xyz="0 0 0.4" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-2.7925" upper="2.5307" effort="100" velocity="10"/>
+  </joint>
+  <joint name="torso_joint3" type="revolute">
+    <parent link="link2"/>
+    <child link="link3"/>
+    <origin xyz="0 0.0001005 0.3" rpy="0 0 0"/>
+    <axis xyz="0 -1 0"/>
+    <limit lower="-1.8326" upper="1.5708" effort="100" velocity="10"/>
+  </joint>
+  <joint name="torso_joint4" type="revolute">
+    <parent link="link3"/>
+    <child link="top"/>
+    <origin xyz="0 -0.00010015 0.09962" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-3.0543" upper="3.0543" effort="100" velocity="10"/>
+  </joint>
+</robot>

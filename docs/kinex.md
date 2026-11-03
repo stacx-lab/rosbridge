@@ -30,11 +30,12 @@ normalized value they were trained on. RoboCasa's grip joint `gripper` is robosu
 integrated command, limits [-1, 1] with `open: -1` and `closed: 1`, which its finger
 joints mimic from their actuator ranges. BEHAVIOR's R1Pro grip joint `<side>_gripper`
 is the evaluator's smooth command, limits [-1, 1] with `open: 1` and `closed: -1`. The
-G1's Sharpa hands are `joint` devices: 22 commanded joints each and no tip link.
+Sharpa hands, on the G1 and on the R1Pro of `behavior-dex`, are `joint` devices: 22
+commanded joints each and no tip link.
 
 A base is a Kinex `locomotion` device in the single mode `drive`: `velocity`
 declares the commandable axes in native units (RoboCasa and BEHAVIOR's R1Pro:
-normalized `vx`, `vy`, `wz`; the BEHAVIOR G1: `vx`, `vy`, `wz` in m/s and rad/s within
+normalized `vx`, `vy`, `wz`, also with Sharpa hands; the BEHAVIOR G1: `vx`, `vy`, `wz` in m/s and rad/s within
 GR00T's navigation limits), the base stops 0.5 s of world time after the last twist, and `odometry`
 reports the twist in `<base>/base` with a pose in `<base>/odom` relative to the
 episode start. Its `frames.base` is an unlocalized root; a mobile rig chains its
@@ -65,7 +66,7 @@ from the arm URDF, publishes calibrated mounts and fixed frames such as
 
 `rosbridge robots list` lists every rig. Builders in `tools/robots` measure each
 rig from its simulator (`build_abc.py`, `build_robotwin.py`, `build_robodojo.py`,
-`build_robocasa.py`, `build_behavior.py`, `build_behavior_g1.py`);
+`build_robocasa.py`, `build_behavior.py`, `build_behavior_g1.py`, `build_behavior_dex.py`);
 native geometry tests check the exported profiles with Kinex's own FK against the
 simulator.
 
@@ -77,6 +78,7 @@ simulator.
 | `robocasa/robocasa-panda-omron` | `base` (Omron, locomotion), `torso` (lift), `arm` (Panda, `robot0_joint1..7`), integrated-command `gripper`, RGB-D `camera_left`, `camera_right`, `camera_wrist` | 365 |
 | `behavior/behavior-r1pro` | `base` (holonomic, locomotion), `torso` (`torso_joint1..4`), `left_arm`, `right_arm` (`<side>_arm_joint1..7`), smooth grippers, RGB-D `head_camera` (720²), `left_camera`, `right_camera` (480²) | 100 |
 | `behavior-g1/behavior-g1-sharpa` | `base` (legged, locomotion), `torso` (waist), `left_arm`, `right_arm` (G1, 7 joints), `left_hand`, `right_hand` (Sharpa Wave, 22 joints), RGB-D `head_camera` | 100 |
+| `behavior-dex/behavior-r1pro-sharpa` | `base` (holonomic, locomotion), `torso` (`torso_joint1..4`), `left_arm`, `right_arm` (`<side>_arm_joint1..7`), `left_hand`, `right_hand` (Sharpa Wave, 22 joints, in place of the grippers), RGB-D `head_camera` (720²), `left_camera`, `right_camera` (480², on the backs of the hands) | 100 |
 
 The LIBERO rigs are the same Panda arm and gripper
 with distinct fixed mounts and camera calibration. Each rig directory is a complete

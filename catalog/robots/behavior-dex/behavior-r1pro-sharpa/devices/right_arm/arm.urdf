@@ -1,0 +1,61 @@
+<?xml version="1.0"?>
+<!-- BEHAVIOR R1Pro right arm from r1pro.urdf: right_arm_base_link..right_arm_link7; flange is the link7 frame. -->
+<robot name="r1pro_right_arm">
+  <link name="base_link"/>
+  <link name="link1"/>
+  <link name="link2"/>
+  <link name="link3"/>
+  <link name="link4"/>
+  <link name="link5"/>
+  <link name="link6"/>
+  <link name="flange"/>
+  <joint name="right_arm_joint1" type="revolute">
+    <parent link="base_link"/>
+    <child link="link1"/>
+    <origin xyz="0 -0.0735 0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-4.4506" upper="1.309" effort="100" velocity="10"/>
+  </joint>
+  <joint name="right_arm_joint2" type="revolute">
+    <parent link="link1"/>
+    <child link="link2"/>
+    <origin xyz="0.023988 -0.081265 0" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-3.1416" upper="0.1745" effort="100" velocity="10"/>
+  </joint>
+  <joint name="right_arm_joint3" type="revolute">
+    <parent link="link2"/>
+    <child link="link3"/>
+    <origin xyz="-0.023988 0 -0.1155" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-2.356196" upper="2.356196" effort="100" velocity="10"/>
+  </joint>
+  <joint name="right_arm_joint4" type="revolute">
+    <parent link="link3"/>
+    <child link="link4"/>
+    <origin xyz="0 0.035058 -0.1945" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-2.0944" upper="0.3491" effort="100" velocity="10"/>
+  </joint>
+  <joint name="right_arm_joint5" type="revolute">
+    <parent link="link4"/>
+    <child link="link5"/>
+    <origin xyz="0 -0.035058 -0.095" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-2.356196" upper="2.356196" effort="100" velocity="10"/>
+  </joint>
+  <joint name="right_arm_joint6" type="revolute">
+    <parent link="link5"/>
+    <child link="link6"/>
+    <origin xyz="0 0.028001 -0.16305" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-1.047198" upper="1.047198" effort="100" velocity="10"/>
+  </joint>
+  <joint name="right_arm_joint7" type="revolute">
+    <parent link="link6"/>
+    <child link="flange"/>
+    <origin xyz="0.0295 -0.028001 0" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-1.5708" upper="1.5708" effort="100" velocity="10"/>
+  </joint>
+</robot>

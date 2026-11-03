@@ -1,0 +1,108 @@
+name: left_hand
+runtime:
+  domain_id: 0
+  nodes:
+  - entry: links.py
+    factory: create
+  ready_timeout_s: 30
+operations:
+  joint_state:
+    description: Measured positions of left_thumb_CMC_FE, left_thumb_CMC_AA, left_thumb_MCP_FE,
+      left_thumb_MCP_AA, left_thumb_IP, left_index_MCP_FE, left_index_MCP_AA, left_index_PIP,
+      left_index_DIP, left_middle_MCP_FE, left_middle_MCP_AA, left_middle_PIP, left_middle_DIP,
+      left_ring_MCP_FE, left_ring_MCP_AA, left_ring_PIP, left_ring_DIP, left_pinky_CMC, left_pinky_MCP_FE,
+      left_pinky_MCP_AA, left_pinky_PIP, left_pinky_DIP in radians with velocities and the
+      world-clock acquisition stamp; do not infer motion completion from a sent command.
+    transport: topic
+    direction: output
+    endpoint: /left_hand/joint_state
+    type: sensor_msgs/msg/JointState
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: transient_local
+    timeout_s: 10
+  joint_target:
+    description: Joint trajectory over all 22 hand joints in radians, timed from receipt by
+      strictly increasing time_from_start and finishing within 120 seconds; velocities, accelerations
+      and effort must be empty. A zero header stamp selects now; a nonzero stamp must not
+      start in the past. Points are absolute native joint positions, linearly interpolated
+      at the native control period. Replacement clears pending references; invalid trajectories
+      are ignored, so verify measured joint_state.
+    transport: topic
+    direction: input
+    endpoint: /left_hand/joint_target
+    type: trajectory_msgs/msg/JointTrajectory
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: volatile
+    timeout_s: 10
+  stop:
+    description: Stop hand motion and hold the measured posture.
+    transport: service
+    direction: input
+    endpoint: /left_hand/stop
+    type: std_srvs/srv/Trigger
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: volatile
+    timeout_s: 10
+loaded: false
+meta:
+  created_at: '2026-10-24T00:00:00Z'
+  updated_at: '2026-10-24T00:00:00Z'
+type: joint
+description: Sharpa Wave 22-joint left hand on the left_arm flange, palm toward the body's
+  midline. Geometry is the sibling hand.urdf from the flange to the fingertips, with no single
+  tip link; commands are absolute native joint positions on Sharpa's calibrated position drives,
+  and contact is physical.
+source: introspected
+calibrated_at: null
+method: introspection
+model:
+  format: urdf
+  path: hand.urdf
+  base_link: base_link
+  tip_link: null
+limits: native
+home:
+  left_thumb_CMC_FE: 0.0
+  left_thumb_CMC_AA: 0.0
+  left_thumb_MCP_FE: 0.0
+  left_thumb_MCP_AA: 0.0
+  left_thumb_IP: 0.0
+  left_index_MCP_FE: 0.0
+  left_index_MCP_AA: 0.0
+  left_index_PIP: 0.0
+  left_index_DIP: 0.0
+  left_middle_MCP_FE: 0.0
+  left_middle_MCP_AA: 0.0
+  left_middle_PIP: 0.0
+  left_middle_DIP: 0.0
+  left_ring_MCP_FE: 0.0
+  left_ring_MCP_AA: 0.0
+  left_ring_PIP: 0.0
+  left_ring_DIP: 0.0
+  left_pinky_CMC: 0.0
+  left_pinky_MCP_FE: 0.0
+  left_pinky_MCP_AA: 0.0
+  left_pinky_PIP: 0.0
+  left_pinky_DIP: 0.0
+stop:
+  behavior: hold
+  affected_devices:
+  - left_hand
+frames:
+  base:
+    translation_m:
+    - -0.0295
+    - 0.0
+    - -0.084
+    rotation_xyzw:
+    - 0.707106781187
+    - -0.707106781187
+    - 0.0
+    - 0.0
+    parent: left_arm:flange

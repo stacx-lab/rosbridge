@@ -248,6 +248,7 @@ pixi run -e robodojo-native smoke && pixi run -e robodojo test-ros
 pixi run -e robocasa smoke && pixi run -e robocasa test-ros
 pixi run -e behavior-native smoke && pixi run -e behavior test-ros
 pixi run -e behavior-g1-native smoke && pixi run -e behavior-g1 test-ros
+pixi run -e behavior-dex-native smoke && pixi run -e behavior-dex test-ros
 pixi run -e abc python -m pytest -q tests/integration
 rosbridge demo abc
 rosbridge demo libero --execution-mode realtime
@@ -256,6 +257,7 @@ rosbridge demo robodojo
 rosbridge demo robocasa
 rosbridge demo behavior --timeout 1800
 rosbridge demo behavior-g1 --timeout 1800
+rosbridge demo behavior-dex --timeout 1800
 ```
 
 Kinex-backed checks (rig geometry against each simulator, Kinex client tests)

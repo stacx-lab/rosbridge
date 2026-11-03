@@ -24,7 +24,7 @@ where = ["src"]
 testpaths = ["tests/unit", "simulators/abc/tests/unit", "simulators/libero/tests/unit",
              "simulators/robotwin/tests/unit", "simulators/robodojo/tests/unit",
              "simulators/robocasa/tests/unit", "simulators/behavior/tests/unit",
-             "simulators/behavior-g1/tests/unit"]
+             "simulators/behavior-g1/tests/unit", "simulators/behavior-dex/tests/unit"]
 
 [tool.ruff]
 line-length = 100

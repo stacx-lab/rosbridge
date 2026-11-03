@@ -30,7 +30,6 @@ def native(**options):
 @pytest.fixture(scope="module")
 def sim():
     sim = native(max_steps=90)
-    sim.configure_spectators()
     sim.reset("turning_on_radio", 0)
     yield sim
     sim.close()
@@ -55,12 +54,40 @@ def test_evaluator_period_layout_and_full_resolution_rgbd_cameras(sim):
         image, depth = sim.render(camera), sim.render_depth(camera)
         assert image.shape == (height, width, 3) and image.dtype == np.uint8 and image.std() > 1
         assert depth.shape == (height, width) and depth.dtype == np.float32 and (depth > 0).mean() > .9
-    for view in sim.spectators:
-        assert sim.render_spectator(view.name).shape == (720, 960, 3)
-        assert sim.spectator_intrinsics(view.name)[2:] == (479.5, 359.5)
     after = sim.state()
     np.testing.assert_array_equal(before[0], after[0])
     np.testing.assert_array_equal(before[1], after[1])
+
+
+def test_reads_render_once_after_a_step_with_omnigibsons_antialiasing_and_current_frames(sim):
+    settings = sim.native("render_settings")
+    assert settings["/rtx/post/aa/op"] != 4 and settings["/rtx/post/dlss/execMode"] == 0  # DLSS Performance
+    sim.reset("turning_on_radio", 0)
+    start = sim.native("render_count")
+    sim.render("head_camera")
+    assert sim.native("render_count") == start  # env.reset rendered the reset state
+    target = sim.state()[0]
+    target[channels(sim, "base")] = 0., 0., 1.
+    for _ in range(3):
+        sim.step(target)  # unread steps do not render
+    assert sim.native("render_count") == start
+    depths = []
+    for step in range(4):
+        sim.step(target)
+        before = sim.state()
+        for camera in sim.cameras:
+            sim.render(camera), sim.render_depth(camera)
+        np.testing.assert_array_equal(before[0], sim.state()[0])  # renders do not step physics
+        depths.append(sim.render_depth("head_camera"))
+        # The first read after unread steps has no recent history; later reads render once.
+        assert sim.native("render_count") == start + 3 + step
+    # Turning, consecutive frames differ; more renders of the same state change nothing, so
+    # each read's frame showed the state it was read in, not the previous step's.
+    assert np.median(np.abs(depths[-1] - depths[-2])) > 1e-3
+    sim.native("_render")
+    sim.native("__setattr__", "_frames", {})
+    assert np.median(np.abs(sim.render_depth("head_camera") - depths[-1])) < 1e-3
+    sim.reset("turning_on_radio", 0)  # the next checks start still, facing ahead
 
 
 def test_normalized_base_smooth_grippers_and_joint_targets(sim):
@@ -131,12 +158,22 @@ def test_rig_matches_native_chains_grippers_and_cameras(tmp_path, sim):
 
 
 @pytest.mark.parametrize("task", SELECTED)
-def test_catalog_task_loads_and_steps(task):
+def test_catalog_task_loads_steps_and_records(task):
     sim = native()
     try:
+        sim.configure_spectators()
         sim.reset(task, 0)
         assert not sim.done and sim.max_steps > 0
+        start = sim.native("render_count")
         sim.step(sim.state()[0])
         assert sim.steps == 1 and np.isfinite(sim.state()[0]).all() and sim.reward in (0., 1.)
+        sim.step(sim.state()[0])
+        # Recording renders every step; the reset settled the spectators at their new pose.
+        assert sim.native("render_count") == start + 2
+        for view in sim.spectators:
+            assert sim.render_spectator(view.name).shape == (720, 960, 3)
+            assert sim.spectator_intrinsics(view.name)[2:] == (479.5, 359.5)
+        sim.render("head_camera")
+        assert sim.native("render_count") == start + 3  # one render serves every view
     finally:
         sim.close()

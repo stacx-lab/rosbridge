@@ -1,5 +1,5 @@
 # One git patch filename per line, applied in order to .runtime/behavior (and
-# .runtime/behavior-g1). Ported from RoboEnv:
+# .runtime/behavior-g1 and .runtime/behavior-dex). Ported from RoboEnv:
 # 0001 OmniGibson's dataset-recording and LeRobot wrappers become optional imports and extras;
 # 0002 OMNIGIBSON_RENDER_GPU selects Isaac's Vulkan renderer apart from the CUDA physics device.
 0001-optional-workflows.patch

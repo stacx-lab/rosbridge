@@ -84,7 +84,8 @@ class Episode:
         self.task, self.embodiment = task, embodiment
         with capture_launch_settings():
             self.env = og.Environment(configs=cfg)
-        apply_render_settings()
+        if embodiment.rendering == "on_demand":
+            apply_render_settings()  # DLAA; the R1Pro embodiments keep OmniGibson's anti-aliasing
         if self.env.num_envs != 1 or len(self.env.scene.robots) != 1:
             raise ValueError("BEHAVIOR episodes hold one scene with one robot")
         self.robot = self.env.scene.robots[0]
@@ -161,8 +162,8 @@ class Episode:
     def step(self, action):
         """Advance one action period on the native action vector; returns native success.
 
-        Physics steps exactly as the evaluator's; cameras render on demand (render_for_capture),
-        not every period.
+        Physics steps exactly as the evaluator's but without rendering, so it does not depend on
+        whether cameras are read; reads render afterwards (BehaviorSim._render).
         """
         import omnigibson as og
         import torch
