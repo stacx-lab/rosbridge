@@ -17,7 +17,7 @@ VELOCITY_LIMIT = .5  # m/s and rad/s: GR00T's keyboard navigation limits for vx,
 # The pelvis height command (m above the floor) GR00T's balance policy takes. Its own teleoperation clamps it to
 # 0.20-0.74; the policy squats to 0.20 without falling and stands back up in one command.
 PELVIS_LIMITS = (.20, .78)
-CLIP = True  # targets beyond a limit act at the limit (the G1 layout clips; a refusal is silent to a topic publisher)
+CLIP = True  # targets beyond a limit act at the limit (the G1 layout clips; a refusal is reported only in the next wait's reply)
 SELF_COLLISIONS = False  # the robot's links do not collide with each other (OmniGibson robot config)
 # A hand applies a grasp while its flexion joints (all but the abduction joints, _AA) are commanded past this fraction
 # of their closing range on average; it releases as soon as the average is back at or below it.
@@ -269,6 +269,7 @@ def rules():
     compared with their whitespace collapsed."""
     from rosbridge.core.commands import TRAJECTORY_MAX_S, VELOCITY_TIMEOUT_S
     from rosbridge.runtime.waits import ended
+    from rosbridge.runtime.world import END_CAUSES, REFUSED
 
     low, high = (f"{v:.2f}" for v in PELVIS_LIMITS)
     clipped = "A target beyond a joint's limits is clipped to the limit" if CLIP else "A target beyond a joint's limits"
@@ -340,6 +341,12 @@ def rules():
         Rule("NORMAL_TILT_DEG", "base.description", f"Normal postures stay within about {NORMAL_TILT_DEG:g} degrees"),
         Rule("HEIGHTS", "head_camera.description", "pelvis/floor gives heights above the floor"),
         Rule("WAIT_END", "world.operations.wait.description", ended(0.).replace("0.00", "T")),
+        Rule("END_CAUSE", "world.operations.wait.description", f"world time T s because {END_CAUSES['success']}"),
+        Rule("END_CAUSE", "world.operations.wait.description", f"because {END_CAUSES['max_steps']}"),
+        Rule("REFUSED", "world.operations.wait.description", f'after "{REFUSED}"'),
+        Rule("REFUSED", "world.description", "a refused one is named, with its reason, in the reply to the next world wait"),
+        Rule("REFUSED", "base.operations.velocity.description",
+             "the reply to the next world wait names the device and the reason"),
         Rule("WAIST_AT_060", "torso.description",
              f"with the pelvis at 0.60 a 0.52 target reaches only {WAIST_AT_060[0]:.2f}-{WAIST_AT_060[1]:.2f}"),
         *(Rule("WAIST_SQUAT", "torso.description", f"{target:g} at {low:.2f} to {high:.2f}")
@@ -368,6 +375,9 @@ def rules():
     for device in ("torso", "pelvis", "left_arm", "right_arm", "left_hand", "right_hand"):
         out.append(Rule("TRAJECTORY_MAX_S", f"{device}.operations.joint_target.description",
                         f"finishing within {TRAJECTORY_MAX_S:g} seconds"))
+        out.append(Rule("REFUSED", f"{device}.operations.joint_target.description",
+                        "(one without points, say) is refused (nothing of it is executed), and the reply to the next "
+                        "world wait names the device and the reason"))
         if device != "pelvis":
             out.append(Rule("CLIP", f"{device}.operations.joint_target.description", clipped))
     return out

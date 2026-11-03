@@ -12,7 +12,7 @@ operations:
       (wz), in m/s and rad/s within the declared bounds; other fields must be zero. The body
       follows the latest twist and stops 0.5 s of world time after the last one, so re-send
       to keep moving. A component beyond its bound is clipped to it; a twist with other nonzero
-      fields is ignored, so verify with odometry.
+      fields or a non-finite value is refused (nothing of it is executed), and the reply to the next world wait names the device and the reason; verify with odometry.
     transport: topic
     direction: input
     endpoint: /base/velocity

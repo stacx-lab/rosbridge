@@ -99,9 +99,10 @@ class SimNode(Node):
             def complete(result):
                 self.pending_wait = None
                 ready.set_result(result)
-            self.pending_wait = complete
+            # The reply states why a finished episode ended, and the commands refused since the previous reply.
+            self.pending_wait = self.world.reporting(complete)
             self.world.waits.admit(request.duration_s, self.world.time_s, self.world.steps,
-                                   self.sim.period, self.sim.done, complete)
+                                   self.sim.period, self.world.end_cause(), self.pending_wait)
         try:
             await self.request(admit)
             result = await ready

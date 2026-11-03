@@ -1,6 +1,6 @@
 """Main-thread episode execution, request admission and observation ordering."""
 from concurrent.futures import Future
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 import json
 import os
 from pathlib import Path
@@ -13,8 +13,15 @@ from .waits import WaitScheduler
 
 
 # Per-episode counts of device commands the world clipped to a limit or refused (malformed, or the episode is done);
-# both are silent to a topic publisher, so the episode record carries them.
+# the episode record carries them. A topic publisher gets no reply, so a refusal (device, reason) is also stated in the
+# reply of the next world wait (WorldRuntime.reporting).
 COUNTERS = ("commands_clipped", "commands_refused")
+# How a wait states why the episode ended, per the reason its record gives (WorldRuntime.end_cause).
+END_CAUSES = {"success": "the goal was reached", "max_steps": "the time limit was reached",
+              "episode_done": "the simulator ended it"}
+# A wait reply names at most this many kinds of refusal (device and reason), then counts the rest.
+REFUSALS_LISTED = 5
+REFUSED = "refused, so not executed"  # how a wait reply introduces them
 
 
 @dataclass(frozen=True)
@@ -49,6 +56,7 @@ class WorldRuntime:
         self.time_s, self.steps = self.sim.time_s, self.sim.steps
         self._judged = False
         self.counters = dict.fromkeys(COUNTERS, 0)
+        self.refusals = {}  # (device, reason) -> [count, world time of the first]; until a wait reply states them
         self.commands = CommandBuffer(self.sim.layout, self.sim.state()[0][:len(self.sim.layout.joint_names)])
         self.pacer.reset(self.sim.period)
 
@@ -86,6 +94,41 @@ class WorldRuntime:
         self._assert_owner()
         self.counters[name] += 1
 
+    def refuse(self, device, reason):
+        """A device refused a command (device: its name and operation, e.g. right_arm.joint_target): count it for the
+        record and keep it for the next wait's reply; owner thread."""
+        self.count("commands_refused")
+        entry = self.refusals.setdefault((device, str(reason)), [0, self.time_s])
+        entry[0] += 1
+
+    def refusal_note(self):
+        """The refusals not yet stated, as a wait reply states them (empty if none); clears them."""
+        if not self.refusals:
+            return ""
+        items, self.refusals = list(self.refusals.items()), {}
+        parts = [f"{device}: {reason} (" + (f"at world time {first:.2f} s" if count == 1 else
+                                            f"{count} commands, the first at world time {first:.2f} s") + ")"
+                 for (device, reason), (count, first) in items[:REFUSALS_LISTED]]
+        rest = sum(count for _, (count, _) in items[REFUSALS_LISTED:])
+        if rest:
+            parts.append(f"and {rest} more")
+        return f"{REFUSED}: " + "; ".join(parts)
+
+    def reporting(self, complete):
+        """complete() for a wait whose reply also states the commands refused since the previous reply; owner thread."""
+        def report(result):
+            note = self.refusal_note()
+            complete(replace(result, message=f"{result.message}; {note}") if note else result)
+        return report
+
+    def _end_reason(self):
+        limit = self.sim.max_steps
+        return "success" if self.sim.success else "max_steps" if limit and self.steps >= limit else "episode_done"
+
+    def end_cause(self):
+        """Why the episode ended, as a wait states it (None while it runs); stated only once it is over."""
+        return END_CAUSES[self._end_reason()] if self.sim.done else None
+
     def drain(self, timeout=0.):
         self._assert_owner()
         try:
@@ -118,18 +161,16 @@ class WorldRuntime:
             self.commands.close()
             self._record_terminal()
         # Publications precede completion, including a successful terminal tick.
-        self.waits.settle(self.time_s, self.steps, self.sim.done)
+        self.waits.settle(self.time_s, self.steps, self.end_cause())
         return True
 
     def _outcome(self, reason=None):
-        limit = self.sim.max_steps
         # A backend may add its own measures of the episode (BEHAVIOR: the goal predicates that hold).
         extra = self.sim.outcome_extra() if hasattr(type(self.sim), "outcome_extra") else {}
         return {"episode": self.episode, "task": self.sim.task, "seed": self.sim.seed,
                 "step": self.steps, "time_s": self.time_s, "reward": self.sim.reward,
                 "success": bool(self.sim.success), "done": bool(self.sim.done),
-                "reason": reason or ("success" if self.sim.success else "max_steps"
-                           if limit and self.steps >= limit else "episode_done"), **self.counters, **extra}
+                "reason": reason or self._end_reason(), **self.counters, **extra}
 
     def _record_terminal(self, reason=None, *, result=None, error=None):
         if self._judged:

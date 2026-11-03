@@ -25,7 +25,8 @@ operations:
       and effort must be empty. A zero header stamp selects now; a nonzero stamp must not
       start in the past. Points are absolute native joint positions, linearly interpolated
       at the native control period. Replacement clears pending references. A target beyond a joint's limits
-      is clipped to the limit; other invalid trajectories are ignored, so verify measured joint_state.
+      is clipped to the limit; any other invalid trajectory
+      (one without points, say) is refused (nothing of it is executed), and the reply to the next world wait names the device and the reason; verify measured joint_state.
     transport: topic
     direction: input
     endpoint: /torso/joint_target

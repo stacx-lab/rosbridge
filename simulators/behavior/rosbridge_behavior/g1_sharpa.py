@@ -262,7 +262,7 @@ class G1Sharpa:
             raise ValueError(f"unexpected G1 controllers: {order}")
         # GR00T pitches the pelvis forward as it lowers (about 6 degrees at 0.62 m, 27 below 0.40): the pelvis device
         # reports that tilt from the yaw-only base frame, so frames on the pelvis can follow it. Targets beyond a limit
-        # are clipped to it: a refused command is silent to a worker, which publishes on a topic.
+        # are clipped to it: a worker publishes on a topic and learns of a refusal only from its next wait's reply.
         return ActionLayout(tuple(channels), tuple(groups), measured=(("pelvis", ("pelvis_pitch", "pelvis_roll")),),
                             clip=CLIP)
 

@@ -17,6 +17,15 @@ class CommandError(ValueError):
     pass
 
 
+def check_trajectory_span(times):
+    """A device trajectory needs a point and must end within TRAJECTORY_MAX_S of its start; each refusal names its own
+    cause (an empty trajectory used to be refused as one that ends too late)."""
+    if not times:
+        raise CommandError("trajectory has no points")
+    if times[-1] > TRAJECTORY_MAX_S:
+        raise CommandError(f"trajectory must end within {TRAJECTORY_MAX_S:g} seconds")
+
+
 class Trajectory:
     """Piecewise-linear joint targets; starts from the target held on arrival."""
 

@@ -129,26 +129,116 @@ def test_terminal_tick_completes_due_waits_then_fails_others():
     assert zero.result().success and not future.result().success
 
 
-def test_every_wait_at_or_after_the_end_states_the_world_time_of_the_end():
-    """A worker tells an early end (the goal held) from its time limit by the world time of the end; the reply never
-    states the outcome. Pending waits keep the 'episode ended during wait' words workers' code looks for."""
+def cause_wait(runtime, duration):
+    """A wait admitted as the world node admits it: with the episode's end cause and the refusal report."""
+    result = Future()
+    runtime.submit(lambda: runtime.waits.admit(duration, runtime.time_s, runtime.steps, runtime.sim.period,
+                                               runtime.end_cause(), runtime.reporting(result.set_result)))
+    return result
+
+
+def test_every_wait_at_or_after_the_end_states_the_world_time_and_cause_of_the_end():
+    """Every wait at or after the end states the world time of the end and why it ended (here the time limit); no
+    reply says anything about the goal before the end. Pending waits keep the 'episode ended during wait' words workers'
+    code looks for."""
     runtime, _ = world(max_steps=3)
-    early = wait(runtime, .1)
+    early = cause_wait(runtime, .1)
     runtime.drain()
     runtime.tick()
-    assert early.result().message == "ok" and early.result().success
-    due, late = wait(runtime, .2), wait(runtime, 1.)
+    assert early.result().message == "ok" and early.result().success and runtime.end_cause() is None
+    due, late = cause_wait(runtime, .2), cause_wait(runtime, 1.)
     finish(runtime)
-    assert due.result().message == "ok; the episode ended at world time 0.30 s" and due.result().success
-    assert late.result().message == "episode ended during wait; the episode ended at world time 0.30 s"
+    end = "the episode ended at world time 0.30 s because the time limit was reached"
+    assert due.result().message == f"ok; {end}" and due.result().success
+    assert late.result().message == f"episode ended during wait; {end}"
     assert not late.result().success and late.result().time_s == pytest.approx(.3)
-    after, zero = wait(runtime, .5), wait(runtime, 0.)
+    after, zero = cause_wait(runtime, .5), cause_wait(runtime, 0.)
     runtime.drain()
-    assert after.result().message == "the episode ended at world time 0.30 s" and not after.result().success
+    assert after.result().message == end and not after.result().success
     assert after.result().time_s == pytest.approx(.3) and after.result().waited_s == 0.
-    assert zero.result().message == "ok; the episode ended at world time 0.30 s" and zero.result().success
+    assert zero.result().message == f"ok; {end}" and zero.result().success
     for result in (due, late, after, zero):
         assert "success" not in result.result().message and "fail" not in result.result().message
+
+
+class Succeeds(ToyBackend):
+    """Reaches its goal at step 2 and stops there, as a world launched with --stop-on-success does."""
+    def step(self, action):
+        super().step(action)
+        self.success = self.steps >= 2
+        self.done = self.done or self.success
+
+
+def test_an_end_on_the_goal_is_stated_as_such_only_once_the_episode_is_over():
+    runtime, _ = world(max_steps=10)
+    runtime.sim = Succeeds(10)
+    runtime._snapshot_reset()
+    first = cause_wait(runtime, .1)
+    runtime.drain()
+    runtime.tick()
+    assert first.result().message == "ok" and runtime.end_cause() is None  # nothing before the end
+    pending = cause_wait(runtime, 1.)
+    finish(runtime)
+    assert pending.result().message == ("episode ended during wait; the episode ended at world time 0.20 s because the "
+                                        "goal was reached")
+    later = cause_wait(runtime, .1)
+    runtime.drain()
+    assert later.result().message == "the episode ended at world time 0.20 s because the goal was reached"
+    assert runtime.end_cause() == "the goal was reached"
+
+
+def test_a_refused_command_is_named_with_its_reason_in_the_next_wait_reply(tmp_path, monkeypatch):
+    """A topic publisher gets no reply; the world states each refusal (device, reason, world time) in the reply of the
+    next wait, once, and counts it for the episode's record. The wait itself is unaffected."""
+    import json
+    monkeypatch.setenv('ROSBRIDGE_RUN_DIR', str(tmp_path))
+    runtime, _ = world()
+    plain = cause_wait(runtime, 0.)
+    runtime.drain()
+    assert plain.result().message == "ok"
+    runtime.submit(lambda: runtime.refuse("right_arm.joint_target", CommandError("trajectory has no points")))
+    reply = cause_wait(runtime, .1)
+    finish(runtime)
+    assert reply.result().success and reply.result().message == (
+        "ok; refused, so not executed: right_arm.joint_target: trajectory has no points (at world time 0.00 s)")
+    again = cause_wait(runtime, .1)
+    finish(runtime)
+    assert again.result().message == "ok"  # stated once
+    for _ in range(25):
+        runtime.submit(lambda: runtime.refuse("base.velocity", "base target has non-finite values"))
+    for i in range(6):
+        runtime.submit(lambda i=i: runtime.refuse(f"device{i}.joint_target", "trajectory has no points"))
+    many = cause_wait(runtime, 0.)
+    runtime.drain()
+    message = many.result().message
+    assert message.startswith("ok; refused, so not executed: base.velocity: base target has non-finite values "
+                              "(25 commands, the first at world time 0.20 s); device0.joint_target")
+    assert message.endswith("; and 2 more") and "device3" in message and "device4" not in message
+    reset(runtime, 'toy')
+    runtime.drain()
+    runtime.close()
+    outcomes = [json.loads(line) for line in (tmp_path / 'episode-results.jsonl').read_text().splitlines()]
+    assert [o['commands_refused'] for o in outcomes] == [32, 0]
+
+
+def test_a_refusal_reaches_a_pending_wait_and_a_stopped_one():
+    runtime, _ = world()
+    pending = cause_wait(runtime, 1.)
+    runtime.drain()
+    runtime.tick()
+    runtime.refuse("torso.joint_target", "trajectory must end within 120 seconds")
+    finish(runtime)
+    assert pending.result().message == ("ok; refused, so not executed: torso.joint_target: trajectory must end within "
+                                        "120 seconds (at world time 0.10 s)")
+
+
+def test_a_trajectory_without_points_has_its_own_refusal():
+    from rosbridge.core.commands import TRAJECTORY_MAX_S, check_trajectory_span
+    with pytest.raises(CommandError, match="^trajectory has no points$"):
+        check_trajectory_span([])
+    with pytest.raises(CommandError, match=f"^trajectory must end within {TRAJECTORY_MAX_S:g} seconds$"):
+        check_trajectory_span([1., TRAJECTORY_MAX_S + .1])
+    check_trajectory_span([0.5, TRAJECTORY_MAX_S])
 
 
 def test_realtime_runs_without_waits_and_wait_does_not_add_extra_ticks():
@@ -352,8 +442,10 @@ def test_a_wait_queued_behind_a_slow_terminal_step_gets_the_end_time():
         time.sleep(.1)
         assert not second.done()
         release.set()
-        assert first.result(timeout=5).message == "episode ended during wait; the episode ended at world time 0.30 s"
-        assert second.result(timeout=5).message == "the episode ended at world time 0.30 s"
+        assert first.result(timeout=5).message == ("episode ended during wait; the episode ended at world time 0.30 s "
+                                                   "because the goal was reached")
+        assert second.result(timeout=5).message == "the episode ended at world time 0.30 s"  # admitted as done=True
+        assert runtime.end_cause() == "the goal was reached"
     finally:
         release.set()
         stop.set()

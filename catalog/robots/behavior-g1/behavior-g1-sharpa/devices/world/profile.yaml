@@ -19,11 +19,14 @@ operations:
   wait:
     description: Advance or await duration_s of world time (finite and nonnegative). Zero
       is an observation barrier. Waits are sequential; one requested while another is pending
-      is rejected. A terminal episode rejects further progression without exposing benchmark
-      results; it states the world time of the end instead (a pending wait answers "episode ended
-      during wait; the episode ended at world time T s", a later one "the episode ended at world
-      time T s"), so an end before the episode's time limit tells an early end from running out of
-      time. A world step that runs a cooking, slicing or dicing transition can take minutes of wall
+      is rejected. A terminal episode rejects further progression; a wait at or after the end states
+      the world time of the end and why the episode ended, which is known only then (a pending wait
+      answers "episode ended during wait; the episode ended at world time T s because the goal was
+      reached" or "... because the time limit was reached", a later one "the episode ended at world
+      time T s because ..."). A reply also names each command a device refused since the previous
+      reply, after "refused, so not executed", with the device and operation, the reason and the
+      world time (for example right_arm.joint_target, trajectory has no points); a refused command
+      changes nothing. A world step that runs a cooking, slicing or dicing transition can take minutes of wall
       time while world time stands still; a wait that times out then has not lost the world, so
       wait again.
     transport: service
@@ -68,8 +71,8 @@ type: world
 description: Simulation clock of the BEHAVIOR house. Furniture, objects and the activity's
   BDDL goal are not devices; the robot is not localized in this frame. This device exposes
   no task instructions or evaluator results. Observations (world time, odometry, joint states, camera images and depth)
-  are current and exact, and every command a device accepts is executed, in order; none is dropped (a refused or
-  clipped one is described by its device). Furniture and room doors, drawers and lids move only along their joint,
+  are current and exact, and every command a device accepts is executed, in order; none is dropped (a refused one is
+  named, with its reason, in the reply to the next world wait; a clipped one is described by its device). Furniture and room doors, drawers and lids move only along their joint,
   in one direction from closed (a door turns open on its hinge, typically up to about 1.5 rad; a drawer slides out); a
   push or pull toward the hinge line or past the closed position moves nothing, so a held handle opens a door only by
   moving along the door's arc in the opening direction. They resist with a friction that grows with the part's weight.

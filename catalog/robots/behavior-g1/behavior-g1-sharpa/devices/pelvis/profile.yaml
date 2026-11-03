@@ -26,7 +26,8 @@ operations:
       time_from_start and finishing within 120 seconds; velocities, accelerations and effort must be empty. A
       zero header stamp selects now; a nonzero stamp must not start in the past. Points are absolute heights,
       linearly interpolated at the native control period. Replacement clears pending references. A height beyond
-      0.20 to 0.78 is clipped to it; other invalid trajectories are ignored, so verify measured joint_state.
+      0.20 to 0.78 is clipped to it; any other invalid trajectory
+      (one without points, say) is refused (nothing of it is executed), and the reply to the next world wait names the device and the reason; verify measured joint_state.
     transport: topic
     direction: input
     endpoint: /pelvis/joint_target
