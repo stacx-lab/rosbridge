@@ -137,6 +137,36 @@ def test_a_measured_value_its_file_does_not_support_fails(monkeypatch):
     assert "WAIST_REACH_M" in {rule.name for rule in missing(rules())}
 
 
+def test_an_approach_value_its_file_does_not_support_fails(monkeypatch, tmp_path):
+    # "The arms' home pose does not hinder walking up to furniture" (workers' standoffs of 0.15-0.3 m read as reach
+    # limits): the measurement shows the home-arm walk stopping 0.14-0.29 m short where a raised-arm walk did not.
+    with monkeypatch.context() as patch:
+        patch.setattr(g1_rules, "HOME_WALK_STALL", (0, 15, 0., .02))
+        assert measured("HOME_WALK_STALL") != g1_rules.HOME_WALK_STALL
+        assert "HOME_WALK_STALL" in {rule.name for rule in missing(rules())}
+    # "A waist held at 0.52 leaves the body where it stands": the measurement shows it stepping back.
+    with monkeypatch.context() as patch:
+        patch.setattr(g1_rules, "WAIST_HELD_STEP_BACK", (0, 28, 0., 0., 0, 21))
+        assert measured("WAIST_HELD_STEP_BACK") != g1_rules.WAIST_HELD_STEP_BACK
+        assert "WAIST_HELD_STEP_BACK" in {rule.name for rule in missing(rules())}
+    # A stored measurement that no longer shows a stated value: every approach value is recomputed from the file.
+    approach = json.loads((MEASUREMENTS / "approach_reach.json").read_text())
+    for pose in approach["arm_poses_foot_frame"]["home"].values():
+        pose[0] += .05
+        pose[2] += .05
+    for place in approach["places"]:
+        place["rests_at_z"] = round(place["rests_at_z"] + .03, 3)
+        place["home_arm_walks_short_m"] = [s + .05 for s in place["home_arm_walks_short_m"]]
+        place["raised_arm_walks_short_m"] = [s + .05 for s in place["raised_arm_walks_short_m"]]
+    for row in approach["standing_waist_0.52"]:
+        row["moved_back_m"] = round(row["moved_back_m"] + .05, 3)
+    (tmp_path / "approach_reach.json").write_text(json.dumps(approach))
+    names = [name for name, (files, _) in g1_rules.MEASURED.items() if files == ("approach_reach.json",)]
+    assert len(names) == 5
+    for name in names:
+        assert measured(name, tmp_path) != getattr(g1_rules, name), name
+
+
 def test_the_depth_text_states_the_profiles_own_intrinsics():
     """Depth is planar z; the unprojection the text gives must use the projection the profile declares."""
     camera = yaml.safe_load((PROFILES / "head_camera/profile.yaml").read_text())

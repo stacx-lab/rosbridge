@@ -72,6 +72,21 @@ WAIST_SQUAT = {0.: (-.39, -.16), .3: (.08, .18), .52: (.15, .25)}
 # (reach_envelope.json: IK targets 0.95 and 1.1 m, measured in the simulator).
 WAIST_REACH_M = {0.: .50, .3: .60, .52: .66}
 WAIST_REACH_AT_M = (.95, 1.15)
+# Walking up to furniture and leaning at it (native device-path attempts, approach_reach.json;
+# positions in the foot frame). In the arms' home pose (the profile's home, held at episode start) the fingertips are
+# HOME_TIP_M[0] ahead of the ankle midpoint at HOME_TIP_M[1] above the floor. Walking up in that pose to the places where
+# the object rests at APPROACH_PLACE_MIN_Z or higher (furniture tops HOME_WALK_TOPS_M), the walk stopped more than
+# APPROACH_STALL_M short at HOME_WALK_STALL[0] of [1] places, by [2]-[3]; at each of those the best walk with the palms
+# raised (0.20 m ahead of and 0.05 m above the shoulders) stopped within RAISED_WALK_M. Standing there (pelvis 0.74) with a
+# 0.52 waist target: of the attempts whose measured waist pitch stayed at WAIST_HELD or more through every reach stage,
+# WAIST_HELD_STEP_BACK[0] of [1] ended more than APPROACH_STALL_M farther from the target ([2]-[3] m), against [4] of [5]
+# of the attempts whose waist settled lower.
+APPROACH_PLACE_MIN_Z, APPROACH_STALL_M, WAIST_HELD = .6, .1, .45  # the selection, not measured values
+HOME_TIP_M = (.45, .89)
+HOME_WALK_TOPS_M = (.69, 1.08)
+HOME_WALK_STALL = (11, 15, .14, .29)
+RAISED_WALK_M = .03
+WAIST_HELD_STEP_BACK = (21, 28, .14, .74, 3, 21)
 # Furniture under OmniGibson's friction (furniture_forces.json; constant horizontal forces held 1 s at the handle with
 # the robot held still; force ramps along a sliding door's track;
 # hand pulls with GR00T). Held for 1 s at the handle, a hinged furniture door of DOOR_TURN_N[i][0]
@@ -170,6 +185,41 @@ def _standing_reach(envelope):
             for p in envelope["postures"] if p["pelvis_cmd"] == STANDING_PELVIS and p["waist_pitch_cmd"] in WAIST_REACH_M}
 
 
+def _approach_places(approach):
+    return [p for p in approach["places"] if p["rests_at_z"] >= APPROACH_PLACE_MIN_Z]
+
+
+def _home_tip(approach):
+    home = approach["arm_poses_foot_frame"]["home"]
+    return tuple(_nearest((home["left_tip"][i] + home["right_tip"][i]) / 2, .01) for i in (0, 2))
+
+
+def _home_stall(approach):
+    """Places where every home-arm walk stopped more than APPROACH_STALL_M short: how many, and how short."""
+    places = _approach_places(approach)
+    stalled = [p for p in places if p["home_arm_walks_short_m"] and min(p["home_arm_walks_short_m"]) > APPROACH_STALL_M]
+    shorts = [s for p in stalled for s in p["home_arm_walks_short_m"]]
+    return (len(stalled), len(places), _nearest(min(shorts), .01), _nearest(max(shorts), .01))
+
+
+def _raised_walk(approach):
+    """At the places where the home-arm walk stalled, how close the best raised-arm walk came (the farthest of them)."""
+    places = _approach_places(approach)
+    stalled = [p for p in places if p["home_arm_walks_short_m"] and min(p["home_arm_walks_short_m"]) > APPROACH_STALL_M]
+    return _nearest(max(min(abs(s) for s in p["raised_arm_walks_short_m"]) for p in stalled), .01)
+
+
+def _waist_step_back(approach):
+    """Standing 0.52 waist attempts at those places: stepped back (more than APPROACH_STALL_M) with the waist held at
+    WAIST_HELD or more through the reach, and with it settled lower."""
+    rows = [r for r in approach["standing_waist_0.52"] if r["rests_at_z"] >= APPROACH_PLACE_MIN_Z and r["waist_pitch_during_reach"]]
+    held = [r for r in rows if min(r["waist_pitch_during_reach"]) >= WAIST_HELD]
+    settled = [r for r in rows if min(r["waist_pitch_during_reach"]) < WAIST_HELD]
+    back = [r["moved_back_m"] for r in held if r["moved_back_m"] > APPROACH_STALL_M]
+    return (len(back), len(held), _nearest(min(back), .01), _nearest(max(back), .01),
+            sum(r["moved_back_m"] > APPROACH_STALL_M for r in settled), len(settled))
+
+
 def _waist_squat(postures, conditions):
     out = {}
     for target in WAIST_SQUAT:
@@ -202,6 +252,12 @@ MEASURED = {
         waist: _nearest(max(g[0] for g in points), .01) for waist, points in _standing_reach(envelope).items()}),
     "WAIST_REACH_AT_M": (("reach_envelope.json",), lambda envelope: (lambda z: (_nearest(min(z), .05), _nearest(max(z), .05)))(
         [g[2] for points in _standing_reach(envelope).values() for g in points])),
+    "HOME_TIP_M": (("approach_reach.json",), _home_tip),
+    "HOME_WALK_TOPS_M": (("approach_reach.json",), lambda approach: (lambda z: (_nearest(min(z), .01), _nearest(max(z), .01)))(
+        [p["rests_at_z"] for p in _approach_places(approach)])),
+    "HOME_WALK_STALL": (("approach_reach.json",), _home_stall),
+    "RAISED_WALK_M": (("approach_reach.json",), _raised_walk),
+    "WAIST_HELD_STEP_BACK": (("approach_reach.json",), _waist_step_back),
     "DOOR_TURN_N": (("furniture_forces.json",), _furniture_doors),
     "DRAWER_PULL_N": (("furniture_forces.json",), lambda f: _span(
         r["move_0.05_1s_N"] for r in _handle_rows(f) if r["kind"] == "drawer")),
@@ -286,6 +342,20 @@ def rules():
              f"a steady force at the hands of about {PUSH_STEP_N[0]} N pushing them back (pressing on furniture, a door or "
              f"a wall) or {PUSH_STEP_N[1]} N pulling them forward makes the body step away"),
         Rule("PULL_FALL_N", "base.description", f"a steady {PULL_FALL_N} N pull made it fall"),
+        Rule("HOME_TIP_M", "base.description",
+             f"In the arms' home pose, which an episode starts in, the fingertips are {HOME_TIP_M[0]:.2f} m ahead of the "
+             f"point midway between the ankles, {HOME_TIP_M[1]:.2f} m above the floor"),
+        Rule("HOME_WALK_TOPS_M", "base.description",
+             f"walking up to furniture with tops {HOME_WALK_TOPS_M[0]:.2f}-{HOME_WALK_TOPS_M[1]:.2f} m high in that pose"),
+        Rule("HOME_WALK_STALL", "base.description",
+             f"the body stopped {HOME_WALK_STALL[2]:.2f}-{HOME_WALK_STALL[3]:.2f} m short of its goal at "
+             f"{HOME_WALK_STALL[0]} of {HOME_WALK_STALL[1]} places"),
+        Rule("RAISED_WALK_M", "base.description",
+             f"the same walk with the palms raised above the top got within {RAISED_WALK_M:.2f} m of it"),
+        Rule("WAIST_HELD_STEP_BACK", "base.description",
+             "Standing at such furniture with a 0.52 waist target, the body stepped back {2:.2f}-{3:.2f} m in {0} of {1} "
+             "attempts in which the waist held at {held:.2f} or more through the arm's forward reach, against {4} of {5} "
+             "in which it settled back".format(*WAIST_HELD_STEP_BACK, held=WAIST_HELD)),
         Rule("FALL_TILT_DEG", "base.description", f"tilted more than {FALL_TILT_DEG:g} degrees from upright"),
         Rule("FALL_UPRIGHT_DEG", "base.description", f"back within {FALL_UPRIGHT_DEG:g} degrees of upright"),
         Rule("FALL_HEIGHT", "base.description", f"below {FALL_HEIGHT:g} m above the floor"),

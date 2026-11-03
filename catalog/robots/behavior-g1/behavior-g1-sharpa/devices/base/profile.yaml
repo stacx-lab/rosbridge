@@ -78,7 +78,12 @@ description: Unitree G1 legs walking on GR00T WholeBodyControl's balance and wal
   twist does not move the body. Heights in other devices' frames are relative to the pelvis. The
   balance policy steps rather than braces; a steady force at the hands of about 10 N pushing them back (pressing on
   furniture, a door or a wall) or 20 N pulling them forward makes the body step away and turn, for as long as it lasts
-  (a steady 30 N pull made it fall). A fall is not recovered within the episode; once the pelvis has
+  (a steady 30 N pull made it fall). In the arms' home pose, which an episode starts in, the fingertips are 0.45 m
+  ahead of the point midway between the ankles, 0.89 m above the floor; walking up to furniture with tops 0.69-1.08 m
+  high in that pose, the body stopped 0.14-0.29 m short of its goal at 11 of 15 places, where the same walk with the
+  palms raised above the top got within 0.03 m of it. Standing at such furniture with a 0.52 waist target, the body
+  stepped back 0.14-0.74 m in 21 of 28 attempts in which the waist held at 0.45 or more through the arm's forward
+  reach, against 3 of 21 in which it settled back. A fall is not recovered within the episode; once the pelvis has
   spent 1 s in all tilted more than 45 degrees from upright or below 0.15 m above the floor (since it was last back
   within 30 degrees of upright), the legs and waist hold still until the episode ends (GR00T's policies slid fallen
   bodies across the floor), twists are ignored, and fall reads fallen; the arms and hands still follow their
