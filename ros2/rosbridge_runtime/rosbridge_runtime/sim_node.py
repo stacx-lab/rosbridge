@@ -42,7 +42,8 @@ class SimNode(Node):
         services = ReentrantCallbackGroup()
         self.create_service(Wait, "world/wait", self._wait, callback_group=services)
         self.create_service(Trigger, "world/stop", self._stop, callback_group=services)
-        self.create_service(Trigger, "world/reset", self._reset, callback_group=services)
+        if getattr(self.sim, "resettable", True):  # a backend may build its world only once
+            self.create_service(Trigger, "world/reset", self._reset, callback_group=services)
         self.observations.publish(True)
         self.get_logger().info(f"task={self.sim.task} seed={self.sim.seed} mode={p['mode']} "
                                f"period={self.sim.period:.4f}s")

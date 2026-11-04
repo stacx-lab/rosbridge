@@ -1,13 +1,15 @@
 """PSI-Bench kitchen: RoboCasa's kitchens with the PandaOmron's native part controllers, as
-simulators/robocasa, plus three PSI additions:
+simulators/robocasa, plus PSI additions:
 
-- evidence: each built episode writes meta.json and model.xml, and every step appends
-  [time, action, qpos] to steps.f64, under $ROSBRIDGE_RUN_DIR/episode-<n>/ (render.py replays it);
-- reset guard: world/reset fails unless PSI_ALLOW_RESET=1 (the first build always runs);
-- step limit: PSI_MAX_STEPS overrides the dataset horizon (0 keeps it).
+- scene: PSI_SCENE=k builds target kitchen k (layout k, style k) instead of drawing one from the seed;
+- time limit: PSI_TIME_LIMIT_S (robot seconds) overrides the dataset horizon (0 or unset keeps it);
+- no reset: the launch builds the kitchen once and the world offers no world/reset (resettable = False);
+- evidence: the build writes meta.json and model.xml, and every step appends [time, action, qpos] to
+  steps.f64, under $ROSBRIDGE_RUN_DIR/episode-0/ (render.py replays it).
 No ROS dependencies.
 """
 import json
+import math
 import os
 from pathlib import Path
 import random
@@ -50,15 +52,17 @@ def controller_config():
 class PsiKitchenSim:
     default_task = 'OpenDrawer'
     period = 1 / 20
+    resettable = False  # the world node offers no world/reset
 
     def __init__(self, *, cameras=tuple(CAMERAS), width=256, height=256,
                  max_steps=None, terminate_on_success=False):
         self.cameras, self.width, self.height = tuple(cameras), width, height
-        self.requested_max_steps = self.max_steps = max_steps or int(os.environ.get('PSI_MAX_STEPS', 0)) or None
+        limit = float(os.environ.get('PSI_TIME_LIMIT_S') or 0)
+        self.requested_max_steps = self.max_steps = max_steps or math.ceil(limit / self.period - 1e-9) or None
         self.terminate_on_success = terminate_on_success
         self.env = self._depth = self._spectator = None
         self.spectators = ()
-        self.built, self._log = 0, None
+        self._log = None
 
     @property
     def robot(self):
@@ -82,42 +86,25 @@ class PsiKitchenSim:
                                 for role, source in SPECTATORS)
 
     def reset(self, task, seed, randomize=True):
-        """The seed fully determines the kitchen, its objects and the instruction."""
-        if self.built and os.environ.get('PSI_ALLOW_RESET') != '1':
-            raise RuntimeError('reset is disabled')
+        """Build the kitchen, once: PSI_SCENE and the seed fully determine it, its objects and the instruction."""
+        if self.env is not None:
+            raise RuntimeError('psi-kitchen builds its kitchen once and does not reset')
         spec = resolve('psi-kitchen', task=task)[2]
         check_task(project_root() / '.runtime/psi-kitchen', spec['native_task'])
-        candidate = PsiKitchenSim(cameras=self.cameras, width=self.width, height=self.height,
-                                max_steps=self.requested_max_steps,
-                                terminate_on_success=self.terminate_on_success)
-        candidate.spectators = self.spectators
-        # Kitchen generation also draws from process RNGs; a failed reset keeps the
-        # live episode's future randomness.
-        python_rng, numpy_rng = random.getstate(), np.random.get_state()
-        try:
-            candidate._initialize(spec, seed)
-            if hasattr(self, 'layout') and candidate.layout != self.layout:
-                raise ValueError('reset cannot change the action layout')
-        except BaseException:
-            candidate.close()
-            random.setstate(python_rng)
-            np.random.set_state(numpy_rng)
-            raise
-        built = self.built
-        self.close()
-        self.__dict__.update(candidate.__dict__)
-        self.built = built + 1
+        self._initialize(spec, seed)
         self._start_evidence()
 
     def _start_evidence(self):
         folder = os.environ.get('ROSBRIDGE_RUN_DIR')
         if not folder:
             return
-        folder = Path(folder) / f'episode-{self.built - 1}'
+        folder = Path(folder) / 'episode-0'
         folder.mkdir(parents=True, exist_ok=True)
         (folder / 'model.xml').write_text(self.env.sim.model.get_xml())
+        meta = self.env.get_ep_meta()
         (folder / 'meta.json').write_text(json.dumps({
-            'task': self.task, 'seed': self.seed, 'instruction': self.env.get_ep_meta().get('lang', ''),
+            'task': self.task, 'scene': self.scene, 'seed': self.seed, 'instruction': meta.get('lang', ''),
+            'layout_style': [meta['layout_id'], meta['style_id']], 'time_limit_s': self.max_steps * self.period,
             'max_steps': self.max_steps, 'period': self.period, 'nq': int(self.model.nq),
             'row': ['time_s', *self.layout.joint_names, *(f'qpos{i}' for i in range(self.model.nq))]}) + '\n')
         self._log = (folder / 'steps.f64').open('wb')
@@ -126,16 +113,30 @@ class PsiKitchenSim:
     def _initialize(self, spec, seed):
         import robocasa  # noqa: F401  (registers the kitchen environments)
         import robosuite
+        from robosuite.environments.base import REGISTERED_ENVS
         from robocasa.utils.dataset_registry import ATOMIC_TASK_DATASETS, COMPOSITE_TASK_DATASETS
 
         self.task, self.seed = spec['native_task'], seed
+        horizon = ({**ATOMIC_TASK_DATASETS, **COMPOSITE_TASK_DATASETS}.get(self.task, {}).get('horizon')
+                   or spec.get('horizon'))  # tasks.toml's, for tasks upstream gives none
+        if not (self.requested_max_steps or horizon):
+            raise ValueError(f'{self.task} has no horizon: give it a time limit (PSI_TIME_LIMIT_S)')
+        split = dict(SPLITS.get(spec.get('split'), {}))
+        self.scene = int(os.environ['PSI_SCENE']) if os.environ.get('PSI_SCENE') else None
+        if self.scene is not None:
+            if (self.scene, self.scene) not in split.get('layout_and_style_ids', ()):
+                raise ValueError(f'unknown scene {self.scene} for split {spec.get("split")}')
+            env = REGISTERED_ENVS[self.task]
+            if self.scene in env.EXCLUDE_LAYOUTS or self.scene in env.EXCLUDE_STYLES:
+                raise ValueError(f'{self.task} excludes kitchen {self.scene}')
+            split['layout_and_style_ids'] = [(self.scene, self.scene)]
         random.seed(seed)
         np.random.seed(seed)
         self.env = robosuite.make(
             self.task, robots=ROBOT, controller_configs=controller_config(), has_renderer=False,
             has_offscreen_renderer=True, use_camera_obs=False, camera_names=list(self.cameras),
             camera_widths=self.width, camera_heights=self.height, camera_depths=False,
-            ignore_done=True, translucent_robot=False, seed=seed, **SPLITS.get(spec.get('split'), {}))
+            ignore_done=True, translucent_robot=False, seed=seed, **split)
         self.env.reset()
         # Measurements and frames describe the current state, not the last substep's start.
         self.env.sim.forward()
@@ -155,9 +156,9 @@ class PsiKitchenSim:
         self._grip_rate = 0.
         self._origin = self.data.xpos[self._base].copy(), self.data.xmat[self._base].reshape(3, 3).copy()
         self.steps, self.done, self.success, self.reward = 0, False, False, 0.
-        horizon = {**ATOMIC_TASK_DATASETS, **COMPOSITE_TASK_DATASETS}.get(self.task, {}).get('horizon')
         self.max_steps = self.requested_max_steps or horizon
-        print(f'[psi-kitchen] {self.task} seed {seed}: {self.env.get_ep_meta().get("lang", "")}', flush=True)
+        print(f'[psi-kitchen] {self.task} scene {self.scene} seed {seed}: '
+              f'{self.env.get_ep_meta().get("lang", "")}', flush=True)
         # Pixel-center depth from a separate single-sample context; RGB keeps native antialiasing.
         quality = self.model.vis.quality
         samples, quality.offsamples = quality.offsamples, 0

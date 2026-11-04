@@ -1,5 +1,5 @@
-# PSI-Bench's kitchen: RoboCasa365 with the PandaOmron, as simulators/robocasa, plus evidence
-# logging (per-step actions and states), offline re-rendering and a reset guard for graded runs.
+# PSI-Bench's kitchen: RoboCasa365 with the PandaOmron, as simulators/robocasa, plus scene choice,
+# a robot-time limit, evidence logging (per-step actions and states), offline re-rendering and no world reset.
 name = "psi-kitchen"
 source = "third_party/robocasa"
 source_url = "https://github.com/robocasa/robocasa.git"

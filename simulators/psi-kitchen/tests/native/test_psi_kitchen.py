@@ -1,4 +1,4 @@
-"""PSI additions on a real kitchen: evidence logging, the reset guard and offline re-rendering."""
+"""PSI additions on a real kitchen: scene choice, evidence logging, no reset, offline re-rendering, time limit."""
 import json
 
 import numpy as np
@@ -10,16 +10,18 @@ from rosbridge_psi_kitchen.backend import PsiKitchenSim
 CAMERA = 'robot0_agentview_left'
 
 
-def test_evidence_reset_guard_and_rerender(tmp_path, monkeypatch):
+def test_scene_evidence_no_reset_and_rerender(tmp_path, monkeypatch):
     monkeypatch.setenv('ROSBRIDGE_RUN_DIR', str(tmp_path))
-    monkeypatch.delenv('PSI_ALLOW_RESET', raising=False)
+    monkeypatch.setenv('PSI_SCENE', '3')
+    monkeypatch.delenv('PSI_TIME_LIMIT_S', raising=False)
+    assert PsiKitchenSim.resettable is False
     sim = PsiKitchenSim(cameras=(CAMERA,))
     try:
         sim.reset('OpenDrawer', 0)
         assert sim.max_steps == 750
         for _ in range(5):
             sim.step(sim.state()[0])
-        with pytest.raises(RuntimeError, match='disabled'):
+        with pytest.raises(RuntimeError, match='does not reset'):
             sim.reset('OpenDrawer', 0)
         assert sim.steps == 5
         live = sim.render(CAMERA)
@@ -28,6 +30,7 @@ def test_evidence_reset_guard_and_rerender(tmp_path, monkeypatch):
 
     folder = tmp_path / 'episode-0'
     meta = json.loads((folder / 'meta.json').read_text())
+    assert meta['scene'] == 3 and meta['layout_style'] == [3, 3] and meta['time_limit_s'] == pytest.approx(37.5)
     rows = np.fromfile(folder / 'steps.f64').reshape(-1, len(meta['row']))
     assert meta['instruction'] and len(rows) == 6 and rows[-1, 0] == pytest.approx(.25)
     frames = list(render.frames(folder, camera=CAMERA, width=256, height=256))
@@ -36,8 +39,9 @@ def test_evidence_reset_guard_and_rerender(tmp_path, monkeypatch):
     assert render.render(folder).stat().st_size > 0
 
 
-def test_step_limit_override(monkeypatch):
-    monkeypatch.setenv('PSI_MAX_STEPS', '3')
+def test_time_limit_and_unknown_scene(monkeypatch):
+    monkeypatch.setenv('PSI_TIME_LIMIT_S', '0.15')
+    monkeypatch.delenv('PSI_SCENE', raising=False)
     sim = PsiKitchenSim(cameras=())
     try:
         sim.reset('OpenDrawer', 0)
@@ -46,3 +50,6 @@ def test_step_limit_override(monkeypatch):
         assert sim.max_steps == 3 and sim.done
     finally:
         sim.close()
+    monkeypatch.setenv('PSI_SCENE', '11')
+    with pytest.raises(ValueError, match='unknown scene'):
+        PsiKitchenSim(cameras=()).reset('OpenDrawer', 0)

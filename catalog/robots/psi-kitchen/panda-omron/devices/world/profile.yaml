@@ -40,18 +40,6 @@ operations:
       reliability: reliable
       durability: volatile
     timeout_s: 10
-  reset:
-    description: Restart the task from its start, when the operator allows it (otherwise it fails
-      and nothing changes).
-    transport: service
-    direction: input
-    endpoint: /world/reset
-    type: std_srvs/srv/Trigger
-    qos:
-      depth: 1
-      reliability: reliable
-      durability: volatile
-    timeout_s: 120
 loaded: false
 meta:
   created_at: '2026-10-24T00:00:00Z'
