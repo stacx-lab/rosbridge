@@ -191,13 +191,19 @@ position targets. Physics runs at GR00T's 200 Hz. Commands:
 - `left_arm`, `right_arm` (7 joints) and `left_hand`, `right_hand` (22 joints) take
   absolute joint positions on position drives. Grasping is physical by default;
   `ROSBRIDGE_GRASPING=assisted` selects OmniGibson's assisted grasping, as the BEHAVIOR
-  challenge's R1Pro uses: an object touched by two fingers and crossed by a ray from
-  the thumb tip or the palm to a finger pad, while the flexion joints are commanded
-  past 30% of their closing range, is attached to the hand until it opens.
+  challenge's R1Pro uses: an object touched by two digits (thumb, index, middle, ring,
+  pinky; a fingertip's pad and phalanx are one digit, the palm none) and crossed by a ray
+  from the thumb tip or the palm to a finger pad, while the flexion joints are commanded
+  past 30% of their closing range and not opening, is attached to the hand until it
+  opens; a released object keeps the hand's velocity. A fixed object's base and the parts
+  fixed to it are never attached (no hand is welded to the world); its doors, drawers and
+  lids are. `ROSBRIDGE_GRASP_BREAK_N` sets a force (N) beyond which PhysX breaks the
+  attachment and the hand lets go (`off`: unbreakable, OmniGibson's own).
   `<side>_hand/attachment` (std_msgs/String, latched, republished on change) says what
-  each hand holds: `none`, `held` (an object fixed to the hand) or `tethered` (a door,
-  drawer or lid of a piece of furniture, through a pivot); always `none` when grasping is
-  physical.
+  each hand holds: `none`, `held` (an object fixed to the hand) or `tethered` (a part on a
+  movable joint of its object, such as a door, drawer or lid, through a pivot);
+  `<side>_hand/attached_object` names it as `<object>/<link>`; both are always `none` when
+  grasping is physical.
 
 OmniGibson makes the links below a robot's moving joints weightless, as ideal gravity
 compensation. The G1 needs its weight to walk, so gravity acts on the pelvis, legs

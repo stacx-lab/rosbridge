@@ -46,6 +46,8 @@ def test_a_value_changed_without_its_text_fails(monkeypatch):
     # The note is rendered from the values, so it follows them.
     monkeypatch.setattr(g1_rules, "GRASP_CLOSURE", .25)
     assert missing(rules()) == [] and "above 25% of their closing range" in words(assisted_note())
+    monkeypatch.setattr(g1_rules, "GRASP_BREAK_N", 150)
+    assert missing(rules()) == [] and "when its load passes 150 N" in words(assisted_note())
 
 
 def test_the_code_and_the_structured_profiles_act_on_the_same_values():
@@ -62,6 +64,8 @@ def test_the_code_and_the_structured_profiles_act_on_the_same_values():
         assert sum("_AA" not in joint for joint in hand["home"]) == g1_rules.FLEXION_JOINTS
     assert (g1_sharpa.GRASP_CLOSURE, g1_sharpa.VELOCITY_LIMIT, g1_sharpa.PELVIS_LIMITS) == (
         g1_rules.GRASP_CLOSURE, g1_rules.VELOCITY_LIMIT, g1_rules.PELVIS_LIMITS)
+    assert (g1_sharpa.GRASP_DIGITS, g1_sharpa.DIGITS, g1_sharpa.GRASP_BREAK_N) == (
+        g1_rules.GRASP_DIGITS, g1_rules.DIGITS, g1_rules.GRASP_BREAK_N)
     assert g1_sharpa.FALL_TILT == pytest.approx(g1_rules.FALL_TILT_DEG * 3.141592653589793 / 180)
     assert G1Sharpa_config()["self_collisions"] is g1_rules.SELF_COLLISIONS
 

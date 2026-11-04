@@ -42,11 +42,25 @@ operations:
     timeout_s: 10
   attachment:
     description: What the hand holds under assisted grasping, latched and republished whenever it changes - none,
-      held (an object attached to the hand, which moves with it) or tethered (a door, drawer or lid of a piece of
-      furniture, attached through a pivot). Always none under physical grasping, where nothing attaches.
+      held (an object fixed to the hand, which moves with it) or tethered (a part on a hinge or slide of its object,
+      such as a door, drawer or lid, attached through a pivot); attached_object names it. Always none under physical
+      grasping, where nothing attaches.
     transport: topic
     direction: output
     endpoint: /right_hand/attachment
+    type: std_msgs/msg/String
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: transient_local
+    timeout_s: 10
+  attached_object:
+    description: What the hand is attached to under assisted grasping, as <object>/<link> (the object's name in the
+      world, then the link the attachment holds, such as base_link for a loose object or a door's own link), latched
+      and republished whenever it changes; none whenever attachment is none.
+    transport: topic
+    direction: output
+    endpoint: /right_hand/attached_object
     type: std_msgs/msg/String
     qos:
       depth: 1
@@ -72,8 +86,8 @@ type: joint
 description: Sharpa Wave 22-joint right hand on the right_arm flange, palm toward the body's
   midline. Geometry is the sibling hand.urdf from the flange to the fingertips, with no single
   tip link; commands are absolute native joint positions on Sharpa's calibrated position drives,
-  and contact is physical unless the task says grasping is assisted; attachment reports what an
-  assisted grasp holds.
+  and contact is physical unless the task says grasping is assisted; attachment and
+  attached_object report what an assisted grasp holds.
 source: introspected
 calibrated_at: null
 method: introspection

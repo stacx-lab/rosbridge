@@ -8,7 +8,8 @@ import yaml
 
 from rosbridge.catalog import simulator, tasks
 from rosbridge_behavior import g1_model
-from rosbridge_behavior.g1_sharpa import LOWER, G1Sharpa, attachment, axis_rotation as R, tilt, torso_rpy
+from rosbridge_behavior.g1_sharpa import (LOWER, G1Sharpa, attached_object, attachment, axis_rotation as R, digit,
+                                        digits, grasp_break_n, tilt, torso_rpy)
 
 PROJECT = Path(__file__).resolve().parents[4]
 
@@ -253,6 +254,40 @@ def test_a_hand_reports_what_an_assisted_grasp_holds():
     assert attachment(robot("assisted", "FixedJoint", released=True), "right") == "none"
     assert attachment(robot("assisted"), "right") == "none"
     assert attachment(robot("physical"), "right") == "none"
+
+
+def test_a_hand_names_what_it_is_attached_to():
+    def robot(mode, link=None, released=False):
+        obj = SimpleNamespace(name="door_tonlzz_0") if link else None
+        params = None if released or not link else {"joint_type": "SphericalJoint", "target_obj": obj, "target_link_name": link}
+        return SimpleNamespace(grasping_mode=mode, _ag_obj_in_hand={"right": obj}, _ag_obj_constraint_params={"right": params})
+
+    assert attached_object(robot("assisted", "leaf"), "right") == "door_tonlzz_0/leaf"
+    assert attached_object(robot("assisted", "leaf", released=True), "right") == "none"
+    assert attached_object(robot("assisted"), "right") == "none"
+    assert attached_object(robot("physical"), "right") == "none"
+
+
+def test_an_assisted_grasp_counts_digits_not_finger_links():
+    """A fingertip's pad and phalanx, or the thumb's bones, are one digit (such contacts used to attach); the palm
+    is none. Every hand joint belongs to a digit, so every finger link does."""
+    one = [["/World/robot_g1/right_thumb_MC", "/World/robot_g1/right_thumb_PP", "/World/robot_g1/right_thumb_elastomer"],
+           ["right_index_MP", "right_index_DP", "right_index_elastomer"], ["right_thumb_PP", "right_hand_C_MC"]]
+    assert [len(digits(links)) for links in one] == [1, 1, 1]
+    assert len(digits(["right_thumb_DP", "right_index_elastomer"])) == 2  # a pinch
+    assert len(digits(["left_ring_PP", "left_pinky_MP", "left_pinky_MC"])) == 2
+    assert digit("right_hand_C_MC") is None and digit("right_eef_link") is None
+    for side in ("left", "right"):
+        assert all(digit(joint) for joint in profile(f"{side}_hand")["home"])
+
+
+def test_the_grasp_break_force_is_the_rules_unless_the_environment_sets_one(monkeypatch):
+    from rosbridge_behavior import g1_rules
+    monkeypatch.delenv("ROSBRIDGE_GRASP_BREAK_N", raising=False)
+    assert grasp_break_n() == g1_rules.GRASP_BREAK_N
+    for value, expected in (("150", 150.), ("off", None), ("0", None)):
+        monkeypatch.setenv("ROSBRIDGE_GRASP_BREAK_N", value)
+        assert grasp_break_n() == expected
 
 
 def test_a_fall_stops_the_legs_until_the_next_episode():

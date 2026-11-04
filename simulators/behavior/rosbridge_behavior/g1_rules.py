@@ -22,6 +22,13 @@ SELF_COLLISIONS = False  # the robot's links do not collide with each other (Omn
 # A hand applies a grasp while its flexion joints (all but the abduction joints, _AA) are commanded past this fraction
 # of their closing range on average; it releases as soon as the average is back at or below it.
 GRASP_CLOSURE = .3
+# An assisted grasp needs contact on this many distinct digits; a finger link belongs to the digit its name gives
+# (<side>_<digit>_..., the fingertip pads included), and the palm is no digit. A thumb with the palm, or one fingertip's
+# pad and phalanx, is one digit (such contacts used to attach as "two finger links").
+DIGITS, GRASP_DIGITS = ("thumb", "index", "middle", "ring", "pinky"), 2
+# PhysX breaks an assisted grasp's joint beyond this force (N) and torque (GRASP_BREAK_N * GRASP_BREAK_TORQUE_M, N m),
+# and the hand lets go; None: unbreakable, as OmniGibson's. ROSBRIDGE_GRASP_BREAK_N overrides it (g1_sharpa).
+GRASP_BREAK_N, GRASP_BREAK_TORQUE_M = None, .1
 # A fall: FALL_HOLD_S of world time in all with the pelvis tilted more than FALL_TILT_DEG from upright or lower than
 # FALL_HEIGHT (m) above the floor, counted since it was last within FALL_UPRIGHT_DEG of upright (and higher); from then
 # on the legs hold still. Measured (native probes): squats and walking stay within 17 degrees and
@@ -53,6 +60,10 @@ WALK_MIN_PELVIS = .70  # no gait below a measured pelvis of ~0.68 m (native prob
 # steps of 0.36-0.56 m.)
 PUSH_STEP_N, PULL_FALL_N = (10, 20), 30
 FLEXION_JOINTS = 16  # the Sharpa hand's 22 joints less its 6 abduction joints (_AA)
+# A held object's weight on the arm (assisted grasping; the arms' drives carry it, their own weight compensated): a 2 kg
+# part sagged the hand ARM_PAYLOAD[1]-[2] m in 2 s in four holds, and 9.9 kg made the robot stagger 0.7-0.8 m (native
+# probes).
+ARM_PAYLOAD = (2, .14, .33)
 # Native probes (turning_on_radio, collision geometry at the live physics poses): floor reach, reach envelope and
 # stand-off, squat shift and heading, postures.
 FLOOR_PELVIS_COMMAND = .30  # the fingertips reach the floor only at this pelvis command or lower
@@ -295,22 +306,37 @@ def assisted_note():
     """The instruction's note for a task set with assisted grasping (physical grasping says nothing)."""
     closure = percent(GRASP_CLOSURE)
     mass = f"{ASSIST_MASS_KG:g} kg"
+    if GRASP_BREAK_N is None:
+        load = ("An attachment does not break: a held object pressed into a wall, or held by both hands at once, carries "
+                "the arms' full force.")
+    else:
+        load = (f"An attachment breaks, and the hand lets go, when its load passes {GRASP_BREAK_N:g} N (a hang on it, a "
+                f"press into a wall, two hands pulling one object apart).")
     return f"""
-Grasping is assisted: an object sticks to a hand when two of its finger links touch it and it lies between the
-thumb tip or the palm and the fingertips, for {GRASP_WINDOW_S:g} s while the hand is closed. Closed means that the
-average commanded flexion of the hand's {FLEXION_JOINTS} flexion joints (every joint but the abduction joints, _AA) is
-above {closure} of their closing range: every finger counts, touching or not, so curl the fingers that do not touch
-the object too (a thumb-index pinch with the other fingers straight averages about 20% and never sticks), and know
-that a pre-shape with curled fingers can pick up whatever it touches. The object stays attached until that average
-falls back to {closure} or below, and only then: to let go, open all the fingers, the curled ones included.
-<side>_hand/attachment reports what each hand holds: none, held (attached to the hand) or tethered (on a pivot).
-Parts that turn on a hinge or slide (doors, drawers, lids) stick through a pivot, so the hand stays tethered to them
-and can swing or pull them; anything else lighter than {mass} sticks rigidly (a grasp on the frame of a light cabinet
-or appliance welds the hand to it). A part heavier than {mass} does not stick, except a door, drawer or lid of a fixed
-piece of furniture. Cabinet, drawer, microwave and fridge handles are solid lips or bars with less than 1 cm of room
-behind them, so a hooked hand does not hold one: pinch the handle or the panel's edge between the thumb tip and the
-fingertips, the other fingers curled, and keep it there while the hand closes; a light door that the closing hand
-pushes away does not stick."""
+Grasping is assisted: an object sticks to a hand when at least {_number(GRASP_DIGITS)} digits touch it (the thumb, index,
+middle, ring and pinky; the palm is no digit, and a fingertip's pad and bone are one digit) and it lies between the
+thumb tip or the palm and the fingertips, for {GRASP_WINDOW_S:g} s while the hand is closed and not opening. Closed
+means that the average commanded flexion of the hand's {FLEXION_JOINTS} flexion joints (every joint but the abduction
+joints, _AA) is above {closure} of their closing range: every finger counts, touching or not, so curl the fingers that
+do not touch the object too (a thumb-index pinch with the other fingers straight averages about 20% and never sticks),
+and know that a pre-shape with curled fingers can pick up whatever two of its digits touch. Contact is checked only as
+the grasp forms. The object stays attached until that average falls back to {closure} or below, and only then: to let
+go, open all the fingers, the curled ones included; the object leaves with the hand's own motion. {load}
+<side>_hand/attachment reports what each hand holds: none, held (fixed to the hand) or tethered (on a pivot), and
+<side>_hand/attached_object names it as <object>/<link>. A part on a hinge or slide of its object (a door, drawer or
+lid, also a jar's lid or an appliance's window) sticks through a pivot, so the hand stays tethered to it and can swing
+or pull it; a loose object lighter than {mass} sticks rigidly. Nothing fixed in place sticks: walls, floors, counters,
+shelves and the bodies of furniture and appliances (a cabinet, a microwave, a door frame, a switch) never attach. A
+part heavier than {mass} does not stick, except a door, drawer or lid of a fixed piece of furniture. The arm carries a
+held object's weight: {ARM_PAYLOAD[0]:g} kg sagged the hand {ARM_PAYLOAD[1]:g}-{ARM_PAYLOAD[2]:g} m, and 9.9 kg made the robot stagger.
+Cabinet, drawer, microwave and fridge handles are solid lips or bars with less than 1 cm of room behind them, so a
+hooked hand does not hold one: pinch the handle or the panel's edge between the thumb tip and the fingertips, the other
+fingers curled, and keep it there while the hand closes; a light door that the closing hand pushes away does not
+stick."""
+
+
+def _number(n):
+    return {1: "one", 2: "two", 3: "three", 4: "four", 5: "five"}.get(n, str(n))
 
 
 def physical_note():
@@ -435,6 +461,14 @@ def rules():
         Rule("GRASP_WINDOW_S", "instruction.assisted", f"for {GRASP_WINDOW_S:g} s while the hand is closed"),
         Rule("ASSIST_MASS_KG", "instruction.assisted", f"heavier than {ASSIST_MASS_KG:g} kg does not stick"),
         Rule("FLEXION_JOINTS", "instruction.assisted", f"the hand's {FLEXION_JOINTS} flexion joints"),
+        Rule("GRASP_DIGITS", "instruction.assisted", f"at least {_number(GRASP_DIGITS)} digits touch it"),
+        Rule("DIGITS", "instruction.assisted", "(the thumb, index, middle, ring and pinky; the palm is no digit"),
+        Rule("GRASP_BREAK_N", "instruction.assisted", "An attachment does not break" if GRASP_BREAK_N is None else
+             f"when its load passes {GRASP_BREAK_N:g} N"),
+        Rule("ARM_PAYLOAD", "instruction.assisted", f"{ARM_PAYLOAD[0]:g} kg sagged the hand {ARM_PAYLOAD[1]:g}-{ARM_PAYLOAD[2]:g} m"),
+        Rule("ATTACHED_OBJECT", "instruction.assisted", "<side>_hand/attached_object names it as <object>/<link>"),
+        Rule("ATTACH_EVERY_STEP", "world.description", "at every step in which the object touches the other"),
+        Rule("ATTACH_SNAP", "world.description", "the object snaps into exact alignment"),
         Rule("PHYSICAL_GRASPING", "instruction.physical", "nothing attaches to a hand"),
     ]
     for side in ("left", "right"):
