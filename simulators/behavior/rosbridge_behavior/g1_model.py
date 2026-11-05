@@ -24,6 +24,7 @@ MODEL = "g1_sharpa"
 TITLE = "the G1 with Sharpa hands"
 G1 = Path("third_party/unitree_ros/robots/g1_description")
 WBC = Path("third_party/decoupled_wbc")
+PADS = ("thumb", "index", "middle", "ring", "pinky")  # fingers with an elastomer pad link
 LEGS = [f"{side}_{joint}_joint" for side in SIDES
         for joint in ("hip_pitch", "hip_roll", "hip_yaw", "knee", "ankle_pitch", "ankle_roll")]
 WAIST = ["waist_yaw_joint", "waist_roll_joint", "waist_pitch_joint"]
@@ -135,8 +136,20 @@ def definition(source):
                                for side in SIDES},
             "arm_joint_names": ARMS,
             "eef_link_names": {side: f"{side}_eef_link" for side in SIDES},
-            "finger_link_names": {side: hands[side][1] for side in SIDES},
+            # The fingertips' soft pads (*_elastomer, each with its own collision mesh) are finger links too: they
+            # protrude past the distal phalanges, so a fingertip press or pinch touches through them first, and
+            # OmniGibson's toggles and assisted grasps count only contacts of finger links.
+            "finger_link_names": {side: hands[side][1] + [f"{side}_{finger}_elastomer" for finger in PADS]
+                                  for side in SIDES},
             "finger_joint_names": {side: hands[side][0] for side in SIDES},
+            # For assisted grasping (unused when grasping is physical): rays from just beyond the thumb's tip and from
+            # the palm's face (hand_C_MC: z toward the fingers, x out of the palm) to the pads of the four fingers
+            # (distal links: x along the finger, the tip at 0.026 m, z out of the pad); a ray must start outside the
+            # hand, since only its closest hit counts and the hand itself is ignored.
+            "assisted_grasp_start_points": {side: [[f"{side}_thumb_DP", [.032, 0., 0.]], [f"{side}_hand_C_MC", [.03, 0., .07]],
+                                                   [f"{side}_hand_C_MC", [.03, 0., .04]]] for side in SIDES},
+            "assisted_grasp_end_points": {side: [[f"{side}_{finger}_DP", [.016, 0., .008]]
+                                                 for finger in ("index", "middle", "ring", "pinky")] for side in SIDES},
         },
     }
 

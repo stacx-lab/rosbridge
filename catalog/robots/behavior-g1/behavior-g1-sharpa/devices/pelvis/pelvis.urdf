@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<!-- G1 pelvis: base_link is the base device's frame (base/base: at the pelvis, level, with the pelvis's heading).
+     pelvis_height is GR00T's base height command; the prismatic joint points down, so floor sits pelvis_height below
+     the pelvis. pelvis_pitch and pelvis_roll are measured, never commanded: the tilt GR00T's balance policy gives the
+     pelvis (it pitches forward as it lowers). They are fixed here, so the device commands pelvis_height alone, and
+     links.py turns them about their axes by the measured angles from joint_state: pelvis is the real pelvis link, on
+     which the torso mounts. -->
+<robot name="g1_pelvis">
+  <link name="base_link"/>
+  <link name="floor"/>
+  <link name="pitched"/>
+  <link name="pelvis"/>
+  <joint name="pelvis_height" type="prismatic">
+    <parent link="base_link"/>
+    <child link="floor"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="0 0 -1"/>
+    <limit lower="0.20" upper="0.78" effort="1000" velocity="0.5"/>
+  </joint>
+  <joint name="pelvis_pitch" type="fixed">
+    <parent link="base_link"/>
+    <child link="pitched"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+  </joint>
+  <joint name="pelvis_roll" type="fixed">
+    <parent link="pitched"/>
+    <child link="pelvis"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+  </joint>
+</robot>

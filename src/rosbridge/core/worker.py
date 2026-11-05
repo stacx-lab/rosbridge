@@ -17,7 +17,7 @@ import numpy as np
 
 # Attributes the world reads from a backend. Static ones change only on reset.
 STATIC = ("default_task", "layout", "devices", "cameras", "period", "spectators")
-DYNAMIC = ("time_s", "task", "seed", "steps", "max_steps", "done", "reward", "success")
+DYNAMIC = ("time_s", "task", "seed", "steps", "max_steps", "done", "reward", "success", "status")
 # Exceptions whose type the world interprets; others become RuntimeError.
 ERRORS = {error.__name__: error for error in (ValueError, KeyError, RuntimeError, NotImplementedError)}
 

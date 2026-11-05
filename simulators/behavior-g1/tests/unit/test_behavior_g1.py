@@ -8,7 +8,7 @@ import yaml
 
 from rosbridge.catalog import simulator, tasks
 from rosbridge_behavior import g1_model
-from rosbridge_behavior.g1_sharpa import LOWER, G1Sharpa, axis_rotation as R, torso_rpy
+from rosbridge_behavior.g1_sharpa import LOWER, G1Sharpa, attachment, axis_rotation as R, tilt, torso_rpy
 
 PROJECT = Path(__file__).resolve().parents[4]
 
@@ -134,6 +134,7 @@ class Policy:
 
 
 def test_g1_channels_command_the_lower_body_through_the_policy_and_the_rest_directly():
+    """The base twist and the pelvis height go to GR00T's lower-body policy; arm and hand targets go to their drives."""
     hands = {side: [f"{side}_finger{i}" for i in range(22)] for side in g1_model.SIDES}
     names = [*g1_model.BODY, *hands["left"], *hands["right"]][::-1]  # any native dof order
     q = np.arange(len(names), dtype=float)
@@ -146,25 +147,34 @@ def test_g1_channels_command_the_lower_body_through_the_policy_and_the_rest_dire
     embodiment = G1Sharpa.__new__(G1Sharpa)
     embodiment.hands, embodiment.wbc, embodiment.policy = hands, {"height_cmd": .74}, Policy()
     embodiment.pose = {"left_knee_joint": .3, "left_shoulder_roll_joint": .2}
+    embodiment.floor = .05
     layout = embodiment.layout(robot)
     home = dict(zip(layout.joint_names, embodiment.home))
     assert home["vx"] == 0 and home["left_shoulder_roll_joint"] == .2 and home["right_finger3"] == 0
-    assert len(layout.joint_names) == 3 + 3 + 14 + 44
+    assert home["pelvis_height"] == .74
+    assert len(layout.joint_names) == 3 + 1 + 3 + 14 + 44
     groups = {g.name: g for g in layout.groups}
     assert groups["base"].velocity and groups["base"].upper == (.5, .5, .5)
     assert [layout.joint_names[i] for i in groups["torso"].indices] == g1_model.WAIST
+    assert groups["pelvis"].indices == (3,) and (groups["pelvis"].lower, groups["pelvis"].upper) == ((.2,), (.78,))
     episode = SimpleNamespace(robot=robot, odometry=lambda: ((1., 2., .5), (.1, 0., .2)))
     positions, _ = embodiment.state(episode)
-    assert positions[3] == names.index("waist_yaw_joint") and positions[:3].tolist() == [1., 2., .5]
+    assert positions[:3].tolist() == [1., 2., .5] and positions[3] == pytest.approx(.75)  # pelvis 0.8, floor 0.05
+    assert positions[4] == names.index("waist_yaw_joint")
+    assert layout.joint_state("pelvis")[0] == ["pelvis_height", "pelvis_pitch", "pelvis_roll"]
+    assert layout.clip  # a target beyond a limit acts at the limit: a refusal is silent to a topic publisher
+    assert len(positions) == len(layout.joint_names) + 2 and positions[-2:].tolist() == pytest.approx([0, 0])
     command = np.zeros(len(layout.joint_names))
-    command[:3] = .2, 0., .1
+    command[:4] = .2, 0., .1, .45
     command[list(groups["left_hand"].indices)] = .5
+    command[list(groups["torso"].indices)] = .05, 0., .1  # yaw, roll, pitch: GR00T gets pitch and roll doubled
     native = embodiment.action(episode, command)
     assert native.shape == (15 + 7 + 22 + 7 + 22,)
     np.testing.assert_allclose(native[:15], np.arange(15) / 100., atol=1e-7)
     assert (native[22:44] == .5).all() and not native[44:].any()
     (_, velocity, height, rpy), (_, observation) = embodiment.policy.calls
-    assert velocity == pytest.approx([.2, 0., .1]) and height == .74 and rpy == (0., 0., 0.)
+    assert velocity == pytest.approx([.2, 0., .1]) and height == .45
+    np.testing.assert_allclose(rpy, torso_rpy(.05, 0., .2), atol=1e-12)
     assert observation["q"].tolist() == [names.index(joint) for joint in g1_model.BODY]
     np.testing.assert_allclose(observation["floating_base_pose"][3:], [np.cos(.25), 0, 0, np.sin(.25)])
     np.testing.assert_allclose(observation["floating_base_vel"][3:], [0, 0, 2], atol=1e-12)
@@ -192,3 +202,108 @@ def test_the_g1_pin_follows_the_import_and_the_converter(tmp_path):
     assert first != assets.model_key(tmp_path, "g1") and assets.pins(tmp_path, "g1")["g1"] == first
     (tmp_path / ".prepared.json").write_text('{"revision": "b"}')
     assert assets.crate_key(tmp_path) != first  # a new import makes a new crate
+
+
+def test_the_pelvis_tilt_is_its_pitch_and_roll_from_the_yaw_only_base_frame():
+    """R = Rz(yaw) Ry(pitch) Rx(roll): TF's level base frame, then the measured pelvis_pitch and pelvis_roll."""
+    def turn(axis, angle):  # x, y, z, w
+        return np.r_[np.eye(3)[axis] * np.sin(angle / 2), np.cos(angle / 2)]
+
+    def product(a, b):
+        (x1, y1, z1, w1), (x2, y2, z2, w2) = a, b
+        return np.array([w1 * x2 + x1 * w2 + y1 * z2 - z1 * y2, w1 * y2 - x1 * z2 + y1 * w2 + z1 * x2,
+                         w1 * z2 + x1 * y2 - y1 * x2 + z1 * w2, w1 * w2 - x1 * x2 - y1 * y2 - z1 * z2])
+
+    yaw, pitch, roll = .7, .45, -.03
+    (p, r), _ = tilt(product(product(turn(2, yaw), turn(1, pitch)), turn(0, roll)), [0., 0., 0.])
+    assert (p, r) == pytest.approx((pitch, roll))
+    # Rates: turning about the pitched body's y axis changes pitch alone, about the world z axis yaw alone.
+    frame, quaternion = R(2, yaw) @ R(1, pitch), product(turn(2, yaw), turn(1, pitch))
+    assert tilt(quaternion, frame @ [0., .2, 0.])[1] == pytest.approx((.2, 0.))
+    assert tilt(quaternion, [0., 0., .3])[1] == pytest.approx((0., 0.), abs=1e-12)
+
+
+PROFILES = PROJECT / "catalog/robots/behavior-g1/behavior-g1-sharpa/devices"
+
+
+def profile(device):
+    return yaml.safe_load((PROFILES / device / "profile.yaml").read_text())
+
+
+def test_the_g1_status_topics_are_the_string_outputs_its_profiles_declare():
+    """Each status text the world publishes is a declared device output (Kinex loads a device only when every declared
+    output has a publisher), and every declared String output is published."""
+    robot = SimpleNamespace(grasping_mode="physical", _ag_obj_in_hand={"left": None, "right": None})
+    embodiment = G1Sharpa.__new__(G1Sharpa)
+    embodiment.attachments = 0
+    keys = set(embodiment.status(SimpleNamespace(robot=robot)))
+    declared = {f"{device}/{name}" for device in (p.name for p in PROFILES.iterdir())
+                for name, op in profile(device)["operations"].items() if op["type"] == "std_msgs/msg/String"}
+    assert keys == declared
+
+
+def test_a_hand_reports_what_an_assisted_grasp_holds():
+    def robot(mode, joint_type=None, released=False):
+        held = object() if joint_type else None
+        params = None if released or not joint_type else {"joint_type": joint_type}
+        return SimpleNamespace(grasping_mode=mode, _ag_obj_in_hand={"right": held}, _ag_obj_constraint_params={"right": params})
+
+    assert attachment(robot("assisted", "FixedJoint"), "right") == "held"
+    assert attachment(robot("assisted", "SphericalJoint"), "right") == "tethered"
+    assert attachment(robot("assisted", "FixedJoint", released=True), "right") == "none"
+    assert attachment(robot("assisted"), "right") == "none"
+    assert attachment(robot("physical"), "right") == "none"
+
+
+def test_a_fall_stops_the_legs_until_the_next_episode():
+    """1 s of world time in all tilted past 45 degrees (or the pelvis below 0.15 m), counted since the body was last
+    within 30 degrees of upright, is a fall: from then on the legs and waist hold the joint positions they had (GR00T
+    is no longer consulted), status reads fallen and the episode's counts carry it; a shorter stumble changes
+    nothing."""
+    from rosbridge_behavior.g1_sharpa import FALL_HOLD_S
+    hands = {side: [f"{side}_finger{i}" for i in range(22)] for side in g1_model.SIDES}
+    names = [*g1_model.BODY, *hands["left"], *hands["right"]]
+    pose = {"quaternion": [0., 0., 0., 1.], "z": .8, "q": np.zeros(len(names))}
+    robot = SimpleNamespace(
+        dof_names_ordered=names, joint_lower_limits=-np.ones(len(names)), joint_upper_limits=np.ones(len(names)),
+        controller_order=["trunk", "arm_left", "gripper_left", "arm_right", "gripper_right"],
+        get_joint_positions=lambda: pose["q"], get_joint_velocities=lambda: np.zeros(len(names)),
+        get_position_orientation=lambda: ([0., 0., pose["z"]], pose["quaternion"]),
+        get_linear_velocity=lambda: [0., 0., 0.], get_angular_velocity=lambda: [0., 0., 0.],
+        grasping_mode="physical", _ag_obj_in_hand={"left": None, "right": None})
+    embodiment = G1Sharpa.__new__(G1Sharpa)
+    embodiment.hands, embodiment.wbc, embodiment.policy, embodiment.pose = hands, {"height_cmd": .74}, Policy(), {}
+    embodiment.floor = .05
+    layout = embodiment.layout(robot)
+    episode = SimpleNamespace(robot=robot)
+    command = np.zeros(len(layout.joint_names))
+    command[:4] = .3, 0., .2, .74
+    lower = len(LOWER)
+
+    def run(seconds, angle=0., z=.8):
+        pose["quaternion"], pose["z"] = [0., np.sin(angle / 2), 0., np.cos(angle / 2)], z
+        calls = len(embodiment.policy.calls)
+        for _ in range(round(seconds * 50)):
+            native = embodiment.action(episode, command)
+            pose["q"] = pose["q"] + .01  # the body keeps moving
+        return native[:lower], len(embodiment.policy.calls) > calls
+
+    embodiment._start_episode()
+    gr00t = np.arange(lower) / 100.
+    assert np.allclose(run(.5, np.deg2rad(70))[0], gr00t)  # a stumble: GR00T drives the legs
+    assert np.allclose(run(.5)[0], gr00t) and not embodiment.fallen  # upright again: the count starts over
+    run(.6, np.deg2rad(50)), run(.3, np.deg2rad(40))  # between 30 and 45 degrees the count holds
+    assert np.allclose(run(.3, np.deg2rad(50))[0], gr00t) and not embodiment.fallen
+    run(.5), run(.5)
+    assert np.allclose(run(FALL_HOLD_S - .1, np.deg2rad(65))[0], gr00t)
+    held = pose["q"][[names.index(j) for j in g1_model.BODY[:lower]]] + .01 * 4  # positions when the fall registers
+    legs, consulted = run(.1, np.deg2rad(65))
+    assert embodiment.fallen and np.allclose(legs, held)
+    legs, consulted = run(1.)  # upright again: still held, GR00T not consulted
+    assert np.allclose(legs, held) and not consulted
+    assert embodiment.status(episode)["base/fall"] == "fallen"
+    assert embodiment.counts() == {"attachments": 0, "falls": 1, "fall_time_s": pytest.approx(4.2)}
+    embodiment._start_episode()
+    assert run(.2)[1] and embodiment.status(episode)["base/fall"] == "upright"
+    run(FALL_HOLD_S, 0., z=.05 + .14)  # the pelvis 0.14 m above the floor
+    assert embodiment.fallen and not run(.1)[1]

@@ -28,6 +28,8 @@ class Actuator:
         self.group = next(g for g in node.sim.layout.groups if g.name == spec.source)
         self.indices = list(self.group.indices)
         self.names = [node.sim.layout.joint_names[i] for i in self.indices]
+        # The joint state adds the group's measured joints, which are never commanded.
+        self.state_names, self.state_indices = node.sim.layout.joint_state(self.group.name)
         callbacks = ReentrantCallbackGroup()
         self._endpoints(callbacks)
         # Kinex discovers stop before commanding, so it must follow the command subscription.
@@ -43,33 +45,46 @@ class Actuator:
                                      callback_group=callbacks)
 
     def publish(self, stamp, positions, velocities):
-        self.state.publish(conv.joint_state(stamp, self.names, positions[self.indices], velocities[self.indices]))
+        self.state.publish(conv.joint_state(stamp, self.state_names, positions[self.state_indices],
+                                            velocities[self.state_indices]))
 
     def _admit(self, apply):
         def run():
             try:
-                apply()
+                clipped = apply()
             except ValueError as error:
+                self.node.world.count('commands_refused')
                 self.node.get_logger().error(f'{self.spec.name} rejected a command: {error}',
                                              throttle_duration_sec=1.)
+                return
+            if clipped:
+                self.node.world.count('commands_clipped')
+                limits = ', '.join(f'{joint}={target:.4f} to {limit:.4f}' for joint, (target, limit) in clipped.items())
+                self.node.get_logger().warning(f'{self.spec.name} clipped a command to its limits: {limits}',
+                                               throttle_duration_sec=1.)
         self.node.world.submit(run)
 
     def target(self, msg):
         self._admit(lambda: self.node.world.commands.set_group(self.group.name, [msg.data]))
 
     def joint_target(self, msg):
+        # A trajectory may also name the group's measured joints (echoing its joint state); they are ignored.
+        measured = self.state_names[len(self.names):]
+
         def apply():
             world = self.node.world
-            if sorted(msg.joint_names) != sorted(self.names) or len(set(msg.joint_names)) != len(self.names):
+            named = [n for n in msg.joint_names if n not in measured]
+            if sorted(named) != sorted(self.names) or len(set(msg.joint_names)) != len(msg.joint_names):
                 raise ValueError(f'trajectory must name each of {self.names} once')
             if any(p.velocities or p.accelerations or p.effort for p in msg.points):
                 raise ValueError('only position trajectories are supported')
-            start, times, points = conv.trajectory(msg, self.names)
+            start, times, points = conv.trajectory(msg, self.names, ignored=measured)
             if not times or times[-1] > 120:
                 raise ValueError('trajectory must end within 120 seconds')
             if start is not None and start < world.time_s:
                 raise ValueError('trajectory start is in the past')
-            world.commands.set_trajectory(self.group.name, world.time_s if start is None else start, times, points)
+            return world.commands.set_trajectory(self.group.name, world.time_s if start is None else start,
+                                                 times, points)
         self._admit(apply)
 
     def _hold(self):
@@ -102,8 +117,8 @@ class Base(Actuator):
             if msg.linear.z or msg.angular.x or msg.angular.y:
                 raise ValueError('only linear.x, linear.y and angular.z are commandable')
             world = self.node.world
-            world.commands.set_group(self.group.name, [msg.linear.x, msg.linear.y, msg.angular.z],
-                                     world.time_s)
+            return world.commands.set_group(self.group.name, [msg.linear.x, msg.linear.y, msg.angular.z],
+                                            world.time_s)
         self._admit(apply)
 
     def _hold(self):

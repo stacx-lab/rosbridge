@@ -192,8 +192,14 @@ class BehaviorSim:
     def state(self):
         return self.embodiment.state(self.episode)
 
+    @property
+    def status(self):
+        """The embodiment's status texts ("<device>/<name>" -> text) for the world to publish; none without."""
+        status = getattr(self.embodiment, "status", None)
+        return status(self.episode) if status is not None and self.episode is not None else {}
+
     def outcome_extra(self):
-        """Partial credit for the episode record.
+        """Partial credit for the episode record, and the embodiment's own counts of the episode.
 
         q_score is the evaluator's (TaskMetric): 1 on success, else the largest fraction, over the goal's grounded
         options (quantifiers expanded, one literal per object), of literals that hold now and did not hold at the
@@ -203,8 +209,9 @@ class BehaviorSim:
         _, status = task.compiled_task.check_goal(lambda name, *entities: task._evaluate_predicate(0, name, *entities))
         satisfied = len(status["satisfied"])
         q_score = self.goal_options.q_score(self.success, self._literals(), self.initial_literals)
+        counts = getattr(self.embodiment, "counts", None)
         return {"goal_satisfied": satisfied, "goal_total": satisfied + len(status["unsatisfied"]),
-                "q_score": q_score}
+                "q_score": q_score, **(counts() if counts is not None else {})}
 
     def _literals(self):
         task = self.episode.env.task

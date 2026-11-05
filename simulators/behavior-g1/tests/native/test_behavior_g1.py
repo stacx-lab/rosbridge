@@ -46,9 +46,9 @@ def run(sim, command, seconds):
 def test_layout_period_and_head_camera(sim):
     assert sim.period == pytest.approx(.02)
     assert sim.max_steps == 5374  # the evaluator's 3224 steps at 30 Hz, in time
-    assert [d.name for d in sim.devices] == ["base", "torso", "left_arm", "right_arm", "left_hand",
+    assert [d.name for d in sim.devices] == ["base", "pelvis", "torso", "left_arm", "right_arm", "left_hand",
                                              "right_hand", "head_camera"]
-    assert [len(channels(sim, d)) for d in ("base", "torso", "left_arm", "left_hand")] == [3, 3, 7, 22]
+    assert [len(channels(sim, d)) for d in ("base", "pelvis", "torso", "left_arm", "left_hand")] == [3, 1, 3, 7, 22]
     width, height, fx, fy, cx, cy = sim.intrinsics("head_camera")
     assert (width, height, fx, cx) == (720, 720, pytest.approx(306.), 359.5)
     image, depth = sim.render("head_camera"), sim.render_depth("head_camera")
@@ -74,6 +74,39 @@ def test_stands_walks_and_turns_on_gr00t_without_falling(sim):
     assert sim.state()[0][2] - yaw > .5
     assert run(sim, hold, 2.) < FALL_M
     assert np.abs(sim.state()[1][:3]).max() < .1
+
+
+def test_squats_on_the_pelvis_height_command_and_stands_back_up(sim):
+    """GR00T takes the pelvis height as a command: it squats to 0.20 without falling (the pelvis pitches forward while
+    the torso stays level) and stands back up in one command; the pelvis device measures the height."""
+    hold = sim.state()[0]
+    hold[channels(sim, "base")] = 0.
+    pelvis = channels(sim, "pelvis")[0]
+    hold[pelvis] = .74
+    assert run(sim, hold, 2.) < FALL_M
+    assert sim.state()[0][pelvis] == pytest.approx(.75, abs=.04)
+    squat = hold.copy()
+    squat[pelvis] = .20
+    run(sim, squat, 6.)
+    assert sim.state()[0][pelvis] < .35
+    run(sim, hold, 6.)
+    assert sim.state()[0][pelvis] > .66
+    assert sim.native("link_pose", "pelvis")[2, 2] > .9  # upright again
+
+
+def test_waist_follows_pitch_and_roll_targets_while_balancing(sim):
+    """GR00T realizes about half the torso pitch and roll it is given; the embodiment doubles them so the measured
+    waist follows the device's targets."""
+    target = sim.state()[0]
+    target[channels(sim, "base")] = 0.
+    torso = channels(sim, "torso")
+    for index, angle in ((2, .3), (1, .3)):
+        target[torso] = 0.
+        target[torso[index]] = angle
+        assert run(sim, target, 3.) < FALL_M
+        assert sim.state()[0][torso[index]] == pytest.approx(angle, abs=.07)
+    target[torso] = 0.
+    assert run(sim, target, 2.) < FALL_M
 
 
 def test_arms_and_hands_track_joint_targets_while_balancing(sim):
@@ -116,3 +149,10 @@ def test_rig_matches_native_chains_hands_and_head_camera(tmp_path, sim):
         for link in (f"{side}_index_DP", f"{side}_thumb_DP"):
             fingers = q[channels(sim, f"{side}_hand")]
             close(compose(hand, rig.link(f"{side}_hand", fingers, link)), measured(link), atol=2e-3)
+
+
+def test_status_and_episode_counts_reach_the_world_through_the_worker(sim):
+    """The native worker's snapshot carries the status texts the world publishes, and the record's counts."""
+    assert sim.status == {"left_hand/attachment": "none", "right_hand/attachment": "none", "base/fall": "upright"}
+    extra = sim.outcome_extra()
+    assert (extra["attachments"], extra["falls"], extra["fall_time_s"]) == (0, 0, None)

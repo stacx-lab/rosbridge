@@ -20,6 +20,8 @@ OPERATIONS = {
     "rgbd": {"image": "sensor_msgs/msg/Image", "depth": "sensor_msgs/msg/Image",
              "camera_info": "sensor_msgs/msg/CameraInfo"},
 }
+# A backend's status topics (SimulatorBackend.status) are latched std_msgs/String outputs a device may add.
+STATUS = "std_msgs/msg/String"
 WORLD = {"time": ("/clock", "rosgraph_msgs/msg/Clock"),
          "wait": ("/world/wait", "kinex_interfaces/srv/Wait"),
          "stop": ("/world/stop", "std_srvs/srv/Trigger"),
@@ -54,18 +56,32 @@ def test_every_rig_exports_unloaded_profiles_on_rosbridge_endpoints(tmp_path, id
         assert profile["runtime"]["domain_id"] == 83
         expected = WORLD if name == "world" else {
             op: (f"/{name}/{op}", kind) for op, kind in OPERATIONS[profile["type"]].items()}
-        assert {op: (spec["endpoint"], spec["type"]) for op, spec in profile["operations"].items()} == expected
+        served = {op: (spec["endpoint"], spec["type"]) for op, spec in profile["operations"].items()}
+        status = {op: served.pop(op) for op, spec in profile["operations"].items()
+                  if name != "world" and op not in expected and spec["type"] == STATUS}
+        assert served == expected
+        assert all(endpoint == f"/{name}/{op}" and profile["operations"][op]["direction"] == "output"
+                   and profile["operations"][op]["qos"]["durability"] == "transient_local"
+                   for op, (endpoint, _) in status.items())
         assert all(isinstance(op["description"], str) and op["description"]
                    for op in profile["operations"].values())
         assert all("parent" in frame for frame in profile["frames"].values())
-        # Profiles borrow rosbridge's endpoints; only URDF link publishers run in Kinex.
-        nodes = ([{"entry": "links.py", "factory": "create"}]
-                 if profile["type"] in ("joint", "gripper") else [])
-        assert profile["runtime"]["nodes"] == nodes
-        for node in nodes:
-            exported = root / "devices" / name / node["entry"]
-            assert not exported.is_symlink() and "LinkPublisher(profile, context" in exported.read_text()
+        # Profiles borrow rosbridge's endpoints; only TF publishers run in Kinex: URDF links for joints and
+        # grippers, and optionally a base's odometry (base/odom -> base/base).
+        nodes = profile["runtime"]["nodes"]
+        if profile["type"] in ("joint", "gripper"):
+            assert nodes == [{"entry": "links.py", "factory": "create"}]
+            exported = root / "devices" / name / "links.py"
+            text = exported.read_text()
+            assert not exported.is_symlink() and ("LinkPublisher(profile, context" in text
+                                                  or "(LinkPublisher):" in text)
             assert (root / "devices" / name / profile["model"]["path"]).is_file()
+        elif profile["type"] == "locomotion" and nodes:
+            assert nodes == [{"entry": "odom.py", "factory": "create"}]
+            exported = root / "devices" / name / "odom.py"
+            assert not exported.is_symlink() and "TransformBroadcaster" in exported.read_text()
+        else:
+            assert nodes == []
     assert not any(root.rglob("*.pyc")) and not any(path.is_symlink() for path in root.rglob("*"))
     with pytest.raises(ValueError, match="already contains"):
         setup(identifier, tmp_path, project=PROJECT)

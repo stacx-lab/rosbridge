@@ -69,18 +69,21 @@ def camera_info(t, frame, width, height, fx, fy, cx, cy):
     return msg
 
 
-def trajectory(msg, joint_names):
-    """JointTrajectory -> (start_s or None, times, points) ordered as joint_names."""
-    if msg.joint_names:
-        if sorted(msg.joint_names) != sorted(joint_names):
-            raise ValueError(f"trajectory joints must be {joint_names}, got {list(msg.joint_names)}")
-        order = [list(msg.joint_names).index(n) for n in joint_names]
+def trajectory(msg, joint_names, ignored=()):
+    """JointTrajectory -> (start_s or None, times, points) ordered as joint_names; the positions of named
+    joints in ignored are dropped."""
+    names = list(msg.joint_names)
+    if names:
+        if sorted(n for n in names if n not in ignored) != sorted(joint_names) or len(set(names)) != len(names):
+            raise ValueError(f"trajectory joints must be {joint_names}, got {names}")
+        order = [names.index(n) for n in joint_names]
     else:
         order = list(range(len(joint_names)))
+    size = len(names) or len(joint_names)
     points = []
     for p in msg.points:
-        if len(p.positions) != len(joint_names):
-            raise ValueError(f"trajectory point needs {len(joint_names)} positions")
+        if len(p.positions) != size:
+            raise ValueError(f"trajectory point needs {size} positions")
         points.append([p.positions[i] for i in order])
     times = [seconds(p.time_from_start) for p in msg.points]
     start = seconds(msg.header.stamp)

@@ -6,6 +6,9 @@ import numpy as np
 
 # A base stops this long in world time after its last velocity command (Kinex locomotion watchdog).
 VELOCITY_TIMEOUT_S = 0.5
+# Targets this close outside a limit (rad or m) are clipped to it, not refused: interpolation rounding (0.2 - 1e-17) and
+# measured positions a joint's soft limit lets past its bound (-0.0005 rad) are valid targets.
+LIMIT_TOLERANCE = 1e-3
 
 
 class CommandError(ValueError):
@@ -73,33 +76,43 @@ class CommandBuffer:
             raise CommandError(f"{what} has non-finite values")
         return v
 
-    def _group(self, name, values):
+    def _group(self, name, values, clipped=None):
+        """A group's target within its limits. Beyond the tolerance a target is refused, or clipped and reported
+        in clipped (joint -> (target, limit)) if the layout clips."""
         if not self._open:
-            raise CommandError("episode is done; call world/reset")
+            raise CommandError("episode is done")
         if name not in self._groups:
             raise CommandError(f"unknown command group: {name}")
         group = self._groups[name]
         q = self._vector(values, len(group.indices), f"{name} target")
         lo, hi = np.asarray(group.lower), np.asarray(group.upper)
-        bad = np.flatnonzero((q < lo) | (q > hi))
-        if bad.size:
+        bad = np.flatnonzero((q < lo - LIMIT_TOLERANCE) | (q > hi + LIMIT_TOLERANCE))
+        if bad.size and not self.layout.clip:
             i = bad[0]
             joint = self.layout.joint_names[group.indices[i]]
             raise CommandError(f"{joint}={q[i]:.4f} outside [{lo[i]:.4f}, {hi[i]:.4f}]")
-        return q
+        limited = np.clip(q, lo, hi)
+        if clipped is not None:
+            for i in bad:
+                clipped.setdefault(self.layout.joint_names[group.indices[i]], (float(q[i]), float(limited[i])))
+        return limited
 
     def set_group(self, name, values, time_s=None):
-        """time_s: world time of a velocity command, which expires VELOCITY_TIMEOUT_S later."""
-        q = self._group(name, values)
+        """time_s: world time of a velocity command, which expires VELOCITY_TIMEOUT_S later.
+        Returns the clipped targets, joint -> (target, limit)."""
+        clipped = {}
+        q = self._group(name, values, clipped)
         if self._groups[name].velocity:
             if time_s is None:
                 raise CommandError(f"{name} velocity needs its command time")
             self._expiry[name] = time_s + VELOCITY_TIMEOUT_S
         self._target[list(self._groups[name].indices)] = q
         self._trajectory[name] = None
+        return clipped
 
     def set_trajectory(self, name, start_s, times, points):
-        """times: seconds from start_s, strictly increasing and >= 0."""
+        """times: seconds from start_s, strictly increasing and >= 0. Returns the clipped targets, joint ->
+        (first target beyond the limit, limit)."""
         if name in self._groups and self._groups[name].velocity:
             raise CommandError(f"{name} accepts velocities, not trajectories")
         if not np.isfinite(start_s) or not np.isfinite(times).all():
@@ -108,11 +121,13 @@ class CommandBuffer:
             raise CommandError("trajectory needs one time per point and at least one point")
         if times[0] < 0 or any(b <= a for a, b in zip(times, times[1:])):
             raise CommandError("trajectory times must be >= 0 and strictly increasing")
-        points = [self._group(name, p).copy() for p in points]
+        clipped = {}
+        points = [self._group(name, p, clipped).copy() for p in points]
         current = self._trajectory[name]
         start_q = (current.sample(start_s) if current is not None
                    else self._target[list(self._groups[name].indices)].copy())
         self._trajectory[name] = Trajectory(start_s, start_q, times, points)
+        return clipped
 
     def action(self, t):
         """Native action for the step that ends at sim time t."""

@@ -65,7 +65,10 @@ success, else the largest fraction, over the goal's grounded options (quantifier
 one literal per object), of literals that hold at the end and did not hold when the
 instance loaded; and `goal_satisfied` of `goal_total`, the goal's top-level conditions that
 hold at the end (a `forall` over six objects is one condition, and conditions that held
-from the start count).
+from the start count). Every record also counts the episode's device commands the world
+clipped to a limit (`commands_clipped`) or refused (`commands_refused`), both silent to a
+client publishing on a topic, and, for the G1, the objects or furniture parts a hand
+attached under assisted grasping (`attachments`).
 
 ## Native worker
 
@@ -171,8 +174,30 @@ position targets. Physics runs at GR00T's 200 Hz. Commands:
   every base.
 - `torso/joint_target` sets the waist (yaw, roll, pitch); its torso orientation is
   GR00T's torso command, which the lower body tracks while it balances.
+- `pelvis/joint_target` sets `pelvis_height`, GR00T's base height command: the pelvis
+  above the floor, 0.20-0.78 m (standing 0.74). The policy squats to 0.20 without
+  falling, keeping the torso level while the pelvis pitches forward, and stands back up
+  in one command; in a full squat the fingertips reach the floor about 0.25 m in front
+  of the pelvis. It walks only with the pelvis at about 0.65 m or higher. The base
+  device publishes its odometry on TF (`base/odom -> base/base`), which is planar:
+  `base/base` is level at the pelvis. `pelvis/joint_state` also reports the measured
+  pelvis tilt from that level frame, `pelvis_pitch` and `pelvis_roll` (read-only; about
+  26 degrees forward in a full squat, and several degrees while standing as the body
+  balances the arms and waist), which the rig puts on TF as `pelvis/pelvis`.
+- A G1 target beyond a joint's limits, in a joint target or a trajectory point, and a
+  twist component beyond its bound act at the limit: the world clips them (and logs it)
+  instead of refusing the command, which a client publishing on a topic would not see.
+  A command may also name the pelvis's read-only tilt joints, which are ignored.
 - `left_arm`, `right_arm` (7 joints) and `left_hand`, `right_hand` (22 joints) take
-  absolute joint positions on position drives; grasping is physical.
+  absolute joint positions on position drives. Grasping is physical by default;
+  `ROSBRIDGE_GRASPING=assisted` selects OmniGibson's assisted grasping, as the BEHAVIOR
+  challenge's R1Pro uses: an object touched by two fingers and crossed by a ray from
+  the thumb tip or the palm to a finger pad, while the flexion joints are commanded
+  past 30% of their closing range, is attached to the hand until it opens.
+  `<side>_hand/attachment` (std_msgs/String, latched, republished on change) says what
+  each hand holds: `none`, `held` (an object fixed to the hand) or `tethered` (a door,
+  drawer or lid of a piece of furniture, through a pivot); always `none` when grasping is
+  physical.
 
 OmniGibson makes the links below a robot's moving joints weightless, as ideal gravity
 compensation. The G1 needs its weight to walk, so gravity acts on the pelvis, legs
@@ -182,11 +207,19 @@ not load the torso). Each reset places the pelvis at standing height above the
 instance's R1Pro start pose and runs GR00T's standing initialization outside the
 episode, as RoboEnv's SIMPLE G1 does, until the base is still (within 6 s). The
 policies were trained for a G1 with Dex3 hands in MuJoCo; here they balance the
-heavier Sharpa hands in PhysX. A fall is not recovered; reset the world.
+heavier Sharpa hands in PhysX. A fall is not recovered within the episode: once the pelvis has spent 1 s of world
+time in all tilted more than 45° from upright or below 0.15 m above the floor (counted since it was last within 30°
+of upright; squats, reaching and walking stay within 33°, recovered pushes within 24°), the legs and waist hold
+the joint positions they had then and GR00T is no longer stepped until the next reset (its walking and balance
+policies otherwise slid the fallen body across the floor, 0.3-0.6 m in 3 s), the arms and hands still follow their
+commands,
+`base/fall` (std_msgs/String, latched) changes from `upright` to `fallen`, and the episode record carries
+`falls` (0 or 1) and `fall_time_s`. Falls do not end the episode, as in BEHAVIOR's evaluator (its tasks
+terminate on the goal or the timeout only).
 
 The head camera is an RGB-D camera on the G1's D435 mount with the R1Pro head
 camera's optics (720×720, fx = 306). The rig `behavior-g1/behavior-g1-sharpa` chains
-`torso` from the base (the pelvis), the arms and head camera from `torso:top`
+`torso` from the tilted pelvis (`pelvis:pelvis`), the arms and head camera from `torso:top`
 (`torso_link`) and each hand from its arm's flange (`<side>_wrist_yaw_link`); hands
 are `joint` devices without a tip link.
 

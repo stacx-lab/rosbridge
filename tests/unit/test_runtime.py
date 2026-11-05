@@ -258,6 +258,24 @@ def test_operator_judge_reads_results_without_ros(tmp_path, monkeypatch):
     assert main(['judge', str(run), '--json']) == 0
 
 
+def test_episode_records_count_clipped_and_refused_commands(tmp_path, monkeypatch):
+    """Clipped and refused commands are silent to a topic publisher; each episode's record counts them."""
+    import json
+    monkeypatch.setenv('ROSBRIDGE_RUN_DIR', str(tmp_path))
+    runtime, _ = world()
+    for name in ("commands_clipped", "commands_clipped", "commands_refused"):
+        runtime.submit(lambda name=name: runtime.count(name))
+    runtime.drain()
+    reset(runtime, 'toy')
+    runtime.drain()
+    runtime.close()
+    outcomes = [json.loads(line) for line in (tmp_path / 'episode-results.jsonl').read_text().splitlines()]
+    assert [(o['reason'], o['commands_clipped'], o['commands_refused']) for o in outcomes] == [
+        ('reset', 2, 1), ('stopped', 0, 0)]
+    with ThreadPoolExecutor(1) as pool, pytest.raises(RuntimeError, match="owner thread"):
+        pool.submit(runtime.count, "commands_clipped").result()
+
+
 def test_a_world_stopped_by_an_error_records_it(tmp_path, monkeypatch):
     import json
     monkeypatch.setenv('ROSBRIDGE_RUN_DIR', str(tmp_path))

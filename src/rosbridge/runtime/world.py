@@ -12,6 +12,11 @@ from .pacing import Pacer
 from .waits import WaitScheduler
 
 
+# Per-episode counts of device commands the world clipped to a limit or refused (malformed, or the episode is done);
+# both are silent to a topic publisher, so the episode record carries them.
+COUNTERS = ("commands_clipped", "commands_refused")
+
+
 @dataclass(frozen=True)
 class ResetResult:
     success: bool
@@ -43,7 +48,8 @@ class WorldRuntime:
         self.episode += 1
         self.time_s, self.steps = self.sim.time_s, self.sim.steps
         self._judged = False
-        self.commands = CommandBuffer(self.sim.layout, self.sim.state()[0])
+        self.counters = dict.fromkeys(COUNTERS, 0)
+        self.commands = CommandBuffer(self.sim.layout, self.sim.state()[0][:len(self.sim.layout.joint_names)])
         self.pacer.reset(self.sim.period)
 
     def submit(self, request):
@@ -74,6 +80,11 @@ class WorldRuntime:
         self._snapshot_reset()
         self.publish(True)
         return ResetResult(True, "episode reset")
+
+    def count(self, name):
+        """Count an event of this episode (COUNTERS) for its record; owner thread."""
+        self._assert_owner()
+        self.counters[name] += 1
 
     def drain(self, timeout=0.):
         self._assert_owner()
@@ -118,7 +129,7 @@ class WorldRuntime:
                 "step": self.steps, "time_s": self.time_s, "reward": self.sim.reward,
                 "success": bool(self.sim.success), "done": bool(self.sim.done),
                 "reason": reason or ("success" if self.sim.success else "max_steps"
-                           if limit and self.steps >= limit else "episode_done"), **extra}
+                           if limit and self.steps >= limit else "episode_done"), **self.counters, **extra}
 
     def _record_terminal(self, reason=None, *, result=None, error=None):
         if self._judged:

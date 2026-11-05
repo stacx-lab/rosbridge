@@ -41,6 +41,7 @@ source_revision = "5b304e4d643fe89cd000068dcbba7e7519539caa"
 # The backend's device inventory; catalog rigs must declare exactly these devices.
 [devices]
 base = "locomotion"
+pelvis = "joint"
 torso = "joint"
 left_arm = "joint"
 right_arm = "joint"

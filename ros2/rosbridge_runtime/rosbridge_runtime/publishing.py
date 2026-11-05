@@ -3,6 +3,7 @@ import threading
 
 from rosgraph_msgs.msg import Clock
 from sensor_msgs.msg import CameraInfo, Image
+from std_msgs.msg import String
 
 from rosbridge.core.devices import SampleSchedule
 from . import conversions as conv
@@ -37,10 +38,26 @@ class Spectator:
             self.image.publish(pending[1])
 
 
+class StatusPublisher:
+    """The backend's status texts ("<device>/<name>" -> text), latched, published when they change and on reset."""
+
+    def __init__(self, node, keys):
+        self.publishers = {key: node.create_publisher(String, key, STREAM_QOS) for key in keys}
+        self.last = {}
+
+    def publish(self, status, reset=False):
+        for key, publisher in self.publishers.items():
+            value = status.get(key, "")
+            if reset or self.last.get(key) != value:
+                publisher.publish(String(data=value))
+                self.last[key] = value
+
+
 class ObservationPublisher:
     def __init__(self, node, spectator_rate_hz, views=None):
         self.node, self.sim = node, node.sim
         self.clock = node.create_publisher(Clock, '/clock', STREAM_QOS)
+        self.status = StatusPublisher(node, sorted(getattr(self.sim, 'status', None) or {}))
         self.cameras = SampleSchedule(CAMERA_RATE_HZ)
         self.spectator_schedule = SampleSchedule(spectator_rate_hz)
         self.spectators = [Spectator(node, view) for view in (self.sim.spectators if views is None else views)]
@@ -50,6 +67,7 @@ class ObservationPublisher:
         stamp = conv.stamp(time_s)
         positions, velocities = self.sim.state()
         self.clock.publish(conv.clock(stamp))
+        self.status.publish(getattr(self.sim, 'status', None) or {}, reset)
         cameras = self.cameras.due(time_s, reset)
         for device in self.node.devices:
             if not isinstance(device, Camera):

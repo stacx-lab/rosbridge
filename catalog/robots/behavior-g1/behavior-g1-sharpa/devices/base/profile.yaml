@@ -2,14 +2,17 @@ name: base
 runtime:
   domain_id: 0
   observation: odometry
-  nodes: []
+  nodes:
+  - entry: odom.py
+    factory: create
   ready_timeout_s: 30
 operations:
   velocity:
     description: Body velocity in base/base axes as linear.x (vx), linear.y (vy), angular.z
       (wz), in m/s and rad/s within the declared bounds; other fields must be zero. The body
       follows the latest twist and stops 0.5 s of world time after the last one, so re-send
-      to keep moving; out-of-range twists are ignored, so verify with odometry.
+      to keep moving. A component beyond its bound is clipped to it; a twist with other nonzero
+      fields is ignored, so verify with odometry.
     transport: topic
     direction: input
     endpoint: /base/velocity
@@ -21,11 +24,24 @@ operations:
     timeout_s: 10
   odometry:
     description: Measured body twist in base/base (m/s and rad/s at the body origin) and the
-      planar pose in base/odom, the body frame at episode start; never a global pose.
+      planar pose (x, y, yaw) in base/odom, the body frame at episode start; never a global pose.
+      The pose is also on TF as base/odom -> base/base.
     transport: topic
     direction: output
     endpoint: /base/odometry
     type: nav_msgs/msg/Odometry
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: transient_local
+    timeout_s: 10
+  fall:
+    description: upright, or fallen once the body has fallen (latched, republished when it changes); after a fall
+      the body does not walk again within the episode, whatever twist is sent.
+    transport: topic
+    direction: output
+    endpoint: /base/fall
+    type: std_msgs/msg/String
     qos:
       depth: 1
       reliability: reliable
@@ -50,8 +66,18 @@ type: locomotion
 description: Unitree G1 legs walking on GR00T WholeBodyControl's balance and walking policies,
   which own the legs and waist at 50 Hz. Commands are a body twist (vx, vy in m/s, wz in rad/s)
   within GR00T's navigation limits of 0.5; the gait balances the body while the arms and hands
-  move. The base frame is the pelvis; odometry starts at the episode-start pose. A fall is
-  not recovered; reset the world.
+  move. The base frame base/base is at the pelvis, level, with the pelvis's heading; odometry
+  starts at the episode-start pose and is on TF (base/odom -> base/base). Odometry is planar, so
+  base/base keeps its episode-start height in base/odom, also while the pelvis is lowered (in a
+  squat, base/odom heights are off by the drop). The pelvis device has the pelvis height above
+  the floor (pelvis/floor) and its tilt (pelvis/pelvis, which the torso and everything on it
+  follow). The legs walk only with the pelvis at 0.70 m or higher (the pelvis device); lower, a
+  twist does not move the body. Heights in other devices' frames are relative to the pelvis. A
+  fall is not recovered within the episode; once the pelvis has
+  spent 1 s in all tilted more than 45 degrees from upright or below 0.15 m above the floor (since it was last back
+  within 30 degrees of upright), the legs and waist hold still until the episode ends (GR00T's policies slid fallen
+  bodies across the floor), twists are ignored, and fall reads fallen; the arms and hands still follow their
+  commands. Squats and walking stay within about 17 degrees.
 source: introspected
 calibrated_at: null
 method: introspection

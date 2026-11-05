@@ -24,8 +24,8 @@ operations:
       strictly increasing time_from_start and finishing within 120 seconds; velocities, accelerations
       and effort must be empty. A zero header stamp selects now; a nonzero stamp must not
       start in the past. Points are absolute native joint positions, linearly interpolated
-      at the native control period. Replacement clears pending references; invalid trajectories
-      are ignored, so verify measured joint_state.
+      at the native control period. Replacement clears pending references. A target beyond a joint's limits
+      is clipped to the limit; other invalid trajectories are ignored, so verify measured joint_state.
     transport: topic
     direction: input
     endpoint: /torso/joint_target
@@ -51,8 +51,10 @@ meta:
   created_at: '2026-10-24T00:00:00Z'
   updated_at: '2026-10-24T00:00:00Z'
 type: joint
-description: G1 three-joint waist (yaw, roll, pitch) on the pelvis. Geometry is the sibling
-  torso.urdf with top (torso_link), where the arms and head camera mount, as its tip link.
+description: G1 three-joint waist (yaw, roll, pitch) on the pelvis; its base frame is the pelvis link
+  pelvis/pelvis, which carries the measured pelvis tilt (the pelvis device), so the TF poses of the torso, arms,
+  hands and head camera include it. Geometry is the sibling torso.urdf with top (torso_link), where the arms and
+  head camera mount, as its tip link.
   Targets set the torso orientation that GR00T's lower-body policy tracks while it balances,
   so verify the measured joint_state.
 source: introspected
@@ -83,4 +85,4 @@ frames:
     - 0.0
     - 0.0
     - 1.0
-    parent: base:base
+    parent: pelvis:pelvis
