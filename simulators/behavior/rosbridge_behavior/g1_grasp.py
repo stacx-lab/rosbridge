@@ -10,12 +10,19 @@ commanded open. On the Sharpa hand the same idea reads:
   its targets (a hand closed round a thin handle presses nothing); a little-curled hand that only touches a thing, a
   hand still closing, or an opening hand, does not grip;
 - both hold over OmniGibson's 0.3 s window, judged on most of its steps so that flickering contacts on a thin lip or
-  handle still count.
+  handle still count;
+- held, it stays attached until the fingers that grip it stop gripping or are commanded open, and then until they have
+  left it (so that they do not push it as they open), or until the load on the grasp stays above what a hand can grip
+  for a sustained time.
+g1_sharpa feeds these functions from OmniGibson's contacts, rays and joint states once per physics step.
 """
 from collections import deque
 
-from .g1_rules import (CLOSED_FRACTION, DIGITS, GRASP_EVIDENCE, GRASP_RECENT_S, GRASP_WINDOW_S, SQUEEZE_OFF_RAD,
+from .g1_rules import (CLOSED_FRACTION, DIGITS, GRASP_EVIDENCE, GRASP_RECENT_S, GRASP_WINDOW_S, GRIP_CLAMP_RAD,
+                       LET_GO_S, LOAD_HOLD_S, LOAD_LIMIT_N, LOAD_TAU_S, OPEN_RAD, RELEASE_MARGIN_MPS, SQUEEZE_OFF_RAD,
                        SQUEEZE_ON_RAD)
+
+GRAVITY = 9.81  # m/s^2
 
 # The palm (name after "<side>_"): it opposes the fingers as the thumb does, but has no joint to squeeze with. The
 # thumb's metacarpal (the ball of the thumb) is a thumb link; the pinky's metacarpal is a pinky link, so a pinky curled
@@ -46,6 +53,12 @@ def surface(link):
     if name in PALM or digit(link) == "thumb":
         return "thumb"
     return "finger" if digit(link) else None
+
+
+def phalanx(link):
+    """Whether a hand link is a moving phalanx of a digit (proximal, middle or distal: what pushes an object when the
+    digit moves), not a metacarpal, the palm or a virtual link."""
+    return digit(link) is not None and link_name(link).rsplit("_", 1)[-1] in ("PP", "MP", "DP")
 
 
 def opposed(links):
@@ -79,8 +92,26 @@ def excess(joint_digits, command, reference):
     return out
 
 
+def clamp(command, measured):
+    """The position target a flexion joint gets while its hand holds an object: no more than GRIP_CLAMP_RAD beyond
+    where it is, so a finger blocked by the held object presses with a bounded force instead of driving into it (and
+    no depenetration flings the object when it is let go); opening commands pass unchanged."""
+    return min(command, measured + GRIP_CLAMP_RAD)
+
+
+def leaving_velocity(relative, seconds):
+    """A released object's velocity relative to the hand (x, y, z; z up), limited while it still touches the hand:
+    sideways and upward no faster than RELEASE_MARGIN_MPS, downward no faster than falling for `seconds` gives plus
+    that margin. Falling out of the hand, or resting in it, is unchanged; a push from the contacts it was squeezed with
+    (depenetration, fingers that keep closing) is cut, so it does not fly."""
+    x, y, z = relative
+    sideways = (x * x + y * y) ** .5
+    scale = min(1., RELEASE_MARGIN_MPS / sideways) if sideways > 0 else 1.
+    return x * scale, y * scale, max(-(GRAVITY * seconds + RELEASE_MARGIN_MPS), min(z, RELEASE_MARGIN_MPS))
+
+
 class Grip:
-    """One hand's assisted grasp while it forms: the evidence window.
+    """One hand's assisted grasp: the evidence window while a grasp forms, then the hold until it is let go.
 
     dt is the physics step; GRASP_WINDOW_S of steps make the window. Each step records whether the target lies on a
     ray between the thumb or palm and the fingertips, touches the thumb side, touches the finger side, and is squeezed
@@ -89,14 +120,20 @@ class Grip:
     joint_digits names the digit of each flexion joint, in the order of the command and measured sequences the methods
     take."""
 
-    def __init__(self, dt, joint_digits, limits=None):
-        self.dt, self.joint_digits = dt, tuple(joint_digits)
+    def __init__(self, dt, joint_digits, load_limit=LOAD_LIMIT_N, limits=None):
+        self.dt, self.joint_digits, self.load_limit = dt, tuple(joint_digits), load_limit
         self.limits = limits  # the flexion joints' (lower, upper) limits, for the commanded closure; None: squeeze only
         self.steps = max(1, round(GRASP_WINDOW_S / dt))
         self.recent = max(1, round(GRASP_RECENT_S / dt))
         self.window = deque(maxlen=self.steps)
         self.target = None  # the link the window is about
         self.touched = deque(maxlen=self.recent)  # the digits that touched it on the last steps
+        self.held = None  # the digits gripping a held object, None while nothing is held
+        self.load = self.over_s = 0.
+        self.why = None  # why the last grasp ended: "squeeze", "open" or "load"
+        self.tightest = None  # the gripping digits' tightest mean command while held
+        self.yielded = False  # it handed its object to the other hand and grasps again only after opening
+        self.letting_s = 0.  # how long the hand has been opened while a finger still touches the held object
 
     def reset(self):
         self.window.clear()
@@ -110,6 +147,8 @@ class Grip:
         measured: the flexion joints' targets and positions (rad); closing: whether the commanded closure is still
         rising (a closing hand grips only by squeezing; closed digits count once it has stopped closing). Returns the
         target once the window shows a grasp, else None."""
+        if self.yielded:
+            return None
         if candidate is not None and candidate != self.target:
             self.reset()
             self.target = candidate
@@ -135,3 +174,55 @@ class Grip:
             return {}
         closed = closure(self.joint_digits, command, *self.limits)
         return closed if squeeze is None else {d: c for d, c in closed.items() if squeeze.get(d, 0.) <= SQUEEZE_OFF_RAD}
+
+    def grips(self, links, command, measured):
+        """Whether the touching hand links grip an object now: opposition, and a touching digit squeezes or is closed
+        (the window's conditions on one step, less the ray)."""
+        squeeze = excess(self.joint_digits, command, measured)
+        return opposed(links) and squeezing(links, squeeze, closed=self.closed(command, squeeze))
+
+    def hold(self, gripping=None):
+        """The grasp was made: the given digits grip it, else those that touched the target on the last steps."""
+        self.held = set(gripping) if gripping else set().union(*self.touched) if self.touched else set()
+        self.load = self.over_s = 0.
+        self.tightest = None
+        self.reset()
+
+    def keep(self, command, measured, load_n, fingers_on=lambda: False):
+        """One physics step while holding. Returns why the grasp ends now, else None (keep holding): "squeeze" when
+        no gripping digit is commanded SQUEEZE_OFF_RAD beyond its measured flexion nor CLOSED_FRACTION closed (the
+        hand opened), "open" when they are commanded OPEN_RAD open from their tightest, "load" when the load on the
+        grasp (N; None for a tether, which has no load limit), low-pass filtered with LOAD_TAU_S, has stayed above the
+        load limit for LOAD_HOLD_S. An opened hand
+        keeps the object while fingers_on() says a phalanx still touches it, for LET_GO_S at most: it is let go once
+        the fingers have left it (or just begin to), so they do not push it as they open. A grasp OmniGibson restored
+        from a saved state is gripped by every digit."""
+        held = DIGITS if self.held is None else self.held
+        squeeze = excess(self.joint_digits, command, measured)
+        gripping = [c for d, c in zip(self.joint_digits, command) if d in held] or list(command)
+        mean = sum(gripping) / len(gripping)
+        self.tightest = mean if getattr(self, "tightest", None) is None else max(self.tightest, mean)
+        self.why = None
+        closed = self.closed(command)
+        if not any(squeeze.get(d, float("-inf")) >= SQUEEZE_OFF_RAD or closed.get(d, 0.) >= CLOSED_FRACTION
+                   for d in held):
+            self.why = "squeeze"
+        elif mean <= self.tightest - OPEN_RAD:
+            self.why = "open"
+        elif self.load_limit is not None and load_n is not None and load_n == load_n:  # None (a tether), NaN: no limit
+            self.load += (load_n - self.load) * self.dt / (LOAD_TAU_S + self.dt)
+            self.over_s = self.over_s + self.dt if self.load > self.load_limit else 0.
+            if self.over_s >= LOAD_HOLD_S - 1e-9:
+                self.why = "load"
+        if self.why is None:
+            self.letting_s = 0.
+        elif self.why != "load" and self.letting_s < LET_GO_S - 1e-9 and fingers_on():
+            self.letting_s += self.dt
+            return None  # opened, and a finger still touches it
+        return self.why
+
+    def let_go(self):
+        self.held = self.tightest = None
+        self.let_after_s, self.letting_s = self.letting_s, 0.  # (how long the fingers took to leave it)
+        self.load = self.over_s = 0.
+        self.reset()

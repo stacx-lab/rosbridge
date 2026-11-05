@@ -9,7 +9,7 @@ import yaml
 from rosbridge.catalog import simulator, tasks
 from rosbridge_behavior import g1_model
 from rosbridge_behavior.g1_sharpa import (LOWER, G1Sharpa, attached_object, attachment, axis_rotation as R, digit,
-                                        digits, grasp_break_n, tilt, torso_rpy)
+                                        digits, grasp_load_limit, tilt, torso_rpy)
 
 PROJECT = Path(__file__).resolve().parents[4]
 
@@ -281,13 +281,13 @@ def test_an_assisted_grasp_counts_digits_not_finger_links():
         assert all(digit(joint) for joint in profile(f"{side}_hand")["home"])
 
 
-def test_the_grasp_break_force_is_the_rules_unless_the_environment_sets_one(monkeypatch):
+def test_the_grasp_load_limit_is_the_rules_unless_the_environment_sets_one(monkeypatch):
     from rosbridge_behavior import g1_rules
-    monkeypatch.delenv("ROSBRIDGE_GRASP_BREAK_N", raising=False)
-    assert grasp_break_n() == g1_rules.GRASP_BREAK_N
+    monkeypatch.delenv("ROSBRIDGE_GRASP_LOAD_N", raising=False)
+    assert grasp_load_limit() == g1_rules.LOAD_LIMIT_N
     for value, expected in (("150", 150.), ("off", None), ("0", None)):
-        monkeypatch.setenv("ROSBRIDGE_GRASP_BREAK_N", value)
-        assert grasp_break_n() == expected
+        monkeypatch.setenv("ROSBRIDGE_GRASP_LOAD_N", value)
+        assert grasp_load_limit() == expected
 
 
 def test_a_fall_stops_the_legs_until_the_next_episode():

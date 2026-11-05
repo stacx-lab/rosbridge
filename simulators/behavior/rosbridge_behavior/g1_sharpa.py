@@ -19,8 +19,10 @@ from . import scene_doors
 from .environment import data_root, rotation, values
 from .g1_model import ARMS, BODY, CAMERA, LEGS, MODEL, SIDES, WAIST, WBC, arm_links, standing_height
 # The values a worker's outcome depends on live in g1_rules, which the device texts and the task note state.
-from .g1_rules import (CLIP, DIGITS, FALL_HEIGHT, FALL_HOLD_S, FALL_TILT_DEG, FALL_UPRIGHT_DEG, GRASP_BREAK_N,
-                       GRASP_BREAK_TORQUE_M, GRASP_CLOSURE, GRASP_DIGITS, PELVIS_LIMITS, SELF_COLLISIONS, VELOCITY_LIMIT)
+from .g1_rules import (CLIP, FALL_HEIGHT, FALL_HOLD_S, FALL_TILT_DEG, FALL_UPRIGHT_DEG, GRIP_CLAMP_RAD, LOAD_LIMIT_N,
+                       PELVIS_LIMITS, RELEASE_FOLLOW_S, RELEASE_MARGIN_MPS, SELF_COLLISIONS,
+                       VELOCITY_LIMIT)
+from .g1_grasp import Grip, digit, digits, leaving_velocity, phalanx  # noqa: F401 (digits: for callers)
 
 NAME = "robot_g1"
 LOWER = LEGS + WAIST
@@ -28,6 +30,10 @@ LOWER = LEGS + WAIST
 # the pitch and roll (its own waist targets match the measured joints, so it is the policy's choice, not drive
 # tracking) while tracking yaw. Doubling pitch and roll before the policy makes the measured waist follow the device's
 # targets (0.3 -> 0.34, 0.5 -> 0.51 pitch; standing and walking stay balanced); yaw is passed as is.
+# Extra assisted-grasp ray start points around the middle of the thumb's distal link, 12 mm off its axis (the tip is at
+# 0.026 m along x), so that a rim pinched between the thumb's pad and a fingertip pad, short of the thumb's tip, lies on
+# a ray; rays from the back of the thumb pass through the thumb itself and count nothing.
+THUMB_PADS = ((.016, 0., .012), (.016, 0., -.012), (.016, .012, 0.), (.016, -.012, 0.))
 TORSO_GAIN = {"yaw": 1., "roll": 2., "pitch": 2.}
 HEAD_RESOLUTION = 720
 HEAD_HORIZONTAL_APERTURE = 40.  # the evaluator's R1Pro head optics
@@ -40,11 +46,9 @@ ARM_POSE = {"left_shoulder_roll_joint": .2, "right_shoulder_roll_joint": -.2}
 # and rad/s, above SIMPLE's MuJoCo threshold of 1e-3.
 STABILIZE_STEPS, SETTLE_STEPS, STILL = 300, 100, .05
 # How objects are held: "physical" (contact and friction only, as the hands are) or "assisted" (OmniGibson's assisted
-# grasping, as the BEHAVIOR challenge's R1Pro uses: an object between the thumb and the other fingers, touched by two
-# of them while the hand closes, is attached to the hand until it opens). ROSBRIDGE_GRASPING selects it.
+# grasping, as the BEHAVIOR challenge's R1Pro uses: an object held between the thumb or palm and a finger while the hand
+# grips it is attached to the hand until the hand opens; g1_grasp). ROSBRIDGE_GRASPING selects it.
 GRASPING_MODES = ("physical", "assisted")
-# A hand applies a grasp while its flexion joints are commanded past GRASP_CLOSURE of their closing range on average;
-# the abduction joints (_AA) do not count. OmniGibson's own test (any joint off its open limit) is for parallel grippers.
 # A fall (FALL_*): GR00T does not get up again, and its policies kept acting on the fallen body: walking slid and spun
 # it ~0.5 m on its back, and the balance policy alone moved it 0.3-0.6 m in 3 s. From then
 # on the legs and waist hold the joint positions they had when it fell, as a real G1's damping mode stops its legs.
@@ -65,26 +69,6 @@ def grasping_mode():
     if mode not in GRASPING_MODES:
         raise ValueError(f"ROSBRIDGE_GRASPING must be one of {GRASPING_MODES}, not {mode!r}")
     return mode
-
-
-def grasp_break_n():
-    """The force (N) at which an assisted grasp's joint breaks and the hand lets go, or None (unbreakable, OmniGibson's
-    own): GRASP_BREAK_N unless ROSBRIDGE_GRASP_BREAK_N sets another (0 or off: unbreakable)."""
-    value = os.environ.get("ROSBRIDGE_GRASP_BREAK_N")
-    if value is None:
-        return GRASP_BREAK_N
-    return None if value.strip().lower() in ("", "0", "off", "none") else float(value)
-
-
-def digit(link_name):
-    """The digit a finger link belongs to ("right_index_DP" -> "index"), None for any other link."""
-    parts = link_name.split("_")
-    return parts[1] if len(parts) > 2 and parts[1] in DIGITS else None
-
-
-def digits(link_paths):
-    """The distinct digits among links (prim paths or names): a fingertip's pad and phalanx are one digit."""
-    return {digit(path.rsplit("/", 1)[-1]) for path in link_paths} - {None}
 
 
 def attachment(robot, arm):
@@ -108,143 +92,243 @@ def _attached(robot, arm):
     return robot._ag_obj_constraint_params[arm]  # None once released, while the release window has not ended
 
 
+def grasp_load_limit():
+    """The sustained load (N) beyond which a held grasp lets go, or None (no limit): LOAD_LIMIT_N unless
+    ROSBRIDGE_GRASP_LOAD_N sets another (0 or off: none)."""
+    value = os.environ.get("ROSBRIDGE_GRASP_LOAD_N")
+    if value is None:
+        return LOAD_LIMIT_N
+    return None if value.strip().lower() in ("", "0", "off", "none") else float(value)
+
+
 def assisted_grasping(robot, hands, attached=lambda arm: None, fallen=lambda: False):
-    """The G1's assisted grasp (its ray points are in the robot definition, g1_model): OmniGibson's own, with the closure
-    test on finger flexion and these general changes:
-    - no weld to the world: a link of a fixed object is a target only through a movable joint (a door, drawer or lid,
-      tethered); the object's base, and parts fixed to it, never are;
-    - digits, not links: the target must touch GRASP_DIGITS distinct digits (a fingertip's pad and phalanx are one);
-    - the window restarts while the commanded closure is falling, so an opening hand never completes a grasp;
-    - a break force (grasp_break_n): beyond it PhysX breaks the joint and the hand lets go;
-    - a released object moves on at the hand's velocity through the release window (no depenetration fling);
-    - no search while the body has fallen or a hand's pose is not finite.
+    """The G1's assisted grasp: OmniGibson's mechanism (its rays, joint types, joint creation, release window and saved
+    state) with g1_grasp's rules for when a grasp forms and when it ends, once per physics step:
+    - a target is what OmniGibson's search picks (touched, on a ray between the thumb or palm and the fingertips,
+      closest to the eef link), now also through the palm's contacts and with rays from the thumb's pad; a fixed
+      object's base, and parts fixed to it, never are (no weld to the world), its doors, drawers and lids are;
+    - it is grasped once g1_grasp.Grip's window shows opposition and squeeze; there is no search while the commanded
+      closure falls (an opening hand never completes a grasp), while the body has fallen, or while a hand pose is not
+      finite;
+    - an object one hand holds is taken over by the other hand when that hand's grasp forms: the first hand's
+      attachment ends in the same step, after the new joint exists (a hand-over without a drop, and never a rigid
+      two-hand chain); the first hand then presses lightly and grasps again only after it opens; and when the first
+      hand opens while the other touches the object from both sides and grips it, the other takes it at once;
+    - while it is held, the hand's flexion targets are clamped (g1_grasp.clamp), and the grasp lets go when the
+      gripping digits stop gripping or are opened and no finger touches the object any more (LET_GO_S at most), or,
+      for a held object (not a tether to a door, drawer or lid, which OmniGibson never breaks either), when the load the
+      arm passes to the hand stays above grasp_load_limit();
+    - a released free object leaves at the hand's velocity, and while it still touches the hand (RELEASE_FOLLOW_S at
+      most) the fingers stay clamped and it moves no faster from the hand than falling gives (g1_grasp.leaving_velocity):
+      no fling.
     attached(arm) is called when a hand attaches an object; fallen() says whether the body has fallen."""
     import types
     import omnigibson as og
-    import omnigibson.lazy as lazy
     import torch as th
     from omnigibson.controllers import ControllerView
+    import omnigibson.utils.transform_utils as T
     from omnigibson.prims.rigid_dynamic_prim import RigidDynamicPrim
-    from omnigibson.robots.robot import m
-    from omnigibson.utils.usd_utils import create_joint
+    from omnigibson.utils.sampling_utils import raytest_batch
+    from omnigibson.utils.usd_utils import ControllableObjectViewAPI, RigidContactAPI, get_robot_kinematic_tree_pattern
 
+    dt, root = og.sim.get_physics_dt(), robot.articulation_root_path
     names = list(robot.dof_names_ordered)
-    flexion = {side: th.tensor([i for i, joint in enumerate(hands[side]) if "_AA" not in joint]) for side in hands}
-    ray_links = {side: sorted({point.link_name for point in robot.assisted_grasp_start_points[side]
-                               + robot.assisted_grasp_end_points[side]}) for side in hands}
-    last = {side: 0. for side in hands}  # each hand's commanded closure at the previous physics step
-    broken = set()  # hands whose grasp joint PhysX broke since their last physics step
-    break_n = grasp_break_n()
+    flexion = {arm: [i for i, joint in enumerate(hands[arm]) if "_AA" not in joint] for arm in hands}
+    dofs = {arm: th.tensor([names.index(hands[arm][i]) for i in flexion[arm]]) for arm in hands}
+    flexion_digit = {arm: [digit(hands[arm][i]) for i in flexion[arm]] for arm in hands}
+    sensing = {arm: {link.prim_path for link in robot.finger_links[arm]} | {robot.links[f"{arm}_hand_C_MC"].prim_path}
+               for arm in hands}  # the finger links and the palm
+    ray_links = {arm: sorted({point.link_name for point in robot.assisted_grasp_start_points[arm]
+                              + robot.assisted_grasp_end_points[arm]}) for arm in hands}
+    # OmniGibson's rays run from the thumb's tip and the palm to the four fingertip pads (the robot definition); more
+    # start around the thumb's distal link (THUMB_PADS), so that a pinch counts whose rim lies between the pads.
+    point = lambda p: (p.link_name, th.as_tensor(p.position, dtype=th.float32))
+    starts = {arm: [point(p) for p in robot.assisted_grasp_start_points[arm]]
+              + [(f"{arm}_thumb_DP", th.tensor(pad)) for pad in THUMB_PADS] for arm in hands}
+    ends = {arm: [point(p) for p in robot.assisted_grasp_end_points[arm]] for arm in hands}
+    own = set(robot.link_prim_paths)
+    limits = {arm: (robot.joint_lower_limits[dofs[arm]].tolist(), robot.joint_upper_limits[dofs[arm]].tolist())
+              for arm in hands}
+    grips = robot._g1_grips = {arm: Grip(dt, flexion_digit[arm], grasp_load_limit(), limits[arm]) for arm in hands}
+    leaving = robot._g1_leaving = {arm: None for arm in hands}  # a released object near the hand: (obj, s, last touch s)
+    offered = {arm: None for arm in hands}  # an object the other hand let go of this step: (obj, that hand)
+    last = {arm: 0. for arm in hands}  # each hand's commanded closure at the previous physics step
 
-    def closure(arm):
+    def flexion_state(arm):
+        """The worker's flexion targets (the controller's control, as OmniGibson's own test reads it) and the measured
+        flexion, or None before any control."""
         group_key, index = robot._controllers[f"gripper_{arm}"]
         control = ControllerView.get_control(group_key, index)
         if control is None:
-            return 0.
-        joints = th.tensor([names.index(joint) for joint in hands[arm]])[flexion[arm]]
-        lower, upper = robot.joint_lower_limits[joints], robot.joint_upper_limits[joints]
-        return float(((control[flexion[arm]] - lower) / (upper - lower).clamp(min=1e-6)).clamp(0, 1).mean())
+            return None
+        measured = th.as_tensor(ControllableObjectViewAPI.get_joint_positions(root))[dofs[arm]]
+        return th.as_tensor(control)[flexion[arm]], measured
 
-    def in_hand_object(self, arm="default"):
-        # OmniGibson's _calculate_in_hand_object (assisted), with the fall, world-weld and digit rules.
-        arm = self.default_arm if arm == "default" else arm
-        if fallen():
+    def closure(arm, command):
+        lower, upper = robot.joint_lower_limits[dofs[arm]], robot.joint_upper_limits[dofs[arm]]
+        return float(((command - lower) / (upper - lower).clamp(min=1e-6)).clamp(0, 1).mean())
+
+    def touching(arm):
+        """Each body a hand link (finger link or palm) touched during the step's substeps -> the hand links."""
+        out = {}
+        for link, other in RigidContactAPI.get_contact_pairs(robot.scene.idx, sensing[arm], None, False):
+            if other not in own:
+                out.setdefault(other, set()).add(link)
+        return out
+
+    def on_rays(self, arm):
+        """The bodies the first hit of any ray from a start point to an end point lands on (OmniGibson's
+        _find_gripper_raycast_collisions with the points above); the robot's own links do not count."""
+        points = []
+        for link_name, offset in starts[arm] + ends[arm]:
+            position, orientation = self.links[link_name].get_position_orientation()
+            points.append(position + T.quat2mat(orientation) @ offset)
+        n = len(starts[arm])
+        origins = th.stack([points[i] for _ in ends[arm] for i in range(n)])
+        targets = th.stack([points[n + j] for j in range(len(ends[arm])) for _ in range(n)]) + 1e-8
+        return {hit["rigidBody"] for hit in raytest_batch(origins, targets, only_closest=True)
+                if hit["hit"] and self.prim_path not in hit["rigidBody"]}
+
+    def graspable(self, prim_path):
+        """(object, link name) if a hand may attach the link: a dynamic link of a registered object, and of a fixed
+        object only through a movable joint (OmniGibson's joint-type rule gives it a pivot); else None."""
+        obj_path, link_name = prim_path.rsplit("/", 1)
+        obj = self.scene.object_registry("prim_path", obj_path, None)
+        if obj is None or link_name not in obj.links or not isinstance(obj.links[link_name], RigidDynamicPrim):
             return None
-        candidates, touching = self._find_gripper_contacts(arm=arm)
-        if not candidates or not all(bool(th.isfinite(self.links[name].get_position_orientation()[0]).all())
-                                     for name in ray_links[arm]):
-            return None
-        candidates = candidates & self._find_gripper_raycast_collisions(arm=arm)
-        eef = self.eef_links[arm].get_position_orientation()[0]
-        found = []
-        for prim_path in candidates:
-            obj_path, link_name = prim_path.rsplit("/", 1)
-            obj = self.scene.object_registry("prim_path", obj_path, None)
-            if obj is None or link_name not in obj.links or not isinstance(obj.links[link_name], RigidDynamicPrim):
-                continue
-            if obj.fixed_base and self._get_assisted_grasp_joint_type(obj, link_name) != "SphericalJoint":
-                continue  # a fixed object's base or a part fixed to it: the hand would be welded to the world
-            distance = float(th.norm(obj.links[link_name].get_position_orientation()[0] - eef))
-            found.append((distance, prim_path, obj, link_name))
-        if not found:
-            return None
-        _, prim_path, obj, link_name = min(found, key=lambda row: row[0])
-        if len(digits(touching[prim_path])) < GRASP_DIGITS:
-            return None
+        if obj.fixed_base and self._get_assisted_grasp_joint_type(obj, link_name) != "SphericalJoint":
+            return None  # a fixed object's base or a part fixed to it: the hand would be welded to the world
         return obj, link_name
 
-    def create_grasp_joint(self, arm, params):
-        # OmniGibson's _create_assisted_grasp_joint, with PhysX break limits (as AttachedTo creates its joints).
-        self._ag_obj_constraints[arm] = create_joint(
-            prim_path=f"{self.eef_links[arm].prim_path}/ag_constraint", joint_type=params["joint_type"],
-            body0=self.eef_links[arm].prim_path, body1=params["target_obj"].links[params["target_link_name"]].prim_path,
-            enabled=True, exclude_from_articulation=True,
-            joint_frame_in_parent_frame_pos=params["parent_frame_pos"],
-            joint_frame_in_parent_frame_quat=params["parent_frame_orn"],
-            joint_frame_in_child_frame_pos=params["child_frame_pos"],
-            joint_frame_in_child_frame_quat=params["child_frame_orn"],
-            break_force=break_n, break_torque=break_n * GRASP_BREAK_TORQUE_M)
-        self._ag_obj_in_hand[arm] = params["target_obj"]
-        self._ag_obj_constraint_params[arm] = params
+    def candidate(self, arm, contacts, on_ray):
+        """OmniGibson's choice (_calculate_in_hand_object): a touched, graspable link on a ray, closest to the eef."""
+        eef = self.eef_links[arm].get_position_orientation()[0]
+        found = []
+        for path in set(contacts) & on_ray:
+            target = graspable(self, path)
+            if target is not None:
+                found.append((float(th.norm(target[0].links[target[1]].get_position_orientation()[0] - eef)), path))
+        return min(found)[1] if found else None
 
-    def follow_hand(self, arm):
-        """A released free object moves on at the velocity the hand's eef link has at the object's position."""
-        obj = self._ag_obj_in_hand[arm]
+    def load(arm):
+        """The force (N) the arm passes to the hand (the palm link's incoming joint): what the hand carries. The
+        fingers' squeeze on a held object pushes back on the hand through the grasp joint, so it cancels within the
+        hand and only the load from outside remains (the object's weight and motion, a pull, a press)."""
+        view = ControllableObjectViewAPI._VIEWS_BY_PATTERN[get_robot_kinematic_tree_pattern(root)]
+        row = view._idx[root]
+        forces = th.as_tensor(view._view.get_link_incoming_joint_force()).reshape(view._view.count, -1, 6)
+        return float(th.norm(forces[row, view._link_idx[row][f"{arm}_hand_C_MC"], :3]))
+
+    def let_go_gently(self, arm, obj, seconds):
+        """A released free object, still touching the hand: its velocity relative to the hand (the velocity the eef
+        link has at the object's position) is limited by g1_grasp.leaving_velocity, so the contacts it was squeezed
+        with separate it from the hand without flinging it; when let go it also turns with the hand."""
         if obj is None or obj.fixed_base:
             return
         eef = self.eef_links[arm]
         linear, angular = eef.get_linear_velocity(), eef.get_angular_velocity()
-        offset = obj.get_position_orientation()[0] - eef.get_position_orientation()[0]
-        if bool(th.isfinite(linear).all() and th.isfinite(angular).all() and th.isfinite(offset).all()):
-            obj.set_linear_velocity(linear + th.linalg.cross(angular, offset))
+        hand = linear + th.linalg.cross(angular, obj.get_position_orientation()[0] - eef.get_position_orientation()[0])
+        relative = obj.get_linear_velocity() - hand
+        if not bool(th.isfinite(hand).all() and th.isfinite(relative).all()):
+            return
+        limited = th.tensor(leaving_velocity(relative.tolist(), seconds), dtype=hand.dtype)
+        if not bool(th.allclose(limited, relative.to(hand.dtype))):
+            obj.set_linear_velocity(hand + limited)
+        if seconds == 0.:
             obj.set_angular_velocity(angular)
 
+    def catch(self, arm, obj, giver, contacts, state):
+        """A hand-over by letting go: the other hand opened its grip on obj this step, and this hand touches obj from
+        both sides and grips it now (g1_grasp.Grip.grips), so it takes obj at once, as when its own grasp forms first,
+        without waiting for its window (the giver held obj still, so the taker's contacts were not all on a ray)."""
+        links = {link.prim_path for link in obj.links.values()}
+        body = next((path for path in contacts if path in links), None)
+        touch = [link for path in contacts if path in links for link in contacts[path]]
+        if body is None or graspable(self, body) is None or not grips[arm].grips(touch, *(x.tolist() for x in state)):
+            return False
+        self._maybe_establish_grasp(target_obj=obj, target_link_name=body.rsplit("/", 1)[-1], arm=arm)
+        if self._ag_obj_in_hand[arm] is None:
+            return False
+        grips[arm].hold(digits(touch))
+        attached(arm)
+        if leaving[giver] is not None and leaving[giver][0] is obj:
+            leaving[giver] = None  # it is held again: the giver's release limit no longer applies
+        return True
+
+    def clamp_fingers(arm, command, measured):
+        ControllableObjectViewAPI.set_joint_position_targets(root, th.minimum(command, measured + GRIP_CLAMP_RAD),
+                                                             dofs[arm])
+
+    def finite(self, arm):
+        return all(bool(th.isfinite(self.links[name].get_position_orientation()[0]).all()) for name in ray_links[arm])
+
     def handle(self):
-        # OmniGibson's _handle_assisted_grasping with the closure test above.
+        # Replaces OmniGibson's _handle_assisted_grasping (its window counter is unused; Grip keeps the window).
         for arm in self.arm_names:
-            snapped = arm in broken
-            broken.discard(arm)
-            now = closure(arm)
-            applying, opening, last[arm] = now > GRASP_CLOSURE, now < last[arm] - 1e-6, now
-            if self._ag_obj_in_hand[arm]:
-                if self._ag_release_counter[arm] is not None:
-                    follow_hand(self, arm)
-                    self._handle_release_window(arm=arm)
-                elif snapped or not applying:
+            grip, state = grips[arm], flexion_state(arm)
+            caught, offered[arm] = offered[arm], None  # offered by the other hand on its last pass
+            if leaving[arm] is not None:  # let go and still touching the hand (or on the step it parted): no fling
+                obj, seconds, touched_at = leaving[arm]
+                seconds += dt
+                if any(path.startswith(obj.prim_path + "/") for path in touching(arm)):
+                    touched_at = seconds
+                parted = seconds - touched_at > dt + 1e-9
+                leaving[arm] = None if parted or seconds > RELEASE_FOLLOW_S else (obj, seconds, touched_at)
+                if leaving[arm] is not None:
+                    let_go_gently(self, arm, obj, seconds)
+                    if state is not None:  # nor does a squeeze still commanded push it out
+                        clamp_fingers(arm, *state)
+            if self._ag_obj_in_hand[arm] is not None and self._ag_release_counter[arm] is not None:
+                self._handle_release_window(arm=arm)  # OmniGibson's release window (then the hand may grasp again)
+                if self._ag_obj_in_hand[arm] is not None:
+                    continue
+            if self._ag_obj_in_hand[arm] is not None:
+                obj = self._ag_obj_in_hand[arm]
+                links = {link.prim_path for link in obj.links.values()}
+                fingers_on = lambda: any(phalanx(finger) for body, fingers in touching(arm).items() if body in links
+                                         for finger in fingers)  # an opened hand keeps it until its fingers left it
+                tether = (_attached(self, arm) or {}).get("joint_type") == "SphericalJoint"
+                load_n = None if tether else load(arm)  # a tether to a door, drawer or lid has no load limit
+                if state is None or grip.keep(state[0].tolist(), state[1].tolist(), load_n, fingers_on):
                     self._release_grasp(arm=arm)
-                    follow_hand(self, arm)
-            elif applying and not opening:
-                target = self._calculate_in_hand_object(arm=arm)
-                if self._ag_grasp_counter[arm] is not None:
-                    if target is None:
-                        self._ag_grasp_counter[arm] = None
-                    else:
-                        self._ag_grasp_counter[arm] += 1
-                        if self._ag_grasp_counter[arm] * og.sim.get_physics_dt() >= m.GRASP_WINDOW:
-                            self._maybe_establish_grasp(target_obj=target[0], target_link_name=target[1], arm=arm)
-                            self._ag_grasp_counter[arm] = None
-                            if self._ag_obj_in_hand[arm] is not None:
-                                attached(arm)
-                elif target is not None:
-                    self._ag_grasp_counter[arm] = 0
-            else:
-                self._ag_grasp_counter[arm] = None
+                    let_go_gently(self, arm, obj, 0.)
+                    leaving[arm] = (obj, 0., 0.)
+                    if grip.why != "load":  # opened: a hand that grips it now takes it (a hand-over)
+                        offered.update({other: (obj, arm) for other in self.arm_names if other != arm})
+                    grip.let_go()
+                else:  # held: the fingers press it lightly (g1_grasp.clamp)
+                    clamp_fingers(arm, *state)
+                continue
+            if state is None:
+                grip.reset()
+                continue
+            now = closure(arm, state[0])
+            opening, closing, last[arm] = now < last[arm] - 1e-6, now > last[arm] + 1e-6, now
+            if grip.yielded:  # it handed its object over: it presses lightly and grasps again once it opens
+                grip.yielded = not opening
+                clamp_fingers(arm, *state)
+            contacts = {} if opening or fallen() else touching(arm)
+            if opening or fallen() or (contacts and not finite(self, arm)):
+                grip.reset()
+                continue
+            if caught is not None and catch(self, arm, *caught, contacts, state):
+                continue
+            on_ray = on_rays(self, arm) if contacts else set()
+            target = grip.observe(candidate(self, arm, contacts, on_ray), lambda link: contacts.get(link, ()),
+                                  lambda link: link in on_ray, state[0].tolist(), state[1].tolist(), closing)
+            if target is not None:
+                obj, link_name = graspable(self, target)
+                self._maybe_establish_grasp(target_obj=obj, target_link_name=link_name, arm=arm)
+                if self._ag_obj_in_hand[arm] is not None:
+                    grip.hold()
+                    attached(arm)
+                    for other in self.arm_names:  # a hand-over: the other hand's attachment ends in this same step,
+                        if other != arm and (_attached(self, other) or {}).get("target_obj") is obj:  # before physics
+                            self._release_grasp(arm=other)
+                            grips[other].let_go()
+                            grips[other].yielded = True
 
     robot._handle_assisted_grasping = types.MethodType(handle, robot)
-    robot._calculate_in_hand_object = types.MethodType(in_hand_object, robot)
-    if break_n is not None:
-        robot._create_assisted_grasp_joint = types.MethodType(create_grasp_joint, robot)
-        joints = {f"{robot.eef_links[side].prim_path}/ag_constraint": side for side in hands}
-
-        def on_event(event):  # as OmniGibson's simulator hears of AttachedTo's joint breaks
-            if event.type == int(lazy.omni.physx.bindings._physx.SimulationEvent.JOINT_BREAK):
-                path = str(lazy.pxr.PhysicsSchemaTools.decodeSdfPath(event.payload["jointPath"][0],
-                                                                     event.payload["jointPath"][1]))
-                if path in joints:
-                    broken.add(joints[path])
-
-        stream = lazy.omni.physx.get_physx_interface().get_simulation_event_stream_v2()
-        robot._g1_joint_breaks = stream.create_subscription_to_pop(on_event)
 
 
 def axis_rotation(axis, angle):

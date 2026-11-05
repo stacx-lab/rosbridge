@@ -1,9 +1,11 @@
-"""g1_grasp: the assisted grasp's rules without a simulator (opposition, squeeze, the window)."""
+"""g1_grasp: the assisted grasp's rules without a simulator (opposition, squeeze, the window, the hold, the load)."""
 import pytest
 
 from rosbridge_behavior import g1_grasp
-from rosbridge_behavior.g1_grasp import Grip, closure, digit, digits, opposed, squeezing, surface
-from rosbridge_behavior.g1_rules import CLOSED_FRACTION, GRASP_EVIDENCE, GRASP_WINDOW_S, SQUEEZE_OFF_RAD, SQUEEZE_ON_RAD
+from rosbridge_behavior.g1_grasp import (Grip, clamp, closure, digit, digits, excess, leaving_velocity, opposed,
+                                        phalanx, squeezing, surface)
+from rosbridge_behavior.g1_rules import (CLOSED_FRACTION, GRASP_EVIDENCE, GRASP_WINDOW_S, GRIP_CLAMP_RAD, LET_GO_S,
+                                         LOAD_HOLD_S, SQUEEZE_OFF_RAD, SQUEEZE_ON_RAD)
 
 DT = .005  # the G1's physics step
 TARGET = "/World/scene_0/glass/base_link"
@@ -52,6 +54,12 @@ def test_a_closed_touching_digit_grips_without_squeezing():
     assert not squeezing(links, {}, closed={"index": CLOSED_FRACTION - .01, "middle": 1.})
 
 
+def test_a_held_hand_presses_lightly_and_opens_freely():
+    assert clamp(1.2, .4) == pytest.approx(.4 + GRIP_CLAMP_RAD)
+    assert clamp(.42, .4) == .42
+    assert clamp(0., .4) == 0.
+
+
 JOINTS = ("thumb", "thumb", "index", "index", "middle", "ring", "pinky")  # the digit of each flexion joint
 REST = [.5] * len(JOINTS)
 
@@ -62,8 +70,8 @@ def command(squeeze, measured=REST):
             for i, (d, m) in enumerate(zip(JOINTS, measured))]
 
 
-def grip():
-    return Grip(DT, JOINTS)
+def grip(load_limit=None):
+    return Grip(DT, JOINTS, load_limit)
 
 
 def run(grip, steps, links, on_ray=True, squeeze=None, candidate=TARGET, measured=None):
@@ -121,6 +129,10 @@ def test_the_window_restarts_on_a_new_target_and_on_reset():
     assert run(g, WINDOW - 1, PINCH) is None and run(g, 1, PINCH) == 1
 
 
+def keep(g, squeeze, load=0., fingers_on=lambda: False):
+    return g.keep(command(squeeze), REST, load, fingers_on)
+
+
 def test_a_shape_the_hand_has_reached_does_not_squeeze_until_pressed_or_closed():
     # the command stays where the fingers are: touching only
     assert run(grip(), 400, PINCH, squeeze={}) is None
@@ -129,19 +141,128 @@ def test_a_shape_the_hand_has_reached_does_not_squeeze_until_pressed_or_closed()
     assert run(grip(), 400, PINCH, squeeze={}, measured=pushed) == WINDOW
 
 
-def test_a_hand_closed_round_a_thin_handle_grasps_it():
+def test_a_hand_that_handed_its_object_over_grasps_again_only_after_opening():
+    g = grip()
+    g.yielded = True
+    assert run(g, 400, PINCH) is None
+    g.yielded = False  # the handler clears it when the hand opens
+    assert run(g, WINDOW, PINCH) == WINDOW
+
+
+def test_a_held_grasp_lets_go_when_the_squeeze_ends_with_hysteresis():
+    g = grip()
+    assert run(g, WINDOW, PINCH) == WINDOW
+    g.hold()
+    assert g.held == {"thumb", "index"}
+    assert keep(g, {"thumb": SQUEEZE_OFF_RAD + 1e-6, "index": -.2}) is None  # one gripping digit still squeezes
+    assert keep(g, {"thumb": (SQUEEZE_ON_RAD + SQUEEZE_OFF_RAD) / 2}) is None  # between OFF and ON
+    assert keep(g, {"thumb": SQUEEZE_OFF_RAD - .01, "middle": 1.}) == "squeeze"  # the middle does not grip it
+    assert g.why == "squeeze"
+
+
+def test_a_hand_closed_round_a_thin_handle_grasps_and_holds_it_until_opened():
     n = len(JOINTS)
-    half = Grip(DT, JOINTS, limits=([0.] * n, [REST[0] / CLOSED_FRACTION] * n))  # REST is CLOSED_FRACTION closed
+    half = Grip(DT, JOINTS, None, ([0.] * n, [REST[0] / CLOSED_FRACTION] * n))  # REST is CLOSED_FRACTION closed
     assert run(half, 200, PINCH, squeeze={}) == WINDOW  # the targets are reached: no squeeze, but closed
-    less = Grip(DT, JOINTS, limits=([0.] * n, [2.] * n))  # REST is a quarter closed: a shape that only touches
+    less = Grip(DT, JOINTS, None, ([0.] * n, [2.] * n))  # REST is a quarter closed: a shape that only touches
     assert run(less, 200, PINCH, squeeze={}) is None
-    moving = Grip(DT, JOINTS, limits=([0.] * n, [REST[0] / CLOSED_FRACTION] * n))
+    moving = Grip(DT, JOINTS, None, ([0.] * n, [REST[0] / CLOSED_FRACTION] * n))
     lag = (SQUEEZE_OFF_RAD + SQUEEZE_ON_RAD) / 2  # closed, but still closing (neither settled nor squeezing)
     assert run(moving, 200, PINCH, squeeze={"thumb": lag, "index": lag}) is None
-    still_closing = Grip(DT, JOINTS, limits=([0.] * n, [REST[0] / CLOSED_FRACTION] * n))
+    still_closing = Grip(DT, JOINTS, None, ([0.] * n, [REST[0] / CLOSED_FRACTION] * n))
     assert not any(still_closing.observe(TARGET, lambda t: PINCH, lambda t: True, REST, REST, closing=True)
                    for _ in range(200))  # the command still rising: only a squeeze grips
+    half.hold()
+    assert half.keep(REST, REST, 0.) is None
+    assert half.keep([r - .1 for r in REST], REST, 0.) == "squeeze"  # opened below CLOSED_FRACTION, no squeeze
+
+
+def test_a_hand_that_grips_an_object_now_can_take_it_over_at_once():
+    n = len(JOINTS)
+    g = Grip(DT, JOINTS, None, ([0.] * n, [REST[0] / CLOSED_FRACTION] * n))  # REST is closed
+    assert g.grips(PINCH, REST, REST)
+    assert not g.grips(["right_index_DP", "right_middle_DP"], REST, REST)  # one side only
+    assert not Grip(DT, JOINTS, None, ([0.] * n, [2.] * n)).grips(PINCH, REST, REST)  # a quarter closed, no squeeze
+    g.hold({"thumb", "index"})
+    assert g.held == {"thumb", "index"} and g.keep(REST, REST, 0.) is None
+
+
+def test_a_held_grasp_lets_go_when_the_gripping_digits_are_commanded_open():
+    from rosbridge_behavior.g1_rules import OPEN_RAD
+    g = grip()
+    run(g, WINDOW, PINCH)
+    g.hold()
+    tight = [m + .5 for m in REST]
+    assert g.keep(tight, REST, 0.) is None
+    # opened by less than OPEN_RAD while the object holds the fingers out: still held
+    assert g.keep([c - OPEN_RAD / 2 for c in tight], REST, 0.) is None
+    # opened by OPEN_RAD (the object still holds a finger out beyond the new command): let go
+    assert g.keep([c - OPEN_RAD for c in tight], REST, 0.) == "open"
+
+
+def test_the_moving_phalanges_are_what_pushes_an_object():
+    assert all(phalanx(f"right_{name}") for name in ("thumb_PP", "thumb_DP", "index_MP", "pinky_DP"))
+    assert not any(phalanx(f"right_{name}") for name in ("thumb_MC", "pinky_MC", "index_MCP_VL", "hand_C_MC", "eef"))
+
+
+def test_an_opened_hand_lets_go_once_its_fingers_have_left_the_object():
+    g = grip()
+    run(g, WINDOW, PINCH)
+    g.hold()
+    opened = {"thumb": 0., "index": 0.}  # the squeeze has ended
+    on = [True] * 5 + [False]
+    assert [keep(g, opened, 0., fingers_on=lambda: on.pop(0)) for _ in range(6)] == [None] * 5 + ["squeeze"]
+    g.let_go()
+    assert g.let_after_s == pytest.approx(5 * DT)
+    run(g, WINDOW, PINCH)
+    g.hold()
+    steps = [keep(g, opened, 0., fingers_on=lambda: True) for _ in range(round(2 * LET_GO_S / DT))]
+    assert steps.index("squeeze") == round(LET_GO_S / DT)  # fingers that stay on it: let go after LET_GO_S
+    g.let_go()
+    run(g, WINDOW, PINCH)
+    g.hold()
+    assert keep(g, opened, 0., fingers_on=lambda: True) is None
+    assert keep(g, {"thumb": .5}, 0., fingers_on=lambda: True) is None and g.letting_s == 0.  # squeezed again
+
+
+def test_a_grasp_restored_from_a_saved_state_is_held_by_any_squeezing_digit():
+    g = grip()
+    assert keep(g, {"ring": .3}) is None and keep(g, {"ring": 0.}) == "squeeze"
+
+
+def test_the_load_limit_ignores_spikes_and_ends_a_sustained_overload():
+    limit, squeeze = 100., {"thumb": .5, "index": .5}
+    g = grip(limit)
+    run(g, WINDOW, PINCH)
+    g.hold()
+    for k in range(400):  # 4 steps of 2000 N every 0.5 s over a 60 N pull
+        assert keep(g, squeeze, 2000. if k % 100 < 4 else 60.) is None
+    for _ in range(round(2 / DT)):
+        assert keep(g, squeeze, .99 * limit) is None  # just under the limit, held for 2 s
+    ended = next(k for k in range(1000) if keep(g, squeeze, 1.5 * limit))
+    assert g.why == "load" and LOAD_HOLD_S / DT <= ended + 1 <= (LOAD_HOLD_S + .1) / DT
+    g.let_go()
+    run(g, WINDOW, PINCH)
+    g.hold()
+    assert all(keep(g, squeeze, float("nan")) is None for _ in range(200))  # an unreadable load never counts
+    assert all(keep(g, squeeze, None) is None for _ in range(200))  # a tether: no load limit
+
+
+def test_no_load_limit_keeps_any_load():
+    g = grip()
+    run(g, WINDOW, PINCH)
+    g.hold()
+    assert all(keep(g, {"thumb": .5}, 1e6) is None for _ in range(1000))
 
 
 def test_the_rules_module_is_free_of_the_simulator():
     assert "omnigibson" not in g1_grasp.__dict__ and "torch" not in g1_grasp.__dict__
+
+
+def test_a_released_object_falls_or_rests_but_is_not_flung():
+    from rosbridge_behavior.g1_rules import RELEASE_MARGIN_MPS as m
+    assert leaving_velocity((0., 0., -.98), .1) == (0., 0., -.98)  # falling out of the hand: unchanged
+    assert leaving_velocity((0., 0., 0.), .2) == (0., 0., 0.)  # resting in it: unchanged
+    x, y, z = leaving_velocity((2., 0., 1.5), .1)  # pushed sideways and up by the fingers: cut to the margin
+    assert (x, y, z) == pytest.approx((m, 0., m))
+    assert leaving_velocity((0., 0., -5.), .1)[2] == pytest.approx(-(9.81 * .1 + m))  # shot downward: cut to falling

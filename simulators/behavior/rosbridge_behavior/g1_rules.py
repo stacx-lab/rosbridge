@@ -45,6 +45,28 @@ CLOSED_FRACTION = .5
 # touched a finger and was squeezed, each on at least GRASP_EVIDENCE of the window's steps and within the last
 # GRASP_RECENT_S (contacts on thin lips and handles flicker from step to step).
 GRASP_EVIDENCE, GRASP_RECENT_S = .5, .05
+# A held object is also let go once the gripping digits are commanded open: their joints' mean command OPEN_RAD below
+# the tightest it was while held (an object can hold a finger out beyond a partly opened command, still a squeeze).
+OPEN_RAD = .2
+# An opened hand lets go of the object once its fingers have left it (no phalanx touches it), LET_GO_S after it opened
+# at the latest, so that the opening fingers do not push it out (the R1Pro's jaws are clear when it lets go). Measured
+# (native grasp suite): holding on until the fingers had left (0.5 s) let the opening fingers press into the still
+# attached object and fling it when let go (mug wraps 1.3-3.7 m/s); 0.08 s lets go while they only begin to part.
+LET_GO_S = .08
+# While a hand holds an object, each flexion joint's position target is at most GRIP_CLAMP_RAD beyond its measured
+# position, so the fingers press lightly instead of driving into the held object (which flung it when let go).
+GRIP_CLAMP_RAD = .05
+# A held object (not a tether) is let go when the load the arm passes to the hand (the palm link's incoming joint force,
+# in which the fingers' squeeze cancels), low-pass filtered with LOAD_TAU_S, stays above LOAD_LIMIT_N for LOAD_HOLD_S;
+# None: no load limit. Tethers to doors, drawers and lids are never let go by load, as OmniGibson's joints never break:
+# the 10.8 kg room door door_tonlzz pressed by the closing hand passed the limit within its close and lost its tether in
+# 11 of 12 trials (native grasp suite), while the legged-robot reasons for limiting tethers are gone (a body
+# held up by a hand on a handle is physics; two hands never hold one object, HAND_OVER).
+LOAD_LIMIT_N, LOAD_TAU_S, LOAD_HOLD_S = 150., .1, .3
+# A released object leaves at the hand's velocity; while it still touches the hand (RELEASE_FOLLOW_S at most) it moves
+# from the hand no faster than RELEASE_MARGIN_MPS sideways or up, and no faster down than falling since the release gives
+# plus that margin, so the contacts it was squeezed with (fingers, palm) separate it from the hand without flinging it.
+RELEASE_FOLLOW_S, RELEASE_MARGIN_MPS = .6, .1
 # A fall: FALL_HOLD_S of world time in all with the pelvis tilted more than FALL_TILT_DEG from upright or lower than
 # FALL_HEIGHT (m) above the floor, counted since it was last within FALL_UPRIGHT_DEG of upright (and higher); from then
 # on the legs hold still. Measured (native probes): squats and walking stay within 17 degrees and
