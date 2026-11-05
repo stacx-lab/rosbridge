@@ -167,6 +167,13 @@ class BehaviorSim:
         self.initial_literals = self._literals()
         self.embodiment.reset(self.episode)
         self.episode.origin = self.episode.base_pose()
+        doors = getattr(self.embodiment, "doors", None)
+        if doors is not None and not getattr(self, "_doors_written", False):
+            # The scene's room doors at the first episode's start pose, for the world text (the start pose is the same
+            # in every episode of a run).
+            from .scene_doors import write
+            write(doors, self.episode.origin)
+            self._doors_written = True
         self.seed, self.steps, self.done = seed, 0, False
         self.success = bool(self.episode.env.task.success[0])
         self.reward, self._frames, self._spectator_frames = float(self.success), {}, {}
