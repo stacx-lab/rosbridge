@@ -57,6 +57,16 @@ launched with, and a reset reloads the instance in the live environment (seconds
 A reset that fails after the reload starts leaves the episode done until a reset
 succeeds.
 
+Every episode's reset first restores the whole scene as it was loaded, then applies
+the instance: an instance holds only the task's own objects, so anything else a client
+moved, opened or switched on would otherwise carry into the next episode. Episode
+records add BEHAVIOR's partial credit: `q_score`, the evaluator's own (`TaskMetric`): 1 on
+success, else the largest fraction, over the goal's grounded options (quantifiers expanded,
+one literal per object), of literals that hold at the end and did not hold when the
+instance loaded; and `goal_satisfied` of `goal_total`, the goal's top-level conditions that
+hold at the end (a `forall` over six objects is one condition, and conditions that held
+from the start count).
+
 ## Native worker
 
 Isaac Sim 5.1 publishes Python 3.11 wheels only, so the world node runs in the

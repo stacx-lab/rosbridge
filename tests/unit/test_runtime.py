@@ -210,6 +210,39 @@ def test_judge_stop_reset_and_failed_reset(tmp_path, monkeypatch):
     assert all(not item['done'] for item in outcomes)
 
 
+def test_failed_reset_that_loses_the_episode_records_its_outcome(tmp_path, monkeypatch):
+    """A backend that reloads in place (BEHAVIOR) has no episode left after a failed reset: the episode it ended is
+    recorded with the outcome measured before the attempt, and the world stays done until a reset succeeds."""
+    import json
+    monkeypatch.setenv('ROSBRIDGE_RUN_DIR', str(tmp_path))
+    runtime, _ = world()
+    wait(runtime, .2)
+    finish(runtime)
+    sim = runtime.sim
+
+    def lose(task, seed, randomize):
+        sim.done = True
+        raise RuntimeError("reload failed")
+    sim.reset = lose
+    bad = reset(runtime, 'toy', 0, False)
+    runtime.drain()
+    assert not bad.result().success
+    outcomes = [json.loads(line) for line in (tmp_path / 'episode-results.jsonl').read_text().splitlines()]
+    assert [(item['episode'], item['reason'], item['step']) for item in outcomes] == [(0, 'reset_failed', 2)]
+    with pytest.raises(CommandError):
+        runtime.commands.set_group("finger", [0.])
+    late = wait(runtime, .1)
+    runtime.drain()
+    assert not late.result().success and not runtime.tick()
+    del sim.reset
+    restarted = reset(runtime, 'toy', 0, False)
+    runtime.drain()
+    assert restarted.result().success
+    runtime.close()
+    outcomes = [json.loads(line) for line in (tmp_path / 'episode-results.jsonl').read_text().splitlines()]
+    assert [(item['episode'], item['reason']) for item in outcomes] == [(0, 'reset_failed'), (1, 'stopped')]
+
+
 def test_operator_judge_reads_results_without_ros(tmp_path, monkeypatch):
     import json
     import os

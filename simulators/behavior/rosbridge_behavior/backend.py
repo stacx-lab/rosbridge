@@ -50,6 +50,55 @@ def inside(offset, contains, step):
     return 1.
 
 
+class GoalOptions:
+    """An activity's grounded goal options (lists of literals, one per object for quantified goals) as rows of indices
+    into their distinct literals. The options of a quantified goal repeat the same literals (assembling_gift_baskets:
+    331,776 options of 16), and OmniGibson's get_goal_option_satisfaction evaluates every literal of every option,
+    which took minutes there; here each distinct literal is evaluated once per call, with the same values."""
+
+    def __init__(self, options):
+        index, literals, rows = {}, [], []
+        for option in options:
+            row = []
+            for node in option:
+                key = repr(node.body)  # a grounded literal's tokens, e.g. ['not', ['open', 'fridge.n.01_1']]
+                if key not in index:
+                    index[key] = len(literals)
+                    literals.append(node)
+                row.append(index[key])
+            rows.append(row)
+        self.literals, self.lengths = literals, np.array([len(row) for row in rows], dtype=np.int64)
+        self.rows = np.full((len(rows), int(self.lengths.max(initial=0))), -1, dtype=np.int32)
+        for i, row in enumerate(rows):
+            self.rows[i, :len(row)] = row
+
+    def truth(self, evaluate_predicate):
+        """Each distinct literal's value now (a predicate on the same objects is evaluated once)."""
+        cache = {}
+
+        def evaluate(name, *entities, **kwargs):
+            key = (name, *entities, *sorted(kwargs.items()))
+            if key not in cache:
+                cache[key] = evaluate_predicate(name, *entities, **kwargs)
+            return cache[key]
+
+        return np.array([bool(node.evaluate(evaluate)) for node in self.literals], dtype=bool)
+
+    def masks(self, truth):
+        """get_goal_option_satisfaction's form: per option, per literal, whether it holds."""
+        return [truth[row[:n]].tolist() for row, n in zip(self.rows, self.lengths)]
+
+    def q_score(self, success, now, initial):
+        """compute_q_score: 1 on success, else the best option's fraction of literals that hold now and did not at
+        the start (an empty option scores 0)."""
+        if success:
+            return 1.0
+        if not len(self.lengths):
+            return 0.0
+        newly = (np.append(now, False)[self.rows] & ~np.append(initial, True)[self.rows]).sum(axis=1)
+        return float(np.max(np.where(self.lengths > 0, newly / np.maximum(self.lengths, 1), 0.)))
+
+
 class Overview(NamedTuple):
     """An embodiment's overview spectators: `distance` m out horizontally from the base, with
     their eye and the point they look at `eye` and `target` m above the base's height at the
@@ -113,6 +162,9 @@ class BehaviorSim:
             self.max_steps = self.episode.max_steps
         self.done = True
         self.episode.load(seed)
+        # The evaluator's TaskMetric takes the goal options' satisfaction here, after the instance loads and before
+        # the policy acts; its partial credit counts only what was not already satisfied.
+        self.initial_literals = self._literals()
         self.embodiment.reset(self.episode)
         self.episode.origin = self.episode.base_pose()
         self.seed, self.steps, self.done = seed, 0, False
@@ -139,6 +191,26 @@ class BehaviorSim:
 
     def state(self):
         return self.embodiment.state(self.episode)
+
+    def outcome_extra(self):
+        """Partial credit for the episode record.
+
+        q_score is the evaluator's (TaskMetric): 1 on success, else the largest fraction, over the goal's grounded
+        options (quantifiers expanded, one literal per object), of literals that hold now and did not hold at the
+        episode start. goal_satisfied of goal_total counts the goal's top-level conditions that hold now (a forall over
+        six objects is one condition), including any that held from the start."""
+        task = self.episode.env.task
+        _, status = task.compiled_task.check_goal(lambda name, *entities: task._evaluate_predicate(0, name, *entities))
+        satisfied = len(status["satisfied"])
+        q_score = self.goal_options.q_score(self.success, self._literals(), self.initial_literals)
+        return {"goal_satisfied": satisfied, "goal_total": satisfied + len(status["unsatisfied"]),
+                "q_score": q_score}
+
+    def _literals(self):
+        task = self.episode.env.task
+        if getattr(self, "goal_options", None) is None or self._options_of is not task.ground_goal_state_options:
+            self.goal_options, self._options_of = GoalOptions(task.ground_goal_state_options), task.ground_goal_state_options
+        return self.goal_options.truth(lambda name, *entities, **kwargs: task._evaluate_predicate(0, name, *entities, **kwargs))
 
     def step(self, action):
         if self.done:

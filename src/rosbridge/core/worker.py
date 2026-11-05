@@ -189,6 +189,15 @@ class WorkerBackend:
     def camera_pose(self, camera):
         return self._call("camera_pose", camera)
 
+    def outcome_extra(self):
+        """The native backend's own measures for the episode record; none when it has none."""
+        try:
+            return self._call("outcome_extra")
+        except WorkerError as error:
+            if str(error).startswith("native AttributeError") and "outcome_extra" in str(error).split("\n")[0]:
+                return {}
+            raise
+
     def native(self, method, *args, **kwargs):
         """Invoke another backend method in the worker, for tests and diagnostics."""
         return self._call(method, *args, **kwargs)

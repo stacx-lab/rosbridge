@@ -63,6 +63,11 @@ class WorldRuntime:
         try:
             self.sim.reset(task, seed, randomize)
         except Exception:
+            if self.sim.done:
+                # The backend lost the episode in the attempt (BEHAVIOR reloads its one scene in place). Its outcome was
+                # measured before; record it, or the episode would go unjudged although it ended normally.
+                self.commands.close()
+                self._record_terminal(result=dict(previous, reason="reset_failed"))
             return ResetResult(False, "reset failed")
         self._record_terminal(result=previous)
         self.commands.close()
@@ -107,11 +112,13 @@ class WorldRuntime:
 
     def _outcome(self, reason=None):
         limit = self.sim.max_steps
+        # A backend may add its own measures of the episode (BEHAVIOR: the goal predicates that hold).
+        extra = self.sim.outcome_extra() if hasattr(type(self.sim), "outcome_extra") else {}
         return {"episode": self.episode, "task": self.sim.task, "seed": self.sim.seed,
                 "step": self.steps, "time_s": self.time_s, "reward": self.sim.reward,
                 "success": bool(self.sim.success), "done": bool(self.sim.done),
                 "reason": reason or ("success" if self.sim.success else "max_steps"
-                           if limit and self.steps >= limit else "episode_done")}
+                           if limit and self.steps >= limit else "episode_done"), **extra}
 
     def _record_terminal(self, reason=None, *, result=None, error=None):
         if self._judged:
