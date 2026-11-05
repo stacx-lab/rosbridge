@@ -7,8 +7,9 @@ turned back about the joint by the joint's position), and rays straight down at 
 1.0 m from the leaf at its middle and a quarter of its width either way, look for floor (a collision surface within
 FLOOR_BAND of the leaf's bottom; the door and the robot are ignored). A leaf with floor on one side (FLOOR_MIN_POINTS of
 the points) and no floor at any point of the other, nor a lower one (a step), is a boundary door: a static, invisible
-collision box fills its doorway, in the plane of the closed leaf and thinner than it, so the robot (and anything else)
-cannot pass while the leaf still turns or slides through the box (the pair is filtered); the door itself is untouched.
+collision box fills its doorway, in the plane of the closed leaf and thinner than it, so the robot cannot pass while the
+leaf still turns or slides through the box (the pair is filtered); the door itself is untouched. A box is made only when
+the robot comes near its doorway, and removed when the next episode starts (Guard).
 The world's text gets one line per door with its position in the robot's episode-start frame (base/odom), which way it
 opens and whether it is blocked (describe); the facts are written to the run directory (write)."""
 import json
@@ -28,6 +29,10 @@ BLOCKER_THICKNESS_M = .01
 BLOCKER_ROOT = "/World/rosbridge_scene_edge"
 UPRIGHT = .9  # |axis z| of an upright hinge, or at most 1 - UPRIGHT for a horizontal slide
 LEAF_MIN_M = (.4, 1.)  # width and height of a door leaf; smaller jointed parts of a door (a handle) are not leaves
+# A doorway's wall exists only once the robot's pelvis has come within this distance of the doorway (it walks at most
+# ~0.35 m/s): a static collider anywhere in the scene (even with collision off) changes PhysX's pair order, which moved a
+# knife resting on a board 15 m away by 1e-6 m at the start of canning_food (12 walls); without walls nothing changes.
+GUARD_M = 1.5
 
 
 def _values(value):
@@ -199,26 +204,20 @@ def _door(obj, name, joint, revolute, bodies, robot_bodies, owner, raytest_batch
             "no_floor_side": edge, "prim_path": str(obj.prim_path)}
 
 
-def block(doors, stage=None):
-    """Fill the doorway of every door that opens onto no floor with a static, invisible collision box in the plane of
-    its closed leaf (thinner than the leaf, as wide and high), filtered against the door so that the leaf still moves.
-    Static USD colliders outlive simulator stops and scene restores. Returns the boxes' prim paths."""
-    import contextlib
-
-    if stage is None:
-        import omnigibson as og
-        stage, editing = og.sim.stage, og.sim.editing_usd  # OmniGibson's guard: USD edits sync to Fabric in this context
-    else:
-        editing = contextlib.nullcontext
-    edges = [door for door in doors if door.get("no_floor_side") is not None]
-    if not edges:
-        return []
-    with editing():
-        return [_blocker(stage, door) for door in edges]
+def block(doors):
+    """Mark every door that opens onto no floor for a wall in its doorway (door["blocked"]: the wall's prim path) and
+    return those paths. Nothing is made here: the Guard makes a wall when the robot comes near its doorway."""
+    paths = []
+    for door in doors:
+        if door.get("no_floor_side") is not None:
+            door["blocked"] = f"{BLOCKER_ROOT}/{door['object']}_{door['joint']}"
+            paths.append(door["blocked"])
+    return paths
 
 
-def _blocker(stage, door):
-    """One doorway's collision box (see block)."""
+def make_wall(stage, door):
+    """A doorway's wall: a static, invisible collision box in the plane of the closed leaf (as wide and high, thinner),
+    filtered against the door so that the leaf still turns or slides through it."""
     from pxr import Gf, Sdf, UsdGeom, UsdPhysics
 
     wide, normal = np.asarray(door["wide"]), np.asarray(door["normal"])
@@ -229,8 +228,7 @@ def _blocker(stage, door):
     w = math.sqrt(max(0., 1. + np.trace(frame))) / 2
     x, y, z = ((frame[2, 1] - frame[1, 2]) / (4 * w), (frame[0, 2] - frame[2, 0]) / (4 * w),
                (frame[1, 0] - frame[0, 1]) / (4 * w))
-    path = f"{BLOCKER_ROOT}/{door['object']}_{door['joint']}"
-    cube = UsdGeom.Cube.Define(stage, path)
+    cube = UsdGeom.Cube.Define(stage, door["blocked"])
     cube.CreateSizeAttr(1.)
     xform = UsdGeom.Xformable(cube.GetPrim())
     xform.ClearXformOpOrder()
@@ -241,8 +239,65 @@ def _blocker(stage, door):
     UsdGeom.Imageable(cube.GetPrim()).MakeInvisible()
     UsdPhysics.CollisionAPI.Apply(cube.GetPrim())
     UsdPhysics.FilteredPairsAPI.Apply(cube.GetPrim()).CreateFilteredPairsRel().AddTarget(Sdf.Path(door["prim_path"]))
-    door["blocked"] = path
-    return path
+    return door["blocked"]
+
+
+class Guard:
+    """Makes a boundary doorway's wall when the robot's pelvis comes within GUARD_M of the doorway, and removes every wall
+    when the next episode is reset, before its scene loads (reset): the scene holds no wall until the robot nears a
+    boundary door, so episodes that never do run exactly as without walls (any collider, even one with collision off,
+    changed PhysX's pair order)."""
+
+    def __init__(self, doors, stage=None):
+        self.doors = {door["blocked"]: door for door in doors or () if door.get("blocked")}
+        self.walls = [(path, np.asarray(door["centre"][:2], float), np.asarray(door["wide"][:2], float),
+                       door["width"] / 2) for path, door in self.doors.items()]
+        self.stage, self.on = stage, set()
+
+    def _edit(self):
+        if self.stage is None:
+            import omnigibson as og
+            return og.sim.stage, og.sim.editing_usd()  # OmniGibson's guard: USD edits sync to Fabric in this context
+        import contextlib
+        return self.stage, contextlib.nullcontext()
+
+    def _make(self, paths):
+        stage, editing = self._edit()
+        with editing:
+            for path in paths:
+                make_wall(stage, self.doors[path])
+
+    def _remove(self, paths):
+        stage, editing = self._edit()
+        with editing:
+            for path in paths:
+                stage.RemovePrim(path)
+            if not stage.GetPrimAtPath(BLOCKER_ROOT).GetChildren():
+                stage.RemovePrim(BLOCKER_ROOT)
+        if self.stage is None:
+            # Removing a collider invalidates PhysX's simulation view: OmniGibson's physics views (the robot's joint
+            # reads) must be rebuilt, as after removing an object.
+            import omnigibson as og
+            og.sim.update_handles()
+
+    def reset(self):
+        if self.on:
+            self._remove(sorted(self.on))
+            self.on = set()
+
+    def update(self, xy):
+        """xy: the robot's pelvis in the world (m). Returns the walls made now."""
+        near = []
+        for path, centre, wide, half in self.walls:
+            if path in self.on:
+                continue
+            along = float(np.clip((np.asarray(xy, float) - centre) @ wide, -half, half))
+            if np.linalg.norm(np.asarray(xy, float) - (centre + along * wide)) < GUARD_M:
+                near.append(path)
+        if near:
+            self._make(near)
+            self.on.update(near)
+        return near
 
 
 def _bearing(vector):
@@ -263,7 +318,7 @@ KINDS = {"door": "a door", "sliding_door": "a sliding door", "garage_door": "a g
 HEADER = ("Room doors of this scene, each at its closed position in base/odom (the episode-start frame: x ahead, y to "
           "the left, in metres; a side of a door is named by the direction it faces, +x, -y or a bearing in degrees "
           "counterclockwise from +x)")
-BLOCKED = ("an invisible wall fills its doorway, so nothing passes through it, although the door itself still opens")
+BLOCKED = "an invisible wall in its doorway keeps the robot from passing through, although the door itself still opens"
 
 
 def describe(doors, origin):

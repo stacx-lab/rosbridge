@@ -117,3 +117,27 @@ def test_a_lower_floor_beyond_a_door_keeps_it_open_but_walls_without_floor_do_no
     assert sd.classify({1: 9, -1: 0}, {1: 0, -1: sd.FLOOR_MIN_POINTS}) is None  # a lower floor
     assert sd.classify({1: 0, -1: 7}, {1: 0, -1: 0}) == 1
 
+
+class Recorded(sd.Guard):
+    def _make(self, paths):
+        self.calls.append((tuple(paths), True))
+
+    def _remove(self, paths):
+        self.calls.append((tuple(paths), False))
+
+
+def test_a_wall_exists_only_once_the_robot_has_come_near_its_doorway():
+    walled = door((2., 0., 1.), (1., 0., 0.), 1, no_floor=-1)  # doorway along y from (2, -0.42) to (2, 0.42)
+    other = door((9., 9., 1.), (1., 0., 0.), 1)
+    assert sd.block([walled, other]) == ["/World/rosbridge_scene_edge/door_x_0_j_leaf"] and "blocked" not in other
+    guard = Recorded([walled, other])
+    guard.calls = []
+    assert len(guard.walls) == 1
+    assert guard.update([0., 0.]) == [] and guard.update([2. - sd.GUARD_M - .01, .42]) == []
+    assert guard.update([2. - sd.GUARD_M + .05, .42]) == [walled["blocked"]]  # in front of the doorway's end
+    assert guard.update([2., 0.]) == []  # already on
+    guard.reset()
+    assert guard.calls == [((walled["blocked"],), True), ((walled["blocked"],), False)] and guard.on == set()
+    guard.reset()
+    assert len(guard.calls) == 2  # nothing to turn off
+    assert sd.Guard(None).walls == []

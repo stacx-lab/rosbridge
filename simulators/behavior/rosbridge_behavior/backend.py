@@ -161,6 +161,9 @@ class BehaviorSim:
             self.layout = self.embodiment.layout(self.episode.robot)
             self.max_steps = self.episode.max_steps
         self.done = True
+        guard = getattr(self.embodiment, "guard", None)
+        if guard is not None:
+            guard.reset()  # the boundary walls the last episode made go before the scene reloads (scene_doors.Guard)
         self.episode.load(seed)
         # The evaluator's TaskMetric takes the goal options' satisfaction here, after the instance loads and before
         # the policy acts; its partial credit counts only what was not already satisfied.

@@ -158,6 +158,7 @@ class G1Sharpa:
     rendering = "on_demand"  # DLAA captures (backend.HISTORY_S, CUT_DELIVERIES)
     # This episode: periods since it started, how long the body has looked fallen, and whether (and when) it fell.
     ticks, lying_s, fallen, fall_time_s, frozen = 0, 0., False, None, None
+    doors = guard = None  # the scene's room doors and the boundary walls' guard (configure)
     frequencies = {"action_frequency": 50, "rendering_frequency": 50, "physics_frequency": 200}
     cameras = {"head_camera": f"{NAME}:{CAMERA}:Camera:0"}
 
@@ -215,6 +216,7 @@ class G1Sharpa:
             import traceback
             print(f"scene doors not read: {traceback.format_exc()}", file=sys.stderr, flush=True)
             self.doors = None
+        self.guard = scene_doors.Guard(self.doors)  # each wall is on only while the robot is near its doorway
 
     def _attached(self, arm):
         self.attachments += 1
@@ -320,6 +322,8 @@ class G1Sharpa:
             targets[device], start = command[start:start + len(joints)], start + len(joints)
         q, dq = values(robot.get_joint_positions()), values(robot.get_joint_velocities())
         position, quaternion = robot.get_position_orientation()
+        if self.guard is not None and self.guard.walls:
+            self.guard.update(values(position)[:2])
         x, y, z, w = values(quaternion)
         frame = rotation(quaternion)
         # MuJoCo's free joint, which GR00T observes, reports angular velocity in the body frame.
