@@ -64,13 +64,22 @@ def batch_particle_view_rebuilds():
     removals only edit USD, and generate_particles sets the new particles' poses after the rebuild. Measured:
     cook 154 -> 18 s, reset 72 -> 23 s; success, goal and robot identical; the
     cooked particles' resting positions differ from the original code's by 5 mm median, as two runs of the original code
-    differ from each other (5.6 mm)."""
+    differ from each other (5.6 mm).
+
+    Visual particles (sprayed insectifuge, pesticide, dust, stains) are removed through og.sim.remove_prim, which rebuilds
+    every physics view after each one too. A reset's restore (_sync_particle_groups -> remove_attachment_group ->
+    remove_all_group_particles) removed a sprayed group particle by particle at ~0.14 s each, so ~2,000 sprayed
+    particles outlasted a 300 s reset timeout (10 unscored spraying episodes in one evaluation). remove_all_group_particles and
+    remove_particles of a visual system now run one rebuild at their end, at the point where the original's last
+    per-particle rebuild ran; nothing reads the physics views in between (a removal only deletes USD prims and the
+    system's own records), so the restored state is the same."""
     import contextlib
 
     import omnigibson as og
     import omnigibson.utils.transform_utils as T
     import torch as th
-    from omnigibson.systems.macro_particle_system import MacroParticleSystem, MacroPhysicalParticleSystem
+    from omnigibson.systems.macro_particle_system import (
+        MacroParticleSystem, MacroPhysicalParticleSystem, MacroVisualParticleSystem)
 
     if getattr(MacroParticleSystem, "_rosbridge_batched", False):
         return
@@ -91,10 +100,15 @@ def batch_particle_view_rebuilds():
                 sim.update_handles()
 
     remove, sync = MacroParticleSystem.remove_particles, MacroPhysicalParticleSystem._sync_particles
+    remove_group = MacroVisualParticleSystem.remove_all_group_particles
 
     def remove_particles(self, idxs, **kwargs):
         with one_rebuild():
             return remove(self, idxs, **kwargs)
+
+    def remove_all_group_particles(self, group):
+        with one_rebuild():
+            return remove_group(self, group)
 
     def _sync_particles(self, n_particles):
         with one_rebuild():
@@ -114,6 +128,8 @@ def batch_particle_view_rebuilds():
         self.set_particles_position_orientation(positions=positions, orientations=orientations)
 
     MacroPhysicalParticleSystem.remove_particles = remove_particles
+    MacroVisualParticleSystem.remove_particles = remove_particles
+    MacroVisualParticleSystem.remove_all_group_particles = remove_all_group_particles
     MacroPhysicalParticleSystem._sync_particles = _sync_particles
     MacroParticleSystem.generate_particles = generate_particles
     MacroParticleSystem._rosbridge_batched = True
