@@ -99,8 +99,9 @@ description: Simulation clock of the BEHAVIOR house. Furniture, objects and the 
   object (a radio, a lamp, a stove) carries a small marker that is red while it is off and green while it is on; a
   finger held on the marker for 0.15 s toggles it, once per touch, also while that hand holds something (some machines
   with a door stay off while it is open). Objects made to be attached to another (a camera to a tripod, a picture to a
-  hook) attach by themselves as soon as their mounting points touch within 5 cm and 15 degrees, with nothing to press
-  or release.
+  hook) attach by themselves, with nothing to press or release, at every step in which the object touches the other
+  with their mounting points within 5 cm and 15 degrees, held in a hand or not; on attaching, the object snaps into
+  exact alignment, moving a hand that holds it.
 source: default
 calibrated_at: null
 method: unknown

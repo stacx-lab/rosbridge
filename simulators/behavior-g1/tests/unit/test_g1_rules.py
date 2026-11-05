@@ -44,8 +44,12 @@ def test_a_value_changed_without_its_text_fails(monkeypatch):
             patch.setattr(g1_rules, name, value)
             assert name in {rule.name for rule in missing(rules())}
     # The note is rendered from the values, so it follows them.
-    monkeypatch.setattr(g1_rules, "GRASP_CLOSURE", .25)
-    assert missing(rules()) == [] and "above 25% of their closing range" in words(assisted_note())
+    monkeypatch.setattr(g1_rules, "SQUEEZE_ON_RAD", .25)
+    assert missing(rules()) == [] and "commanded at least 0.25 rad of flexion" in words(assisted_note())
+    monkeypatch.setattr(g1_rules, "LOAD_LIMIT_N", 120)
+    assert missing(rules()) == [] and "stays above 120 N for" in words(assisted_note())
+    monkeypatch.setattr(g1_rules, "LOAD_LIMIT_N", None)
+    assert missing(rules()) == [] and "An attachment does not break" in words(assisted_note())
 
 
 def test_the_code_and_the_structured_profiles_act_on_the_same_values():
@@ -60,8 +64,13 @@ def test_the_code_and_the_structured_profiles_act_on_the_same_values():
     for side in ("left", "right"):
         hand = yaml.safe_load((PROFILES / f"{side}_hand/profile.yaml").read_text())
         assert sum("_AA" not in joint for joint in hand["home"]) == g1_rules.FLEXION_JOINTS
-    assert (g1_sharpa.GRASP_CLOSURE, g1_sharpa.VELOCITY_LIMIT, g1_sharpa.PELVIS_LIMITS) == (
-        g1_rules.GRASP_CLOSURE, g1_rules.VELOCITY_LIMIT, g1_rules.PELVIS_LIMITS)
+    from rosbridge_behavior import g1_grasp
+    assert (g1_sharpa.VELOCITY_LIMIT, g1_sharpa.PELVIS_LIMITS, g1_sharpa.LOAD_LIMIT_N, g1_sharpa.GRIP_CLAMP_RAD) == (
+        g1_rules.VELOCITY_LIMIT, g1_rules.PELVIS_LIMITS, g1_rules.LOAD_LIMIT_N, g1_rules.GRIP_CLAMP_RAD)
+    assert (g1_sharpa.RELEASE_FOLLOW_S, g1_sharpa.RELEASE_MARGIN_MPS) == (g1_rules.RELEASE_FOLLOW_S,
+                                                                         g1_rules.RELEASE_MARGIN_MPS)
+    assert (g1_grasp.DIGITS, g1_grasp.SQUEEZE_ON_RAD, g1_grasp.SQUEEZE_OFF_RAD, g1_grasp.GRASP_EVIDENCE) == (
+        g1_rules.DIGITS, g1_rules.SQUEEZE_ON_RAD, g1_rules.SQUEEZE_OFF_RAD, g1_rules.GRASP_EVIDENCE)
     assert g1_sharpa.FALL_TILT == pytest.approx(g1_rules.FALL_TILT_DEG * 3.141592653589793 / 180)
     assert G1Sharpa_config()["self_collisions"] is g1_rules.SELF_COLLISIONS
 

@@ -10,6 +10,7 @@ workspace) and, under assisted grasping, in the task instruction's note (assiste
 generator renders). rules() lists where each value is stated and in which words, and a unit test fails when a value changes
 without its text. No third-party imports: a task generator imports this module with the host's Python.
 """
+import textwrap
 from typing import NamedTuple
 
 # Constants the code acts on -----------------------------------------------------------------------------------------
@@ -19,9 +20,45 @@ VELOCITY_LIMIT = .5  # m/s and rad/s: GR00T's keyboard navigation limits for vx,
 PELVIS_LIMITS = (.20, .78)
 CLIP = True  # targets beyond a limit act at the limit (the G1 layout clips; a refusal is reported only in the next wait's reply)
 SELF_COLLISIONS = False  # the robot's links do not collide with each other (OmniGibson robot config)
-# A hand applies a grasp while its flexion joints (all but the abduction joints, _AA) are commanded past this fraction
-# of their closing range on average; it releases as soon as the average is back at or below it.
-GRASP_CLOSURE = .3
+# Assisted grasping (g1_grasp; BEHAVIOR's R1Pro attaches an object both jaws touch while the gripper closes). A finger
+# link belongs to the digit its name gives (<side>_<digit>_..., the fingertip pads included); the palm is no digit.
+DIGITS = ("thumb", "index", "middle", "ring", "pinky")
+# A digit squeezes while one of its flexion joints (all but the abduction joints, _AA) is commanded at least
+# SQUEEZE_ON_RAD beyond its measured position; a held object stays attached while a gripping digit is commanded at least
+# SQUEEZE_OFF_RAD beyond (the lower value keeps a grip from chattering).
+SQUEEZE_ON_RAD, SQUEEZE_OFF_RAD = .15, .05
+# A touching digit also grips while it is commanded at least CLOSED_FRACTION of its flexion range closed (the mean over
+# its flexion joints) and, while a grasp forms, the hand has stopped closing and the digit has reached its targets
+# (within SQUEEZE_OFF_RAD): a hand closed round a thin handle reaches its targets and squeezes nothing, yet holds it, as
+# the R1Pro's jaws commanded closed on an object do. Counting closed digits while the hand still closed made grasps form
+# earlier than squeezing ones (the native grasp suite: a glass attached before its 12 kg mass was set).
+CLOSED_FRACTION = .5
+# A held object is also let go once the gripping digits are commanded open: their joints' mean command OPEN_RAD below
+# the tightest it was while held (an object can hold a finger out beyond a partly opened command, still a squeeze).
+OPEN_RAD = .2
+# An opened hand lets go of the object once its fingers have left it (no phalanx touches it), LET_GO_S after it opened
+# at the latest, so that the opening fingers do not push it out (the R1Pro's jaws are clear when it lets go). Measured
+# (native grasp suite): holding on until the fingers had left (0.5 s) let the opening fingers press into the still
+# attached object and fling it when let go (mug wraps 1.3-3.7 m/s); 0.08 s lets go while they only begin to part.
+LET_GO_S = .08
+# A grasp forms when, over OmniGibson's window (GRASP_WINDOW_S), the object lay on a ray, touched the thumb or palm,
+# touched a finger and was squeezed, each on at least GRASP_EVIDENCE of the window's steps and within the last
+# GRASP_RECENT_S (contacts on thin lips and handles flicker from step to step).
+GRASP_EVIDENCE, GRASP_RECENT_S = .5, .05
+# While a hand holds an object, each flexion joint's position target is at most GRIP_CLAMP_RAD beyond its measured
+# position, so the fingers press lightly instead of driving into the held object (which flung it when let go).
+GRIP_CLAMP_RAD = .05
+# A held object (not a tether) is let go when the load the arm passes to the hand (the palm link's incoming joint force,
+# in which the fingers' squeeze cancels), low-pass filtered with LOAD_TAU_S, stays above LOAD_LIMIT_N for LOAD_HOLD_S;
+# None: no load limit. Tethers to doors, drawers and lids are never let go by load, as OmniGibson's joints never break:
+# the 10.8 kg room door door_tonlzz pressed by the closing hand passed the limit within its close and lost its tether in
+# 11 of 12 trials (native grasp suite), while the legged-robot reasons for limiting tethers are gone (a body
+# held up by a hand on a handle is physics; two hands never hold one object, HAND_OVER).
+LOAD_LIMIT_N, LOAD_TAU_S, LOAD_HOLD_S = 150., .1, .3
+# A released object leaves at the hand's velocity; while it still touches the hand (RELEASE_FOLLOW_S at most) it moves
+# from the hand no faster than RELEASE_MARGIN_MPS sideways or up, and no faster down than falling since the release gives
+# plus that margin, so the contacts it was squeezed with (fingers, palm) separate it from the hand without flinging it.
+RELEASE_FOLLOW_S, RELEASE_MARGIN_MPS = .6, .1
 # A fall: FALL_HOLD_S of world time in all with the pelvis tilted more than FALL_TILT_DEG from upright or lower than
 # FALL_HEIGHT (m) above the floor, counted since it was last within FALL_UPRIGHT_DEG of upright (and higher); from then
 # on the legs hold still. Measured (native probes): squats and walking stay within 17 degrees and
@@ -53,6 +90,10 @@ WALK_MIN_PELVIS = .70  # no gait below a measured pelvis of ~0.68 m (native prob
 # steps of 0.36-0.56 m.)
 PUSH_STEP_N, PULL_FALL_N = (10, 20), 30
 FLEXION_JOINTS = 16  # the Sharpa hand's 22 joints less its 6 abduction joints (_AA)
+# A held object's weight on the arm (assisted grasping; the arms' drives carry it, their own weight compensated): a 2 kg
+# part sagged the hand ARM_PAYLOAD[1]-[2] m in 2 s in four holds, and 9.9 kg made the robot stagger 0.7-0.8 m (native
+# probes).
+ARM_PAYLOAD = (2, .14, .33)
 # Native probes (turning_on_radio, collision geometry at the live physics poses): floor reach, reach envelope and
 # stand-off, squat shift and heading, postures.
 FLOOR_PELVIS_COMMAND = .30  # the fingertips reach the floor only at this pelvis command or lower
@@ -291,26 +332,49 @@ def percent(fraction):
     return f"{fraction:.0%}"
 
 
+def load_text():
+    """What the note says about the load an attachment carries."""
+    if LOAD_LIMIT_N is None:
+        return "An attachment does not break: a held object pressed into a wall carries the arm's full force."
+    return (f"A held object is let go when the load on the hand stays above {LOAD_LIMIT_N:g} N for {LOAD_HOLD_S:g} s "
+            f"(an object jammed against something, the body hanging on it; its weight counts); a tether to a door, "
+            f"drawer or lid is never let go by load.")
+
+
 def assisted_note():
     """The instruction's note for a task set with assisted grasping (physical grasping says nothing)."""
-    closure = percent(GRASP_CLOSURE)
     mass = f"{ASSIST_MASS_KG:g} kg"
-    return f"""
-Grasping is assisted: an object sticks to a hand when two of its finger links touch it and it lies between the
-thumb tip or the palm and the fingertips, for {GRASP_WINDOW_S:g} s while the hand is closed. Closed means that the
-average commanded flexion of the hand's {FLEXION_JOINTS} flexion joints (every joint but the abduction joints, _AA) is
-above {closure} of their closing range: every finger counts, touching or not, so curl the fingers that do not touch
-the object too (a thumb-index pinch with the other fingers straight averages about 20% and never sticks), and know
-that a pre-shape with curled fingers can pick up whatever it touches. The object stays attached until that average
-falls back to {closure} or below, and only then: to let go, open all the fingers, the curled ones included.
-<side>_hand/attachment reports what each hand holds: none, held (attached to the hand) or tethered (on a pivot).
-Parts that turn on a hinge or slide (doors, drawers, lids) stick through a pivot, so the hand stays tethered to them
-and can swing or pull them; anything else lighter than {mass} sticks rigidly (a grasp on the frame of a light cabinet
-or appliance welds the hand to it). A part heavier than {mass} does not stick, except a door, drawer or lid of a fixed
-piece of furniture. Cabinet, drawer, microwave and fridge handles are solid lips or bars with less than 1 cm of room
-behind them, so a hooked hand does not hold one: pinch the handle or the panel's edge between the thumb tip and the
-fingertips, the other fingers curled, and keep it there while the hand closes; a light door that the closing hand
-pushes away does not stick."""
+    return "\n" + textwrap.fill(" ".join(f"""
+Grasping is assisted: an object sticks to a hand when it is held between the thumb or the palm on one side and a finger
+(index, middle, ring or pinky) on the other, lies between the thumb or the palm and the fingertips, and the hand grips
+it: a digit touching it is commanded at least {SQUEEZE_ON_RAD:g} rad of flexion beyond where it is (a squeeze) or is at
+least {percent(CLOSED_FRACTION)} of the way closed and has stopped there. That must hold on at least
+{percent(GRASP_EVIDENCE)} of {GRASP_WINDOW_S:g} s and at its end, while the hand is not opening. Two fingers side by
+side, one fingertip, a hand less closed that only touches it, and an opening hand do not grasp; a thumb-index pinch
+does, whatever the other fingers do, and so does a hand closed round a thin handle. The object stays attached while a
+digit that grips it is commanded at least {SQUEEZE_OFF_RAD:g} rad beyond where it is or {percent(CLOSED_FRACTION)}
+closed, and until the gripping digits are commanded open by {OPEN_RAD:g} rad on average from their tightest command: to
+let go, open them. It is let go once no finger touches it any more, at the latest {LET_GO_S:g} s after the hand opened,
+so the opening fingers do not push it. While it is attached the fingers press it only lightly (each flexion target stays
+within {GRIP_CLAMP_RAD:g} rad of its joint); let go, it leaves with the hand's motion, and while it still touches the
+hand ({RELEASE_FOLLOW_S:g} s at most) it moves no faster from the hand than falling gives (plus {RELEASE_MARGIN_MPS:g}
+m/s). To hand an object over, grasp it with the other hand: when that grasp forms, the object moves to the new hand and
+the first hand's attachment ends in the same step (never both; it does not drop), and the first hand grasps again only
+after it opens. {load_text()} <side>_hand/attachment reports what each hand holds: none, held (fixed to the hand) or
+tethered (on a pivot), and <side>_hand/attached_object names it as <object>/<link>. A part on a hinge or slide of its
+object (a door, drawer or lid, also a jar's lid or an appliance's window) sticks through a pivot, so the hand stays
+tethered to it and can swing or pull it; a loose object lighter than {mass} sticks rigidly. Nothing fixed in place
+sticks: walls, floors, counters, shelves and the bodies of furniture and appliances (a cabinet, a microwave, a door
+frame, a switch) never attach. A part heavier than {mass} does not stick, except a door, drawer or lid of a fixed piece
+of furniture. The arm carries a held object's weight: {ARM_PAYLOAD[0]:g} kg sagged the hand
+{ARM_PAYLOAD[1]:g}-{ARM_PAYLOAD[2]:g} m, and 9.9 kg made the robot stagger. Cabinet, drawer, microwave and fridge
+handles are solid lips or bars with less than 1 cm of room behind them, so a hooked hand does not hold one: pinch the
+handle or the panel's edge between the thumb tip and a fingertip and keep squeezing; a light door that the closing hand
+pushes away does not stick.""".split()), 120)
+
+
+def _number(n):
+    return {1: "one", 2: "two", 3: "three", 4: "four", 5: "five"}.get(n, str(n))
 
 
 def physical_note():
@@ -430,11 +494,32 @@ def rules():
         Rule("WAIST_REACH_AT_M", "torso.description",
              f"at hand heights of {WAIST_REACH_AT_M[0]:.2f}-{WAIST_REACH_AT_M[1]:.2f} m"),
         Rule("WAIST_SETTLED", "torso.description", "once the measured waist pitch has settled at its target"),
-        Rule("GRASP_CLOSURE", "instruction.assisted", f"above {percent(GRASP_CLOSURE)} of their closing range"),
-        Rule("GRASP_CLOSURE", "instruction.assisted", f"falls back to {percent(GRASP_CLOSURE)} or below"),
-        Rule("GRASP_WINDOW_S", "instruction.assisted", f"for {GRASP_WINDOW_S:g} s while the hand is closed"),
+        Rule("SQUEEZE_ON_RAD", "instruction.assisted",
+             f"commanded at least {SQUEEZE_ON_RAD:g} rad of flexion beyond where it is"),
+        Rule("SQUEEZE_OFF_RAD", "instruction.assisted", f"commanded at least {SQUEEZE_OFF_RAD:g} rad beyond where it is"),
+        Rule("CLOSED_FRACTION", "instruction.assisted",
+             f"at least {percent(CLOSED_FRACTION)} of the way closed and has stopped there"),
+        Rule("LET_GO_S", "instruction.assisted", f"at the latest {LET_GO_S:g} s after the hand opened"),
+        Rule("OPEN_RAD", "instruction.assisted", f"commanded open by {OPEN_RAD:g} rad on average from their tightest command"),
+        Rule("GRASP_EVIDENCE", "instruction.assisted",
+             f"on at least {percent(GRASP_EVIDENCE)} of {GRASP_WINDOW_S:g} s and at its end, while the hand is not opening"),
+        Rule("GRASP_WINDOW_S", "instruction.assisted", f"of {GRASP_WINDOW_S:g} s and at its end"),
+        Rule("OPPOSITION", "instruction.assisted",
+             "held between the thumb or the palm on one side and a finger (index, middle, ring or pinky) on the other"),
+        Rule("GRIP_CLAMP_RAD", "instruction.assisted", f"each flexion target stays within {GRIP_CLAMP_RAD:g} rad of its joint"),
+        Rule("RELEASE_FOLLOW_S", "instruction.assisted", f"while it still touches the hand ({RELEASE_FOLLOW_S:g} s at most)"),
+        Rule("RELEASE_MARGIN_MPS", "instruction.assisted", f"faster from the hand than falling gives (plus {RELEASE_MARGIN_MPS:g} m/s)"),
         Rule("ASSIST_MASS_KG", "instruction.assisted", f"heavier than {ASSIST_MASS_KG:g} kg does not stick"),
-        Rule("FLEXION_JOINTS", "instruction.assisted", f"the hand's {FLEXION_JOINTS} flexion joints"),
+        Rule("LOAD_LIMIT_N", "instruction.assisted", "An attachment does not break" if LOAD_LIMIT_N is None else
+             f"stays above {LOAD_LIMIT_N:g} N for {LOAD_HOLD_S:g} s"),
+        Rule("TETHER_UNLIMITED", "instruction.assisted", "An attachment does not break" if LOAD_LIMIT_N is None else
+             "a tether to a door, drawer or lid is never let go by load"),
+        Rule("HAND_OVER", "instruction.assisted",
+             "the object moves to the new hand and the first hand's attachment ends in the same step"),
+        Rule("ARM_PAYLOAD", "instruction.assisted", f"{ARM_PAYLOAD[0]:g} kg sagged the hand {ARM_PAYLOAD[1]:g}-{ARM_PAYLOAD[2]:g} m"),
+        Rule("ATTACHED_OBJECT", "instruction.assisted", "<side>_hand/attached_object names it as <object>/<link>"),
+        Rule("ATTACH_EVERY_STEP", "world.description", "at every step in which the object touches the other"),
+        Rule("ATTACH_SNAP", "world.description", "the object snaps into exact alignment"),
         Rule("PHYSICAL_GRASPING", "instruction.physical", "nothing attaches to a hand"),
     ]
     for side in ("left", "right"):
