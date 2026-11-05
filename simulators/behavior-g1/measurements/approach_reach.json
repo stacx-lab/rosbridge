@@ -1,0 +1,1464 @@
+{
+ "source": "Native device-path attempts (the devices' commands through the world), each activity at seed 0. Positions in the foot frame (origin the ankle midpoint on the floor, x the heading). An attempt: fresh stand 0.30 m behind the probe's stance (closer if that was in collision), the arms in their home pose or raised (palms 0.20 m ahead of and 0.05 m above the shoulders), a walk on base velocity with heading hold to the stance (stopped there or when progress stalled: under 2 cm in 1.5 s after 2 s), then the posture (lean-first: arms lowered before the posture) and the arm's reach stages.",
+ "arm_poses_foot_frame": {
+  "home": {
+   "left_palm": [
+    0.332,
+    0.155,
+    0.877
+   ],
+   "left_tip": [
+    0.45,
+    0.19,
+    0.888
+   ],
+   "right_palm": [
+    0.334,
+    -0.152,
+    0.88
+   ],
+   "right_tip": [
+    0.452,
+    -0.186,
+    0.891
+   ]
+  },
+  "raised": {
+   "left_palm": [
+    0.173,
+    0.1,
+    1.099
+   ],
+   "left_tip": [
+    0.169,
+    0.011,
+    1.184
+   ],
+   "right_palm": [
+    0.174,
+    -0.1,
+    1.1
+   ],
+   "right_tip": [
+    0.233,
+    -0.107,
+    1.208
+   ]
+  }
+ },
+ "places": [
+  {
+   "activity": "assembling_gift_baskets",
+   "object": "butter_cookie.n.01_1",
+   "target_z": 0.453,
+   "rests_at_z": 0.423,
+   "home_arm_walks_short_m": [
+    -0.005
+   ],
+   "raised_arm_walks_short_m": [
+    0.006,
+    0.007,
+    0.01,
+    0.015,
+    0.006,
+    0.008,
+    0.003,
+    0.006,
+    0.005
+   ]
+  },
+  {
+   "activity": "assembling_gift_baskets",
+   "object": "candle.n.01_1",
+   "target_z": 0.485,
+   "rests_at_z": 0.423,
+   "home_arm_walks_short_m": [
+    0.02
+   ],
+   "raised_arm_walks_short_m": [
+    0.007,
+    0.004,
+    0.005,
+    0.001,
+    0.008,
+    0.009,
+    0.005,
+    0.019,
+    0.008
+   ]
+  },
+  {
+   "activity": "bringing_paper_to_recycling",
+   "object": "newspaper.n.03_1",
+   "target_z": 0.927,
+   "rests_at_z": 0.887,
+   "home_arm_walks_short_m": [
+    0.208
+   ],
+   "raised_arm_walks_short_m": [
+    0.06,
+    0.029,
+    -3.467,
+    0.061,
+    -0.048,
+    0.146,
+    0.243,
+    0.064,
+    0.09
+   ]
+  },
+  {
+   "activity": "clearing_food_from_table_into_fridge",
+   "object": "half__apple_pie.n.01_1",
+   "target_z": 0.732,
+   "rests_at_z": 0.693,
+   "home_arm_walks_short_m": [
+    -0.006
+   ],
+   "raised_arm_walks_short_m": [
+    0.005,
+    0.005,
+    0.006,
+    0.007,
+    0.007,
+    0.013,
+    0.032
+   ]
+  },
+  {
+   "activity": "clearing_food_from_table_into_fridge",
+   "object": "tupperware.n.01_1",
+   "target_z": 1.038,
+   "rests_at_z": 0.887,
+   "home_arm_walks_short_m": [
+    0.198
+   ],
+   "raised_arm_walks_short_m": [
+    0.216,
+    0.194,
+    0.236,
+    0.188,
+    0.276,
+    -0.003,
+    0.009
+   ]
+  },
+  {
+   "activity": "collecting_childrens_toys",
+   "object": "die.n.01_1",
+   "target_z": 0.454,
+   "rests_at_z": 0.424,
+   "home_arm_walks_short_m": [
+    -0.003
+   ],
+   "raised_arm_walks_short_m": [
+    0.005,
+    0.007,
+    0.005,
+    0.014,
+    0.009,
+    0.015,
+    0.016,
+    0.011,
+    0.012
+   ]
+  },
+  {
+   "activity": "dispose_of_batteries",
+   "object": "battery.n.02_3",
+   "target_z": 1.042,
+   "rests_at_z": 1.02,
+   "home_arm_walks_short_m": [
+    0.247,
+    0.247
+   ],
+   "raised_arm_walks_short_m": [
+    0.008,
+    0.006,
+    0.006,
+    0.007,
+    0.006,
+    0.088,
+    0.179,
+    0.008,
+    0.006,
+    0.006,
+    0.007,
+    0.006,
+    0.088,
+    0.179,
+    0.008,
+    0.009,
+    0.009
+   ]
+  },
+  {
+   "activity": "getting_organized_for_work",
+   "object": "notebook.n.01_1",
+   "target_z": 0.747,
+   "rests_at_z": 0.717,
+   "home_arm_walks_short_m": [
+    0.292
+   ],
+   "raised_arm_walks_short_m": [
+    0.064,
+    0.021,
+    0.002,
+    0.054,
+    0.007,
+    0.004,
+    0.075
+   ]
+  },
+  {
+   "activity": "make_gift_bags_for_baby_showers",
+   "object": "sack.n.01_1",
+   "target_z": 0.969,
+   "rests_at_z": 0.759,
+   "home_arm_walks_short_m": [
+    0.013
+   ],
+   "raised_arm_walks_short_m": [
+    0.008,
+    0.013,
+    0.003,
+    0.004,
+    0.005,
+    -0.013,
+    0.007
+   ]
+  },
+  {
+   "activity": "make_gift_bags_for_baby_showers",
+   "object": "toy_dice.n.01_2",
+   "target_z": 0.784,
+   "rests_at_z": 0.754,
+   "home_arm_walks_short_m": [
+    0.095
+   ],
+   "raised_arm_walks_short_m": [
+    0.012,
+    0.013,
+    0.015,
+    0.015,
+    0.014,
+    0.021,
+    0.007
+   ]
+  },
+  {
+   "activity": "organizing_art_supplies",
+   "object": "marker.n.03_1",
+   "target_z": 0.803,
+   "rests_at_z": 0.773,
+   "home_arm_walks_short_m": [
+    0.015
+   ],
+   "raised_arm_walks_short_m": [
+    0.007,
+    0.006,
+    0.004,
+    0.008,
+    0.009,
+    0.015,
+    0.005
+   ]
+  },
+  {
+   "activity": "packing_meal_for_delivery",
+   "object": "sack.n.01_3",
+   "target_z": 1.0,
+   "rests_at_z": 0.871,
+   "home_arm_walks_short_m": [
+    0.157
+   ],
+   "raised_arm_walks_short_m": [
+    0.007,
+    0.008,
+    0.017,
+    0.007,
+    0.01,
+    -0.003,
+    0.006,
+    0.019,
+    0.009,
+    0.008
+   ]
+  },
+  {
+   "activity": "packing_meal_for_delivery",
+   "object": "sack.n.01_2",
+   "target_z": 0.897,
+   "rests_at_z": 0.871,
+   "home_arm_walks_short_m": [
+    0.144
+   ],
+   "raised_arm_walks_short_m": [
+    -0.002,
+    0.016,
+    -0.001,
+    0.006,
+    0.007,
+    0.01,
+    0.005,
+    0.009,
+    0.02,
+    -0.004
+   ]
+  },
+  {
+   "activity": "preparing_lunch_box",
+   "object": "chocolate_chip_cookie.n.01_1",
+   "target_z": 0.957,
+   "rests_at_z": 0.927,
+   "home_arm_walks_short_m": [
+    0.258,
+    0.223,
+    0.227
+   ],
+   "raised_arm_walks_short_m": [
+    0.005,
+    0.02,
+    0.011,
+    0.022,
+    0.018,
+    0.013,
+    0.01,
+    0.016,
+    0.012,
+    0.02,
+    0.017,
+    0.018,
+    0.005,
+    0.022,
+    0.021,
+    0.02,
+    0.019,
+    0.015,
+    0.083,
+    0.007,
+    0.021,
+    0.021
+   ]
+  },
+  {
+   "activity": "preparing_lunch_box",
+   "object": "club_sandwich.n.01_1",
+   "target_z": 0.978,
+   "rests_at_z": 0.927,
+   "home_arm_walks_short_m": [
+    0.225
+   ],
+   "raised_arm_walks_short_m": [
+    -0.003,
+    0.016,
+    0.02,
+    0.022,
+    0.019,
+    0.018
+   ]
+  },
+  {
+   "activity": "preparing_lunch_box",
+   "object": "half__apple.n.01_1",
+   "target_z": 0.957,
+   "rests_at_z": 0.927,
+   "home_arm_walks_short_m": [
+    0.228
+   ],
+   "raised_arm_walks_short_m": [
+    0.008,
+    0.014,
+    0.021,
+    0.007,
+    0.02,
+    0.022
+   ]
+  },
+  {
+   "activity": "putting_away_Halloween_decorations",
+   "object": "cabinet.n.01_1",
+   "target_z": 0.133,
+   "rests_at_z": 0.0,
+   "home_arm_walks_short_m": [
+    0.209
+   ],
+   "raised_arm_walks_short_m": [
+    0.18,
+    0.093,
+    0.075,
+    0.106,
+    0.169,
+    0.018,
+    0.315
+   ]
+  },
+  {
+   "activity": "rearrange_your_room",
+   "object": "tissue_dispenser.n.01_1",
+   "target_z": 0.497,
+   "rests_at_z": 0.427,
+   "home_arm_walks_short_m": [
+    0.016
+   ],
+   "raised_arm_walks_short_m": [
+    0.009,
+    0.012,
+    0.013,
+    0.007,
+    0.016,
+    0.013,
+    0.014,
+    0.021,
+    -0.01,
+    0.011,
+    -0.002,
+    -0.009
+   ]
+  },
+  {
+   "activity": "setting_the_fire",
+   "object": "firewood.n.01_2",
+   "target_z": 0.043,
+   "rests_at_z": -0.001,
+   "home_arm_walks_short_m": [
+    0.017
+   ],
+   "raised_arm_walks_short_m": [
+    0.004,
+    0.003,
+    0.003,
+    0.008,
+    0.007,
+    0.035,
+    0.01
+   ]
+  },
+  {
+   "activity": "setting_the_fire",
+   "object": "firewood.n.01_1",
+   "target_z": 0.042,
+   "rests_at_z": -0.001,
+   "home_arm_walks_short_m": [
+    -0.005
+   ],
+   "raised_arm_walks_short_m": [
+    0.011,
+    0.005,
+    0.006,
+    0.006,
+    0.004,
+    0.018,
+    0.01
+   ]
+  },
+  {
+   "activity": "sorting_vegetables",
+   "object": "leek.n.02_1",
+   "target_z": 0.082,
+   "rests_at_z": 0.02,
+   "home_arm_walks_short_m": [
+    0.02
+   ],
+   "raised_arm_walks_short_m": [
+    0.015,
+    0.018,
+    0.019,
+    0.017,
+    0.019,
+    0.017,
+    0.015
+   ]
+  },
+  {
+   "activity": "sorting_vegetables",
+   "object": "sweet_corn.n.02_2",
+   "target_z": 0.196,
+   "rests_at_z": 0.017,
+   "home_arm_walks_short_m": [
+    0.019
+   ],
+   "raised_arm_walks_short_m": [
+    0.008,
+    0.01,
+    0.009,
+    0.009,
+    0.007,
+    0.005,
+    0.009,
+    0.007,
+    -0.011,
+    0.007
+   ]
+  },
+  {
+   "activity": "store_batteries",
+   "object": "battery.n.02_3",
+   "target_z": 1.109,
+   "rests_at_z": 1.079,
+   "home_arm_walks_short_m": [
+    0.233
+   ],
+   "raised_arm_walks_short_m": [
+    0.093,
+    0.079,
+    0.048,
+    0.047,
+    0.046,
+    0.092,
+    0.021,
+    0.096,
+    0.073,
+    0.041
+   ]
+  },
+  {
+   "activity": "store_batteries",
+   "object": "battery.n.02_1",
+   "target_z": 0.436,
+   "rests_at_z": 0.396,
+   "home_arm_walks_short_m": [
+    0.018
+   ],
+   "raised_arm_walks_short_m": [
+    0.007,
+    0.008,
+    0.006,
+    0.015,
+    0.008,
+    0.008,
+    0.009,
+    0.008,
+    0.015
+   ]
+  },
+  {
+   "activity": "tidying_bathroom",
+   "object": "cork.n.04_1",
+   "target_z": 0.828,
+   "rests_at_z": 0.792,
+   "home_arm_walks_short_m": [
+    0.2
+   ],
+   "raised_arm_walks_short_m": [
+    0.001,
+    0.005,
+    0.007,
+    0.005,
+    0.007,
+    0.016
+   ]
+  }
+ ],
+ "standing_waist_0.52": [
+  {
+   "activity": "assembling_gift_baskets",
+   "object": "butter_cookie.n.01_1",
+   "rests_at_z": 0.423,
+   "label": "0.74_0.52",
+   "arm": "right",
+   "approach": "raised arms",
+   "lean_first": false,
+   "waist_pitch_after_posture": 0.505,
+   "waist_pitch_during_reach": [
+    0.52,
+    0.52,
+    0.477,
+    0.517
+   ],
+   "moved_back_m": 0.0
+  },
+  {
+   "activity": "assembling_gift_baskets",
+   "object": "candle.n.01_1",
+   "rests_at_z": 0.423,
+   "label": "0.74_0.52",
+   "arm": "right",
+   "approach": "raised arms",
+   "lean_first": false,
+   "waist_pitch_after_posture": 0.502,
+   "waist_pitch_during_reach": [
+    0.512,
+    0.489,
+    0.491,
+    0.464
+   ],
+   "moved_back_m": 0.0
+  },
+  {
+   "activity": "bringing_paper_to_recycling",
+   "object": "newspaper.n.03_1",
+   "rests_at_z": 0.887,
+   "label": "0.74_0.52 lean-first",
+   "arm": "right",
+   "approach": "raised arms",
+   "lean_first": true,
+   "waist_pitch_after_posture": 0.406,
+   "waist_pitch_during_reach": [
+    -0.001,
+    0.52,
+    0.38,
+    0.057
+   ],
+   "moved_back_m": -0.194
+  },
+  {
+   "activity": "bringing_paper_to_recycling",
+   "object": "newspaper.n.03_1",
+   "rests_at_z": 0.887,
+   "label": "0.74_0.52 lean-first waist_yaw",
+   "arm": "right",
+   "approach": "raised arms",
+   "lean_first": true,
+   "waist_pitch_after_posture": -0.52,
+   "waist_pitch_during_reach": [
+    0.31,
+    0.223,
+    0.17,
+    0.265
+   ],
+   "moved_back_m": 0.202
+  },
+  {
+   "activity": "clearing_food_from_table_into_fridge",
+   "object": "half__apple_pie.n.01_1",
+   "rests_at_z": 0.693,
+   "label": "0.74_0.52",
+   "arm": "right",
+   "approach": "raised arms",
+   "lean_first": false,
+   "waist_pitch_after_posture": 0.49,
+   "waist_pitch_during_reach": [
+    0.52,
+    0.52,
+    0.509,
+    0.494
+   ],
+   "moved_back_m": 0.0
+  },
+  {
+   "activity": "clearing_food_from_table_into_fridge",
+   "object": "half__apple_pie.n.01_1",
+   "rests_at_z": 0.693,
+   "label": "0.74_0.52 waist_yaw",
+   "arm": "right",
+   "approach": "raised arms",
+   "lean_first": false,
+   "waist_pitch_after_posture": 0.52,
+   "waist_pitch_during_reach": [
+    0.52,
+    0.52,
+    0.52,
+    0.52
+   ],
+   "moved_back_m": 0.478
+  },
+  {
+   "activity": "clearing_food_from_table_into_fridge",
+   "object": "half__apple_pie.n.01_1",
+   "rests_at_z": 0.693,
+   "label": "0.74_0.52 yaw+",
+   "arm": "right",
+   "approach": "raised arms",
+   "lean_first": false,
+   "waist_pitch_after_posture": 0.468,
+   "waist_pitch_during_reach": [
+    0.52,
+    0.511,
+    0.519,
+    0.511
+   ],
+   "moved_back_m": 0.0
+  },
+  {
+   "activity": "clearing_food_from_table_into_fridge",
+   "object": "half__apple_pie.n.01_1",
+   "rests_at_z": 0.693,
+   "label": "0.74_0.52 yaw-",
+   "arm": "right",
+   "approach": "raised arms",
+   "lean_first": false,
+   "waist_pitch_after_posture": 0.494,
+   "waist_pitch_during_reach": [
+    0.52,
+    0.512,
+    0.474,
+    0.392
+   ],
+   "moved_back_m": 0.001
+  },
+  {
+   "activity": "clearing_food_from_table_into_fridge",
+   "object": "half__apple_pie.n.01_1",
+   "rests_at_z": 0.693,
+   "label": "0.74_0.52 home-arms approach",
+   "arm": "right",
+   "approach": "home arms",
+   "lean_first": false,
+   "waist_pitch_after_posture": 0.378,
+   "waist_pitch_during_reach": [
+    0.431,
+    0.403,
+    0.287,
+    0.223
+   ],
+   "moved_back_m": 0.001
+  },
+  {
+   "activity": "clearing_food_from_table_into_fridge",
+   "object": "tupperware.n.01_1",
+   "rests_at_z": 0.887,
+   "label": "0.74_0.52",
+   "arm": "right",
+   "approach": "raised arms",
+   "lean_first": false,
+   "waist_pitch_after_posture": 0.52,
+   "waist_pitch_during_reach": [
+    0.52,
+    0.52,
+    0.52,
+    0.52
+   ],
+   "moved_back_m": 0.187
+  },
+  {
+   "activity": "collecting_childrens_toys",
+   "object": "die.n.01_1",
+   "rests_at_z": 0.424,
+   "label": "0.74_0.52",
+   "arm": "right",
+   "approach": "raised arms",
+   "lean_first": false,
+   "waist_pitch_after_posture": 0.512,
+   "waist_pitch_during_reach": [
+    0.52,
+    0.514,
+    0.52,
+    0.52
+   ],
+   "moved_back_m": 0.001
+  },
+  {
+   "activity": "dispose_of_batteries",
+   "object": "battery.n.02_3",
+   "rests_at_z": 1.02,
+   "label": "0.74_0.52",
+   "arm": "right",
+   "approach": "raised arms",
+   "lean_first": false,
+   "waist_pitch_after_posture": 0.213,
+   "waist_pitch_during_reach": [
+    0.291,
+    0.284,
+    0.253,
+    0.235
+   ],
+   "moved_back_m": 0.001
+  },
+  {
+   "activity": "dispose_of_batteries",
+   "object": "battery.n.02_3",
+   "rests_at_z": 1.02,
+   "label": "0.74_0.52 waist_yaw",
+   "arm": "right",
+   "approach": "raised arms",
+   "lean_first": false,
+   "waist_pitch_after_posture": 0.227,
+   "waist_pitch_during_reach": [
+    0.347,
+    0.362,
+    0.321,
+    0.278
+   ],
+   "moved_back_m": 0.001
+  },
+  {
+   "activity": "dispose_of_batteries",
+   "object": "battery.n.02_3",
+   "rests_at_z": 1.02,
+   "label": "0.74_0.52 yaw+",
+   "arm": "right",
+   "approach": "raised arms",
+   "lean_first": false,
+   "waist_pitch_after_posture": 0.348,
+   "waist_pitch_during_reach": [
+    0.52,
+    0.52,
+    0.52,
+    0.52
+   ],
+   "moved_back_m": 0.046
+  },
+  {
+   "activity": "dispose_of_batteries",
+   "object": "battery.n.02_3",
+   "rests_at_z": 1.02,
+   "label": "0.74_0.52 yaw-",
+   "arm": "right",
+   "approach": "raised arms",
+   "lean_first": false,
+   "waist_pitch_after_posture": 0.345,
+   "waist_pitch_during_reach": [
+    0.52,
+    0.52,
+    0.52,
+    0.52
+   ],
+   "moved_back_m": 0.211
+  },
+  {
+   "activity": "dispose_of_batteries",
+   "object": "battery.n.02_3",
+   "rests_at_z": 1.02,
+   "label": "0.74_0.52 home-arms approach",
+   "arm": "right",
+   "approach": "home arms",
+   "lean_first": false,
+   "waist_pitch_after_posture": 0.271,
+   "waist_pitch_during_reach": [
+    0.441,
+    0.465,
+    0.44,
+    0.41
+   ],
+   "moved_back_m": 0.003
+  },
+  {
+   "activity": "dispose_of_batteries",
+   "object": "battery.n.02_3",
+   "rests_at_z": 1.02,
+   "label": "0.74_0.52 lean-first",
+   "arm": "right",
+   "approach": "raised arms",
+   "lean_first": true,
+   "waist_pitch_after_posture": 0.52,
+   "waist_pitch_during_reach": [
+    0.52,
+    0.52,
+    0.52,
+    0.52
+   ],
+   "moved_back_m": 0.644
+  },
+  {
+   "activity": "dispose_of_batteries",
+   "object": "battery.n.02_3",
+   "rests_at_z": 1.02,
+   "label": "0.74_0.52 lean-first waist_yaw",
+   "arm": "right",
+   "approach": "raised arms",
+   "lean_first": true,
+   "waist_pitch_after_posture": 0.52,
+   "waist_pitch_during_reach": [
+    0.52,
+    0.52,
+    0.52,
+    0.52
+   ],
+   "moved_back_m": 0.631
+  },
+  {
+   "activity": "dispose_of_batteries",
+   "object": "battery.n.02_3",
+   "rests_at_z": 1.02,
+   "label": "0.74_0.52 repeat best",
+   "arm": "right",
+   "approach": "raised arms",
+   "lean_first": false,
+   "waist_pitch_after_posture": 0.228,
+   "waist_pitch_during_reach": [
+    0.313,
+    0.321,
+    0.276,
+    0.242
+   ],
+   "moved_back_m": 0.0
+  },
+  {
+   "activity": "getting_organized_for_work",
+   "object": "notebook.n.01_1",
+   "rests_at_z": 0.717,
+   "label": "0.74_0.52",
+   "arm": "left",
+   "approach": "raised arms",
+   "lean_first": false,
+   "waist_pitch_after_posture": 0.256,
+   "waist_pitch_during_reach": [
+    0.255,
+    0.257,
+    0.257
+   ],
+   "moved_back_m": 0.0
+  },
+  {
+   "activity": "make_gift_bags_for_baby_showers",
+   "object": "sack.n.01_1",
+   "rests_at_z": 0.759,
+   "label": "0.74_0.52",
+   "arm": "right",
+   "approach": "raised arms",
+   "lean_first": false,
+   "waist_pitch_after_posture": 0.257,
+   "waist_pitch_during_reach": [
+    0.426,
+    0.439,
+    0.387,
+    0.307
+   ],
+   "moved_back_m": 0.0
+  },
+  {
+   "activity": "make_gift_bags_for_baby_showers",
+   "object": "toy_dice.n.01_2",
+   "rests_at_z": 0.754,
+   "label": "0.74_0.52",
+   "arm": "right",
+   "approach": "raised arms",
+   "lean_first": false,
+   "waist_pitch_after_posture": 0.515,
+   "waist_pitch_during_reach": [
+    0.519,
+    0.52,
+    0.52,
+    0.52
+   ],
+   "moved_back_m": 0.403
+  },
+  {
+   "activity": "organizing_art_supplies",
+   "object": "marker.n.03_1",
+   "rests_at_z": 0.773,
+   "label": "0.74_0.52",
+   "arm": "left",
+   "approach": "raised arms",
+   "lean_first": false,
+   "waist_pitch_after_posture": 0.506,
+   "waist_pitch_during_reach": [
+    0.52,
+    0.52,
+    0.502,
+    0.487
+   ],
+   "moved_back_m": 0.0
+  },
+  {
+   "activity": "organizing_art_supplies",
+   "object": "marker.n.03_1",
+   "rests_at_z": 0.773,
+   "label": "0.74_0.52 waist_yaw",
+   "arm": "left",
+   "approach": "raised arms",
+   "lean_first": false,
+   "waist_pitch_after_posture": 0.52,
+   "waist_pitch_during_reach": [
+    0.52,
+    0.52,
+    0.52,
+    0.52
+   ],
+   "moved_back_m": 0.001
+  },
+  {
+   "activity": "organizing_art_supplies",
+   "object": "marker.n.03_1",
+   "rests_at_z": 0.773,
+   "label": "0.74_0.52 yaw+",
+   "arm": "left",
+   "approach": "raised arms",
+   "lean_first": false,
+   "waist_pitch_after_posture": 0.511,
+   "waist_pitch_during_reach": [
+    0.503,
+    0.493,
+    0.467,
+    0.431
+   ],
+   "moved_back_m": 0.001
+  },
+  {
+   "activity": "organizing_art_supplies",
+   "object": "marker.n.03_1",
+   "rests_at_z": 0.773,
+   "label": "0.74_0.52 yaw-",
+   "arm": "left",
+   "approach": "raised arms",
+   "lean_first": false,
+   "waist_pitch_after_posture": 0.509,
+   "waist_pitch_during_reach": [
+    0.52,
+    0.52,
+    0.52,
+    0.52
+   ],
+   "moved_back_m": 0.381
+  },
+  {
+   "activity": "organizing_art_supplies",
+   "object": "marker.n.03_1",
+   "rests_at_z": 0.773,
+   "label": "0.74_0.52 home-arms approach",
+   "arm": "left",
+   "approach": "home arms",
+   "lean_first": false,
+   "waist_pitch_after_posture": 0.25,
+   "waist_pitch_during_reach": [
+    0.268,
+    0.269,
+    0.223,
+    0.202
+   ],
+   "moved_back_m": 0.0
+  },
+  {
+   "activity": "packing_meal_for_delivery",
+   "object": "sack.n.01_3",
+   "rests_at_z": 0.871,
+   "label": "0.74_0.52",
+   "arm": "right",
+   "approach": "raised arms",
+   "lean_first": false,
+   "waist_pitch_after_posture": 0.426,
+   "waist_pitch_during_reach": [
+    0.52,
+    0.52,
+    0.52,
+    0.52
+   ],
+   "moved_back_m": 0.137
+  },
+  {
+   "activity": "packing_meal_for_delivery",
+   "object": "sack.n.01_3",
+   "rests_at_z": 0.871,
+   "label": "0.74_0.52 lean-first",
+   "arm": "right",
+   "approach": "raised arms",
+   "lean_first": true,
+   "waist_pitch_after_posture": 0.52,
+   "waist_pitch_during_reach": [
+    0.52,
+    0.52,
+    0.52,
+    0.52
+   ],
+   "moved_back_m": 0.645
+  },
+  {
+   "activity": "packing_meal_for_delivery",
+   "object": "sack.n.01_3",
+   "rests_at_z": 0.871,
+   "label": "0.74_0.52 lean-first waist_yaw",
+   "arm": "right",
+   "approach": "raised arms",
+   "lean_first": true,
+   "waist_pitch_after_posture": 0.52,
+   "waist_pitch_during_reach": [
+    0.52,
+    0.52,
+    0.52,
+    0.52
+   ],
+   "moved_back_m": 0.48
+  },
+  {
+   "activity": "packing_meal_for_delivery",
+   "object": "sack.n.01_2",
+   "rests_at_z": 0.871,
+   "label": "0.74_0.52",
+   "arm": "right",
+   "approach": "raised arms",
+   "lean_first": false,
+   "waist_pitch_after_posture": 0.432,
+   "waist_pitch_during_reach": [
+    0.52,
+    0.52,
+    0.52,
+    0.52
+   ],
+   "moved_back_m": 0.52
+  },
+  {
+   "activity": "packing_meal_for_delivery",
+   "object": "sack.n.01_2",
+   "rests_at_z": 0.871,
+   "label": "0.74_0.52 lean-first",
+   "arm": "right",
+   "approach": "raised arms",
+   "lean_first": true,
+   "waist_pitch_after_posture": 0.52,
+   "waist_pitch_during_reach": [
+    0.52,
+    0.52,
+    0.52,
+    0.52
+   ],
+   "moved_back_m": 0.735
+  },
+  {
+   "activity": "packing_meal_for_delivery",
+   "object": "sack.n.01_2",
+   "rests_at_z": 0.871,
+   "label": "0.74_0.52 lean-first waist_yaw",
+   "arm": "right",
+   "approach": "raised arms",
+   "lean_first": true,
+   "waist_pitch_after_posture": 0.52,
+   "waist_pitch_during_reach": [
+    0.52,
+    0.52,
+    0.52,
+    0.52
+   ],
+   "moved_back_m": 0.465
+  },
+  {
+   "activity": "preparing_lunch_box",
+   "object": "chocolate_chip_cookie.n.01_1",
+   "rests_at_z": 0.927,
+   "label": "0.74_0.52",
+   "arm": "left",
+   "approach": "raised arms",
+   "lean_first": false,
+   "waist_pitch_after_posture": 0.417,
+   "waist_pitch_during_reach": [
+    0.403,
+    0.243
+   ],
+   "moved_back_m": 0.144
+  },
+  {
+   "activity": "preparing_lunch_box",
+   "object": "chocolate_chip_cookie.n.01_1",
+   "rests_at_z": 0.927,
+   "label": "0.74_0.52",
+   "arm": "left",
+   "approach": "raised arms",
+   "lean_first": false,
+   "waist_pitch_after_posture": 0.414,
+   "waist_pitch_during_reach": [
+    0.519,
+    0.52,
+    0.52,
+    0.52
+   ],
+   "moved_back_m": 0.209
+  },
+  {
+   "activity": "preparing_lunch_box",
+   "object": "chocolate_chip_cookie.n.01_1",
+   "rests_at_z": 0.927,
+   "label": "0.74_0.52",
+   "arm": "left",
+   "approach": "raised arms",
+   "lean_first": false,
+   "waist_pitch_after_posture": 0.417,
+   "waist_pitch_during_reach": [
+    0.452,
+    0.394,
+    0.364,
+    0.311
+   ],
+   "moved_back_m": 0.161
+  },
+  {
+   "activity": "preparing_lunch_box",
+   "object": "chocolate_chip_cookie.n.01_1",
+   "rests_at_z": 0.927,
+   "label": "0.74_0.52 lean-first",
+   "arm": "left",
+   "approach": "raised arms",
+   "lean_first": true,
+   "waist_pitch_after_posture": 0.52,
+   "waist_pitch_during_reach": [
+    0.52,
+    0.52,
+    0.52,
+    0.52
+   ],
+   "moved_back_m": 0.465
+  },
+  {
+   "activity": "preparing_lunch_box",
+   "object": "chocolate_chip_cookie.n.01_1",
+   "rests_at_z": 0.927,
+   "label": "0.74_0.52 lean-first waist_yaw",
+   "arm": "left",
+   "approach": "raised arms",
+   "lean_first": true,
+   "waist_pitch_after_posture": -0.52,
+   "waist_pitch_during_reach": [
+    -0.396,
+    -0.3,
+    -0.348,
+    -0.386
+   ],
+   "moved_back_m": 0.04
+  },
+  {
+   "activity": "preparing_lunch_box",
+   "object": "club_sandwich.n.01_1",
+   "rests_at_z": 0.927,
+   "label": "0.74_0.52",
+   "arm": "left",
+   "approach": "raised arms",
+   "lean_first": false,
+   "waist_pitch_after_posture": 0.425,
+   "waist_pitch_during_reach": [
+    0.513,
+    0.493
+   ],
+   "moved_back_m": 0.368
+  },
+  {
+   "activity": "preparing_lunch_box",
+   "object": "half__apple.n.01_1",
+   "rests_at_z": 0.927,
+   "label": "0.74_0.52",
+   "arm": "right",
+   "approach": "raised arms",
+   "lean_first": false,
+   "waist_pitch_after_posture": 0.271,
+   "waist_pitch_during_reach": [
+    0.266,
+    0.222
+   ],
+   "moved_back_m": 0.0
+  },
+  {
+   "activity": "rearrange_your_room",
+   "object": "tissue_dispenser.n.01_1",
+   "rests_at_z": 0.427,
+   "label": "0.74_0.52",
+   "arm": "right",
+   "approach": "raised arms",
+   "lean_first": false,
+   "waist_pitch_after_posture": 0.442,
+   "waist_pitch_during_reach": [
+    0.52,
+    0.52,
+    0.476,
+    0.34
+   ],
+   "moved_back_m": 0.001
+  },
+  {
+   "activity": "store_batteries",
+   "object": "battery.n.02_3",
+   "rests_at_z": 1.079,
+   "label": "0.74_0.52",
+   "arm": "right",
+   "approach": "raised arms",
+   "lean_first": false,
+   "waist_pitch_after_posture": 0.206,
+   "waist_pitch_during_reach": [
+    0.342,
+    0.313,
+    0.226,
+    0.167
+   ],
+   "moved_back_m": 0.001
+  },
+  {
+   "activity": "store_batteries",
+   "object": "battery.n.02_3",
+   "rests_at_z": 1.079,
+   "label": "0.74_0.52 waist_yaw",
+   "arm": "right",
+   "approach": "raised arms",
+   "lean_first": false,
+   "waist_pitch_after_posture": 0.233,
+   "waist_pitch_during_reach": [
+    0.337,
+    0.339,
+    0.217,
+    0.13
+   ],
+   "moved_back_m": 0.002
+  },
+  {
+   "activity": "store_batteries",
+   "object": "battery.n.02_3",
+   "rests_at_z": 1.079,
+   "label": "0.74_0.52 yaw+",
+   "arm": "right",
+   "approach": "raised arms",
+   "lean_first": false,
+   "waist_pitch_after_posture": 0.362,
+   "waist_pitch_during_reach": [
+    0.52,
+    0.52,
+    0.52,
+    0.52
+   ],
+   "moved_back_m": 0.657
+  },
+  {
+   "activity": "store_batteries",
+   "object": "battery.n.02_3",
+   "rests_at_z": 1.079,
+   "label": "0.74_0.52 yaw-",
+   "arm": "right",
+   "approach": "raised arms",
+   "lean_first": false,
+   "waist_pitch_after_posture": 0.203,
+   "waist_pitch_during_reach": [
+    0.271,
+    0.256,
+    0.179,
+    0.132
+   ],
+   "moved_back_m": 0.001
+  },
+  {
+   "activity": "store_batteries",
+   "object": "battery.n.02_3",
+   "rests_at_z": 1.079,
+   "label": "0.74_0.52 home-arms approach",
+   "arm": "right",
+   "approach": "home arms",
+   "lean_first": false,
+   "waist_pitch_after_posture": 0.382,
+   "waist_pitch_during_reach": [
+    0.52,
+    0.52,
+    0.52,
+    0.52
+   ],
+   "moved_back_m": 0.357
+  },
+  {
+   "activity": "store_batteries",
+   "object": "battery.n.02_3",
+   "rests_at_z": 1.079,
+   "label": "0.74_0.52 lean-first",
+   "arm": "right",
+   "approach": "raised arms",
+   "lean_first": true,
+   "waist_pitch_after_posture": 0.52,
+   "waist_pitch_during_reach": [
+    0.52,
+    0.52,
+    0.52,
+    0.52
+   ],
+   "moved_back_m": 0.705
+  },
+  {
+   "activity": "store_batteries",
+   "object": "battery.n.02_3",
+   "rests_at_z": 1.079,
+   "label": "0.74_0.52 lean-first waist_yaw",
+   "arm": "right",
+   "approach": "raised arms",
+   "lean_first": true,
+   "waist_pitch_after_posture": 0.52,
+   "waist_pitch_during_reach": [
+    0.52,
+    0.52,
+    0.52,
+    0.52
+   ],
+   "moved_back_m": 0.243
+  },
+  {
+   "activity": "store_batteries",
+   "object": "battery.n.02_3",
+   "rests_at_z": 1.079,
+   "label": "0.74_0.52 repeat best",
+   "arm": "right",
+   "approach": "raised arms",
+   "lean_first": false,
+   "waist_pitch_after_posture": 0.215,
+   "waist_pitch_during_reach": [
+    0.311,
+    0.29,
+    0.204,
+    0.152
+   ],
+   "moved_back_m": 0.0
+  },
+  {
+   "activity": "store_batteries",
+   "object": "battery.n.02_1",
+   "rests_at_z": 0.396,
+   "label": "0.74_0.52",
+   "arm": "left",
+   "approach": "raised arms",
+   "lean_first": false,
+   "waist_pitch_after_posture": 0.509,
+   "waist_pitch_during_reach": [
+    0.506,
+    0.487,
+    0.505,
+    0.509
+   ],
+   "moved_back_m": 0.0
+  },
+  {
+   "activity": "tidying_bathroom",
+   "object": "cork.n.04_1",
+   "rests_at_z": 0.792,
+   "label": "0.74_0.52",
+   "arm": "right",
+   "approach": "raised arms",
+   "lean_first": false,
+   "waist_pitch_after_posture": 0.453,
+   "waist_pitch_during_reach": [
+    0.51,
+    0.495
+   ],
+   "moved_back_m": 0.0
+  },
+  {
+   "activity": "tidying_bathroom",
+   "object": "cork.n.04_1",
+   "rests_at_z": 0.792,
+   "label": "0.74_0.52 waist_yaw",
+   "arm": "right",
+   "approach": "raised arms",
+   "lean_first": false,
+   "waist_pitch_after_posture": 0.472,
+   "waist_pitch_during_reach": [
+    0.52,
+    0.52
+   ],
+   "moved_back_m": 0.328
+  },
+  {
+   "activity": "tidying_bathroom",
+   "object": "cork.n.04_1",
+   "rests_at_z": 0.792,
+   "label": "0.74_0.52 yaw-",
+   "arm": "right",
+   "approach": "raised arms",
+   "lean_first": false,
+   "waist_pitch_after_posture": 0.464,
+   "waist_pitch_during_reach": [
+    0.52,
+    0.513
+   ],
+   "moved_back_m": 0.002
+  },
+  {
+   "activity": "tidying_bathroom",
+   "object": "cork.n.04_1",
+   "rests_at_z": 0.792,
+   "label": "0.74_0.52 home-arms approach",
+   "arm": "right",
+   "approach": "home arms",
+   "lean_first": false,
+   "waist_pitch_after_posture": 0.233,
+   "waist_pitch_during_reach": [
+    0.277,
+    0.245
+   ],
+   "moved_back_m": 0.0
+  }
+ ],
+ "fields": {
+  "rests_at_z": "the object's lowest point (the top it rests on) above the floor, m",
+  "*_walks_short_m": "how far short of the stance the walk stopped along the heading, m (negative: past it)",
+  "moved_back_m": "how much farther the ankle midpoint was from the target after the reach than at the stance, m",
+  "waist_pitch_*": "measured waist_pitch_joint, rad (after the posture; at each reach stage)"
+ }
+}

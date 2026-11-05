@@ -12,7 +12,7 @@ operations:
       (wz), in m/s and rad/s within the declared bounds; other fields must be zero. The body
       follows the latest twist and stops 0.5 s of world time after the last one, so re-send
       to keep moving. A component beyond its bound is clipped to it; a twist with other nonzero
-      fields is ignored, so verify with odometry.
+      fields or a non-finite value is refused (nothing of it is executed), and the reply to the next world wait names the device and the reason; verify with odometry.
     transport: topic
     direction: input
     endpoint: /base/velocity
@@ -25,7 +25,8 @@ operations:
   odometry:
     description: Measured body twist in base/base (m/s and rad/s at the body origin) and the
       planar pose (x, y, yaw) in base/odom, the body frame at episode start; never a global pose.
-      The pose is also on TF as base/odom -> base/base.
+      The pose is also on TF as base/odom -> base/base. It is the simulator's own pose of the body,
+      current at every step and exact (no drift, delay or noise).
     transport: topic
     direction: output
     endpoint: /base/odometry
@@ -66,18 +67,31 @@ type: locomotion
 description: Unitree G1 legs walking on GR00T WholeBodyControl's balance and walking policies,
   which own the legs and waist at 50 Hz. Commands are a body twist (vx, vy in m/s, wz in rad/s)
   within GR00T's navigation limits of 0.5; the gait balances the body while the arms and hands
-  move. The base frame base/base is at the pelvis, level, with the pelvis's heading; odometry
+  move. A twist whose norm sqrt(vx^2 + vy^2 + wz^2) is below 0.1 takes no step at all (GR00T then runs its
+  standing policy), so a slowing final approach stalls short of its goal; from 0.1 up the body moves at about
+  0.7 of vx (0.1 m/s gives 0.07, 0.3 gives 0.2), 0.6 to 0.9 of vy and 0.85 to 1.1 of wz. The base frame base/base is at the pelvis, level, with the pelvis's heading; odometry
   starts at the episode-start pose and is on TF (base/odom -> base/base). Odometry is planar, so
   base/base keeps its episode-start height in base/odom, also while the pelvis is lowered (in a
   squat, base/odom heights are off by the drop). The pelvis device has the pelvis height above
   the floor (pelvis/floor) and its tilt (pelvis/pelvis, which the torso and everything on it
   follow). The legs walk only with the pelvis at 0.70 m or higher (the pelvis device); lower, a
-  twist does not move the body. Heights in other devices' frames are relative to the pelvis. A
-  fall is not recovered within the episode; once the pelvis has
+  twist does not move the body. Heights in other devices' frames are relative to the pelvis. The
+  balance policy steps rather than braces; a steady force at the hands of about 10 N pushing them back (pressing on
+  furniture, a door or a wall) or 20 N pulling them forward makes the body step away and turn, for as long as it lasts
+  (a steady 30 N pull made it fall). In the arms' home pose, which an episode starts in, the fingertips are 0.45 m
+  ahead of the point midway between the ankles, 0.89 m above the floor; walking up to furniture with tops 0.69-1.08 m
+  high in that pose, the body stopped 0.14-0.29 m short of its goal at 11 of 15 places, where the same walk with the
+  palms raised above the top got within 0.03 m of it. Standing at such furniture with a 0.52 waist target, the body
+  stepped back 0.14-0.74 m in 21 of 28 attempts in which the waist held at 0.45 or more through the arm's forward
+  reach, against 3 of 21 in which it settled back. A fall is not recovered within the episode; once the pelvis has
   spent 1 s in all tilted more than 45 degrees from upright or below 0.15 m above the floor (since it was last back
   within 30 degrees of upright), the legs and waist hold still until the episode ends (GR00T's policies slid fallen
   bodies across the floor), twists are ignored, and fall reads fallen; the arms and hands still follow their
-  commands. Squats and walking stay within about 17 degrees.
+  commands. Normal postures stay within about 33 degrees (squats, reaching, walking). Heading can be set to about
+  0.04 rad; the smallest lasting turn is about 0.04 rad (wz 0.1 for 1 s), shorter pulses mostly spring back, and the
+  body keeps turning 0.05-0.09 rad for about 1.5 s after the last twist, so a loop on odometry yaw with |wz| of 0.1-0.3
+  that stops within 0.02 rad ends within about 0.04 rad (re-check 2 s later); standing still, the heading does not
+  drift.
 source: introspected
 calibrated_at: null
 method: introspection

@@ -1,0 +1,7124 @@
+{
+ "source": "An offline scan of collision-geometry dumps (the scene at seed 0 after the instance loads, as BEHAVIOR's evaluator loads it, only the activity's rooms (B100_task_misc.csv 'Rooms to include'); collision shapes on vertical rays every 4 cm between 0.15 m below and 2.6 m above the floor, over the task's objects and the robot's start plus 3 m). no_floor_beyond: door leaves with floor on one side and, 0.3-1.0 m beyond the other, no collision shape within 0.2 m of floor height (checked at 12 points per side); unverified_by_rooms: doors whose far side lies outside the scanned area and whose rooms say it is not loaded.",
+ "activities": {
+  "assembling_gift_baskets": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_bexenl_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "corridor_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_bexenl_1",
+     "category": "door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "attach_a_camera_to_a_tripod": {
+   "no_floor_beyond": [
+    {
+     "door": "door_pxhbim_1",
+     "joint": "j_leaf",
+     "category": "door",
+     "rooms": [
+      "living_room_0",
+      "bedroom_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      }
+     }
+    }
+   ],
+   "unverified_by_rooms": [
+    {
+     "door": "door_pxhbim_2",
+     "category": "door",
+     "rooms": [
+      "living_room_0",
+      "bedroom_1"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_pxhbim_3",
+     "category": "door",
+     "rooms": [
+      "living_room_0",
+      "bedroom_2"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "boxing_books_up_for_storage": {
+   "no_floor_beyond": [
+    {
+     "door": "door_pxhbim_0",
+     "joint": "j_leaf",
+     "category": "door",
+     "rooms": [
+      "living_room_0",
+      "bathroom_1"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 0
+      }
+     }
+    },
+    {
+     "door": "door_pxhbim_1",
+     "joint": "j_leaf",
+     "category": "door",
+     "rooms": [
+      "living_room_0",
+      "bedroom_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 0
+      }
+     }
+    },
+    {
+     "door": "door_pxhbim_2",
+     "joint": "j_leaf",
+     "category": "door",
+     "rooms": [
+      "living_room_0",
+      "bedroom_1"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 0
+      }
+     }
+    },
+    {
+     "door": "door_pxhbim_3",
+     "joint": "j_leaf",
+     "category": "door",
+     "rooms": [
+      "living_room_0",
+      "bedroom_2"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 0
+      }
+     }
+    }
+   ],
+   "unverified_by_rooms": []
+  },
+  "boxing_food_after_dinner": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_crtrpa_0",
+     "category": "door",
+     "rooms": [
+      "sauna_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_eduavq_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_0",
+     "category": "door",
+     "rooms": [
+      "childs_room_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_2",
+     "category": "door",
+     "rooms": [
+      "childs_room_2",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_3",
+     "category": "door",
+     "rooms": [
+      "childs_room_1",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_0",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bedroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_1",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_1"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_11",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_12",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0"
+     ],
+     "beyond": "one room listed (exterior)"
+    },
+    {
+     "door": "sliding_door_tprpvb_5",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_6",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_2"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_7",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "utility_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "bringing_in_wood": {
+   "no_floor_beyond": [
+    {
+     "door": "door_bexenl_1",
+     "joint": "j_leaf",
+     "category": "door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 6,
+       "floor": 6,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 0
+      }
+     }
+    }
+   ],
+   "unverified_by_rooms": [
+    {
+     "door": "garage_door_prdjyt_0",
+     "category": "garage_door",
+     "rooms": [
+      "garage_0"
+     ],
+     "beyond": "one room listed (exterior)"
+    },
+    {
+     "door": "garage_door_prdjyt_0",
+     "category": "garage_door",
+     "rooms": [
+      "garage_0"
+     ],
+     "beyond": "one room listed (exterior)"
+    }
+   ]
+  },
+  "bringing_paper_to_recycling": {
+   "no_floor_beyond": [
+    {
+     "door": "door_bexenl_0",
+     "joint": "j_leaf",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "corridor_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 0
+      }
+     }
+    },
+    {
+     "door": "door_bexenl_1",
+     "joint": "j_leaf",
+     "category": "door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 0
+      }
+     }
+    }
+   ],
+   "unverified_by_rooms": []
+  },
+  "bringing_water": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_crtrpa_0",
+     "category": "door",
+     "rooms": [
+      "sauna_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_eduavq_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_0",
+     "category": "door",
+     "rooms": [
+      "childs_room_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_2",
+     "category": "door",
+     "rooms": [
+      "childs_room_2",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_3",
+     "category": "door",
+     "rooms": [
+      "childs_room_1",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_0",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bedroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_1",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_1"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_11",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_12",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0"
+     ],
+     "beyond": "one room listed (exterior)"
+    },
+    {
+     "door": "sliding_door_tprpvb_5",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_6",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_2"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_7",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "utility_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "can_meat": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_crtrpa_0",
+     "category": "door",
+     "rooms": [
+      "sauna_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_eduavq_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_0",
+     "category": "door",
+     "rooms": [
+      "childs_room_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_2",
+     "category": "door",
+     "rooms": [
+      "childs_room_2",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_3",
+     "category": "door",
+     "rooms": [
+      "childs_room_1",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_0",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bedroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_1",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_1"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_11",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_12",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0"
+     ],
+     "beyond": "one room listed (exterior)"
+    },
+    {
+     "door": "sliding_door_tprpvb_5",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_6",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_2"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_7",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "utility_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "canning_food": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_crtrpa_0",
+     "category": "door",
+     "rooms": [
+      "sauna_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_eduavq_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_0",
+     "category": "door",
+     "rooms": [
+      "childs_room_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_2",
+     "category": "door",
+     "rooms": [
+      "childs_room_2",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_3",
+     "category": "door",
+     "rooms": [
+      "childs_room_1",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_0",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bedroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_1",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_1"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_11",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_12",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0"
+     ],
+     "beyond": "one room listed (exterior)"
+    },
+    {
+     "door": "sliding_door_tprpvb_5",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_6",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_2"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_7",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "utility_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "carrying_in_groceries": {
+   "no_floor_beyond": [
+    {
+     "door": "door_bexenl_1",
+     "joint": "j_leaf",
+     "category": "door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 0
+      }
+     }
+    }
+   ],
+   "unverified_by_rooms": []
+  },
+  "carrying_out_garden_furniture": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_crtrpa_0",
+     "category": "door",
+     "rooms": [
+      "sauna_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_eduavq_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_0",
+     "category": "door",
+     "rooms": [
+      "childs_room_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_2",
+     "category": "door",
+     "rooms": [
+      "childs_room_2",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_3",
+     "category": "door",
+     "rooms": [
+      "childs_room_1",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_0",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bedroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_1",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_1"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_11",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_5",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_6",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_2"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_7",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "utility_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "chop_an_onion": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_bexenl_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "corridor_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_bexenl_1",
+     "category": "door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "chopping_wood": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_bexenl_1",
+     "category": "door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "clean_a_keyboard": {
+   "no_floor_beyond": [
+    {
+     "door": "door_ggcyib_2",
+     "joint": "j_leaf",
+     "category": "door",
+     "rooms": [
+      "corridor_0",
+      "empty_room_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 12
+      }
+     }
+    }
+   ],
+   "unverified_by_rooms": [
+    {
+     "door": "door_ggcyib_4",
+     "category": "door",
+     "rooms": [
+      "corridor_0",
+      "conference_hall_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_ggcyib_5",
+     "category": "door",
+     "rooms": [
+      "corridor_0",
+      "meeting_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_pwoerr_1",
+     "category": "door",
+     "rooms": [
+      "corridor_0",
+      "conference_hall_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "clean_a_patio": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_bexenl_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "corridor_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_bexenl_1",
+     "category": "door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "clean_a_trumpet": {
+   "no_floor_beyond": [
+    {
+     "door": "door_pxhbim_1",
+     "joint": "j_leaf",
+     "category": "door",
+     "rooms": [
+      "living_room_0",
+      "bedroom_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      }
+     }
+    },
+    {
+     "door": "door_pxhbim_2",
+     "joint": "j_leaf",
+     "category": "door",
+     "rooms": [
+      "living_room_0",
+      "bedroom_1"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      }
+     }
+    },
+    {
+     "door": "door_pxhbim_3",
+     "joint": "j_leaf",
+     "category": "door",
+     "rooms": [
+      "living_room_0",
+      "bedroom_2"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      }
+     }
+    }
+   ],
+   "unverified_by_rooms": []
+  },
+  "clean_boxing_gloves": {
+   "no_floor_beyond": [
+    {
+     "door": "door_crtrpa_0",
+     "joint": "j_leaf",
+     "category": "door",
+     "rooms": [
+      "sauna_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      }
+     }
+    },
+    {
+     "door": "door_iuuykr_0",
+     "joint": "j_left_leaf",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      }
+     }
+    },
+    {
+     "door": "door_iuuykr_0",
+     "joint": "j_right_leaf",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      }
+     }
+    },
+    {
+     "door": "door_kwbnhy_0",
+     "joint": "j_leaf",
+     "category": "door",
+     "rooms": [
+      "childs_room_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 12
+      }
+     }
+    },
+    {
+     "door": "door_kwbnhy_2",
+     "joint": "j_leaf",
+     "category": "door",
+     "rooms": [
+      "childs_room_2",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 12
+      }
+     }
+    },
+    {
+     "door": "door_kwbnhy_3",
+     "joint": "j_leaf",
+     "category": "door",
+     "rooms": [
+      "childs_room_1",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 12
+      }
+     }
+    },
+    {
+     "door": "door_tonlzz_0",
+     "joint": "j_leaf",
+     "category": "door",
+     "rooms": [
+      "dining_room_0",
+      "living_room_1"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 12
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      }
+     }
+    },
+    {
+     "door": "sliding_door_lrvyvc_0",
+     "joint": "j_movingpart",
+     "category": "sliding_door",
+     "rooms": [
+      "living_room_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 12
+      }
+     }
+    },
+    {
+     "door": "sliding_door_tprpvb_0",
+     "joint": "j_movingpart",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bedroom_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 12
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      }
+     }
+    },
+    {
+     "door": "sliding_door_tprpvb_1",
+     "joint": "j_movingpart",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_1"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 12
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      }
+     }
+    },
+    {
+     "door": "sliding_door_tprpvb_11",
+     "joint": "j_movingpart",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 12
+      }
+     }
+    },
+    {
+     "door": "sliding_door_tprpvb_5",
+     "joint": "j_movingpart",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 12
+      }
+     }
+    },
+    {
+     "door": "sliding_door_tprpvb_6",
+     "joint": "j_movingpart",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_2"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 12
+      }
+     }
+    }
+   ],
+   "unverified_by_rooms": []
+  },
+  "clean_up_broken_glass": {
+   "no_floor_beyond": [
+    {
+     "door": "door_adejun_0",
+     "joint": "j_left_leaf",
+     "category": "door",
+     "rooms": [
+      "dining_room_0"
+     ],
+     "beyond": "one room listed (exterior)",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 12
+      }
+     }
+    },
+    {
+     "door": "door_adejun_0",
+     "joint": "j_right_leaf",
+     "category": "door",
+     "rooms": [
+      "dining_room_0"
+     ],
+     "beyond": "one room listed (exterior)",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 12
+      }
+     }
+    }
+   ],
+   "unverified_by_rooms": []
+  },
+  "clean_up_your_desk": {
+   "no_floor_beyond": [
+    {
+     "door": "sliding_door_tprpvb_3",
+     "joint": "j_movingpart",
+     "category": "sliding_door",
+     "rooms": [
+      "childs_room_0",
+      "closet_2"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 12
+      }
+     }
+    },
+    {
+     "door": "sliding_door_tprpvb_5",
+     "joint": "j_movingpart",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 3,
+       "floor": 3,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 12
+      }
+     }
+    },
+    {
+     "door": "sliding_door_tprpvb_8",
+     "joint": "j_movingpart",
+     "category": "sliding_door",
+     "rooms": [
+      "childs_room_1",
+      "closet_4"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 12
+      }
+     }
+    }
+   ],
+   "unverified_by_rooms": [
+    {
+     "door": "door_crtrpa_0",
+     "category": "door",
+     "rooms": [
+      "sauna_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_eduavq_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_tonlzz_0",
+     "category": "door",
+     "rooms": [
+      "dining_room_0",
+      "living_room_1"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_lrvyvc_0",
+     "category": "sliding_door",
+     "rooms": [
+      "living_room_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_0",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bedroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_12",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0"
+     ],
+     "beyond": "one room listed (exterior)"
+    },
+    {
+     "door": "sliding_door_tprpvb_2",
+     "category": "sliding_door",
+     "rooms": [
+      "childs_room_2",
+      "closet_3"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_7",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "utility_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "clean_your_rusty_garden_tools": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_crtrpa_0",
+     "category": "door",
+     "rooms": [
+      "sauna_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_0",
+     "category": "door",
+     "rooms": [
+      "childs_room_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_2",
+     "category": "door",
+     "rooms": [
+      "childs_room_2",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_3",
+     "category": "door",
+     "rooms": [
+      "childs_room_1",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_tfdrhh_0",
+     "category": "door",
+     "rooms": [
+      "entryway_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_0",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bedroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_1",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_1"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_11",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_12",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0"
+     ],
+     "beyond": "one room listed (exterior)"
+    },
+    {
+     "door": "sliding_door_tprpvb_5",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_6",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_2"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_7",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "utility_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "cleaning_up_branches_and_twigs": {
+   "no_floor_beyond": [
+    {
+     "door": "door_bexenl_1",
+     "joint": "j_leaf",
+     "category": "door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 0
+      }
+     }
+    }
+   ],
+   "unverified_by_rooms": [
+    {
+     "door": "garage_door_prdjyt_0",
+     "category": "garage_door",
+     "rooms": [
+      "garage_0"
+     ],
+     "beyond": "one room listed (exterior)"
+    },
+    {
+     "door": "garage_door_prdjyt_0",
+     "category": "garage_door",
+     "rooms": [
+      "garage_0"
+     ],
+     "beyond": "one room listed (exterior)"
+    }
+   ]
+  },
+  "cleaning_up_plates_and_food": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_bexenl_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "corridor_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_bexenl_1",
+     "category": "door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "clearing_food_from_table_into_fridge": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_bexenl_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "corridor_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_bexenl_1",
+     "category": "door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "collecting_aluminum_cans": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_uptpdr_0",
+     "category": "door",
+     "rooms": [
+      "bathroom_0"
+     ],
+     "beyond": "one room listed (exterior)"
+    },
+    {
+     "door": "door_ydokma_0",
+     "category": "door",
+     "rooms": [
+      "bathroom_0"
+     ],
+     "beyond": "one room listed (exterior)"
+    }
+   ]
+  },
+  "collecting_childrens_toys": {
+   "no_floor_beyond": [
+    {
+     "door": "sliding_door_tprpvb_2",
+     "joint": "j_movingpart",
+     "category": "sliding_door",
+     "rooms": [
+      "childs_room_2",
+      "closet_3"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 12
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      }
+     }
+    },
+    {
+     "door": "sliding_door_tprpvb_5",
+     "joint": "j_movingpart",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 12
+      }
+     }
+    }
+   ],
+   "unverified_by_rooms": [
+    {
+     "door": "door_crtrpa_0",
+     "category": "door",
+     "rooms": [
+      "sauna_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_eduavq_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_tonlzz_0",
+     "category": "door",
+     "rooms": [
+      "dining_room_0",
+      "living_room_1"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_lrvyvc_0",
+     "category": "sliding_door",
+     "rooms": [
+      "living_room_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_0",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bedroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_12",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0"
+     ],
+     "beyond": "one room listed (exterior)"
+    },
+    {
+     "door": "sliding_door_tprpvb_3",
+     "category": "sliding_door",
+     "rooms": [
+      "childs_room_0",
+      "closet_2"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_7",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "utility_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_8",
+     "category": "sliding_door",
+     "rooms": [
+      "childs_room_1",
+      "closet_4"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "composting_waste": {
+   "no_floor_beyond": [
+    {
+     "door": "door_ktydvs_0",
+     "joint": "j_link_2",
+     "category": "door",
+     "rooms": [
+      "bedroom_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 0
+      }
+     }
+    },
+    {
+     "door": "door_lvgliq_0",
+     "joint": "j_link_2",
+     "category": "door",
+     "rooms": [
+      "entryway_0"
+     ],
+     "beyond": "one room listed (exterior)",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 12
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      }
+     }
+    }
+   ],
+   "unverified_by_rooms": []
+  },
+  "cook_a_brisket": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_bexenl_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "corridor_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_bexenl_1",
+     "category": "door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "cook_a_frozen_pie": {
+   "no_floor_beyond": [
+    {
+     "door": "door_mkcndz_0",
+     "joint": "j_leaf",
+     "category": "door",
+     "rooms": [
+      "kitchen_0"
+     ],
+     "beyond": "one room listed (exterior)",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 6
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      }
+     }
+    }
+   ],
+   "unverified_by_rooms": []
+  },
+  "cook_bacon": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_crtrpa_0",
+     "category": "door",
+     "rooms": [
+      "sauna_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_eduavq_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_0",
+     "category": "door",
+     "rooms": [
+      "childs_room_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_2",
+     "category": "door",
+     "rooms": [
+      "childs_room_2",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_3",
+     "category": "door",
+     "rooms": [
+      "childs_room_1",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_0",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bedroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_1",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_1"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_11",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_12",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0"
+     ],
+     "beyond": "one room listed (exterior)"
+    },
+    {
+     "door": "sliding_door_tprpvb_5",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_6",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_2"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_7",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "utility_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "cook_broccolini": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_mkcndz_0",
+     "category": "door",
+     "rooms": [
+      "kitchen_0"
+     ],
+     "beyond": "one room listed (exterior)"
+    }
+   ]
+  },
+  "cook_brussels_sprouts": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": []
+  },
+  "cook_cabbage": {
+   "no_floor_beyond": [
+    {
+     "door": "door_crtrpa_0",
+     "joint": "j_leaf",
+     "category": "door",
+     "rooms": [
+      "sauna_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      }
+     }
+    },
+    {
+     "door": "door_iuuykr_0",
+     "joint": "j_left_leaf",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      }
+     }
+    },
+    {
+     "door": "door_iuuykr_0",
+     "joint": "j_right_leaf",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      }
+     }
+    },
+    {
+     "door": "door_kwbnhy_0",
+     "joint": "j_leaf",
+     "category": "door",
+     "rooms": [
+      "childs_room_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 12
+      }
+     }
+    },
+    {
+     "door": "door_kwbnhy_2",
+     "joint": "j_leaf",
+     "category": "door",
+     "rooms": [
+      "childs_room_2",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 12
+      }
+     }
+    },
+    {
+     "door": "door_kwbnhy_3",
+     "joint": "j_leaf",
+     "category": "door",
+     "rooms": [
+      "childs_room_1",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 12
+      }
+     }
+    },
+    {
+     "door": "sliding_door_tprpvb_0",
+     "joint": "j_movingpart",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bedroom_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 12
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      }
+     }
+    },
+    {
+     "door": "sliding_door_tprpvb_1",
+     "joint": "j_movingpart",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_1"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 12
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      }
+     }
+    },
+    {
+     "door": "sliding_door_tprpvb_11",
+     "joint": "j_movingpart",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 12
+      }
+     }
+    },
+    {
+     "door": "sliding_door_tprpvb_5",
+     "joint": "j_movingpart",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 12
+      }
+     }
+    },
+    {
+     "door": "sliding_door_tprpvb_6",
+     "joint": "j_movingpart",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_2"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 12
+      }
+     }
+    },
+    {
+     "door": "sliding_door_tprpvb_7",
+     "joint": "j_movingpart",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "utility_room_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 12
+      }
+     }
+    }
+   ],
+   "unverified_by_rooms": []
+  },
+  "cook_hot_dogs": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_crtrpa_0",
+     "category": "door",
+     "rooms": [
+      "sauna_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_eduavq_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_0",
+     "category": "door",
+     "rooms": [
+      "childs_room_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_2",
+     "category": "door",
+     "rooms": [
+      "childs_room_2",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_3",
+     "category": "door",
+     "rooms": [
+      "childs_room_1",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_0",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bedroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_1",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_1"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_11",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_12",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0"
+     ],
+     "beyond": "one room listed (exterior)"
+    },
+    {
+     "door": "sliding_door_tprpvb_5",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_6",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_2"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_7",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "utility_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "dispose_of_batteries": {
+   "no_floor_beyond": [
+    {
+     "door": "door_ggcyib_2",
+     "joint": "j_leaf",
+     "category": "door",
+     "rooms": [
+      "corridor_0",
+      "empty_room_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 12
+      }
+     }
+    }
+   ],
+   "unverified_by_rooms": [
+    {
+     "door": "door_ggcyib_4",
+     "category": "door",
+     "rooms": [
+      "corridor_0",
+      "conference_hall_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_ggcyib_5",
+     "category": "door",
+     "rooms": [
+      "corridor_0",
+      "meeting_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_pwoerr_1",
+     "category": "door",
+     "rooms": [
+      "corridor_0",
+      "conference_hall_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "dispose_of_glass": {
+   "no_floor_beyond": [
+    {
+     "door": "door_uptpdr_0",
+     "joint": "j_leaf",
+     "category": "door",
+     "rooms": [
+      "bathroom_0"
+     ],
+     "beyond": "one room listed (exterior)",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 12
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      }
+     }
+    }
+   ],
+   "unverified_by_rooms": []
+  },
+  "freeze_fruit": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_crtrpa_0",
+     "category": "door",
+     "rooms": [
+      "sauna_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_eduavq_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_0",
+     "category": "door",
+     "rooms": [
+      "childs_room_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_2",
+     "category": "door",
+     "rooms": [
+      "childs_room_2",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_3",
+     "category": "door",
+     "rooms": [
+      "childs_room_1",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_0",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bedroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_1",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_1"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_11",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_12",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0"
+     ],
+     "beyond": "one room listed (exterior)"
+    },
+    {
+     "door": "sliding_door_tprpvb_5",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_6",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_2"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_7",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "utility_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "freeze_pies": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_crtrpa_0",
+     "category": "door",
+     "rooms": [
+      "sauna_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_eduavq_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_0",
+     "category": "door",
+     "rooms": [
+      "childs_room_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_2",
+     "category": "door",
+     "rooms": [
+      "childs_room_2",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_3",
+     "category": "door",
+     "rooms": [
+      "childs_room_1",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_0",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bedroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_1",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_1"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_11",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_12",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0"
+     ],
+     "beyond": "one room listed (exterior)"
+    },
+    {
+     "door": "sliding_door_tprpvb_5",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_6",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_2"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_7",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "utility_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "getting_organized_for_work": {
+   "no_floor_beyond": [
+    {
+     "door": "door_pxhbim_3",
+     "joint": "j_leaf",
+     "category": "door",
+     "rooms": [
+      "living_room_0",
+      "bedroom_2"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      }
+     }
+    }
+   ],
+   "unverified_by_rooms": [
+    {
+     "door": "door_pxhbim_1",
+     "category": "door",
+     "rooms": [
+      "living_room_0",
+      "bedroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_pxhbim_2",
+     "category": "door",
+     "rooms": [
+      "living_room_0",
+      "bedroom_1"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "halve_an_egg": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_crtrpa_0",
+     "category": "door",
+     "rooms": [
+      "sauna_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_eduavq_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_0",
+     "category": "door",
+     "rooms": [
+      "childs_room_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_2",
+     "category": "door",
+     "rooms": [
+      "childs_room_2",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_3",
+     "category": "door",
+     "rooms": [
+      "childs_room_1",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_0",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bedroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_1",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_1"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_11",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_12",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0"
+     ],
+     "beyond": "one room listed (exterior)"
+    },
+    {
+     "door": "sliding_door_tprpvb_5",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_6",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_2"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_7",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "utility_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "hanging_pictures": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_bexenl_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "corridor_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_bexenl_1",
+     "category": "door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "hiding_Easter_eggs": {
+   "no_floor_beyond": [
+    {
+     "door": "door_bexenl_0",
+     "joint": "j_leaf",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "corridor_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 0
+      }
+     }
+    },
+    {
+     "door": "door_bexenl_1",
+     "joint": "j_leaf",
+     "category": "door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 0
+      }
+     }
+    }
+   ],
+   "unverified_by_rooms": []
+  },
+  "installing_a_fax_machine": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_ggcyib_2",
+     "category": "door",
+     "rooms": [
+      "corridor_0",
+      "empty_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_ggcyib_4",
+     "category": "door",
+     "rooms": [
+      "corridor_0",
+      "conference_hall_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_ggcyib_5",
+     "category": "door",
+     "rooms": [
+      "corridor_0",
+      "meeting_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_pwoerr_1",
+     "category": "door",
+     "rooms": [
+      "corridor_0",
+      "conference_hall_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "installing_a_modem": {
+   "no_floor_beyond": [
+    {
+     "door": "door_ktydvs_0",
+     "joint": "j_link_2",
+     "category": "door",
+     "rooms": [
+      "bedroom_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 0
+      }
+     }
+    }
+   ],
+   "unverified_by_rooms": [
+    {
+     "door": "door_lvgliq_0",
+     "category": "door",
+     "rooms": [
+      "entryway_0"
+     ],
+     "beyond": "one room listed (exterior)"
+    },
+    {
+     "door": "door_lvgliq_0",
+     "category": "door",
+     "rooms": [
+      "entryway_0"
+     ],
+     "beyond": "one room listed (exterior)"
+    }
+   ]
+  },
+  "installing_a_scanner": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_ggcyib_2",
+     "category": "door",
+     "rooms": [
+      "corridor_0",
+      "empty_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_ggcyib_4",
+     "category": "door",
+     "rooms": [
+      "corridor_0",
+      "conference_hall_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_ggcyib_5",
+     "category": "door",
+     "rooms": [
+      "corridor_0",
+      "meeting_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_pwoerr_1",
+     "category": "door",
+     "rooms": [
+      "corridor_0",
+      "conference_hall_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "installing_smoke_detectors": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_bexenl_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "corridor_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_bexenl_1",
+     "category": "door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "laying_tile_floors": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_lztyfn_0",
+     "category": "door",
+     "rooms": [
+      "bathroom_0"
+     ],
+     "beyond": "one room listed (exterior)"
+    }
+   ]
+  },
+  "loading_the_car": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_bexenl_1",
+     "category": "door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "make_cabinet_doors": {
+   "no_floor_beyond": [
+    {
+     "door": "door_ktydvs_0",
+     "joint": "j_link_2",
+     "category": "door",
+     "rooms": [
+      "bedroom_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 2,
+       "floor": 2,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 3,
+       "floor": 0,
+       "empty": 0
+      }
+     }
+    }
+   ],
+   "unverified_by_rooms": [
+    {
+     "door": "door_ktydvs_0",
+     "category": "door",
+     "rooms": [
+      "bedroom_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_lvgliq_0",
+     "category": "door",
+     "rooms": [
+      "entryway_0"
+     ],
+     "beyond": "one room listed (exterior)"
+    },
+    {
+     "door": "door_lvgliq_0",
+     "category": "door",
+     "rooms": [
+      "entryway_0"
+     ],
+     "beyond": "one room listed (exterior)"
+    }
+   ]
+  },
+  "make_gift_bags_for_baby_showers": {
+   "no_floor_beyond": [
+    {
+     "door": "door_ktydvs_0",
+     "joint": "j_link_2",
+     "category": "door",
+     "rooms": [
+      "bedroom_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 0
+      }
+     }
+    },
+    {
+     "door": "door_lvgliq_0",
+     "joint": "j_link_2",
+     "category": "door",
+     "rooms": [
+      "entryway_0"
+     ],
+     "beyond": "one room listed (exterior)",
+     "sides": {
+      "+n": {
+       "inside_grid": 3,
+       "floor": 0,
+       "empty": 3
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      }
+     }
+    }
+   ],
+   "unverified_by_rooms": []
+  },
+  "make_microwave_popcorn": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_bexenl_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "corridor_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_bexenl_1",
+     "category": "door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "make_pizza": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_bexenl_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "corridor_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_bexenl_1",
+     "category": "door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "make_rose_centerpieces": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "garage_door_prdjyt_0",
+     "category": "garage_door",
+     "rooms": [
+      "garage_0"
+     ],
+     "beyond": "one room listed (exterior)"
+    },
+    {
+     "door": "garage_door_prdjyt_0",
+     "category": "garage_door",
+     "rooms": [
+      "garage_0"
+     ],
+     "beyond": "one room listed (exterior)"
+    }
+   ]
+  },
+  "moving_boxes_to_storage": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_bexenl_1",
+     "category": "door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "garage_door_prdjyt_0",
+     "category": "garage_door",
+     "rooms": [
+      "garage_0"
+     ],
+     "beyond": "one room listed (exterior)"
+    },
+    {
+     "door": "garage_door_prdjyt_0",
+     "category": "garage_door",
+     "rooms": [
+      "garage_0"
+     ],
+     "beyond": "one room listed (exterior)"
+    }
+   ]
+  },
+  "organizing_art_supplies": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_dlncrt_0",
+     "category": "door",
+     "rooms": [
+      "bathroom_0"
+     ],
+     "beyond": "one room listed (exterior)"
+    },
+    {
+     "door": "door_pevmgl_0",
+     "category": "door",
+     "rooms": [
+      "bathroom_0"
+     ],
+     "beyond": "one room listed (exterior)"
+    }
+   ]
+  },
+  "organizing_school_stuff": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_crtrpa_0",
+     "category": "door",
+     "rooms": [
+      "sauna_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_eduavq_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_0",
+     "category": "door",
+     "rooms": [
+      "childs_room_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_2",
+     "category": "door",
+     "rooms": [
+      "childs_room_2",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_3",
+     "category": "door",
+     "rooms": [
+      "childs_room_1",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_tfdrhh_0",
+     "category": "door",
+     "rooms": [
+      "entryway_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_lrvyvc_0",
+     "category": "sliding_door",
+     "rooms": [
+      "living_room_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_1",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_1"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_11",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_12",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0"
+     ],
+     "beyond": "one room listed (exterior)"
+    },
+    {
+     "door": "sliding_door_tprpvb_5",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_6",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_2"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_7",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "utility_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "outfit_a_basic_toolbox": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_crtrpa_0",
+     "category": "door",
+     "rooms": [
+      "sauna_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_eduavq_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_0",
+     "category": "door",
+     "rooms": [
+      "childs_room_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_2",
+     "category": "door",
+     "rooms": [
+      "childs_room_2",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_3",
+     "category": "door",
+     "rooms": [
+      "childs_room_1",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_tonlzz_0",
+     "category": "door",
+     "rooms": [
+      "dining_room_0",
+      "living_room_1"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_lrvyvc_0",
+     "category": "sliding_door",
+     "rooms": [
+      "living_room_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_0",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bedroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_1",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_1"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_11",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_5",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_6",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_2"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "packing_meal_for_delivery": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_mkcndz_0",
+     "category": "door",
+     "rooms": [
+      "kitchen_0"
+     ],
+     "beyond": "one room listed (exterior)"
+    }
+   ]
+  },
+  "picking_up_toys": {
+   "no_floor_beyond": [
+    {
+     "door": "sliding_door_tprpvb_3",
+     "joint": "j_movingpart",
+     "category": "sliding_door",
+     "rooms": [
+      "childs_room_0",
+      "closet_2"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 12
+      }
+     }
+    },
+    {
+     "door": "sliding_door_tprpvb_8",
+     "joint": "j_movingpart",
+     "category": "sliding_door",
+     "rooms": [
+      "childs_room_1",
+      "closet_4"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 12
+      }
+     }
+    }
+   ],
+   "unverified_by_rooms": [
+    {
+     "door": "door_crtrpa_0",
+     "category": "door",
+     "rooms": [
+      "sauna_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_eduavq_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_tonlzz_0",
+     "category": "door",
+     "rooms": [
+      "dining_room_0",
+      "living_room_1"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_lrvyvc_0",
+     "category": "sliding_door",
+     "rooms": [
+      "living_room_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_0",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bedroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_12",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0"
+     ],
+     "beyond": "one room listed (exterior)"
+    },
+    {
+     "door": "sliding_door_tprpvb_2",
+     "category": "sliding_door",
+     "rooms": [
+      "childs_room_2",
+      "closet_3"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_5",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_7",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "utility_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "picking_up_trash": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_bexenl_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "corridor_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_bexenl_1",
+     "category": "door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "polishing_shoes": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_uptpdr_0",
+     "category": "door",
+     "rooms": [
+      "bathroom_0"
+     ],
+     "beyond": "one room listed (exterior)"
+    },
+    {
+     "door": "door_ydokma_0",
+     "category": "door",
+     "rooms": [
+      "bathroom_0"
+     ],
+     "beyond": "one room listed (exterior)"
+    }
+   ]
+  },
+  "preparing_lunch_box": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_crtrpa_0",
+     "category": "door",
+     "rooms": [
+      "sauna_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_eduavq_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_0",
+     "category": "door",
+     "rooms": [
+      "childs_room_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_2",
+     "category": "door",
+     "rooms": [
+      "childs_room_2",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_3",
+     "category": "door",
+     "rooms": [
+      "childs_room_1",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_0",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bedroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_1",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_1"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_11",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_12",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0"
+     ],
+     "beyond": "one room listed (exterior)"
+    },
+    {
+     "door": "sliding_door_tprpvb_5",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_6",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_2"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_7",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "utility_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "put_together_a_basic_pruning_kit": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_bexenl_1",
+     "category": "door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_vudhlc_2",
+     "category": "door",
+     "rooms": [
+      "kitchen_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_vudhlc_3",
+     "category": "door",
+     "rooms": [
+      "living_room_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "putting_away_Halloween_decorations": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_bexenl_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "corridor_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_bexenl_1",
+     "category": "door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "putting_away_toys": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_crtrpa_0",
+     "category": "door",
+     "rooms": [
+      "sauna_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_eduavq_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_0",
+     "category": "door",
+     "rooms": [
+      "childs_room_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_2",
+     "category": "door",
+     "rooms": [
+      "childs_room_2",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_3",
+     "category": "door",
+     "rooms": [
+      "childs_room_1",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_0",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bedroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_1",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_1"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_11",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_5",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_6",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_2"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_7",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "utility_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "putting_dirty_dishes_in_sink": {
+   "no_floor_beyond": [
+    {
+     "door": "door_adejun_0",
+     "joint": "j_left_leaf",
+     "category": "door",
+     "rooms": [
+      "dining_room_0"
+     ],
+     "beyond": "one room listed (exterior)",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 12
+      }
+     }
+    },
+    {
+     "door": "door_adejun_0",
+     "joint": "j_right_leaf",
+     "category": "door",
+     "rooms": [
+      "dining_room_0"
+     ],
+     "beyond": "one room listed (exterior)",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 12
+      }
+     }
+    }
+   ],
+   "unverified_by_rooms": []
+  },
+  "putting_dishes_away_after_cleaning": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_crtrpa_0",
+     "category": "door",
+     "rooms": [
+      "sauna_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_eduavq_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_0",
+     "category": "door",
+     "rooms": [
+      "childs_room_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_2",
+     "category": "door",
+     "rooms": [
+      "childs_room_2",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_3",
+     "category": "door",
+     "rooms": [
+      "childs_room_1",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_0",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bedroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_1",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_1"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_11",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_12",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0"
+     ],
+     "beyond": "one room listed (exterior)"
+    },
+    {
+     "door": "sliding_door_tprpvb_5",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_6",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_2"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_7",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "utility_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "putting_shoes_on_rack": {
+   "no_floor_beyond": [
+    {
+     "door": "door_bexenl_0",
+     "joint": "j_leaf",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "corridor_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 0
+      }
+     }
+    },
+    {
+     "door": "door_bexenl_1",
+     "joint": "j_leaf",
+     "category": "door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 0
+      }
+     }
+    }
+   ],
+   "unverified_by_rooms": []
+  },
+  "putting_up_Christmas_decorations_inside": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_crtrpa_0",
+     "category": "door",
+     "rooms": [
+      "sauna_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_eduavq_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_0",
+     "category": "door",
+     "rooms": [
+      "childs_room_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_2",
+     "category": "door",
+     "rooms": [
+      "childs_room_2",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_3",
+     "category": "door",
+     "rooms": [
+      "childs_room_1",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_0",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bedroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_1",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_1"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_11",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_5",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_6",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_2"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_7",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "utility_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "re_shelving_library_books": {
+   "no_floor_beyond": [
+    {
+     "door": "door_pxhbim_0",
+     "joint": "j_leaf",
+     "category": "door",
+     "rooms": [
+      "living_room_0",
+      "bathroom_1"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 0
+      }
+     }
+    },
+    {
+     "door": "door_pxhbim_1",
+     "joint": "j_leaf",
+     "category": "door",
+     "rooms": [
+      "living_room_0",
+      "bedroom_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 0
+      }
+     }
+    }
+   ],
+   "unverified_by_rooms": [
+    {
+     "door": "door_pxhbim_2",
+     "category": "door",
+     "rooms": [
+      "living_room_0",
+      "bedroom_1"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_pxhbim_3",
+     "category": "door",
+     "rooms": [
+      "living_room_0",
+      "bedroom_2"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "rearrange_your_room": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_uptpdr_0",
+     "category": "door",
+     "rooms": [
+      "bathroom_0"
+     ],
+     "beyond": "one room listed (exterior)"
+    }
+   ]
+  },
+  "rearranging_kitchen_furniture": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_bexenl_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "corridor_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_bexenl_1",
+     "category": "door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "scrubbing_bathroom_floor": {
+   "no_floor_beyond": [
+    {
+     "door": "sliding_door_tprpvb_5",
+     "joint": "j_movingpart",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 12
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      }
+     }
+    }
+   ],
+   "unverified_by_rooms": [
+    {
+     "door": "door_crtrpa_0",
+     "category": "door",
+     "rooms": [
+      "sauna_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_eduavq_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_fnvpyu_0",
+     "category": "door",
+     "rooms": [
+      "corridor_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_0",
+     "category": "door",
+     "rooms": [
+      "childs_room_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_1",
+     "category": "door",
+     "rooms": [
+      "corridor_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_2",
+     "category": "door",
+     "rooms": [
+      "childs_room_2",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_3",
+     "category": "door",
+     "rooms": [
+      "childs_room_1",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_tfdrhh_0",
+     "category": "door",
+     "rooms": [
+      "entryway_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_lrvyvc_0",
+     "category": "sliding_door",
+     "rooms": [
+      "living_room_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_10",
+     "category": "sliding_door",
+     "rooms": [
+      "bedroom_0",
+      "bathroom_1"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "set_up_a_coffee_station_in_your_kitchen": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_crtrpa_0",
+     "category": "door",
+     "rooms": [
+      "sauna_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_eduavq_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_0",
+     "category": "door",
+     "rooms": [
+      "childs_room_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_2",
+     "category": "door",
+     "rooms": [
+      "childs_room_2",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_3",
+     "category": "door",
+     "rooms": [
+      "childs_room_1",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_0",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bedroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_1",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_1"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_11",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_12",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0"
+     ],
+     "beyond": "one room listed (exterior)"
+    },
+    {
+     "door": "sliding_door_tprpvb_5",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_6",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_2"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_7",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "utility_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "setting_mousetraps": {
+   "no_floor_beyond": [
+    {
+     "door": "door_pxhbim_0",
+     "joint": "j_leaf",
+     "category": "door",
+     "rooms": [
+      "living_room_0",
+      "bathroom_1"
+     ],
+     "beyond": "no loaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      }
+     }
+    }
+   ],
+   "unverified_by_rooms": []
+  },
+  "setting_the_fire": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_bexenl_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "corridor_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_bexenl_1",
+     "category": "door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "setting_the_table": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_crtrpa_0",
+     "category": "door",
+     "rooms": [
+      "sauna_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_eduavq_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_0",
+     "category": "door",
+     "rooms": [
+      "childs_room_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_2",
+     "category": "door",
+     "rooms": [
+      "childs_room_2",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_3",
+     "category": "door",
+     "rooms": [
+      "childs_room_1",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_0",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bedroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_1",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_1"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_11",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_12",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0"
+     ],
+     "beyond": "one room listed (exterior)"
+    },
+    {
+     "door": "sliding_door_tprpvb_5",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_6",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_2"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_7",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "utility_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "setup_a_bar_for_a_cocktail_party": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_adejun_0",
+     "category": "door",
+     "rooms": [
+      "dining_room_0"
+     ],
+     "beyond": "one room listed (exterior)"
+    },
+    {
+     "door": "door_adejun_0",
+     "category": "door",
+     "rooms": [
+      "dining_room_0"
+     ],
+     "beyond": "one room listed (exterior)"
+    }
+   ]
+  },
+  "slicing_vegetables": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_crtrpa_0",
+     "category": "door",
+     "rooms": [
+      "sauna_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_eduavq_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_0",
+     "category": "door",
+     "rooms": [
+      "childs_room_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_2",
+     "category": "door",
+     "rooms": [
+      "childs_room_2",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_3",
+     "category": "door",
+     "rooms": [
+      "childs_room_1",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_0",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bedroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_1",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_1"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_11",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_12",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0"
+     ],
+     "beyond": "one room listed (exterior)"
+    },
+    {
+     "door": "sliding_door_tprpvb_5",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_6",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_2"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_7",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "utility_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "sorting_books_on_shelf": {
+   "no_floor_beyond": [
+    {
+     "door": "door_pxhbim_0",
+     "joint": "j_leaf",
+     "category": "door",
+     "rooms": [
+      "living_room_0",
+      "bathroom_1"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 0
+      }
+     }
+    },
+    {
+     "door": "door_pxhbim_1",
+     "joint": "j_leaf",
+     "category": "door",
+     "rooms": [
+      "living_room_0",
+      "bedroom_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 0
+      }
+     }
+    }
+   ],
+   "unverified_by_rooms": [
+    {
+     "door": "door_pxhbim_2",
+     "category": "door",
+     "rooms": [
+      "living_room_0",
+      "bedroom_1"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_pxhbim_3",
+     "category": "door",
+     "rooms": [
+      "living_room_0",
+      "bedroom_2"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "sorting_bottles_cans_and_paper": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_bexenl_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "corridor_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_bexenl_1",
+     "category": "door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "sorting_household_items": {
+   "no_floor_beyond": [
+    {
+     "door": "door_kwbnhy_0",
+     "joint": "j_leaf",
+     "category": "door",
+     "rooms": [
+      "childs_room_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 12
+      }
+     }
+    },
+    {
+     "door": "sliding_door_tprpvb_11",
+     "joint": "j_movingpart",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 12
+      }
+     }
+    },
+    {
+     "door": "sliding_door_tprpvb_4",
+     "joint": "j_movingpart",
+     "category": "sliding_door",
+     "rooms": [
+      "bedroom_0",
+      "closet_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 12
+      }
+     }
+    },
+    {
+     "door": "sliding_door_tprpvb_9",
+     "joint": "j_movingpart",
+     "category": "sliding_door",
+     "rooms": [
+      "bedroom_0",
+      "closet_1"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 12
+      }
+     }
+    }
+   ],
+   "unverified_by_rooms": [
+    {
+     "door": "door_crtrpa_0",
+     "category": "door",
+     "rooms": [
+      "sauna_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_eduavq_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_2",
+     "category": "door",
+     "rooms": [
+      "childs_room_2",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_3",
+     "category": "door",
+     "rooms": [
+      "childs_room_1",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_tonlzz_0",
+     "category": "door",
+     "rooms": [
+      "dining_room_0",
+      "living_room_1"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_lrvyvc_0",
+     "category": "sliding_door",
+     "rooms": [
+      "living_room_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_1",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_1"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_12",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0"
+     ],
+     "beyond": "one room listed (exterior)"
+    },
+    {
+     "door": "sliding_door_tprpvb_6",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_2"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_7",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "utility_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "sorting_vegetables": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_crtrpa_0",
+     "category": "door",
+     "rooms": [
+      "sauna_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_eduavq_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_0",
+     "category": "door",
+     "rooms": [
+      "childs_room_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_2",
+     "category": "door",
+     "rooms": [
+      "childs_room_2",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_3",
+     "category": "door",
+     "rooms": [
+      "childs_room_1",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_0",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bedroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_1",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_1"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_11",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_12",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0"
+     ],
+     "beyond": "one room listed (exterior)"
+    },
+    {
+     "door": "sliding_door_tprpvb_5",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_6",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_2"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_7",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "utility_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "spraying_for_bugs": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_bexenl_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "corridor_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_bexenl_1",
+     "category": "door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "spraying_fruit_trees": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_bexenl_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "corridor_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_bexenl_1",
+     "category": "door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "stacking_wood": {
+   "no_floor_beyond": [
+    {
+     "door": "door_iuuykr_0",
+     "joint": "j_left_leaf",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      }
+     }
+    },
+    {
+     "door": "door_iuuykr_0",
+     "joint": "j_right_leaf",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      }
+     }
+    }
+   ],
+   "unverified_by_rooms": [
+    {
+     "door": "door_crtrpa_0",
+     "category": "door",
+     "rooms": [
+      "sauna_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_0",
+     "category": "door",
+     "rooms": [
+      "childs_room_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_2",
+     "category": "door",
+     "rooms": [
+      "childs_room_2",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_3",
+     "category": "door",
+     "rooms": [
+      "childs_room_1",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_tfdrhh_0",
+     "category": "door",
+     "rooms": [
+      "entryway_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_0",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bedroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_1",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_1"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_11",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_12",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0"
+     ],
+     "beyond": "one room listed (exterior)"
+    },
+    {
+     "door": "sliding_door_tprpvb_5",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_6",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_2"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_7",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "utility_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "store_batteries": {
+   "no_floor_beyond": [
+    {
+     "door": "door_ktydvs_0",
+     "joint": "j_link_2",
+     "category": "door",
+     "rooms": [
+      "bedroom_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 0
+      }
+     }
+    },
+    {
+     "door": "door_lvgliq_0",
+     "joint": "j_link_2",
+     "category": "door",
+     "rooms": [
+      "entryway_0"
+     ],
+     "beyond": "one room listed (exterior)",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 12
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      }
+     }
+    }
+   ],
+   "unverified_by_rooms": []
+  },
+  "store_honey": {
+   "no_floor_beyond": [
+    {
+     "door": "door_ktydvs_0",
+     "joint": "j_link_2",
+     "category": "door",
+     "rooms": [
+      "bedroom_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 0
+      }
+     }
+    },
+    {
+     "door": "door_lvgliq_0",
+     "joint": "j_link_2",
+     "category": "door",
+     "rooms": [
+      "entryway_0"
+     ],
+     "beyond": "one room listed (exterior)",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 12
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      }
+     }
+    }
+   ],
+   "unverified_by_rooms": []
+  },
+  "store_produce": {
+   "no_floor_beyond": [
+    {
+     "door": "door_mkcndz_0",
+     "joint": "j_leaf",
+     "category": "door",
+     "rooms": [
+      "kitchen_0"
+     ],
+     "beyond": "one room listed (exterior)",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 6
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      }
+     }
+    }
+   ],
+   "unverified_by_rooms": []
+  },
+  "storing_food": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_crtrpa_0",
+     "category": "door",
+     "rooms": [
+      "sauna_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_eduavq_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_0",
+     "category": "door",
+     "rooms": [
+      "childs_room_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_2",
+     "category": "door",
+     "rooms": [
+      "childs_room_2",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_3",
+     "category": "door",
+     "rooms": [
+      "childs_room_1",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_0",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bedroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_1",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_1"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_11",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_12",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0"
+     ],
+     "beyond": "one room listed (exterior)"
+    },
+    {
+     "door": "sliding_door_tprpvb_5",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_6",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_2"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_7",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "utility_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "sweeping_garage": {
+   "no_floor_beyond": [
+    {
+     "door": "door_bexenl_1",
+     "joint": "j_leaf",
+     "category": "door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 6,
+       "floor": 0,
+       "empty": 0
+      }
+     }
+    }
+   ],
+   "unverified_by_rooms": [
+    {
+     "door": "door_vudhlc_0",
+     "category": "door",
+     "rooms": [
+      "corridor_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_vudhlc_1",
+     "category": "door",
+     "rooms": [
+      "corridor_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "thawing_frozen_food": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_bexenl_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "corridor_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_bexenl_1",
+     "category": "door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "tidying_bathroom": {
+   "no_floor_beyond": [
+    {
+     "door": "door_uptpdr_0",
+     "joint": "j_leaf",
+     "category": "door",
+     "rooms": [
+      "bathroom_0"
+     ],
+     "beyond": "one room listed (exterior)",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 12
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      }
+     }
+    }
+   ],
+   "unverified_by_rooms": []
+  },
+  "tidying_bedroom": {
+   "no_floor_beyond": [
+    {
+     "door": "sliding_door_tprpvb_4",
+     "joint": "j_movingpart",
+     "category": "sliding_door",
+     "rooms": [
+      "bedroom_0",
+      "closet_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 12
+      }
+     }
+    },
+    {
+     "door": "sliding_door_tprpvb_9",
+     "joint": "j_movingpart",
+     "category": "sliding_door",
+     "rooms": [
+      "bedroom_0",
+      "closet_1"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 12
+      }
+     }
+    }
+   ],
+   "unverified_by_rooms": [
+    {
+     "door": "door_crtrpa_0",
+     "category": "door",
+     "rooms": [
+      "sauna_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_eduavq_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_0",
+     "category": "door",
+     "rooms": [
+      "childs_room_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_2",
+     "category": "door",
+     "rooms": [
+      "childs_room_2",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_3",
+     "category": "door",
+     "rooms": [
+      "childs_room_1",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_tonlzz_0",
+     "category": "door",
+     "rooms": [
+      "dining_room_0",
+      "living_room_1"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_lrvyvc_0",
+     "category": "sliding_door",
+     "rooms": [
+      "living_room_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_1",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_1"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_11",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_12",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0"
+     ],
+     "beyond": "one room listed (exterior)"
+    },
+    {
+     "door": "sliding_door_tprpvb_5",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_6",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_2"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_7",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "utility_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "tidying_living_room": {
+   "no_floor_beyond": [
+    {
+     "door": "door_pxhbim_0",
+     "joint": "j_leaf",
+     "category": "door",
+     "rooms": [
+      "living_room_0",
+      "bathroom_1"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 0
+      }
+     }
+    },
+    {
+     "door": "door_pxhbim_1",
+     "joint": "j_leaf",
+     "category": "door",
+     "rooms": [
+      "living_room_0",
+      "bedroom_0"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 0
+      }
+     }
+    },
+    {
+     "door": "door_pxhbim_2",
+     "joint": "j_leaf",
+     "category": "door",
+     "rooms": [
+      "living_room_0",
+      "bedroom_1"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 0
+      }
+     }
+    },
+    {
+     "door": "door_pxhbim_3",
+     "joint": "j_leaf",
+     "category": "door",
+     "rooms": [
+      "living_room_0",
+      "bedroom_2"
+     ],
+     "beyond": "to an unloaded room",
+     "sides": {
+      "+n": {
+       "inside_grid": 12,
+       "floor": 12,
+       "empty": 0
+      },
+      "-n": {
+       "inside_grid": 12,
+       "floor": 0,
+       "empty": 0
+      }
+     }
+    }
+   ],
+   "unverified_by_rooms": []
+  },
+  "turning_on_radio": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_bexenl_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "corridor_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_bexenl_1",
+     "category": "door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "turning_out_all_lights_before_sleep": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_crtrpa_0",
+     "category": "door",
+     "rooms": [
+      "sauna_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_eduavq_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_0",
+     "category": "door",
+     "rooms": [
+      "childs_room_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_2",
+     "category": "door",
+     "rooms": [
+      "childs_room_2",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_3",
+     "category": "door",
+     "rooms": [
+      "childs_room_1",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_0",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bedroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_1",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_1"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_11",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_5",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_6",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_2"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "unloading_the_car": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_bexenl_1",
+     "category": "door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "vacuuming_floors": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_pxhbim_0",
+     "category": "door",
+     "rooms": [
+      "living_room_0",
+      "bathroom_1"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "wash_a_baseball_cap": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_crtrpa_0",
+     "category": "door",
+     "rooms": [
+      "sauna_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_eduavq_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_0",
+     "category": "door",
+     "rooms": [
+      "childs_room_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_2",
+     "category": "door",
+     "rooms": [
+      "childs_room_2",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_3",
+     "category": "door",
+     "rooms": [
+      "childs_room_1",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_tonlzz_0",
+     "category": "door",
+     "rooms": [
+      "dining_room_0",
+      "living_room_1"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_lrvyvc_0",
+     "category": "sliding_door",
+     "rooms": [
+      "living_room_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_0",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bedroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_1",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_1"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_11",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_5",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_6",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_2"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  },
+  "wash_dog_toys": {
+   "no_floor_beyond": [],
+   "unverified_by_rooms": [
+    {
+     "door": "door_crtrpa_0",
+     "category": "door",
+     "rooms": [
+      "sauna_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_eduavq_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_iuuykr_0",
+     "category": "door",
+     "rooms": [
+      "garage_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_0",
+     "category": "door",
+     "rooms": [
+      "childs_room_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_2",
+     "category": "door",
+     "rooms": [
+      "childs_room_2",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_kwbnhy_3",
+     "category": "door",
+     "rooms": [
+      "childs_room_1",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "door_tonlzz_0",
+     "category": "door",
+     "rooms": [
+      "dining_room_0",
+      "living_room_1"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_lrvyvc_0",
+     "category": "sliding_door",
+     "rooms": [
+      "living_room_0",
+      "garden_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_0",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bedroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_1",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_1"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_11",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_5",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "bathroom_0"
+     ],
+     "beyond": "to an unloaded room"
+    },
+    {
+     "door": "sliding_door_tprpvb_6",
+     "category": "sliding_door",
+     "rooms": [
+      "corridor_0",
+      "childs_room_2"
+     ],
+     "beyond": "to an unloaded room"
+    }
+   ]
+  }
+ },
+ "summary": {
+  "activities": 100,
+  "with_a_door_onto_no_floor": 38,
+  "doors_onto_no_floor": 89,
+  "with_only_unverified_candidates": 61
+ }
+}

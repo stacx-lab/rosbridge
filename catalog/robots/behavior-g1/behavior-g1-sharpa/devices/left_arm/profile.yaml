@@ -26,7 +26,8 @@ operations:
       and effort must be empty. A zero header stamp selects now; a nonzero stamp must not
       start in the past. Points are absolute native joint positions, linearly interpolated
       at the native control period. Replacement clears pending references. A target beyond a joint's limits
-      is clipped to the limit; other invalid trajectories are ignored, so verify measured joint_state.
+      is clipped to the limit; any other invalid trajectory
+      (one without points, say) is refused (nothing of it is executed), and the reply to the next world wait names the device and the reason; verify measured joint_state.
     transport: topic
     direction: input
     endpoint: /left_arm/joint_target
@@ -56,6 +57,13 @@ description: G1 seven-joint left arm on the torso. Geometry is the sibling arm.u
   (left_wrist_yaw_link) as the tip link; measured links are on TF as left_arm/<link>, and
   helpers.joint_model('left_arm') computes FK/IK from it. Commands are absolute native joint
   positions on GR00T's arm gains.
+  Reach, measured from the pelvis (base/base); the straight arm's fingertips get about 0.63-0.67 m forward near
+  shoulder height at any pelvis height (1.0-1.2 m above the floor standing, 0.4-0.8 m in a squat) and less away from
+  it (0.44 m at 0.4-0.6 m standing, 0.55 m within 0.2 m of the floor in a full squat); the wrist flange is 0.27 m
+  behind the fingertips. The toes stick out 0.15-0.20 m and the knees 0.18 m (standing) to 0.29-0.36 m (squatting)
+  ahead of the pelvis, so the fingertips get about 0.45 m past a cabinet front standing (0.25 m at 0.4-0.6 m height)
+  and 0.33 m squatting; waist pitch adds 0.03-0.1 m in a squat. The robot's links do not collide with each other,
+  so an arm passes through the legs.
 source: introspected
 calibrated_at: null
 method: introspection

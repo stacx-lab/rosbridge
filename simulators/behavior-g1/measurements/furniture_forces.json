@@ -1,0 +1,7128 @@
+{
+ "source": "(all under OmniGibson's friction: coefficient 0.2 on revolute, 0.3 on prismatic joints of scene objects):\n  handle  constant horizontal force at the handle (or the panel's free edge without one), perpendicular to the panel, held\n          1 s from closed at 200 Hz physics with the robot held still; per door the smallest force of the grid that turns\n          it 0.3 rad (a hinge) or moves it 0.05 rad / 0.05 m within 1 s:\n          door_force probes (grid 2,3,5,7,10,15,20,30,50,80,120,200,300 N) and\n          door_turn probes (grid 2,5,10,20,30,50,80,120,200,300 N); file: each probe's output;\n  edge    \"legacy\" (= OmniGibson's friction) rows: force ramp 10 N/s at the free edge (breakaway), smallest constant edge\n          force of 2,3,5,7,10,15,20,30,50,80 N that turns a hinge 0.3 rad or slides a slide 0.1 m in 1 s (along a sliding\n          door's track), from friction probes in canning_food;\n  sweep   legacy breakaway at the handle and free edge for every door class of 6 scenes;\n  pulls   room doors pulled toward the robot by hand: physical pinch (physpull probe, legacy rows), assisted\n          attachment at the handle (door_open probe, tidying_bathroom);\n  push    walking chest-first into a door that swings away (pushdoor probe, legacy rows, 8 s;\n          pushdoor_long probe, 30 s);\n  hands   horizontal force on the standing robot's hand(s) along its heading (hand_force probe);\n  release released doors (canning_food) and drawers (drawer_release probe, legacy rows);\n  level   lids and drop-down doors on level hinges released part-way (canning_food, legacy rows).",
+ "friction": {
+  "revolute": 0.2,
+  "prismatic": 0.3
+ },
+ "handle": [
+  {
+   "probe": "door_force",
+   "file": "door-canning_food-fridge_dszchb_0-bottom_cabinet_no_top_rkgjer_0-microwave_abzvij_0-oven_ffitak_0-.json",
+   "task": "canning_food",
+   "object": "fridge_dszchb_0",
+   "category": "fridge",
+   "joint": "j_link_0",
+   "type": "RevoluteJoint",
+   "kind": "fridge door",
+   "mass_kg": 1.514,
+   "lever_m": 0.558,
+   "at": "handle",
+   "friction": 0.20000000298023224,
+   "grid_N": [
+    2,
+    3,
+    5,
+    7,
+    10,
+    15,
+    20,
+    30,
+    50,
+    80,
+    120,
+    200,
+    300
+   ],
+   "turn_0.3_1s_N": 7,
+   "move_0.05_1s_N": 7,
+   "sweeps": {
+    "toward +normal": [
+     [
+      2,
+      0.0055
+     ],
+     [
+      3,
+      0.0125
+     ],
+     [
+      5,
+      0.0347
+     ],
+     [
+      7,
+      0.7191
+     ]
+    ],
+    "toward -normal": [
+     [
+      2,
+      -0.0
+     ],
+     [
+      3,
+      -0.0
+     ],
+     [
+      5,
+      -0.0
+     ],
+     [
+      7,
+      -0.0
+     ],
+     [
+      10,
+      -0.0
+     ],
+     [
+      15,
+      -0.0
+     ],
+     [
+      20,
+      -0.0
+     ],
+     [
+      30,
+      -0.0
+     ],
+     [
+      50,
+      -0.0
+     ],
+     [
+      80,
+      -0.0
+     ],
+     [
+      120,
+      -0.0
+     ],
+     [
+      200,
+      -0.0
+     ],
+     [
+      300,
+      -0.0
+     ]
+    ]
+   }
+  },
+  {
+   "probe": "door_force",
+   "file": "door-canning_food-fridge_dszchb_0-bottom_cabinet_no_top_rkgjer_0-microwave_abzvij_0-oven_ffitak_0-.json",
+   "task": "canning_food",
+   "object": "bottom_cabinet_no_top_rkgjer_0",
+   "category": "bottom_cabinet_no_top",
+   "joint": "j_doorleft1",
+   "type": "RevoluteJoint",
+   "kind": "cabinet door",
+   "mass_kg": 0.161,
+   "lever_m": 0.508,
+   "at": "handle",
+   "friction": 0.20000000298023224,
+   "grid_N": [
+    2,
+    3,
+    5,
+    7,
+    10,
+    15,
+    20,
+    30,
+    50,
+    80,
+    120,
+    200,
+    300
+   ],
+   "turn_0.3_1s_N": 2,
+   "move_0.05_1s_N": 2,
+   "sweeps": {
+    "toward +normal": [
+     [
+      2,
+      1.5708
+     ]
+    ],
+    "toward -normal": [
+     [
+      2,
+      -0.0
+     ],
+     [
+      3,
+      -0.0
+     ],
+     [
+      5,
+      -0.0
+     ],
+     [
+      7,
+      -0.0
+     ],
+     [
+      10,
+      -0.0
+     ],
+     [
+      15,
+      -0.0
+     ],
+     [
+      20,
+      -0.0
+     ],
+     [
+      30,
+      -0.0
+     ],
+     [
+      50,
+      -0.0
+     ],
+     [
+      80,
+      -0.0
+     ],
+     [
+      120,
+      -0.0
+     ],
+     [
+      200,
+      -0.0
+     ],
+     [
+      300,
+      -0.0
+     ]
+    ]
+   }
+  },
+  {
+   "probe": "door_force",
+   "file": "door-canning_food-fridge_dszchb_0-bottom_cabinet_no_top_rkgjer_0-microwave_abzvij_0-oven_ffitak_0-.json",
+   "task": "canning_food",
+   "object": "microwave_abzvij_0",
+   "category": "microwave",
+   "joint": "j_link_0",
+   "type": "RevoluteJoint",
+   "kind": "microwave door",
+   "mass_kg": 1.22,
+   "lever_m": 0.363,
+   "at": "handle",
+   "friction": 0.20000000298023224,
+   "grid_N": [
+    2,
+    3,
+    5,
+    7,
+    10,
+    15,
+    20,
+    30,
+    50,
+    80,
+    120,
+    200,
+    300
+   ],
+   "turn_0.3_1s_N": 10,
+   "move_0.05_1s_N": 7,
+   "sweeps": {
+    "toward +normal": [
+     [
+      2,
+      0.0069
+     ],
+     [
+      3,
+      0.016
+     ],
+     [
+      5,
+      0.0449
+     ],
+     [
+      7,
+      0.0866
+     ],
+     [
+      10,
+      0.7988
+     ]
+    ],
+    "toward -normal": [
+     [
+      2,
+      -0.0
+     ],
+     [
+      3,
+      -0.0
+     ],
+     [
+      5,
+      -0.0
+     ],
+     [
+      7,
+      -0.0
+     ],
+     [
+      10,
+      -0.0
+     ],
+     [
+      15,
+      -0.0
+     ],
+     [
+      20,
+      -0.0
+     ],
+     [
+      30,
+      -0.0
+     ],
+     [
+      50,
+      -0.0
+     ],
+     [
+      80,
+      -0.0
+     ],
+     [
+      120,
+      -0.0
+     ],
+     [
+      200,
+      -0.0
+     ],
+     [
+      300,
+      -0.0
+     ]
+    ]
+   }
+  },
+  {
+   "probe": "door_force",
+   "file": "door-canning_food-fridge_dszchb_0-bottom_cabinet_no_top_rkgjer_0-microwave_abzvij_0-oven_ffitak_0-.json",
+   "task": "canning_food",
+   "object": "oven_ffitak_0",
+   "category": "oven",
+   "joint": "j_door",
+   "type": "RevoluteJoint",
+   "kind": "oven door (level hinge)",
+   "mass_kg": 4.339,
+   "lever_m": 0.254,
+   "at": "handle",
+   "friction": 0.20000000298023224,
+   "grid_N": [
+    2,
+    3,
+    5,
+    7,
+    10,
+    15,
+    20,
+    30,
+    50,
+    80,
+    120,
+    200,
+    300
+   ],
+   "turn_0.3_1s_N": 30,
+   "move_0.05_1s_N": 20,
+   "sweeps": {
+    "toward +normal": [
+     [
+      2,
+      0.0
+     ],
+     [
+      3,
+      0.0002
+     ],
+     [
+      5,
+      0.0016
+     ],
+     [
+      7,
+      0.0043
+     ],
+     [
+      10,
+      0.0108
+     ],
+     [
+      15,
+      0.0275
+     ],
+     [
+      20,
+      0.0514
+     ],
+     [
+      30,
+      1.5708
+     ]
+    ],
+    "toward -normal": [
+     [
+      2,
+      -0.0
+     ],
+     [
+      3,
+      -0.0
+     ],
+     [
+      5,
+      -0.0
+     ],
+     [
+      7,
+      -0.0
+     ],
+     [
+      10,
+      -0.0
+     ],
+     [
+      15,
+      -0.0
+     ],
+     [
+      20,
+      -0.0
+     ],
+     [
+      30,
+      -0.0
+     ],
+     [
+      50,
+      -0.0
+     ],
+     [
+      80,
+      -0.0
+     ],
+     [
+      120,
+      -0.0
+     ],
+     [
+      200,
+      -0.0
+     ],
+     [
+      300,
+      -0.0
+     ]
+    ]
+   }
+  },
+  {
+   "probe": "door_force",
+   "file": "door-canning_food-fridge_dszchb_0-bottom_cabinet_no_top_rkgjer_0-microwave_abzvij_0-oven_ffitak_0-.json",
+   "task": "canning_food",
+   "object": "bottom_cabinet_rhdbzv_0",
+   "category": "bottom_cabinet",
+   "joint": "j_left_drawer",
+   "type": "PrismaticJoint",
+   "kind": "drawer",
+   "mass_kg": 3.505,
+   "lever_m": 0.158,
+   "at": "handle",
+   "friction": 0.30000001192092896,
+   "grid_N": [
+    2,
+    3,
+    5,
+    7,
+    10,
+    15,
+    20,
+    30,
+    50,
+    80,
+    120,
+    200,
+    300
+   ],
+   "turn_0.3_1s_N": null,
+   "move_0.05_1s_N": 15,
+   "sweeps": {
+    "toward +normal": [
+     [
+      2,
+      0.0002
+     ],
+     [
+      3,
+      0.0005
+     ],
+     [
+      5,
+      0.0016
+     ],
+     [
+      7,
+      0.0031
+     ],
+     [
+      10,
+      0.0062
+     ],
+     [
+      15,
+      0.1626
+     ],
+     [
+      20,
+      0.2973
+     ],
+     [
+      30,
+      0.2973
+     ],
+     [
+      50,
+      0.2973
+     ],
+     [
+      80,
+      0.2973
+     ],
+     [
+      120,
+      0.2973
+     ],
+     [
+      200,
+      0.2973
+     ],
+     [
+      300,
+      0.2973
+     ]
+    ],
+    "toward -normal": [
+     [
+      2,
+      0.0
+     ],
+     [
+      3,
+      0.0
+     ],
+     [
+      5,
+      0.0
+     ],
+     [
+      7,
+      0.0
+     ],
+     [
+      10,
+      0.0
+     ],
+     [
+      15,
+      0.0
+     ],
+     [
+      20,
+      0.0
+     ],
+     [
+      30,
+      0.0
+     ],
+     [
+      50,
+      0.0
+     ],
+     [
+      80,
+      0.0
+     ],
+     [
+      120,
+      0.0
+     ],
+     [
+      200,
+      0.0
+     ],
+     [
+      300,
+      0.0
+     ]
+    ]
+   }
+  },
+  {
+   "probe": "door_force",
+   "file": "door-canning_food-fridge_dszchb_0-bottom_cabinet_no_top_rkgjer_0-microwave_abzvij_0-oven_ffitak_0-.json",
+   "task": "canning_food",
+   "object": "top_cabinet_lkxmne_0",
+   "category": "top_cabinet",
+   "joint": "j_leftdoor",
+   "type": "RevoluteJoint",
+   "kind": "cabinet door",
+   "mass_kg": 0.431,
+   "lever_m": 0.473,
+   "at": "handle",
+   "friction": 0.20000000298023224,
+   "grid_N": [
+    2,
+    3,
+    5,
+    7,
+    10,
+    15,
+    20,
+    30,
+    50,
+    80,
+    120,
+    200,
+    300
+   ],
+   "turn_0.3_1s_N": 3,
+   "move_0.05_1s_N": 2,
+   "sweeps": {
+    "toward +normal": [
+     [
+      2,
+      0.0503
+     ],
+     [
+      3,
+      1.2778
+     ]
+    ],
+    "toward -normal": [
+     [
+      2,
+      -0.0
+     ],
+     [
+      3,
+      -0.0
+     ],
+     [
+      5,
+      -0.0
+     ],
+     [
+      7,
+      -0.0
+     ],
+     [
+      10,
+      -0.0
+     ],
+     [
+      15,
+      -0.0
+     ],
+     [
+      20,
+      -0.0
+     ],
+     [
+      30,
+      -0.0
+     ],
+     [
+      50,
+      -0.0
+     ],
+     [
+      80,
+      -0.0
+     ],
+     [
+      120,
+      -0.0
+     ],
+     [
+      200,
+      -0.0
+     ],
+     [
+      300,
+      -0.0
+     ]
+    ]
+   }
+  },
+  {
+   "probe": "door_force",
+   "file": "door-canning_food-fridge_dszchb_0-bottom_cabinet_no_top_rkgjer_0-microwave_abzvij_0-oven_ffitak_0-.json",
+   "task": "canning_food",
+   "object": "sliding_door_tprpvb_0",
+   "category": "sliding_door",
+   "joint": "j_movingpart",
+   "type": "PrismaticJoint",
+   "kind": "sliding door",
+   "mass_kg": 18.059,
+   "lever_m": 0.397,
+   "at": "handle",
+   "friction": 0.30000001192092896,
+   "grid_N": [
+    2,
+    3,
+    5,
+    7,
+    10,
+    15,
+    20,
+    30,
+    50,
+    80,
+    120,
+    200,
+    300
+   ],
+   "turn_0.3_1s_N": null,
+   "move_0.05_1s_N": null,
+   "sweeps": {
+    "toward +normal": [
+     [
+      2,
+      0.0
+     ],
+     [
+      3,
+      0.0
+     ],
+     [
+      5,
+      0.0
+     ],
+     [
+      7,
+      0.0
+     ],
+     [
+      10,
+      0.0
+     ],
+     [
+      15,
+      0.0
+     ],
+     [
+      20,
+      0.0
+     ],
+     [
+      30,
+      0.0
+     ],
+     [
+      50,
+      0.0
+     ],
+     [
+      80,
+      0.0
+     ],
+     [
+      120,
+      0.0
+     ],
+     [
+      200,
+      0.0
+     ],
+     [
+      300,
+      0.0
+     ]
+    ],
+    "toward -normal": [
+     [
+      2,
+      0.0
+     ],
+     [
+      3,
+      0.0
+     ],
+     [
+      5,
+      0.0
+     ],
+     [
+      7,
+      0.0
+     ],
+     [
+      10,
+      0.0
+     ],
+     [
+      15,
+      0.0
+     ],
+     [
+      20,
+      0.0
+     ],
+     [
+      30,
+      0.0
+     ],
+     [
+      50,
+      0.0
+     ],
+     [
+      80,
+      0.0
+     ],
+     [
+      120,
+      0.0
+     ],
+     [
+      200,
+      0.0
+     ],
+     [
+      300,
+      0.0
+     ]
+    ]
+   }
+  },
+  {
+   "probe": "door_force",
+   "file": "door-cook_brussels_sprouts-fridge_jtqazu_0-fridge_juwaoh_0-oven_amblrk_0-stove_ykretu_0.json",
+   "task": "cook_brussels_sprouts",
+   "object": "fridge_jtqazu_0",
+   "category": "fridge",
+   "joint": "j_link_0",
+   "type": "RevoluteJoint",
+   "kind": "fridge door",
+   "mass_kg": 3.076,
+   "lever_m": 0.505,
+   "at": "handle",
+   "friction": 0.20000000298023224,
+   "grid_N": [
+    2,
+    3,
+    5,
+    7,
+    10,
+    15,
+    20,
+    30,
+    50,
+    80,
+    120,
+    200,
+    300
+   ],
+   "turn_0.3_1s_N": 20,
+   "move_0.05_1s_N": 20,
+   "sweeps": {
+    "toward +normal": [
+     [
+      2,
+      0.0002
+     ],
+     [
+      3,
+      0.0005
+     ],
+     [
+      5,
+      0.0016
+     ],
+     [
+      7,
+      0.0031
+     ],
+     [
+      10,
+      0.0064
+     ],
+     [
+      15,
+      0.0143
+     ],
+     [
+      20,
+      0.4146
+     ]
+    ],
+    "toward -normal": [
+     [
+      2,
+      -0.0
+     ],
+     [
+      3,
+      -0.0
+     ],
+     [
+      5,
+      0.0
+     ],
+     [
+      7,
+      -0.0
+     ],
+     [
+      10,
+      0.0
+     ],
+     [
+      15,
+      -0.0
+     ],
+     [
+      20,
+      0.0
+     ],
+     [
+      30,
+      -0.0
+     ],
+     [
+      50,
+      -0.0
+     ],
+     [
+      80,
+      0.0
+     ],
+     [
+      120,
+      -0.0
+     ],
+     [
+      200,
+      -0.0
+     ],
+     [
+      300,
+      -0.0
+     ]
+    ]
+   }
+  },
+  {
+   "probe": "door_force",
+   "file": "door-cook_brussels_sprouts-fridge_jtqazu_0-fridge_juwaoh_0-oven_amblrk_0-stove_ykretu_0.json",
+   "task": "cook_brussels_sprouts",
+   "object": "fridge_juwaoh_0",
+   "category": "fridge",
+   "joint": "j_link_0",
+   "type": "RevoluteJoint",
+   "kind": "fridge door",
+   "mass_kg": 2.528,
+   "lever_m": 0.477,
+   "at": "free edge",
+   "friction": 0.20000000298023224,
+   "grid_N": [
+    2,
+    3,
+    5,
+    7,
+    10,
+    15,
+    20,
+    30,
+    50,
+    80,
+    120,
+    200,
+    300
+   ],
+   "turn_0.3_1s_N": 20,
+   "move_0.05_1s_N": 15,
+   "sweeps": {
+    "toward +normal": [
+     [
+      2,
+      0.0005
+     ],
+     [
+      3,
+      0.0013
+     ],
+     [
+      5,
+      0.0038
+     ],
+     [
+      7,
+      0.0076
+     ],
+     [
+      10,
+      0.0158
+     ],
+     [
+      15,
+      0.2557
+     ],
+     [
+      20,
+      1.0761
+     ]
+    ],
+    "toward -normal": [
+     [
+      2,
+      -0.0
+     ],
+     [
+      3,
+      -0.0
+     ],
+     [
+      5,
+      -0.0
+     ],
+     [
+      7,
+      -0.0
+     ],
+     [
+      10,
+      -0.0
+     ],
+     [
+      15,
+      -0.0
+     ],
+     [
+      20,
+      -0.0
+     ],
+     [
+      30,
+      -0.0
+     ],
+     [
+      50,
+      -0.0
+     ],
+     [
+      80,
+      -0.0
+     ],
+     [
+      120,
+      -0.0
+     ],
+     [
+      200,
+      -0.0
+     ],
+     [
+      300,
+      -0.0
+     ]
+    ]
+   }
+  },
+  {
+   "probe": "door_force",
+   "file": "door-cook_brussels_sprouts-fridge_jtqazu_0-fridge_juwaoh_0-oven_amblrk_0-stove_ykretu_0.json",
+   "task": "cook_brussels_sprouts",
+   "object": "oven_amblrk_0",
+   "category": "oven",
+   "joint": "j_door_leaf1",
+   "type": "RevoluteJoint",
+   "kind": "oven door",
+   "mass_kg": 0.655,
+   "lever_m": 0.512,
+   "at": "handle",
+   "friction": 0.20000000298023224,
+   "grid_N": [
+    2,
+    3,
+    5,
+    7,
+    10,
+    15,
+    20,
+    30,
+    50,
+    80,
+    120,
+    200,
+    300
+   ],
+   "turn_0.3_1s_N": 3,
+   "move_0.05_1s_N": 3,
+   "sweeps": {
+    "toward +normal": [
+     [
+      2,
+      0.0257
+     ],
+     [
+      3,
+      0.4083
+     ]
+    ],
+    "toward -normal": [
+     [
+      2,
+      -0.0
+     ],
+     [
+      3,
+      -0.0
+     ],
+     [
+      5,
+      -0.0
+     ],
+     [
+      7,
+      -0.0
+     ],
+     [
+      10,
+      -0.0
+     ],
+     [
+      15,
+      -0.0
+     ],
+     [
+      20,
+      -0.0
+     ],
+     [
+      30,
+      -0.0
+     ],
+     [
+      50,
+      -0.0
+     ],
+     [
+      80,
+      -0.0
+     ],
+     [
+      120,
+      -0.0
+     ],
+     [
+      200,
+      -0.0
+     ],
+     [
+      300,
+      -0.0
+     ]
+    ]
+   }
+  },
+  {
+   "probe": "door_force",
+   "file": "door-cook_brussels_sprouts-fridge_jtqazu_0-fridge_juwaoh_0-oven_amblrk_0-stove_ykretu_0.json",
+   "task": "cook_brussels_sprouts",
+   "object": "stove_ykretu_0",
+   "category": "stove",
+   "joint": "j_door_leaf1",
+   "type": "RevoluteJoint",
+   "kind": "stove door",
+   "mass_kg": 0.97,
+   "lever_m": 0.074,
+   "at": "handle",
+   "friction": 0.20000000298023224,
+   "grid_N": [
+    2,
+    3,
+    5,
+    7,
+    10,
+    15,
+    20,
+    30,
+    50,
+    80,
+    120,
+    200,
+    300
+   ],
+   "turn_0.3_1s_N": 300,
+   "move_0.05_1s_N": 50,
+   "sweeps": {
+    "toward +normal": [
+     [
+      2,
+      0.0003
+     ],
+     [
+      3,
+      0.0007
+     ],
+     [
+      5,
+      0.002
+     ],
+     [
+      7,
+      0.0038
+     ],
+     [
+      10,
+      0.0069
+     ],
+     [
+      15,
+      0.0127
+     ],
+     [
+      20,
+      0.0185
+     ],
+     [
+      30,
+      0.0298
+     ],
+     [
+      50,
+      0.052
+     ],
+     [
+      80,
+      0.0846
+     ],
+     [
+      120,
+      0.1276
+     ],
+     [
+      200,
+      0.2131
+     ],
+     [
+      300,
+      0.3194
+     ]
+    ],
+    "toward -normal": [
+     [
+      2,
+      -0.0
+     ],
+     [
+      3,
+      -0.0
+     ],
+     [
+      5,
+      -0.0
+     ],
+     [
+      7,
+      -0.0
+     ],
+     [
+      10,
+      -0.0
+     ],
+     [
+      15,
+      -0.0
+     ],
+     [
+      20,
+      -0.0
+     ],
+     [
+      30,
+      -0.0
+     ],
+     [
+      50,
+      -0.0
+     ],
+     [
+      80,
+      -0.0
+     ],
+     [
+      120,
+      -0.0
+     ],
+     [
+      200,
+      -0.0
+     ],
+     [
+      300,
+      -0.0
+     ]
+    ]
+   }
+  },
+  {
+   "probe": "door_force",
+   "file": "door-dispose_of_batteries.json",
+   "task": "dispose_of_batteries",
+   "object": "door_ggcyib_0",
+   "category": "door",
+   "joint": "j_leaf",
+   "type": "RevoluteJoint",
+   "kind": "room door",
+   "mass_kg": 10.521,
+   "lever_m": 0.737,
+   "at": "handle",
+   "friction": 0.20000000298023224,
+   "grid_N": [
+    2,
+    3,
+    5,
+    7,
+    10,
+    15,
+    20,
+    30,
+    50,
+    80,
+    120,
+    200,
+    300
+   ],
+   "turn_0.3_1s_N": 50,
+   "move_0.05_1s_N": 50,
+   "sweeps": {
+    "toward +normal": [
+     [
+      2,
+      -0.0
+     ],
+     [
+      3,
+      -0.0
+     ],
+     [
+      5,
+      -0.0
+     ],
+     [
+      7,
+      -0.0
+     ],
+     [
+      10,
+      -0.0
+     ],
+     [
+      15,
+      -0.0
+     ],
+     [
+      20,
+      -0.0
+     ],
+     [
+      30,
+      -0.0
+     ],
+     [
+      50,
+      -0.0
+     ],
+     [
+      80,
+      -0.0
+     ],
+     [
+      120,
+      -0.0
+     ],
+     [
+      200,
+      -0.0
+     ],
+     [
+      300,
+      -0.0
+     ]
+    ],
+    "toward -normal": [
+     [
+      2,
+      0.0001
+     ],
+     [
+      3,
+      0.0002
+     ],
+     [
+      5,
+      0.0005
+     ],
+     [
+      7,
+      0.0011
+     ],
+     [
+      10,
+      0.0023
+     ],
+     [
+      15,
+      0.0054
+     ],
+     [
+      20,
+      0.0096
+     ],
+     [
+      30,
+      0.0214
+     ],
+     [
+      50,
+      1.1674
+     ]
+    ]
+   }
+  },
+  {
+   "probe": "door_force",
+   "file": "door-dispose_of_batteries.json",
+   "task": "dispose_of_batteries",
+   "object": "door_pwoerr_0",
+   "category": "door",
+   "joint": "j_leaf",
+   "type": "RevoluteJoint",
+   "kind": "room door",
+   "mass_kg": 8.54,
+   "lever_m": 0.737,
+   "at": "handle",
+   "friction": 0.20000000298023224,
+   "grid_N": [
+    2,
+    3,
+    5,
+    7,
+    10,
+    15,
+    20,
+    30,
+    50,
+    80,
+    120,
+    200,
+    300
+   ],
+   "turn_0.3_1s_N": 30,
+   "move_0.05_1s_N": 30,
+   "sweeps": {
+    "toward +normal": [
+     [
+      2,
+      0.0001
+     ],
+     [
+      3,
+      0.0003
+     ],
+     [
+      5,
+      0.0008
+     ],
+     [
+      7,
+      0.0017
+     ],
+     [
+      10,
+      0.0036
+     ],
+     [
+      15,
+      0.0082
+     ],
+     [
+      20,
+      0.0145
+     ],
+     [
+      30,
+      0.4108
+     ]
+    ],
+    "toward -normal": [
+     [
+      2,
+      -0.0
+     ],
+     [
+      3,
+      -0.0
+     ],
+     [
+      5,
+      -0.0
+     ],
+     [
+      7,
+      -0.0
+     ],
+     [
+      10,
+      -0.0
+     ],
+     [
+      15,
+      -0.0
+     ],
+     [
+      20,
+      -0.0
+     ],
+     [
+      30,
+      -0.0
+     ],
+     [
+      50,
+      -0.0
+     ],
+     [
+      80,
+      -0.0
+     ],
+     [
+      120,
+      -0.0
+     ],
+     [
+      200,
+      -0.0
+     ],
+     [
+      300,
+      -0.0
+     ]
+    ]
+   }
+  },
+  {
+   "probe": "door_force",
+   "file": "door-make_gift_bags_for_baby_showers-fridge_xyejdx_0-oven_wuinhm_0_j_link_1-microwave_abzvij_0-bottom_cabinet_jhymlr_.json",
+   "task": "make_gift_bags_for_baby_showers",
+   "object": "fridge_xyejdx_0",
+   "category": "fridge",
+   "joint": "j_link_0",
+   "type": "RevoluteJoint",
+   "kind": "fridge door",
+   "mass_kg": 0.665,
+   "lever_m": 0.535,
+   "at": "handle",
+   "friction": 0.20000000298023224,
+   "grid_N": [
+    2,
+    3,
+    5,
+    7,
+    10,
+    15,
+    20,
+    30,
+    50,
+    80,
+    120,
+    200,
+    300
+   ],
+   "turn_0.3_1s_N": 3,
+   "move_0.05_1s_N": 3,
+   "sweeps": {
+    "toward +normal": [
+     [
+      2,
+      0.0171
+     ],
+     [
+      3,
+      0.3915
+     ]
+    ],
+    "toward -normal": [
+     [
+      2,
+      -0.0
+     ],
+     [
+      3,
+      -0.0
+     ],
+     [
+      5,
+      -0.0
+     ],
+     [
+      7,
+      -0.0
+     ],
+     [
+      10,
+      -0.0
+     ],
+     [
+      15,
+      -0.0
+     ],
+     [
+      20,
+      -0.0
+     ],
+     [
+      30,
+      -0.0
+     ],
+     [
+      50,
+      -0.0
+     ],
+     [
+      80,
+      -0.0
+     ],
+     [
+      120,
+      -0.0
+     ],
+     [
+      200,
+      -0.0
+     ],
+     [
+      300,
+      -0.0
+     ]
+    ]
+   }
+  },
+  {
+   "probe": "door_force",
+   "file": "door-make_gift_bags_for_baby_showers-fridge_xyejdx_0-oven_wuinhm_0_j_link_1-microwave_abzvij_0-bottom_cabinet_jhymlr_.json",
+   "task": "make_gift_bags_for_baby_showers",
+   "object": "oven_wuinhm_0",
+   "category": "oven",
+   "joint": "j_link_1",
+   "type": "RevoluteJoint",
+   "kind": "oven door (level hinge)",
+   "mass_kg": 0.638,
+   "lever_m": 0.118,
+   "at": "handle",
+   "friction": 0.20000000298023224,
+   "grid_N": [
+    2,
+    3,
+    5,
+    7,
+    10,
+    15,
+    20,
+    30,
+    50,
+    80,
+    120,
+    200,
+    300
+   ],
+   "turn_0.3_1s_N": 5,
+   "move_0.05_1s_N": 5,
+   "sweeps": {
+    "toward +normal": [
+     [
+      2,
+      0.0142
+     ],
+     [
+      3,
+      0.0295
+     ],
+     [
+      5,
+      1.4799
+     ]
+    ],
+    "toward -normal": [
+     [
+      2,
+      0.0
+     ],
+     [
+      3,
+      0.0
+     ],
+     [
+      5,
+      0.0
+     ],
+     [
+      7,
+      0.0
+     ],
+     [
+      10,
+      0.0
+     ],
+     [
+      15,
+      -0.0
+     ],
+     [
+      20,
+      0.0
+     ],
+     [
+      30,
+      -0.0
+     ],
+     [
+      50,
+      0.0
+     ],
+     [
+      80,
+      0.0
+     ],
+     [
+      120,
+      -0.0
+     ],
+     [
+      200,
+      -0.0
+     ],
+     [
+      300,
+      0.0
+     ]
+    ]
+   }
+  },
+  {
+   "probe": "door_force",
+   "file": "door-make_gift_bags_for_baby_showers-fridge_xyejdx_0-oven_wuinhm_0_j_link_1-microwave_abzvij_0-bottom_cabinet_jhymlr_.json",
+   "task": "make_gift_bags_for_baby_showers",
+   "object": "microwave_abzvij_0",
+   "category": "microwave",
+   "joint": "j_link_0",
+   "type": "RevoluteJoint",
+   "kind": "microwave door",
+   "mass_kg": 1.22,
+   "lever_m": 0.363,
+   "at": "handle",
+   "friction": 0.20000000298023224,
+   "grid_N": [
+    2,
+    3,
+    5,
+    7,
+    10,
+    15,
+    20,
+    30,
+    50,
+    80,
+    120,
+    200,
+    300
+   ],
+   "turn_0.3_1s_N": 10,
+   "move_0.05_1s_N": 7,
+   "sweeps": {
+    "toward +normal": [
+     [
+      2,
+      0.0041
+     ],
+     [
+      3,
+      0.0096
+     ],
+     [
+      5,
+      0.0275
+     ],
+     [
+      7,
+      0.0541
+     ],
+     [
+      10,
+      0.9943
+     ]
+    ],
+    "toward -normal": [
+     [
+      2,
+      -0.0
+     ],
+     [
+      3,
+      -0.0
+     ],
+     [
+      5,
+      -0.0
+     ],
+     [
+      7,
+      0.0
+     ],
+     [
+      10,
+      -0.0
+     ],
+     [
+      15,
+      0.0
+     ],
+     [
+      20,
+      -0.0
+     ],
+     [
+      30,
+      -0.0
+     ],
+     [
+      50,
+      -0.0
+     ],
+     [
+      80,
+      -0.0
+     ],
+     [
+      120,
+      -0.0
+     ],
+     [
+      200,
+      -0.0
+     ],
+     [
+      300,
+      0.0
+     ]
+    ]
+   }
+  },
+  {
+   "probe": "door_force",
+   "file": "door-make_gift_bags_for_baby_showers-fridge_xyejdx_0-oven_wuinhm_0_j_link_1-microwave_abzvij_0-bottom_cabinet_jhymlr_.json",
+   "task": "make_gift_bags_for_baby_showers",
+   "object": "bottom_cabinet_jhymlr_0",
+   "category": "bottom_cabinet",
+   "joint": "j_link_0",
+   "type": "PrismaticJoint",
+   "kind": "drawer",
+   "mass_kg": 1.839,
+   "lever_m": 0.084,
+   "at": "handle",
+   "friction": 0.30000001192092896,
+   "grid_N": [
+    2,
+    3,
+    5,
+    7,
+    10,
+    15,
+    20,
+    30,
+    50,
+    80,
+    120,
+    200,
+    300
+   ],
+   "turn_0.3_1s_N": null,
+   "move_0.05_1s_N": 7,
+   "sweeps": {
+    "toward +normal": [
+     [
+      2,
+      0.0009
+     ],
+     [
+      3,
+      0.0021
+     ],
+     [
+      5,
+      0.0059
+     ],
+     [
+      7,
+      0.1195
+     ],
+     [
+      10,
+      0.2006
+     ],
+     [
+      15,
+      0.2006
+     ],
+     [
+      20,
+      0.2006
+     ],
+     [
+      30,
+      0.2006
+     ],
+     [
+      50,
+      0.2006
+     ],
+     [
+      80,
+      0.2006
+     ],
+     [
+      120,
+      0.2006
+     ],
+     [
+      200,
+      0.2006
+     ],
+     [
+      300,
+      0.2006
+     ]
+    ],
+    "toward -normal": [
+     [
+      2,
+      0.0
+     ],
+     [
+      3,
+      0.0
+     ],
+     [
+      5,
+      0.0
+     ],
+     [
+      7,
+      0.0
+     ],
+     [
+      10,
+      0.0
+     ],
+     [
+      15,
+      0.0
+     ],
+     [
+      20,
+      0.0
+     ],
+     [
+      30,
+      0.0
+     ],
+     [
+      50,
+      0.0
+     ],
+     [
+      80,
+      0.0
+     ],
+     [
+      120,
+      0.0
+     ],
+     [
+      200,
+      0.0
+     ],
+     [
+      300,
+      0.0
+     ]
+    ]
+   }
+  },
+  {
+   "probe": "door_force",
+   "file": "door-moving_boxes_to_storage-fridge_petcxr_0-microwave_hjjxmi_0-oven_ffitak_0.json",
+   "task": "moving_boxes_to_storage",
+   "object": "fridge_petcxr_0",
+   "category": "fridge",
+   "joint": "j_left_door",
+   "type": "RevoluteJoint",
+   "kind": "fridge door",
+   "mass_kg": 6.959,
+   "lever_m": 0.418,
+   "at": "handle",
+   "friction": 0.20000000298023224,
+   "grid_N": [
+    2,
+    3,
+    5,
+    7,
+    10,
+    15,
+    20,
+    30,
+    50,
+    80,
+    120,
+    200,
+    300
+   ],
+   "turn_0.3_1s_N": 50,
+   "move_0.05_1s_N": 30,
+   "sweeps": {
+    "toward +normal": [
+     [
+      2,
+      0.0001
+     ],
+     [
+      3,
+      0.0004
+     ],
+     [
+      5,
+      0.0013
+     ],
+     [
+      7,
+      0.0027
+     ],
+     [
+      10,
+      0.0057
+     ],
+     [
+      15,
+      0.0132
+     ],
+     [
+      20,
+      0.0236
+     ],
+     [
+      30,
+      0.0525
+     ],
+     [
+      50,
+      1.1348
+     ]
+    ],
+    "toward -normal": [
+     [
+      2,
+      -0.0
+     ],
+     [
+      3,
+      -0.0
+     ],
+     [
+      5,
+      -0.0
+     ],
+     [
+      7,
+      -0.0
+     ],
+     [
+      10,
+      -0.0
+     ],
+     [
+      15,
+      -0.0
+     ],
+     [
+      20,
+      -0.0
+     ],
+     [
+      30,
+      -0.0
+     ],
+     [
+      50,
+      -0.0
+     ],
+     [
+      80,
+      -0.0
+     ],
+     [
+      120,
+      -0.0
+     ],
+     [
+      200,
+      -0.0
+     ],
+     [
+      300,
+      -0.0
+     ]
+    ]
+   }
+  },
+  {
+   "probe": "door_force",
+   "file": "door-moving_boxes_to_storage-fridge_petcxr_0-microwave_hjjxmi_0-oven_ffitak_0.json",
+   "task": "moving_boxes_to_storage",
+   "object": "microwave_hjjxmi_0",
+   "category": "microwave",
+   "joint": "j_link_0",
+   "type": "RevoluteJoint",
+   "kind": "microwave door",
+   "mass_kg": 0.6,
+   "lever_m": 0.359,
+   "at": "handle",
+   "friction": 0.20000000298023224,
+   "grid_N": [
+    2,
+    3,
+    5,
+    7,
+    10,
+    15,
+    20,
+    30,
+    50,
+    80,
+    120,
+    200,
+    300
+   ],
+   "turn_0.3_1s_N": 5,
+   "move_0.05_1s_N": 3,
+   "sweeps": {
+    "toward +normal": [
+     [
+      2,
+      0.0239
+     ],
+     [
+      3,
+      0.0537
+     ],
+     [
+      5,
+      0.6412
+     ]
+    ],
+    "toward -normal": [
+     [
+      2,
+      -0.0
+     ],
+     [
+      3,
+      -0.0
+     ],
+     [
+      5,
+      -0.0
+     ],
+     [
+      7,
+      -0.0
+     ],
+     [
+      10,
+      -0.0
+     ],
+     [
+      15,
+      -0.0
+     ],
+     [
+      20,
+      -0.0
+     ],
+     [
+      30,
+      -0.0
+     ],
+     [
+      50,
+      -0.0
+     ],
+     [
+      80,
+      -0.0
+     ],
+     [
+      120,
+      -0.0
+     ],
+     [
+      200,
+      -0.0
+     ],
+     [
+      300,
+      -0.0
+     ]
+    ]
+   }
+  },
+  {
+   "probe": "door_force",
+   "file": "door-moving_boxes_to_storage-fridge_petcxr_0-microwave_hjjxmi_0-oven_ffitak_0.json",
+   "task": "moving_boxes_to_storage",
+   "object": "oven_ffitak_0",
+   "category": "oven",
+   "joint": "j_door",
+   "type": "RevoluteJoint",
+   "kind": "oven door (level hinge)",
+   "mass_kg": 4.339,
+   "lever_m": 0.254,
+   "at": "handle",
+   "friction": 0.20000000298023224,
+   "grid_N": [
+    2,
+    3,
+    5,
+    7,
+    10,
+    15,
+    20,
+    30,
+    50,
+    80,
+    120,
+    200,
+    300
+   ],
+   "turn_0.3_1s_N": 30,
+   "move_0.05_1s_N": 20,
+   "sweeps": {
+    "toward +normal": [
+     [
+      2,
+      0.0
+     ],
+     [
+      3,
+      0.0001
+     ],
+     [
+      5,
+      0.0013
+     ],
+     [
+      7,
+      0.0039
+     ],
+     [
+      10,
+      0.0101
+     ],
+     [
+      15,
+      0.0265
+     ],
+     [
+      20,
+      0.0502
+     ],
+     [
+      30,
+      1.5708
+     ]
+    ],
+    "toward -normal": [
+     [
+      2,
+      -0.0
+     ],
+     [
+      3,
+      -0.0
+     ],
+     [
+      5,
+      -0.0
+     ],
+     [
+      7,
+      -0.0
+     ],
+     [
+      10,
+      -0.0
+     ],
+     [
+      15,
+      -0.0
+     ],
+     [
+      20,
+      -0.0
+     ],
+     [
+      30,
+      -0.0
+     ],
+     [
+      50,
+      -0.0
+     ],
+     [
+      80,
+      0.0
+     ],
+     [
+      120,
+      -0.0
+     ],
+     [
+      200,
+      -0.0
+     ],
+     [
+      300,
+      -0.0
+     ]
+    ]
+   }
+  },
+  {
+   "probe": "door_turn",
+   "file": "door-canning_food-bottom_cabinet_fancyy_0_j_door1-bottom_cabinet_fancyy_0_j_door2-bottom_cabinet_f.json",
+   "task": "canning_food",
+   "object": "bottom_cabinet_fancyy_0",
+   "category": "bottom_cabinet",
+   "joint": "j_door1",
+   "type": "RevoluteJoint",
+   "kind": "cabinet door",
+   "mass_kg": 0.385,
+   "lever_m": 0.291,
+   "at": "handle",
+   "friction": 0.20000000298023224,
+   "grid_N": [
+    2,
+    5,
+    10,
+    20,
+    30,
+    50,
+    80,
+    120,
+    200,
+    300
+   ],
+   "turn_0.3_1s_N": 5,
+   "move_0.05_1s_N": 5,
+   "sweeps": {
+    "toward +normal": [
+     [
+      2,
+      0.0209
+     ],
+     [
+      5,
+      1.163
+     ]
+    ],
+    "toward -normal": [
+     [
+      2,
+      0.0
+     ],
+     [
+      5,
+      -0.0
+     ],
+     [
+      10,
+      -0.0
+     ],
+     [
+      20,
+      -0.0
+     ],
+     [
+      30,
+      -0.0
+     ],
+     [
+      50,
+      -0.0
+     ],
+     [
+      80,
+      -0.0
+     ],
+     [
+      120,
+      -0.0
+     ],
+     [
+      200,
+      -0.0
+     ],
+     [
+      300,
+      0.0
+     ]
+    ]
+   }
+  },
+  {
+   "probe": "door_turn",
+   "file": "door-canning_food-bottom_cabinet_fancyy_0_j_door1-bottom_cabinet_fancyy_0_j_door2-bottom_cabinet_f.json",
+   "task": "canning_food",
+   "object": "bottom_cabinet_fancyy_0",
+   "category": "bottom_cabinet",
+   "joint": "j_door2",
+   "type": "RevoluteJoint",
+   "kind": "cabinet door",
+   "mass_kg": 1.146,
+   "lever_m": 0.293,
+   "at": "handle",
+   "friction": 0.20000000298023224,
+   "grid_N": [
+    2,
+    5,
+    10,
+    20,
+    30,
+    50,
+    80,
+    120,
+    200,
+    300
+   ],
+   "turn_0.3_1s_N": 20,
+   "move_0.05_1s_N": 10,
+   "sweeps": {
+    "toward +normal": [
+     [
+      2,
+      0.0024
+     ],
+     [
+      5,
+      0.0149
+     ],
+     [
+      10,
+      0.0536
+     ],
+     [
+      20,
+      1.3792
+     ]
+    ],
+    "toward -normal": [
+     [
+      2,
+      -0.0
+     ],
+     [
+      5,
+      -0.0
+     ],
+     [
+      10,
+      -0.0
+     ],
+     [
+      20,
+      -0.0
+     ],
+     [
+      30,
+      -0.0
+     ],
+     [
+      50,
+      -0.0
+     ],
+     [
+      80,
+      -0.0
+     ],
+     [
+      120,
+      -0.0
+     ],
+     [
+      200,
+      -0.0
+     ],
+     [
+      300,
+      -0.0
+     ]
+    ]
+   }
+  },
+  {
+   "probe": "door_turn",
+   "file": "door-canning_food-bottom_cabinet_fancyy_0_j_door1-bottom_cabinet_fancyy_0_j_door2-bottom_cabinet_f.json",
+   "task": "canning_food",
+   "object": "bottom_cabinet_fancyy_0",
+   "category": "bottom_cabinet",
+   "joint": "j_door3",
+   "type": "RevoluteJoint",
+   "kind": "cabinet door",
+   "mass_kg": 0.473,
+   "lever_m": 0.291,
+   "at": "handle",
+   "friction": 0.20000000298023224,
+   "grid_N": [
+    2,
+    5,
+    10,
+    20,
+    30,
+    50,
+    80,
+    120,
+    200,
+    300
+   ],
+   "turn_0.3_1s_N": 5,
+   "move_0.05_1s_N": 5,
+   "sweeps": {
+    "toward +normal": [
+     [
+      2,
+      0.0137
+     ],
+     [
+      5,
+      0.5131
+     ]
+    ],
+    "toward -normal": [
+     [
+      2,
+      -0.0
+     ],
+     [
+      5,
+      -0.0
+     ],
+     [
+      10,
+      -0.0
+     ],
+     [
+      20,
+      0.0
+     ],
+     [
+      30,
+      -0.0
+     ],
+     [
+      50,
+      -0.0
+     ],
+     [
+      80,
+      0.0
+     ],
+     [
+      120,
+      -0.0
+     ],
+     [
+      200,
+      -0.0
+     ],
+     [
+      300,
+      -0.0
+     ]
+    ]
+   }
+  },
+  {
+   "probe": "door_turn",
+   "file": "door-canning_food.json",
+   "task": "canning_food",
+   "object": "bottom_cabinet_fancyy_0",
+   "category": "bottom_cabinet",
+   "joint": "j_door1",
+   "type": "RevoluteJoint",
+   "kind": "cabinet door",
+   "mass_kg": 0.385,
+   "lever_m": 0.291,
+   "at": "handle",
+   "friction": 0.20000000298023224,
+   "grid_N": [
+    2,
+    5,
+    10,
+    20,
+    30,
+    50,
+    80,
+    120,
+    200,
+    300
+   ],
+   "turn_0.3_1s_N": 5,
+   "move_0.05_1s_N": 5,
+   "sweeps": {
+    "toward +normal": [
+     [
+      2,
+      0.0209
+     ],
+     [
+      5,
+      1.163
+     ]
+    ],
+    "toward -normal": [
+     [
+      2,
+      0.0
+     ],
+     [
+      5,
+      -0.0
+     ],
+     [
+      10,
+      -0.0
+     ],
+     [
+      20,
+      -0.0
+     ],
+     [
+      30,
+      -0.0
+     ],
+     [
+      50,
+      -0.0
+     ],
+     [
+      80,
+      -0.0
+     ],
+     [
+      120,
+      -0.0
+     ],
+     [
+      200,
+      -0.0
+     ],
+     [
+      300,
+      0.0
+     ]
+    ]
+   }
+  },
+  {
+   "probe": "door_turn",
+   "file": "door-dispose_of_batteries.json",
+   "task": "dispose_of_batteries",
+   "object": "door_ggcyib_3",
+   "category": "door",
+   "joint": "j_leaf",
+   "type": "RevoluteJoint",
+   "kind": "room door",
+   "mass_kg": 10.521,
+   "lever_m": 0.737,
+   "at": "handle",
+   "friction": 0.20000000298023224,
+   "grid_N": [
+    2,
+    5,
+    10,
+    20,
+    30,
+    50,
+    80,
+    120,
+    200,
+    300
+   ],
+   "turn_0.3_1s_N": 50,
+   "move_0.05_1s_N": 50,
+   "sweeps": {
+    "toward +normal": [
+     [
+      2,
+      -0.0
+     ],
+     [
+      5,
+      -0.0
+     ],
+     [
+      10,
+      -0.0
+     ],
+     [
+      20,
+      -0.0
+     ],
+     [
+      30,
+      -0.0
+     ],
+     [
+      50,
+      -0.0
+     ],
+     [
+      80,
+      -0.0
+     ],
+     [
+      120,
+      -0.0
+     ],
+     [
+      200,
+      -0.0
+     ],
+     [
+      300,
+      -0.0
+     ]
+    ],
+    "toward -normal": [
+     [
+      2,
+      0.0001
+     ],
+     [
+      5,
+      0.0005
+     ],
+     [
+      10,
+      0.0023
+     ],
+     [
+      20,
+      0.0096
+     ],
+     [
+      30,
+      0.0214
+     ],
+     [
+      50,
+      1.1675
+     ]
+    ]
+   }
+  },
+  {
+   "probe": "door_turn",
+   "file": "door-make_gift_bags_for_baby_showers.json",
+   "task": "make_gift_bags_for_baby_showers",
+   "object": "bottom_cabinet_jhymlr_0",
+   "category": "bottom_cabinet",
+   "joint": "j_link_0",
+   "type": "PrismaticJoint",
+   "kind": "drawer",
+   "mass_kg": 1.839,
+   "lever_m": 0.084,
+   "at": "handle",
+   "friction": 0.30000001192092896,
+   "grid_N": [
+    2,
+    5,
+    10,
+    20,
+    30,
+    50,
+    80,
+    120,
+    200,
+    300
+   ],
+   "turn_0.3_1s_N": null,
+   "move_0.05_1s_N": 10,
+   "sweeps": {
+    "toward +normal": [
+     [
+      2,
+      0.0009
+     ],
+     [
+      5,
+      0.0059
+     ],
+     [
+      10,
+      0.2006
+     ],
+     [
+      20,
+      0.2006
+     ],
+     [
+      30,
+      0.2006
+     ],
+     [
+      50,
+      0.2006
+     ],
+     [
+      80,
+      0.2006
+     ],
+     [
+      120,
+      0.2006
+     ],
+     [
+      200,
+      0.2006
+     ],
+     [
+      300,
+      0.2006
+     ]
+    ],
+    "toward -normal": [
+     [
+      2,
+      0.0
+     ],
+     [
+      5,
+      0.0
+     ],
+     [
+      10,
+      0.0
+     ],
+     [
+      20,
+      0.0
+     ],
+     [
+      30,
+      0.0
+     ],
+     [
+      50,
+      0.0
+     ],
+     [
+      80,
+      0.0
+     ],
+     [
+      120,
+      0.0
+     ],
+     [
+      200,
+      0.0
+     ],
+     [
+      300,
+      0.0
+     ]
+    ]
+   }
+  },
+  {
+   "probe": "door_turn",
+   "file": "door-moving_boxes_to_storage.json",
+   "task": "moving_boxes_to_storage",
+   "object": "door_bexenl_0",
+   "category": "door",
+   "joint": "j_leaf",
+   "type": "RevoluteJoint",
+   "kind": "room door",
+   "mass_kg": 15.17,
+   "lever_m": 0.706,
+   "at": "handle",
+   "friction": 0.20000000298023224,
+   "grid_N": [
+    2,
+    5,
+    10,
+    20,
+    30,
+    50,
+    80,
+    120,
+    200,
+    300
+   ],
+   "turn_0.3_1s_N": 80,
+   "move_0.05_1s_N": 50,
+   "sweeps": {
+    "toward +normal": [
+     [
+      2,
+      0.0
+     ],
+     [
+      5,
+      0.0002
+     ],
+     [
+      10,
+      0.0011
+     ],
+     [
+      20,
+      0.0048
+     ],
+     [
+      30,
+      0.0108
+     ],
+     [
+      50,
+      0.2087
+     ],
+     [
+      80,
+      1.4629
+     ]
+    ],
+    "toward -normal": [
+     [
+      2,
+      0.0
+     ],
+     [
+      5,
+      -0.0
+     ],
+     [
+      10,
+      -0.0
+     ],
+     [
+      20,
+      -0.0
+     ],
+     [
+      30,
+      -0.0
+     ],
+     [
+      50,
+      -0.0
+     ],
+     [
+      80,
+      -0.0
+     ],
+     [
+      120,
+      -0.0
+     ],
+     [
+      200,
+      -0.0
+     ],
+     [
+      300,
+      -0.0
+     ]
+    ]
+   }
+  },
+  {
+   "probe": "door_turn",
+   "file": "door-moving_boxes_to_storage.json",
+   "task": "moving_boxes_to_storage",
+   "object": "door_bexenl_1",
+   "category": "door",
+   "joint": "j_leaf",
+   "type": "RevoluteJoint",
+   "kind": "room door",
+   "mass_kg": 15.17,
+   "lever_m": 0.706,
+   "at": "handle",
+   "friction": 0.20000000298023224,
+   "grid_N": [
+    2,
+    5,
+    10,
+    20,
+    30,
+    50,
+    80,
+    120,
+    200,
+    300
+   ],
+   "turn_0.3_1s_N": 80,
+   "move_0.05_1s_N": 50,
+   "sweeps": {
+    "toward +normal": [
+     [
+      2,
+      0.0
+     ],
+     [
+      5,
+      0.0002
+     ],
+     [
+      10,
+      0.0011
+     ],
+     [
+      20,
+      0.0048
+     ],
+     [
+      30,
+      0.0108
+     ],
+     [
+      50,
+      0.2087
+     ],
+     [
+      80,
+      1.4628
+     ]
+    ],
+    "toward -normal": [
+     [
+      2,
+      -0.0
+     ],
+     [
+      5,
+      -0.0
+     ],
+     [
+      10,
+      -0.0
+     ],
+     [
+      20,
+      -0.0
+     ],
+     [
+      30,
+      0.0
+     ],
+     [
+      50,
+      -0.0
+     ],
+     [
+      80,
+      -0.0
+     ],
+     [
+      120,
+      -0.0
+     ],
+     [
+      200,
+      -0.0
+     ],
+     [
+      300,
+      -0.0
+     ]
+    ]
+   }
+  },
+  {
+   "probe": "door_turn",
+   "file": "door-moving_boxes_to_storage.json",
+   "task": "moving_boxes_to_storage",
+   "object": "door_vudhlc_0",
+   "category": "door",
+   "joint": "j_leaf",
+   "type": "RevoluteJoint",
+   "kind": "room door",
+   "mass_kg": 7.225,
+   "lever_m": 0.91,
+   "at": "handle",
+   "friction": 0.20000000298023224,
+   "grid_N": [
+    2,
+    5,
+    10,
+    20,
+    30,
+    50,
+    80,
+    120,
+    200,
+    300
+   ],
+   "turn_0.3_1s_N": 30,
+   "move_0.05_1s_N": 30,
+   "sweeps": {
+    "toward +normal": [
+     [
+      2,
+      -0.0
+     ],
+     [
+      5,
+      -0.0
+     ],
+     [
+      10,
+      0.0
+     ],
+     [
+      20,
+      0.0
+     ],
+     [
+      30,
+      -0.0
+     ],
+     [
+      50,
+      0.0
+     ],
+     [
+      80,
+      0.0
+     ],
+     [
+      120,
+      -0.0
+     ],
+     [
+      200,
+      0.0
+     ],
+     [
+      300,
+      -0.0
+     ]
+    ],
+    "toward -normal": [
+     [
+      2,
+      0.0001
+     ],
+     [
+      5,
+      0.0006
+     ],
+     [
+      10,
+      0.0023
+     ],
+     [
+      20,
+      0.0094
+     ],
+     [
+      30,
+      0.3599
+     ]
+    ]
+   }
+  },
+  {
+   "probe": "door_turn",
+   "file": "door-moving_boxes_to_storage.json",
+   "task": "moving_boxes_to_storage",
+   "object": "door_vudhlc_1",
+   "category": "door",
+   "joint": "j_leaf",
+   "type": "RevoluteJoint",
+   "kind": "room door",
+   "mass_kg": 7.225,
+   "lever_m": 0.91,
+   "at": "handle",
+   "friction": 0.20000000298023224,
+   "grid_N": [
+    2,
+    5,
+    10,
+    20,
+    30,
+    50,
+    80,
+    120,
+    200,
+    300
+   ],
+   "turn_0.3_1s_N": 30,
+   "move_0.05_1s_N": 30,
+   "sweeps": {
+    "toward +normal": [
+     [
+      2,
+      0.0
+     ],
+     [
+      5,
+      -0.0
+     ],
+     [
+      10,
+      0.0
+     ],
+     [
+      20,
+      0.0
+     ],
+     [
+      30,
+      -0.0
+     ],
+     [
+      50,
+      -0.0
+     ],
+     [
+      80,
+      0.0
+     ],
+     [
+      120,
+      0.0
+     ],
+     [
+      200,
+      0.0
+     ],
+     [
+      300,
+      -0.0
+     ]
+    ],
+    "toward -normal": [
+     [
+      2,
+      0.0001
+     ],
+     [
+      5,
+      0.0006
+     ],
+     [
+      10,
+      0.0023
+     ],
+     [
+      20,
+      0.0094
+     ],
+     [
+      30,
+      0.3599
+     ]
+    ]
+   }
+  },
+  {
+   "probe": "door_turn",
+   "file": "door-moving_boxes_to_storage.json",
+   "task": "moving_boxes_to_storage",
+   "object": "garage_door_prdjyt_0",
+   "category": "garage_door",
+   "joint": "j_left_door",
+   "type": "RevoluteJoint",
+   "kind": "garage door",
+   "mass_kg": 58.955,
+   "lever_m": 1.763,
+   "at": "free edge",
+   "friction": 0.20000000298023224,
+   "grid_N": [
+    2,
+    5,
+    10,
+    20,
+    30,
+    50,
+    80,
+    120,
+    200,
+    300
+   ],
+   "turn_0.3_1s_N": null,
+   "move_0.05_1s_N": null,
+   "sweeps": {
+    "toward +normal": [
+     [
+      2,
+      -0.0
+     ],
+     [
+      5,
+      -0.0
+     ],
+     [
+      10,
+      -0.0
+     ],
+     [
+      20,
+      -0.0
+     ],
+     [
+      30,
+      -0.0
+     ],
+     [
+      50,
+      -0.0
+     ],
+     [
+      80,
+      -0.0
+     ],
+     [
+      120,
+      -0.0
+     ],
+     [
+      200,
+      -0.0
+     ],
+     [
+      300,
+      -0.0
+     ]
+    ],
+    "toward -normal": [
+     [
+      2,
+      -0.0
+     ],
+     [
+      5,
+      -0.0
+     ],
+     [
+      10,
+      -0.0
+     ],
+     [
+      20,
+      -0.0
+     ],
+     [
+      30,
+      -0.0
+     ],
+     [
+      50,
+      -0.0
+     ],
+     [
+      80,
+      -0.0
+     ],
+     [
+      120,
+      -0.0
+     ],
+     [
+      200,
+      -0.0
+     ],
+     [
+      300,
+      -0.0
+     ]
+    ]
+   }
+  },
+  {
+   "probe": "door_turn",
+   "file": "door-store_produce.json",
+   "task": "store_produce",
+   "object": "fridge_jtqazu_1",
+   "category": "fridge",
+   "joint": "j_link_0",
+   "type": "RevoluteJoint",
+   "kind": "fridge door",
+   "mass_kg": 3.076,
+   "lever_m": 0.505,
+   "at": "handle",
+   "friction": 0.20000000298023224,
+   "grid_N": [
+    2,
+    5,
+    10,
+    20,
+    30,
+    50,
+    80,
+    120,
+    200,
+    300
+   ],
+   "turn_0.3_1s_N": 20,
+   "move_0.05_1s_N": 20,
+   "sweeps": {
+    "toward +normal": [
+     [
+      2,
+      0.0002
+     ],
+     [
+      5,
+      0.0016
+     ],
+     [
+      10,
+      0.0064
+     ],
+     [
+      20,
+      0.4146
+     ]
+    ],
+    "toward -normal": [
+     [
+      2,
+      -0.0
+     ],
+     [
+      5,
+      -0.0
+     ],
+     [
+      10,
+      -0.0
+     ],
+     [
+      20,
+      -0.0
+     ],
+     [
+      30,
+      -0.0
+     ],
+     [
+      50,
+      -0.0
+     ],
+     [
+      80,
+      -0.0
+     ],
+     [
+      120,
+      -0.0
+     ],
+     [
+      200,
+      -0.0
+     ],
+     [
+      300,
+      -0.0
+     ]
+    ]
+   }
+  },
+  {
+   "probe": "door_turn",
+   "file": "door-store_produce.json",
+   "task": "store_produce",
+   "object": "fridge_jtqazu_0",
+   "category": "fridge",
+   "joint": "j_link_0",
+   "type": "RevoluteJoint",
+   "kind": "fridge door",
+   "mass_kg": 3.076,
+   "lever_m": 0.505,
+   "at": "handle",
+   "friction": 0.20000000298023224,
+   "grid_N": [
+    2,
+    5,
+    10,
+    20,
+    30,
+    50,
+    80,
+    120,
+    200,
+    300
+   ],
+   "turn_0.3_1s_N": 20,
+   "move_0.05_1s_N": 20,
+   "sweeps": {
+    "toward +normal": [
+     [
+      2,
+      0.0002
+     ],
+     [
+      5,
+      0.0016
+     ],
+     [
+      10,
+      0.0064
+     ],
+     [
+      20,
+      0.4146
+     ]
+    ],
+    "toward -normal": [
+     [
+      2,
+      -0.0
+     ],
+     [
+      5,
+      0.0
+     ],
+     [
+      10,
+      0.0
+     ],
+     [
+      20,
+      0.0
+     ],
+     [
+      30,
+      -0.0
+     ],
+     [
+      50,
+      -0.0
+     ],
+     [
+      80,
+      0.0
+     ],
+     [
+      120,
+      -0.0
+     ],
+     [
+      200,
+      -0.0
+     ],
+     [
+      300,
+      -0.0
+     ]
+    ]
+   }
+  },
+  {
+   "probe": "door_turn",
+   "file": "door-tidying_bathroom.json",
+   "task": "tidying_bathroom",
+   "object": "door_ydokma_0",
+   "category": "door",
+   "joint": "j_leaf",
+   "type": "RevoluteJoint",
+   "kind": "room door",
+   "mass_kg": 9.982,
+   "lever_m": 0.771,
+   "at": "handle",
+   "friction": 0.20000000298023224,
+   "grid_N": [
+    2,
+    5,
+    10,
+    20,
+    30,
+    50,
+    80,
+    120,
+    200,
+    300
+   ],
+   "turn_0.3_1s_N": 50,
+   "move_0.05_1s_N": 30,
+   "sweeps": {
+    "toward +normal": [
+     [
+      2,
+      -0.0
+     ],
+     [
+      5,
+      -0.0
+     ],
+     [
+      10,
+      -0.0
+     ],
+     [
+      20,
+      -0.0
+     ],
+     [
+      30,
+      -0.0
+     ],
+     [
+      50,
+      0.0
+     ],
+     [
+      80,
+      0.0
+     ],
+     [
+      120,
+      0.0
+     ],
+     [
+      200,
+      -0.0
+     ],
+     [
+      300,
+      -0.0
+     ]
+    ],
+    "toward -normal": [
+     [
+      2,
+      0.0001
+     ],
+     [
+      5,
+      0.0007
+     ],
+     [
+      10,
+      0.003
+     ],
+     [
+      20,
+      0.0118
+     ],
+     [
+      30,
+      0.1575
+     ],
+     [
+      50,
+      1.3743
+     ]
+    ]
+   }
+  },
+  {
+   "probe": "door_turn",
+   "file": "door-tidying_bathroom.json",
+   "task": "tidying_bathroom",
+   "object": "door_uptpdr_0",
+   "category": "door",
+   "joint": "j_leaf",
+   "type": "RevoluteJoint",
+   "kind": "room door",
+   "mass_kg": 9.512,
+   "lever_m": 0.667,
+   "at": "handle",
+   "friction": 0.20000000298023224,
+   "grid_N": [
+    2,
+    5,
+    10,
+    20,
+    30,
+    50,
+    80,
+    120,
+    200,
+    300
+   ],
+   "turn_0.3_1s_N": 50,
+   "move_0.05_1s_N": 50,
+   "sweeps": {
+    "toward +normal": [
+     [
+      2,
+      -0.0
+     ],
+     [
+      5,
+      -0.0
+     ],
+     [
+      10,
+      -0.0
+     ],
+     [
+      20,
+      -0.0
+     ],
+     [
+      30,
+      -0.0
+     ],
+     [
+      50,
+      -0.0
+     ],
+     [
+      80,
+      -0.0
+     ],
+     [
+      120,
+      -0.0
+     ],
+     [
+      200,
+      -0.0
+     ],
+     [
+      300,
+      -0.0
+     ]
+    ],
+    "toward -normal": [
+     [
+      2,
+      0.0001
+     ],
+     [
+      5,
+      0.0007
+     ],
+     [
+      10,
+      0.0032
+     ],
+     [
+      20,
+      0.0129
+     ],
+     [
+      30,
+      0.0286
+     ],
+     [
+      50,
+      1.3997
+     ]
+    ]
+   }
+  },
+  {
+   "probe": "door_turn",
+   "file": "door-turning_out_all_lights_before_sleep.json",
+   "task": "turning_out_all_lights_before_sleep",
+   "object": "door_kwbnhy_1",
+   "category": "door",
+   "joint": "j_leaf",
+   "type": "RevoluteJoint",
+   "kind": "room door",
+   "mass_kg": 11.194,
+   "lever_m": 0.553,
+   "at": "handle",
+   "friction": 0.20000000298023224,
+   "grid_N": [
+    2,
+    5,
+    10,
+    20,
+    30,
+    50,
+    80,
+    120,
+    200,
+    300
+   ],
+   "turn_0.3_1s_N": 80,
+   "move_0.05_1s_N": 80,
+   "sweeps": {
+    "toward +normal": [
+     [
+      2,
+      -0.0
+     ],
+     [
+      5,
+      -0.0
+     ],
+     [
+      10,
+      -0.0
+     ],
+     [
+      20,
+      -0.0
+     ],
+     [
+      30,
+      -0.0
+     ],
+     [
+      50,
+      -0.0
+     ],
+     [
+      80,
+      -0.0
+     ],
+     [
+      120,
+      -0.0
+     ],
+     [
+      200,
+      -0.0
+     ],
+     [
+      300,
+      -0.0
+     ]
+    ],
+    "toward -normal": [
+     [
+      2,
+      0.0
+     ],
+     [
+      5,
+      0.0003
+     ],
+     [
+      10,
+      0.0014
+     ],
+     [
+      20,
+      0.006
+     ],
+     [
+      30,
+      0.0135
+     ],
+     [
+      50,
+      0.0364
+     ],
+     [
+      80,
+      1.5348
+     ]
+    ]
+   }
+  },
+  {
+   "probe": "door_turn",
+   "file": "door-turning_out_all_lights_before_sleep.json",
+   "task": "turning_out_all_lights_before_sleep",
+   "object": "door_kwbnhy_2",
+   "category": "door",
+   "joint": "j_leaf",
+   "type": "RevoluteJoint",
+   "kind": "room door",
+   "mass_kg": 11.194,
+   "lever_m": 0.553,
+   "at": "handle",
+   "friction": 0.20000000298023224,
+   "grid_N": [
+    2,
+    5,
+    10,
+    20,
+    30,
+    50,
+    80,
+    120,
+    200,
+    300
+   ],
+   "turn_0.3_1s_N": 80,
+   "move_0.05_1s_N": 80,
+   "sweeps": {
+    "toward +normal": [
+     [
+      2,
+      -0.0
+     ],
+     [
+      5,
+      -0.0
+     ],
+     [
+      10,
+      -0.0
+     ],
+     [
+      20,
+      -0.0
+     ],
+     [
+      30,
+      -0.0
+     ],
+     [
+      50,
+      -0.0
+     ],
+     [
+      80,
+      -0.0
+     ],
+     [
+      120,
+      -0.0
+     ],
+     [
+      200,
+      -0.0
+     ],
+     [
+      300,
+      -0.0
+     ]
+    ],
+    "toward -normal": [
+     [
+      2,
+      0.0
+     ],
+     [
+      5,
+      0.0003
+     ],
+     [
+      10,
+      0.0014
+     ],
+     [
+      20,
+      0.006
+     ],
+     [
+      30,
+      0.0135
+     ],
+     [
+      50,
+      0.0364
+     ],
+     [
+      80,
+      1.5344
+     ]
+    ]
+   }
+  },
+  {
+   "probe": "door_turn",
+   "file": "door-turning_out_all_lights_before_sleep.json",
+   "task": "turning_out_all_lights_before_sleep",
+   "object": "sliding_door_tprpvb_12",
+   "category": "sliding_door",
+   "joint": "j_movingpart",
+   "type": "PrismaticJoint",
+   "kind": "sliding door",
+   "mass_kg": 18.059,
+   "lever_m": 0.397,
+   "at": "handle",
+   "friction": 0.30000001192092896,
+   "grid_N": [
+    2,
+    5,
+    10,
+    20,
+    30,
+    50,
+    80,
+    120,
+    200,
+    300
+   ],
+   "turn_0.3_1s_N": null,
+   "move_0.05_1s_N": null,
+   "sweeps": {
+    "toward +normal": [
+     [
+      2,
+      0.0
+     ],
+     [
+      5,
+      0.0
+     ],
+     [
+      10,
+      0.0
+     ],
+     [
+      20,
+      0.0
+     ],
+     [
+      30,
+      0.0
+     ],
+     [
+      50,
+      0.0
+     ],
+     [
+      80,
+      0.0
+     ],
+     [
+      120,
+      0.0
+     ],
+     [
+      200,
+      0.0
+     ],
+     [
+      300,
+      0.0
+     ]
+    ],
+    "toward -normal": [
+     [
+      2,
+      0.0
+     ],
+     [
+      5,
+      0.0
+     ],
+     [
+      10,
+      0.0
+     ],
+     [
+      20,
+      0.0
+     ],
+     [
+      30,
+      0.0
+     ],
+     [
+      50,
+      0.0
+     ],
+     [
+      80,
+      0.0
+     ],
+     [
+      120,
+      0.0
+     ],
+     [
+      200,
+      0.0
+     ],
+     [
+      300,
+      0.0
+     ]
+    ]
+   }
+  },
+  {
+   "probe": "door_turn",
+   "file": "door-turning_out_all_lights_before_sleep.json",
+   "task": "turning_out_all_lights_before_sleep",
+   "object": "sliding_door_tprpvb_2",
+   "category": "sliding_door",
+   "joint": "j_movingpart",
+   "type": "PrismaticJoint",
+   "kind": "sliding door",
+   "mass_kg": 18.059,
+   "lever_m": 0.397,
+   "at": "handle",
+   "friction": 0.30000001192092896,
+   "grid_N": [
+    2,
+    5,
+    10,
+    20,
+    30,
+    50,
+    80,
+    120,
+    200,
+    300
+   ],
+   "turn_0.3_1s_N": null,
+   "move_0.05_1s_N": null,
+   "sweeps": {
+    "toward +normal": [
+     [
+      2,
+      0.0
+     ],
+     [
+      5,
+      0.0
+     ],
+     [
+      10,
+      0.0
+     ],
+     [
+      20,
+      0.0
+     ],
+     [
+      30,
+      0.0
+     ],
+     [
+      50,
+      0.0
+     ],
+     [
+      80,
+      0.0
+     ],
+     [
+      120,
+      0.0
+     ],
+     [
+      200,
+      0.0
+     ],
+     [
+      300,
+      0.0
+     ]
+    ],
+    "toward -normal": [
+     [
+      2,
+      0.0
+     ],
+     [
+      5,
+      0.0
+     ],
+     [
+      10,
+      0.0
+     ],
+     [
+      20,
+      0.0
+     ],
+     [
+      30,
+      0.0
+     ],
+     [
+      50,
+      0.0
+     ],
+     [
+      80,
+      0.0
+     ],
+     [
+      120,
+      0.0
+     ],
+     [
+      200,
+      0.0
+     ],
+     [
+      300,
+      0.0
+     ]
+    ]
+   }
+  },
+  {
+   "probe": "door_turn",
+   "file": "door-turning_out_all_lights_before_sleep.json",
+   "task": "turning_out_all_lights_before_sleep",
+   "object": "sliding_door_tprpvb_6",
+   "category": "sliding_door",
+   "joint": "j_movingpart",
+   "type": "PrismaticJoint",
+   "kind": "sliding door",
+   "mass_kg": 18.059,
+   "lever_m": 0.397,
+   "at": "handle",
+   "friction": 0.30000001192092896,
+   "grid_N": [
+    2,
+    5,
+    10,
+    20,
+    30,
+    50,
+    80,
+    120,
+    200,
+    300
+   ],
+   "turn_0.3_1s_N": null,
+   "move_0.05_1s_N": null,
+   "sweeps": {
+    "toward +normal": [
+     [
+      2,
+      0.0
+     ],
+     [
+      5,
+      0.0
+     ],
+     [
+      10,
+      0.0
+     ],
+     [
+      20,
+      0.0
+     ],
+     [
+      30,
+      0.0
+     ],
+     [
+      50,
+      0.0
+     ],
+     [
+      80,
+      0.0
+     ],
+     [
+      120,
+      0.0
+     ],
+     [
+      200,
+      0.0
+     ],
+     [
+      300,
+      0.0
+     ]
+    ],
+    "toward -normal": [
+     [
+      2,
+      0.0
+     ],
+     [
+      5,
+      0.0
+     ],
+     [
+      10,
+      0.0
+     ],
+     [
+      20,
+      0.0
+     ],
+     [
+      30,
+      0.0
+     ],
+     [
+      50,
+      0.0
+     ],
+     [
+      80,
+      0.0
+     ],
+     [
+      120,
+      0.0
+     ],
+     [
+      200,
+      0.0
+     ],
+     [
+      300,
+      0.0
+     ]
+    ]
+   }
+  },
+  {
+   "probe": "door_turn",
+   "file": "door-turning_out_all_lights_before_sleep.json",
+   "task": "turning_out_all_lights_before_sleep",
+   "object": "sliding_door_tprpvb_7",
+   "category": "sliding_door",
+   "joint": "j_movingpart",
+   "type": "PrismaticJoint",
+   "kind": "sliding door",
+   "mass_kg": 18.059,
+   "lever_m": 0.397,
+   "at": "handle",
+   "friction": 0.30000001192092896,
+   "grid_N": [
+    2,
+    5,
+    10,
+    20,
+    30,
+    50,
+    80,
+    120,
+    200,
+    300
+   ],
+   "turn_0.3_1s_N": null,
+   "move_0.05_1s_N": null,
+   "sweeps": {
+    "toward +normal": [
+     [
+      2,
+      0.0
+     ],
+     [
+      5,
+      0.0
+     ],
+     [
+      10,
+      0.0
+     ],
+     [
+      20,
+      0.0
+     ],
+     [
+      30,
+      0.0
+     ],
+     [
+      50,
+      0.0
+     ],
+     [
+      80,
+      0.0
+     ],
+     [
+      120,
+      0.0
+     ],
+     [
+      200,
+      0.0
+     ],
+     [
+      300,
+      0.0
+     ]
+    ],
+    "toward -normal": [
+     [
+      2,
+      0.0
+     ],
+     [
+      5,
+      0.0
+     ],
+     [
+      10,
+      0.0
+     ],
+     [
+      20,
+      0.0
+     ],
+     [
+      30,
+      0.0
+     ],
+     [
+      50,
+      0.0
+     ],
+     [
+      80,
+      0.0
+     ],
+     [
+      120,
+      0.0
+     ],
+     [
+      200,
+      0.0
+     ],
+     [
+      300,
+      0.0
+     ]
+    ]
+   }
+  }
+ ],
+ "edge": [
+  {
+   "object": "door_crtrpa_0",
+   "breakaway_N": 20.8,
+   "force_0.3rad_1s_N": 80,
+   "coast": 3.17,
+   "stop_s": 0.12,
+   "lever": 0.815,
+   "mass": 10.97
+  },
+  {
+   "object": "fridge_dszchb_0",
+   "breakaway_N": 4.6,
+   "force_0.3rad_1s_N": 7,
+   "coast": 1.43,
+   "stop_s": 0.055,
+   "lever": 0.543
+  },
+  {
+   "object": "bottom_cabinet_no_top_gjeoer_0",
+   "breakaway_N": 1.0,
+   "force_0.3rad_1s_N": 2,
+   "coast": 1.92,
+   "stop_s": 0.07,
+   "lever": 0.67
+  },
+  {
+   "object": "microwave_abzvij_0",
+   "breakaway_N": 4.2,
+   "force_0.3rad_1s_N": 10,
+   "coast": 0.6,
+   "stop_s": 0.025,
+   "lever": 0.359
+  },
+  {
+   "object": "bottom_cabinet_rhdbzv_0",
+   "breakaway_N": 7.75,
+   "force_0.1m_1s_N": 15,
+   "coast": 0.0113,
+   "stop_s": 0.085,
+   "lever": 1.0
+  },
+  {
+   "object": "sliding_door_tprpvb_0",
+   "breakaway_N": 23.45,
+   "force_0.1m_1s_N": 80,
+   "coast": 0.0113,
+   "stop_s": 0.085,
+   "lever": 1.0
+  },
+  {
+   "object": "door_tfdrhh_0",
+   "breakaway_N": 13.7,
+   "force_0.3rad_1s_N": 30,
+   "coast": 3.16,
+   "stop_s": 0.12,
+   "lever": 0.893,
+   "mass": 7.78
+  },
+  {
+   "object": "door_iuuykr_0",
+   "breakaway_N": 15.95,
+   "force_0.3rad_1s_N": 30,
+   "coast": 3.28,
+   "stop_s": 0.125,
+   "lever": 0.897,
+   "mass": 9.86
+  }
+ ],
+ "sweep": [
+  {
+   "task": "canning_food",
+   "object": "bottom_cabinet_rhdbzv_0",
+   "joint": "j_left_drawer",
+   "type": "prismatic",
+   "mass_kg": 3.5,
+   "axis_z": 0.0,
+   "breakaway_edge_N": 7.75,
+   "lever_edge_m": 1.0,
+   "breakaway_handle_N": null,
+   "lever_handle_m": null
+  },
+  {
+   "task": "canning_food",
+   "object": "car_xxsgpq_0",
+   "joint": "j_trunk",
+   "type": "revolute",
+   "mass_kg": 3.11,
+   "axis_z": 0.0,
+   "breakaway_edge_N": 24.65,
+   "lever_edge_m": 0.716,
+   "breakaway_handle_N": null,
+   "lever_handle_m": null
+  },
+  {
+   "task": "canning_food",
+   "object": "charcoal_grill_crdaeu_0",
+   "joint": "j_leaf",
+   "type": "revolute",
+   "mass_kg": 2.63,
+   "axis_z": 0.003,
+   "breakaway_edge_N": 17.75,
+   "lever_edge_m": 0.561,
+   "breakaway_handle_N": 19.3,
+   "lever_handle_m": 0.509
+  },
+  {
+   "task": "canning_food",
+   "object": "dishwasher_ynrhuk_0",
+   "joint": "j_link_0",
+   "type": "prismatic",
+   "mass_kg": 4.61,
+   "axis_z": 0.0,
+   "breakaway_edge_N": 9.35,
+   "lever_edge_m": 1.0,
+   "breakaway_handle_N": null,
+   "lever_handle_m": null
+  },
+  {
+   "task": "canning_food",
+   "object": "dishwasher_ynrhuk_0",
+   "joint": "j_link_2",
+   "type": "revolute",
+   "mass_kg": 6.36,
+   "axis_z": 0.0,
+   "breakaway_edge_N": 11.4,
+   "lever_edge_m": 0.639,
+   "breakaway_handle_N": 11.65,
+   "lever_handle_m": 0.611
+  },
+  {
+   "task": "canning_food",
+   "object": "fridge_dszchb_0",
+   "joint": "j_link_0",
+   "type": "revolute",
+   "mass_kg": 1.51,
+   "axis_z": 1.0,
+   "breakaway_edge_N": 4.6,
+   "lever_edge_m": 0.543,
+   "breakaway_handle_N": 4.65,
+   "lever_handle_m": 0.537
+  },
+  {
+   "task": "canning_food",
+   "object": "microwave_abzvij_0",
+   "joint": "j_link_0",
+   "type": "revolute",
+   "mass_kg": 1.22,
+   "axis_z": 1.0,
+   "breakaway_edge_N": 4.2,
+   "lever_edge_m": 0.359,
+   "breakaway_handle_N": 4.2,
+   "lever_handle_m": 0.363
+  },
+  {
+   "task": "canning_food",
+   "object": "recreational_vehicle_doiucd_0",
+   "joint": "j_door0",
+   "type": "revolute",
+   "mass_kg": 2.05,
+   "axis_z": 0.997,
+   "breakaway_edge_N": 6.4,
+   "lever_edge_m": 0.815,
+   "breakaway_handle_N": 28.5,
+   "lever_handle_m": 0.136
+  },
+  {
+   "task": "canning_food",
+   "object": "bottom_cabinet_fancyy_0",
+   "joint": "j_door1",
+   "type": "revolute",
+   "mass_kg": 0.39,
+   "axis_z": 1.0,
+   "breakaway_edge_N": 1.8,
+   "lever_edge_m": 0.583,
+   "breakaway_handle_N": 2.95,
+   "lever_handle_m": 0.291
+  },
+  {
+   "task": "canning_food",
+   "object": "bottom_cabinet_no_top_gjeoer_0",
+   "joint": "j_doorleft1",
+   "type": "revolute",
+   "mass_kg": 0.19,
+   "axis_z": 1.0,
+   "breakaway_edge_N": 1.0,
+   "lever_edge_m": 0.67,
+   "breakaway_handle_N": 1.15,
+   "lever_handle_m": 0.584
+  },
+  {
+   "task": "canning_food",
+   "object": "bottom_cabinet_no_top_rkgjer_0",
+   "joint": "j_doorleft1",
+   "type": "revolute",
+   "mass_kg": 0.16,
+   "axis_z": 1.0,
+   "breakaway_edge_N": 0.9,
+   "lever_edge_m": 0.583,
+   "breakaway_handle_N": 1.05,
+   "lever_handle_m": 0.508
+  },
+  {
+   "task": "canning_food",
+   "object": "door_crtrpa_0",
+   "joint": "j_leaf",
+   "type": "revolute",
+   "mass_kg": 10.97,
+   "axis_z": 1.0,
+   "breakaway_edge_N": 20.8,
+   "lever_edge_m": 0.815,
+   "breakaway_handle_N": 20.3,
+   "lever_handle_m": 0.795
+  },
+  {
+   "task": "canning_food",
+   "object": "door_eduavq_0",
+   "joint": "j_leaf",
+   "type": "revolute",
+   "mass_kg": 10.62,
+   "axis_z": 1.0,
+   "breakaway_edge_N": 20.45,
+   "lever_edge_m": 0.9,
+   "breakaway_handle_N": 19.9,
+   "lever_handle_m": 0.884
+  },
+  {
+   "task": "canning_food",
+   "object": "door_fnvpyu_0",
+   "joint": "j_leaf",
+   "type": "revolute",
+   "mass_kg": 10.69,
+   "axis_z": 1.0,
+   "breakaway_edge_N": 20.85,
+   "lever_edge_m": 0.993,
+   "breakaway_handle_N": 20.25,
+   "lever_handle_m": 0.982
+  },
+  {
+   "task": "canning_food",
+   "object": "door_iuuykr_0",
+   "joint": "j_left_leaf",
+   "type": "revolute",
+   "mass_kg": 9.86,
+   "axis_z": 1.0,
+   "breakaway_edge_N": 15.95,
+   "lever_edge_m": 0.897,
+   "breakaway_handle_N": 15.75,
+   "lever_handle_m": 0.916
+  },
+  {
+   "task": "canning_food",
+   "object": "door_kwbnhy_0",
+   "joint": "j_leaf",
+   "type": "revolute",
+   "mass_kg": 11.19,
+   "axis_z": 1.0,
+   "breakaway_edge_N": 20.0,
+   "lever_edge_m": 0.576,
+   "breakaway_handle_N": 20.75,
+   "lever_handle_m": 0.553
+  },
+  {
+   "task": "canning_food",
+   "object": "door_tfdrhh_0",
+   "joint": "j_leaf",
+   "type": "revolute",
+   "mass_kg": 7.78,
+   "axis_z": 1.0,
+   "breakaway_edge_N": 13.7,
+   "lever_edge_m": 0.893,
+   "breakaway_handle_N": 13.8,
+   "lever_handle_m": 0.836
+  },
+  {
+   "task": "canning_food",
+   "object": "door_tonlzz_0",
+   "joint": "j_leaf",
+   "type": "revolute",
+   "mass_kg": 10.8,
+   "axis_z": 1.0,
+   "breakaway_edge_N": 20.75,
+   "lever_edge_m": 0.851,
+   "breakaway_handle_N": 20.2,
+   "lever_handle_m": 0.838
+  },
+  {
+   "task": "canning_food",
+   "object": "openable_window_eyvzfu_0",
+   "joint": "j_movingpart",
+   "type": "prismatic",
+   "mass_kg": 4.17,
+   "axis_z": 0.0,
+   "breakaway_edge_N": 10.3,
+   "lever_edge_m": 1.0,
+   "breakaway_handle_N": null,
+   "lever_handle_m": null
+  },
+  {
+   "task": "canning_food",
+   "object": "oven_ffitak_0",
+   "joint": "j_door",
+   "type": "revolute",
+   "mass_kg": 4.34,
+   "axis_z": 0.0,
+   "breakaway_edge_N": 10.75,
+   "lever_edge_m": 0.444,
+   "breakaway_handle_N": 11.2,
+   "lever_handle_m": 0.422
+  },
+  {
+   "task": "canning_food",
+   "object": "oven_ffitak_0",
+   "joint": "j_rack1",
+   "type": "prismatic",
+   "mass_kg": 0.11,
+   "axis_z": 0.0,
+   "breakaway_edge_N": 0.65,
+   "lever_edge_m": 1.0,
+   "breakaway_handle_N": null,
+   "lever_handle_m": null
+  },
+  {
+   "task": "canning_food",
+   "object": "sliding_door_lrvyvc_0",
+   "joint": "j_movingpart",
+   "type": "prismatic",
+   "mass_kg": 6.67,
+   "axis_z": 0.0,
+   "breakaway_edge_N": 14.75,
+   "lever_edge_m": 1.0,
+   "breakaway_handle_N": null,
+   "lever_handle_m": null
+  },
+  {
+   "task": "canning_food",
+   "object": "sliding_door_tprpvb_0",
+   "joint": "j_movingpart",
+   "type": "prismatic",
+   "mass_kg": 18.06,
+   "axis_z": 0.0,
+   "breakaway_edge_N": 23.45,
+   "lever_edge_m": 1.0,
+   "breakaway_handle_N": null,
+   "lever_handle_m": null
+  },
+  {
+   "task": "canning_food",
+   "object": "top_cabinet_lkxmne_0",
+   "joint": "j_leftdoor",
+   "type": "revolute",
+   "mass_kg": 0.43,
+   "axis_z": 1.0,
+   "breakaway_edge_N": 1.95,
+   "lever_edge_m": 0.543,
+   "breakaway_handle_N": 2.15,
+   "lever_handle_m": 0.473
+  },
+  {
+   "task": "collecting_aluminum_cans",
+   "object": "toilet_aapttl_0",
+   "joint": "j_link_0",
+   "type": "revolute",
+   "mass_kg": 0.02,
+   "axis_z": 0.003,
+   "breakaway_edge_N": 0.1,
+   "lever_edge_m": 0.05,
+   "breakaway_handle_N": null,
+   "lever_handle_m": null
+  },
+  {
+   "task": "collecting_aluminum_cans",
+   "object": "toilet_aapttl_0",
+   "joint": "j_link_1",
+   "type": "prismatic",
+   "mass_kg": 2.28,
+   "axis_z": 1.0,
+   "breakaway_edge_N": 23.45,
+   "lever_edge_m": 1.0,
+   "breakaway_handle_N": null,
+   "lever_handle_m": null
+  },
+  {
+   "task": "collecting_aluminum_cans",
+   "object": "door_uptpdr_0",
+   "joint": "j_leaf",
+   "type": "revolute",
+   "mass_kg": 9.51,
+   "axis_z": 1.0,
+   "breakaway_edge_N": 16.1,
+   "lever_edge_m": 0.693,
+   "breakaway_handle_N": 16.0,
+   "lever_handle_m": 0.667
+  },
+  {
+   "task": "collecting_aluminum_cans",
+   "object": "door_ydokma_0",
+   "joint": "j_leaf",
+   "type": "revolute",
+   "mass_kg": 9.98,
+   "axis_z": 1.0,
+   "breakaway_edge_N": 16.45,
+   "lever_edge_m": 0.806,
+   "breakaway_handle_N": 16.4,
+   "lever_handle_m": 0.77
+  },
+  {
+   "task": "cook_brussels_sprouts",
+   "object": "bottom_cabinet_olgoza_0",
+   "joint": "j_link_1",
+   "type": "prismatic",
+   "mass_kg": 2.35,
+   "axis_z": 1.0,
+   "breakaway_edge_N": 24.15,
+   "lever_edge_m": 1.0,
+   "breakaway_handle_N": null,
+   "lever_handle_m": null
+  },
+  {
+   "task": "cook_brussels_sprouts",
+   "object": "fridge_juwaoh_0",
+   "joint": "j_link_0",
+   "type": "revolute",
+   "mass_kg": 2.53,
+   "axis_z": 1.0,
+   "breakaway_edge_N": 7.6,
+   "lever_edge_m": 0.697,
+   "breakaway_handle_N": null,
+   "lever_handle_m": null
+  },
+  {
+   "task": "cook_brussels_sprouts",
+   "object": "bar_xxftww_0",
+   "joint": "j_door",
+   "type": "revolute",
+   "mass_kg": 1.44,
+   "axis_z": 0.0,
+   "breakaway_edge_N": 10.75,
+   "lever_edge_m": 1.156,
+   "breakaway_handle_N": null,
+   "lever_handle_m": null
+  },
+  {
+   "task": "cook_brussels_sprouts",
+   "object": "door_adejun_0",
+   "joint": "j_left_leaf",
+   "type": "revolute",
+   "mass_kg": 2.22,
+   "axis_z": 1.0,
+   "breakaway_edge_N": 6.7,
+   "lever_edge_m": 0.731,
+   "breakaway_handle_N": 6.8,
+   "lever_handle_m": 0.718
+  },
+  {
+   "task": "cook_brussels_sprouts",
+   "object": "fridge_jtqazu_0",
+   "joint": "j_link_0",
+   "type": "revolute",
+   "mass_kg": 3.08,
+   "axis_z": 1.0,
+   "breakaway_edge_N": 7.8,
+   "lever_edge_m": 1.032,
+   "breakaway_handle_N": 7.9,
+   "lever_handle_m": 1.015
+  },
+  {
+   "task": "cook_brussels_sprouts",
+   "object": "metal_bottom_cabinet_bbjuqu_0",
+   "joint": "j_leftdoor",
+   "type": "revolute",
+   "mass_kg": 0.76,
+   "axis_z": 1.0,
+   "breakaway_edge_N": 2.85,
+   "lever_edge_m": 0.421,
+   "breakaway_handle_N": null,
+   "lever_handle_m": null
+  },
+  {
+   "task": "cook_brussels_sprouts",
+   "object": "deep_fryer_fooamf_0",
+   "joint": "j_basket1",
+   "type": "prismatic",
+   "mass_kg": 0.9,
+   "axis_z": 1.0,
+   "breakaway_edge_N": 9.6,
+   "lever_edge_m": 1.0,
+   "breakaway_handle_N": null,
+   "lever_handle_m": null
+  },
+  {
+   "task": "cook_brussels_sprouts",
+   "object": "door_mkcndz_0",
+   "joint": "j_leaf",
+   "type": "revolute",
+   "mass_kg": 8.18,
+   "axis_z": 1.0,
+   "breakaway_edge_N": 13.8,
+   "lever_edge_m": 0.779,
+   "breakaway_handle_N": null,
+   "lever_handle_m": null
+  },
+  {
+   "task": "cook_brussels_sprouts",
+   "object": "oven_amblrk_0",
+   "joint": "j_door_leaf1",
+   "type": "revolute",
+   "mass_kg": 0.66,
+   "axis_z": 1.0,
+   "breakaway_edge_N": 2.7,
+   "lever_edge_m": 0.521,
+   "breakaway_handle_N": 2.7,
+   "lever_handle_m": 0.512
+  },
+  {
+   "task": "cook_brussels_sprouts",
+   "object": "stove_ykretu_0",
+   "joint": "j_door_leaf1",
+   "type": "revolute",
+   "mass_kg": 0.97,
+   "axis_z": 1.0,
+   "breakaway_edge_N": 3.4,
+   "lever_edge_m": 0.404,
+   "breakaway_handle_N": 11.9,
+   "lever_handle_m": 0.074
+  },
+  {
+   "task": "cook_brussels_sprouts",
+   "object": "door_cvvumy_0",
+   "joint": "j_left_leaf",
+   "type": "revolute",
+   "mass_kg": 8.2,
+   "axis_z": 1.0,
+   "breakaway_edge_N": 14.45,
+   "lever_edge_m": 0.854,
+   "breakaway_handle_N": null,
+   "lever_handle_m": null
+  },
+  {
+   "task": "make_gift_bags_for_baby_showers",
+   "object": "laptop_nvulcs_0",
+   "joint": "j_link_0",
+   "type": "revolute",
+   "mass_kg": 0.71,
+   "axis_z": 0.001,
+   "breakaway_edge_N": 4.45,
+   "lever_edge_m": 0.214,
+   "breakaway_handle_N": null,
+   "lever_handle_m": null
+  },
+  {
+   "task": "make_gift_bags_for_baby_showers",
+   "object": "standing_tv_udotid_0",
+   "joint": "j_link_0",
+   "type": "prismatic",
+   "mass_kg": 7.7,
+   "axis_z": 1.0,
+   "breakaway_edge_N": 77.3,
+   "lever_edge_m": 1.0,
+   "breakaway_handle_N": null,
+   "lever_handle_m": null
+  },
+  {
+   "task": "make_gift_bags_for_baby_showers",
+   "object": "bottom_cabinet_bamfsz_0",
+   "joint": "j_link_1",
+   "type": "prismatic",
+   "mass_kg": 5.89,
+   "axis_z": 0.0,
+   "breakaway_edge_N": null,
+   "lever_edge_m": 1.0,
+   "breakaway_handle_N": null,
+   "lever_handle_m": null
+  },
+  {
+   "task": "make_gift_bags_for_baby_showers",
+   "object": "bottom_cabinet_dajebq_0",
+   "joint": "j_link_0",
+   "type": "revolute",
+   "mass_kg": 0.48,
+   "axis_z": 1.0,
+   "breakaway_edge_N": 2.2,
+   "lever_edge_m": 0.254,
+   "breakaway_handle_N": 2.2,
+   "lever_handle_m": 0.254
+  },
+  {
+   "task": "make_gift_bags_for_baby_showers",
+   "object": "bottom_cabinet_jhymlr_0",
+   "joint": "j_link_0",
+   "type": "prismatic",
+   "mass_kg": 1.84,
+   "axis_z": 0.0,
+   "breakaway_edge_N": 5.05,
+   "lever_edge_m": 1.0,
+   "breakaway_handle_N": null,
+   "lever_handle_m": null
+  },
+  {
+   "task": "make_gift_bags_for_baby_showers",
+   "object": "bottom_cabinet_slgzfc_0",
+   "joint": "j_link_1",
+   "type": "prismatic",
+   "mass_kg": 2.12,
+   "axis_z": 0.0,
+   "breakaway_edge_N": 5.55,
+   "lever_edge_m": 1.0,
+   "breakaway_handle_N": null,
+   "lever_handle_m": null
+  },
+  {
+   "task": "make_gift_bags_for_baby_showers",
+   "object": "dishwasher_xlmier_0",
+   "joint": "j_link_1",
+   "type": "revolute",
+   "mass_kg": 3.6,
+   "axis_z": 0.0,
+   "breakaway_edge_N": 9.2,
+   "lever_edge_m": 0.38,
+   "breakaway_handle_N": 10.65,
+   "lever_handle_m": 0.31
+  },
+  {
+   "task": "make_gift_bags_for_baby_showers",
+   "object": "door_ktydvs_0",
+   "joint": "j_link_2",
+   "type": "revolute",
+   "mass_kg": 11.54,
+   "axis_z": 1.0,
+   "breakaway_edge_N": 17.35,
+   "lever_edge_m": 0.654,
+   "breakaway_handle_N": null,
+   "lever_handle_m": null
+  },
+  {
+   "task": "make_gift_bags_for_baby_showers",
+   "object": "door_lvgliq_0",
+   "joint": "j_link_2",
+   "type": "revolute",
+   "mass_kg": 13.73,
+   "axis_z": 1.0,
+   "breakaway_edge_N": 20.45,
+   "lever_edge_m": 0.768,
+   "breakaway_handle_N": 21.15,
+   "lever_handle_m": 0.702
+  },
+  {
+   "task": "make_gift_bags_for_baby_showers",
+   "object": "fridge_xyejdx_0",
+   "joint": "j_link_0",
+   "type": "revolute",
+   "mass_kg": 0.67,
+   "axis_z": 1.0,
+   "breakaway_edge_N": 2.4,
+   "lever_edge_m": 0.759,
+   "breakaway_handle_N": 2.6,
+   "lever_handle_m": 0.672
+  },
+  {
+   "task": "make_gift_bags_for_baby_showers",
+   "object": "microwave_abzvij_0",
+   "joint": "j_link_0",
+   "type": "revolute",
+   "mass_kg": 1.22,
+   "axis_z": 1.0,
+   "breakaway_edge_N": 4.15,
+   "lever_edge_m": 0.473,
+   "breakaway_handle_N": 4.15,
+   "lever_handle_m": 0.473
+  },
+  {
+   "task": "make_gift_bags_for_baby_showers",
+   "object": "openable_window_ithrgo_0",
+   "joint": "j_link_0",
+   "type": "prismatic",
+   "mass_kg": 3.76,
+   "axis_z": 0.0,
+   "breakaway_edge_N": 8.15,
+   "lever_edge_m": 1.0,
+   "breakaway_handle_N": null,
+   "lever_handle_m": null
+  },
+  {
+   "task": "make_gift_bags_for_baby_showers",
+   "object": "openable_window_ulnafj_0",
+   "joint": "j_link_0",
+   "type": "prismatic",
+   "mass_kg": 6.7,
+   "axis_z": 0.001,
+   "breakaway_edge_N": 11.95,
+   "lever_edge_m": 1.0,
+   "breakaway_handle_N": null,
+   "lever_handle_m": null
+  },
+  {
+   "task": "make_gift_bags_for_baby_showers",
+   "object": "oven_wuinhm_0",
+   "joint": "j_link_0",
+   "type": "prismatic",
+   "mass_kg": 0.77,
+   "axis_z": 0.0,
+   "breakaway_edge_N": 2.7,
+   "lever_edge_m": 1.0,
+   "breakaway_handle_N": null,
+   "lever_handle_m": null
+  },
+  {
+   "task": "make_gift_bags_for_baby_showers",
+   "object": "oven_wuinhm_0",
+   "joint": "j_link_1",
+   "type": "revolute",
+   "mass_kg": 0.64,
+   "axis_z": 0.0,
+   "breakaway_edge_N": 2.45,
+   "lever_edge_m": 0.533,
+   "breakaway_handle_N": 2.65,
+   "lever_handle_m": 0.493
+  },
+  {
+   "task": "make_gift_bags_for_baby_showers",
+   "object": "top_cabinet_fqhdne_0",
+   "joint": "j_link_0",
+   "type": "revolute",
+   "mass_kg": 1.33,
+   "axis_z": 1.0,
+   "breakaway_edge_N": 4.15,
+   "lever_edge_m": 0.71,
+   "breakaway_handle_N": 4.25,
+   "lever_handle_m": 0.7
+  },
+  {
+   "task": "make_gift_bags_for_baby_showers",
+   "object": "top_cabinet_lsyzkh_0",
+   "joint": "j_link_1",
+   "type": "revolute",
+   "mass_kg": 1.28,
+   "axis_z": 1.0,
+   "breakaway_edge_N": 4.1,
+   "lever_edge_m": 0.655,
+   "breakaway_handle_N": 4.05,
+   "lever_handle_m": 0.669
+  },
+  {
+   "task": "moving_boxes_to_storage",
+   "object": "car_xxsgpq_0",
+   "joint": "j_trunk",
+   "type": "revolute",
+   "mass_kg": 3.11,
+   "axis_z": 0.0,
+   "breakaway_edge_N": 24.65,
+   "lever_edge_m": 0.716,
+   "breakaway_handle_N": null,
+   "lever_handle_m": null
+  },
+  {
+   "task": "moving_boxes_to_storage",
+   "object": "charcoal_grill_crdaeu_0",
+   "joint": "j_leaf",
+   "type": "revolute",
+   "mass_kg": 2.63,
+   "axis_z": 0.0,
+   "breakaway_edge_N": 17.85,
+   "lever_edge_m": 0.733,
+   "breakaway_handle_N": 19.5,
+   "lever_handle_m": 0.664
+  },
+  {
+   "task": "moving_boxes_to_storage",
+   "object": "dishwasher_ynrhuk_0",
+   "joint": "j_link_0",
+   "type": "prismatic",
+   "mass_kg": 4.61,
+   "axis_z": 0.0,
+   "breakaway_edge_N": 9.35,
+   "lever_edge_m": 1.0,
+   "breakaway_handle_N": null,
+   "lever_handle_m": null
+  },
+  {
+   "task": "moving_boxes_to_storage",
+   "object": "dishwasher_ynrhuk_0",
+   "joint": "j_link_2",
+   "type": "revolute",
+   "mass_kg": 6.36,
+   "axis_z": 0.0,
+   "breakaway_edge_N": 11.4,
+   "lever_edge_m": 0.644,
+   "breakaway_handle_N": 11.65,
+   "lever_handle_m": 0.616
+  },
+  {
+   "task": "moving_boxes_to_storage",
+   "object": "fridge_petcxr_0",
+   "joint": "j_left_door",
+   "type": "revolute",
+   "mass_kg": 6.96,
+   "axis_z": 1.0,
+   "breakaway_edge_N": 12.9,
+   "lever_edge_m": 0.416,
+   "breakaway_handle_N": 12.9,
+   "lever_handle_m": 0.418
+  },
+  {
+   "task": "moving_boxes_to_storage",
+   "object": "microwave_hjjxmi_0",
+   "joint": "j_link_0",
+   "type": "revolute",
+   "mass_kg": 0.6,
+   "axis_z": 1.0,
+   "breakaway_edge_N": 2.85,
+   "lever_edge_m": 0.352,
+   "breakaway_handle_N": 2.8,
+   "lever_handle_m": 0.359
+  },
+  {
+   "task": "moving_boxes_to_storage",
+   "object": "oven_ffitak_0",
+   "joint": "j_door",
+   "type": "revolute",
+   "mass_kg": 4.34,
+   "axis_z": 0.0,
+   "breakaway_edge_N": 11.15,
+   "lever_edge_m": 0.438,
+   "breakaway_handle_N": 11.6,
+   "lever_handle_m": 0.416
+  },
+  {
+   "task": "moving_boxes_to_storage",
+   "object": "oven_ffitak_0",
+   "joint": "j_rack1",
+   "type": "prismatic",
+   "mass_kg": 0.11,
+   "axis_z": 0.0,
+   "breakaway_edge_N": 0.65,
+   "lever_edge_m": 1.0,
+   "breakaway_handle_N": null,
+   "lever_handle_m": null
+  },
+  {
+   "task": "moving_boxes_to_storage",
+   "object": "bottom_cabinet_rhdbzv_0",
+   "joint": "j_left_drawer",
+   "type": "prismatic",
+   "mass_kg": 3.5,
+   "axis_z": 0.0,
+   "breakaway_edge_N": 7.75,
+   "lever_edge_m": 1.0,
+   "breakaway_handle_N": null,
+   "lever_handle_m": null
+  },
+  {
+   "task": "moving_boxes_to_storage",
+   "object": "car_ssxsje_0",
+   "joint": "j_trunk",
+   "type": "revolute",
+   "mass_kg": 3.11,
+   "axis_z": 0.0,
+   "breakaway_edge_N": 25.1,
+   "lever_edge_m": 0.705,
+   "breakaway_handle_N": null,
+   "lever_handle_m": null
+  },
+  {
+   "task": "moving_boxes_to_storage",
+   "object": "door_bexenl_0",
+   "joint": "j_leaf",
+   "type": "revolute",
+   "mass_kg": 15.17,
+   "axis_z": 1.0,
+   "breakaway_edge_N": 20.75,
+   "lever_edge_m": 0.82,
+   "breakaway_handle_N": 22.3,
+   "lever_handle_m": 0.706
+  },
+  {
+   "task": "moving_boxes_to_storage",
+   "object": "door_vudhlc_0",
+   "joint": "j_leaf",
+   "type": "revolute",
+   "mass_kg": 7.22,
+   "axis_z": 1.0,
+   "breakaway_edge_N": 17.15,
+   "lever_edge_m": 1.018,
+   "breakaway_handle_N": 17.75,
+   "lever_handle_m": 0.91
+  },
+  {
+   "task": "moving_boxes_to_storage",
+   "object": "garage_door_prdjyt_0",
+   "joint": "j_left_door",
+   "type": "revolute",
+   "mass_kg": 58.95,
+   "axis_z": 0.0,
+   "breakaway_edge_N": null,
+   "lever_edge_m": 1.787,
+   "breakaway_handle_N": null,
+   "lever_handle_m": null
+  },
+  {
+   "task": "moving_boxes_to_storage",
+   "object": "top_cabinet_tynnnw_0",
+   "joint": "j_leftdoor",
+   "type": "revolute",
+   "mass_kg": 0.74,
+   "axis_z": 1.0,
+   "breakaway_edge_N": 2.85,
+   "lever_edge_m": 0.564,
+   "breakaway_handle_N": 3.75,
+   "lever_handle_m": 0.382
+  },
+  {
+   "task": "tidying_bathroom",
+   "object": "toilet_aapttl_0",
+   "joint": "j_link_0",
+   "type": "revolute",
+   "mass_kg": 0.02,
+   "axis_z": 0.003,
+   "breakaway_edge_N": 0.1,
+   "lever_edge_m": 0.05,
+   "breakaway_handle_N": null,
+   "lever_handle_m": null
+  },
+  {
+   "task": "tidying_bathroom",
+   "object": "toilet_aapttl_0",
+   "joint": "j_link_1",
+   "type": "prismatic",
+   "mass_kg": 2.28,
+   "axis_z": 1.0,
+   "breakaway_edge_N": 23.45,
+   "lever_edge_m": 1.0,
+   "breakaway_handle_N": null,
+   "lever_handle_m": null
+  },
+  {
+   "task": "tidying_bathroom",
+   "object": "door_uptpdr_0",
+   "joint": "j_leaf",
+   "type": "revolute",
+   "mass_kg": 9.51,
+   "axis_z": 1.0,
+   "breakaway_edge_N": 16.1,
+   "lever_edge_m": 0.693,
+   "breakaway_handle_N": 16.0,
+   "lever_handle_m": 0.667
+  },
+  {
+   "task": "tidying_bathroom",
+   "object": "door_ydokma_0",
+   "joint": "j_leaf",
+   "type": "revolute",
+   "mass_kg": 9.98,
+   "axis_z": 1.0,
+   "breakaway_edge_N": 16.45,
+   "lever_edge_m": 0.806,
+   "breakaway_handle_N": 16.4,
+   "lever_handle_m": 0.77
+  }
+ ],
+ "pulls": [
+  {
+   "probe": "physpull, physical pinch",
+   "task": "cook_brussels_sprouts",
+   "object": "oven_amblrk_0",
+   "joint": "j_door_leaf2",
+   "pull": "walk_back",
+   "opened_deg": -2.83,
+   "handle_to_grip_after_close_m": 0.181,
+   "handle_to_grip_end_m": 0.168,
+   "tilt_end_deg": 0.9
+  },
+  {
+   "probe": "physpull, physical pinch",
+   "task": "cook_brussels_sprouts",
+   "object": "oven_amblrk_0",
+   "joint": "j_door_leaf2",
+   "pull": "arm_retract",
+   "opened_deg": 8.32,
+   "handle_to_grip_after_close_m": 0.168,
+   "handle_to_grip_end_m": 0.364,
+   "tilt_end_deg": 2.7
+  },
+  {
+   "probe": "physpull, physical pinch",
+   "task": "cook_brussels_sprouts",
+   "object": "fridge_jtqazu_0",
+   "joint": "j_link_0",
+   "pull": "walk_back",
+   "opened_deg": 0.7,
+   "handle_to_grip_after_close_m": 0.064,
+   "handle_to_grip_end_m": 0.24,
+   "tilt_end_deg": 4.2
+  },
+  {
+   "probe": "physpull, physical pinch",
+   "task": "cook_brussels_sprouts",
+   "object": "fridge_jtqazu_0",
+   "joint": "j_link_0",
+   "pull": "arm_retract",
+   "opened_deg": -0.1,
+   "handle_to_grip_after_close_m": 0.064,
+   "handle_to_grip_end_m": 0.572,
+   "tilt_end_deg": 1.1
+  },
+  {
+   "probe": "physpull, physical pinch",
+   "task": "tidying_bathroom",
+   "object": "door_ydokma_0",
+   "joint": "j_leaf",
+   "pull": "walk_back",
+   "opened_deg": 0.41,
+   "handle_to_grip_after_close_m": 0.059,
+   "handle_to_grip_end_m": 0.058,
+   "tilt_end_deg": 2.4
+  },
+  {
+   "probe": "physpull, physical pinch",
+   "task": "tidying_bathroom",
+   "object": "door_ydokma_0",
+   "joint": "j_leaf",
+   "pull": "arm_retract",
+   "opened_deg": 18.57,
+   "handle_to_grip_after_close_m": 0.023,
+   "handle_to_grip_end_m": 0.022,
+   "tilt_end_deg": 5.9
+  },
+  {
+   "probe": "physpull, physical pinch",
+   "task": "tidying_bathroom",
+   "object": "door_uptpdr_0",
+   "joint": "j_leaf",
+   "pull": "walk_back",
+   "opened_deg": -0.2,
+   "handle_to_grip_after_close_m": 0.13,
+   "handle_to_grip_end_m": 0.12,
+   "tilt_end_deg": 2.6
+  },
+  {
+   "probe": "physpull, physical pinch",
+   "task": "tidying_bathroom",
+   "object": "door_uptpdr_0",
+   "joint": "j_leaf",
+   "pull": "arm_retract",
+   "opened_deg": -0.24,
+   "handle_to_grip_after_close_m": 0.13,
+   "handle_to_grip_end_m": 0.441,
+   "tilt_end_deg": 1.6
+  },
+  {
+   "probe": "door_open, assisted attachment",
+   "task": "tidying_bathroom",
+   "object": "door_ydokma_0",
+   "joint": "j_leaf",
+   "pull": "walk_back",
+   "opened_deg": 0.0,
+   "held": true,
+   "robot_moved_m": 0.027
+  },
+  {
+   "probe": "door_open, assisted attachment",
+   "task": "tidying_bathroom",
+   "object": "door_ydokma_0",
+   "joint": "j_leaf",
+   "pull": "arm_pull",
+   "opened_deg": 0.01,
+   "held": true,
+   "robot_moved_m": 0.131
+  },
+  {
+   "probe": "door_open, assisted attachment",
+   "task": "tidying_bathroom",
+   "object": "door_ydokma_0",
+   "joint": "j_leaf",
+   "pull": "walk_forward",
+   "opened_deg": 0.05,
+   "held": true,
+   "robot_moved_m": 0.182
+  },
+  {
+   "probe": "door_open, assisted attachment",
+   "task": "tidying_bathroom",
+   "object": "door_uptpdr_0",
+   "joint": "j_leaf",
+   "pull": "walk_back",
+   "opened_deg": 0.0,
+   "held": true,
+   "robot_moved_m": 0.056
+  },
+  {
+   "probe": "door_open, assisted attachment",
+   "task": "tidying_bathroom",
+   "object": "door_uptpdr_0",
+   "joint": "j_leaf",
+   "pull": "arm_pull",
+   "opened_deg": 4.3,
+   "held": true,
+   "robot_moved_m": 0.027
+  },
+  {
+   "probe": "door_open, assisted attachment",
+   "task": "tidying_bathroom",
+   "object": "door_uptpdr_0",
+   "joint": "j_leaf",
+   "pull": "walk_forward",
+   "opened_deg": 0.11,
+   "held": true,
+   "robot_moved_m": 0.06
+  }
+ ],
+ "push": [
+  {
+   "probe": "pushdoor, 8 s",
+   "task": "dispose_of_batteries",
+   "door": "door_ggcyib_0",
+   "posture": "chest",
+   "mass_kg": 10.52,
+   "width_m": 0.821,
+   "opened_deg": 2.49,
+   "seconds_to_30deg": null,
+   "robot_progress_m": -0.015,
+   "tilt_max_deg": 4.3,
+   "trace_s_deg_progress": [
+    [
+     0.5,
+     0.33,
+     0.017
+    ],
+    [
+     1.0,
+     0.53,
+     0.021
+    ],
+    [
+     1.5,
+     0.68,
+     0.022
+    ],
+    [
+     2.0,
+     0.83,
+     0.023
+    ],
+    [
+     2.5,
+     0.98,
+     0.026
+    ],
+    [
+     3.0,
+     1.13,
+     0.028
+    ],
+    [
+     3.5,
+     1.27,
+     0.03
+    ],
+    [
+     4.0,
+     1.42,
+     0.031
+    ],
+    [
+     4.5,
+     1.56,
+     0.033
+    ],
+    [
+     5.0,
+     1.7,
+     0.035
+    ],
+    [
+     5.5,
+     1.83,
+     0.036
+    ],
+    [
+     6.0,
+     1.97,
+     0.038
+    ],
+    [
+     6.5,
+     2.1,
+     0.039
+    ],
+    [
+     7.0,
+     2.23,
+     0.041
+    ],
+    [
+     7.5,
+     2.36,
+     0.042
+    ],
+    [
+     8.0,
+     2.49,
+     0.043
+    ]
+   ],
+   "friction": [
+    0.2,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "probe": "pushdoor, 8 s",
+   "task": "dispose_of_batteries",
+   "door": "door_ggcyib_0",
+   "posture": "palm",
+   "mass_kg": 10.52,
+   "width_m": 0.821,
+   "opened_deg": 0.08,
+   "seconds_to_30deg": null,
+   "robot_progress_m": 0.143,
+   "tilt_max_deg": 8.5,
+   "trace_s_deg_progress": [
+    [
+     0.5,
+     0.0,
+     0.056
+    ],
+    [
+     1.0,
+     0.0,
+     0.085
+    ],
+    [
+     1.5,
+     0.0,
+     0.139
+    ],
+    [
+     2.0,
+     0.01,
+     0.172
+    ],
+    [
+     2.5,
+     0.01,
+     0.174
+    ],
+    [
+     3.0,
+     0.02,
+     0.167
+    ],
+    [
+     3.5,
+     0.02,
+     0.166
+    ],
+    [
+     4.0,
+     0.03,
+     0.168
+    ],
+    [
+     4.5,
+     0.03,
+     0.168
+    ],
+    [
+     5.0,
+     0.04,
+     0.169
+    ],
+    [
+     5.5,
+     0.04,
+     0.171
+    ],
+    [
+     6.0,
+     0.05,
+     0.169
+    ],
+    [
+     6.5,
+     0.05,
+     0.168
+    ],
+    [
+     7.0,
+     0.06,
+     0.168
+    ],
+    [
+     7.5,
+     0.07,
+     0.168
+    ],
+    [
+     8.0,
+     0.07,
+     0.17
+    ]
+   ],
+   "friction": [
+    0.2,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "probe": "pushdoor, 8 s",
+   "task": "moving_boxes_to_storage",
+   "door": "door_bexenl_0",
+   "posture": "chest",
+   "mass_kg": 15.17,
+   "width_m": 0.82,
+   "opened_deg": 9.31,
+   "seconds_to_30deg": null,
+   "robot_progress_m": 0.083,
+   "tilt_max_deg": 4.4,
+   "trace_s_deg_progress": [
+    [
+     0.5,
+     0.0,
+     0.047
+    ],
+    [
+     1.0,
+     0.26,
+     0.059
+    ],
+    [
+     1.5,
+     0.79,
+     0.032
+    ],
+    [
+     2.0,
+     1.59,
+     0.058
+    ],
+    [
+     2.5,
+     2.38,
+     0.059
+    ],
+    [
+     3.0,
+     2.77,
+     0.061
+    ],
+    [
+     3.5,
+     3.57,
+     0.076
+    ],
+    [
+     4.0,
+     4.46,
+     0.076
+    ],
+    [
+     4.5,
+     5.19,
+     0.085
+    ],
+    [
+     5.0,
+     6.0,
+     0.09
+    ],
+    [
+     5.5,
+     6.71,
+     0.094
+    ],
+    [
+     6.0,
+     7.35,
+     0.103
+    ],
+    [
+     6.5,
+     8.03,
+     0.102
+    ],
+    [
+     7.0,
+     8.45,
+     0.112
+    ],
+    [
+     7.5,
+     8.82,
+     0.112
+    ],
+    [
+     8.0,
+     9.29,
+     0.112
+    ]
+   ],
+   "friction": [
+    0.2,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "probe": "pushdoor, 8 s",
+   "task": "moving_boxes_to_storage",
+   "door": "door_bexenl_0",
+   "posture": "palm",
+   "mass_kg": 15.17,
+   "width_m": 0.82,
+   "opened_deg": 0.0,
+   "seconds_to_30deg": null,
+   "robot_progress_m": 0.162,
+   "tilt_max_deg": 8.4,
+   "trace_s_deg_progress": [
+    [
+     0.5,
+     0.0,
+     0.056
+    ],
+    [
+     1.0,
+     0.0,
+     0.088
+    ],
+    [
+     1.5,
+     0.0,
+     0.157
+    ],
+    [
+     2.0,
+     0.0,
+     0.2
+    ],
+    [
+     2.5,
+     0.0,
+     0.207
+    ],
+    [
+     3.0,
+     0.0,
+     0.198
+    ],
+    [
+     3.5,
+     0.0,
+     0.195
+    ],
+    [
+     4.0,
+     0.0,
+     0.195
+    ],
+    [
+     4.5,
+     0.0,
+     0.195
+    ],
+    [
+     5.0,
+     0.0,
+     0.195
+    ],
+    [
+     5.5,
+     0.0,
+     0.196
+    ],
+    [
+     6.0,
+     0.0,
+     0.197
+    ],
+    [
+     6.5,
+     0.0,
+     0.194
+    ],
+    [
+     7.0,
+     0.0,
+     0.193
+    ],
+    [
+     7.5,
+     0.0,
+     0.193
+    ],
+    [
+     8.0,
+     0.0,
+     0.193
+    ]
+   ],
+   "friction": [
+    0.2,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "probe": "pushdoor, 8 s",
+   "task": "tidying_bathroom",
+   "door": "door_ydokma_0",
+   "posture": "chest",
+   "mass_kg": 9.98,
+   "width_m": 0.806,
+   "opened_deg": 18.86,
+   "seconds_to_30deg": null,
+   "robot_progress_m": 0.164,
+   "tilt_max_deg": 4.3,
+   "trace_s_deg_progress": [
+    [
+     0.5,
+     0.0,
+     0.047
+    ],
+    [
+     1.0,
+     0.19,
+     0.064
+    ],
+    [
+     1.5,
+     2.2,
+     0.051
+    ],
+    [
+     2.0,
+     3.91,
+     0.084
+    ],
+    [
+     2.5,
+     5.96,
+     0.097
+    ],
+    [
+     3.0,
+     6.67,
+     0.107
+    ],
+    [
+     3.5,
+     8.33,
+     0.124
+    ],
+    [
+     4.0,
+     9.79,
+     0.13
+    ],
+    [
+     4.5,
+     11.21,
+     0.141
+    ],
+    [
+     5.0,
+     12.39,
+     0.146
+    ],
+    [
+     5.5,
+     13.21,
+     0.15
+    ],
+    [
+     6.0,
+     14.29,
+     0.159
+    ],
+    [
+     6.5,
+     15.47,
+     0.169
+    ],
+    [
+     7.0,
+     16.6,
+     0.178
+    ],
+    [
+     7.5,
+     17.61,
+     0.19
+    ],
+    [
+     8.0,
+     18.86,
+     0.202
+    ]
+   ],
+   "friction": [
+    0.2,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "probe": "pushdoor, 8 s",
+   "task": "tidying_bathroom",
+   "door": "door_ydokma_0",
+   "posture": "palm",
+   "mass_kg": 9.98,
+   "width_m": 0.806,
+   "opened_deg": 0.0,
+   "seconds_to_30deg": null,
+   "robot_progress_m": 0.183,
+   "tilt_max_deg": 8.6,
+   "trace_s_deg_progress": [
+    [
+     0.5,
+     0.0,
+     0.057
+    ],
+    [
+     1.0,
+     0.0,
+     0.112
+    ],
+    [
+     1.5,
+     0.0,
+     0.192
+    ],
+    [
+     2.0,
+     0.0,
+     0.217
+    ],
+    [
+     2.5,
+     0.0,
+     0.214
+    ],
+    [
+     3.0,
+     0.0,
+     0.209
+    ],
+    [
+     3.5,
+     0.0,
+     0.21
+    ],
+    [
+     4.0,
+     0.0,
+     0.211
+    ],
+    [
+     4.5,
+     0.0,
+     0.213
+    ],
+    [
+     5.0,
+     0.0,
+     0.214
+    ],
+    [
+     5.5,
+     0.0,
+     0.212
+    ],
+    [
+     6.0,
+     0.0,
+     0.212
+    ],
+    [
+     6.5,
+     0.0,
+     0.212
+    ],
+    [
+     7.0,
+     0.0,
+     0.212
+    ],
+    [
+     7.5,
+     0.0,
+     0.214
+    ],
+    [
+     8.0,
+     0.0,
+     0.215
+    ]
+   ],
+   "friction": [
+    0.2,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "probe": "pushdoor_long",
+   "task": "dispose_of_batteries",
+   "door": "door_ggcyib_3",
+   "posture": "chest",
+   "mass_kg": 10.52,
+   "width_m": 0.821,
+   "opened_deg": 42.53,
+   "seconds_to_30deg": 25.0,
+   "robot_progress_m": 0.491,
+   "tilt_max_deg": 4.4,
+   "trace_s_deg_progress": [
+    [
+     1.0,
+     0.53,
+     0.021
+    ],
+    [
+     2.0,
+     0.81,
+     0.023
+    ],
+    [
+     3.0,
+     1.12,
+     0.027
+    ],
+    [
+     4.0,
+     1.41,
+     0.031
+    ],
+    [
+     5.0,
+     1.69,
+     0.035
+    ],
+    [
+     6.0,
+     1.96,
+     0.038
+    ],
+    [
+     7.0,
+     2.23,
+     0.041
+    ],
+    [
+     8.0,
+     2.49,
+     0.043
+    ],
+    [
+     9.0,
+     2.73,
+     0.046
+    ],
+    [
+     10.0,
+     2.88,
+     0.047
+    ],
+    [
+     11.0,
+     2.91,
+     0.047
+    ],
+    [
+     12.0,
+     2.96,
+     0.047
+    ],
+    [
+     13.0,
+     3.02,
+     0.047
+    ],
+    [
+     14.0,
+     4.02,
+     0.041
+    ],
+    [
+     15.0,
+     6.1,
+     0.067
+    ],
+    [
+     16.0,
+     8.93,
+     0.084
+    ],
+    [
+     17.0,
+     11.13,
+     0.102
+    ],
+    [
+     18.0,
+     13.65,
+     0.127
+    ],
+    [
+     19.0,
+     15.51,
+     0.154
+    ],
+    [
+     20.0,
+     17.1,
+     0.174
+    ],
+    [
+     21.0,
+     19.13,
+     0.186
+    ],
+    [
+     22.0,
+     21.77,
+     0.214
+    ],
+    [
+     23.0,
+     24.04,
+     0.246
+    ],
+    [
+     24.0,
+     26.64,
+     0.266
+    ],
+    [
+     25.0,
+     30.29,
+     0.296
+    ],
+    [
+     26.0,
+     33.5,
+     0.339
+    ],
+    [
+     27.0,
+     35.95,
+     0.381
+    ],
+    [
+     28.0,
+     38.49,
+     0.418
+    ],
+    [
+     29.0,
+     40.68,
+     0.457
+    ],
+    [
+     30.0,
+     42.41,
+     0.5
+    ]
+   ],
+   "friction": [
+    0.2,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "probe": "pushdoor_long",
+   "task": "moving_boxes_to_storage",
+   "door": "door_bexenl_0",
+   "posture": "chest",
+   "mass_kg": 15.17,
+   "width_m": 0.82,
+   "opened_deg": 33.07,
+   "seconds_to_30deg": 29.0,
+   "robot_progress_m": 0.357,
+   "tilt_max_deg": 4.6,
+   "trace_s_deg_progress": [
+    [
+     1.0,
+     0.26,
+     0.059
+    ],
+    [
+     2.0,
+     1.59,
+     0.058
+    ],
+    [
+     3.0,
+     2.77,
+     0.061
+    ],
+    [
+     4.0,
+     4.46,
+     0.076
+    ],
+    [
+     5.0,
+     6.0,
+     0.09
+    ],
+    [
+     6.0,
+     7.35,
+     0.103
+    ],
+    [
+     7.0,
+     8.45,
+     0.112
+    ],
+    [
+     8.0,
+     9.29,
+     0.112
+    ],
+    [
+     9.0,
+     10.25,
+     0.111
+    ],
+    [
+     10.0,
+     11.03,
+     0.117
+    ],
+    [
+     11.0,
+     11.89,
+     0.128
+    ],
+    [
+     12.0,
+     12.71,
+     0.139
+    ],
+    [
+     13.0,
+     13.58,
+     0.151
+    ],
+    [
+     14.0,
+     14.27,
+     0.158
+    ],
+    [
+     15.0,
+     15.1,
+     0.159
+    ],
+    [
+     16.0,
+     15.9,
+     0.164
+    ],
+    [
+     17.0,
+     16.7,
+     0.181
+    ],
+    [
+     18.0,
+     17.47,
+     0.201
+    ],
+    [
+     19.0,
+     18.21,
+     0.209
+    ],
+    [
+     20.0,
+     19.11,
+     0.221
+    ],
+    [
+     21.0,
+     20.32,
+     0.234
+    ],
+    [
+     22.0,
+     21.43,
+     0.252
+    ],
+    [
+     23.0,
+     22.04,
+     0.267
+    ],
+    [
+     24.0,
+     23.48,
+     0.263
+    ],
+    [
+     25.0,
+     24.84,
+     0.277
+    ],
+    [
+     26.0,
+     26.37,
+     0.301
+    ],
+    [
+     27.0,
+     27.31,
+     0.318
+    ],
+    [
+     28.0,
+     29.21,
+     0.329
+    ],
+    [
+     29.0,
+     31.23,
+     0.352
+    ],
+    [
+     30.0,
+     33.05,
+     0.383
+    ]
+   ],
+   "friction": [
+    0.2,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "probe": "pushdoor_long",
+   "task": "tidying_bathroom",
+   "door": "door_ydokma_0",
+   "posture": "chest",
+   "mass_kg": 9.98,
+   "width_m": 0.806,
+   "opened_deg": 52.25,
+   "seconds_to_30deg": 15.0,
+   "robot_progress_m": 2.241,
+   "tilt_max_deg": 4.3,
+   "trace_s_deg_progress": [
+    [
+     1.0,
+     0.19,
+     0.064
+    ],
+    [
+     2.0,
+     3.91,
+     0.084
+    ],
+    [
+     3.0,
+     6.67,
+     0.107
+    ],
+    [
+     4.0,
+     9.79,
+     0.13
+    ],
+    [
+     5.0,
+     12.39,
+     0.146
+    ],
+    [
+     6.0,
+     14.29,
+     0.159
+    ],
+    [
+     7.0,
+     16.6,
+     0.178
+    ],
+    [
+     8.0,
+     18.86,
+     0.202
+    ],
+    [
+     9.0,
+     20.29,
+     0.226
+    ],
+    [
+     10.0,
+     22.05,
+     0.231
+    ],
+    [
+     11.0,
+     23.7,
+     0.241
+    ],
+    [
+     12.0,
+     25.64,
+     0.271
+    ],
+    [
+     13.0,
+     27.11,
+     0.297
+    ],
+    [
+     14.0,
+     29.19,
+     0.31
+    ],
+    [
+     15.0,
+     32.26,
+     0.342
+    ],
+    [
+     16.0,
+     35.16,
+     0.388
+    ],
+    [
+     17.0,
+     37.79,
+     0.425
+    ],
+    [
+     18.0,
+     41.34,
+     0.472
+    ],
+    [
+     19.0,
+     45.06,
+     0.538
+    ],
+    [
+     20.0,
+     47.56,
+     0.618
+    ],
+    [
+     21.0,
+     49.6,
+     0.704
+    ],
+    [
+     22.0,
+     51.07,
+     0.789
+    ],
+    [
+     23.0,
+     52.1,
+     0.933
+    ],
+    [
+     24.0,
+     52.25,
+     1.118
+    ],
+    [
+     25.0,
+     52.25,
+     1.332
+    ],
+    [
+     26.0,
+     52.25,
+     1.562
+    ],
+    [
+     27.0,
+     52.25,
+     1.795
+    ],
+    [
+     28.0,
+     52.25,
+     2.024
+    ],
+    [
+     29.0,
+     52.25,
+     2.247
+    ],
+    [
+     30.0,
+     52.25,
+     2.261
+    ]
+   ],
+   "friction": [
+    0.2,
+    0.0,
+    0.0,
+    0.0
+   ]
+  }
+ ],
+ "hands": [
+  {
+   "task": "turning_on_radio",
+   "hold_s": 2.0,
+   "force_N": 10.0,
+   "hands": [
+    "right"
+   ],
+   "hand_height_m_approx": {
+    "right": 1.065
+   },
+   "pelvis_along_heading_end_of_hold_m": 0.015,
+   "pelvis_max_during_hold_m": 0.024,
+   "pelvis_end_m": 0.006,
+   "feet_moved_m": {
+    "left": 0.0,
+    "right": 0.0
+   },
+   "stepped": false,
+   "yaw_change_deg": 0.15,
+   "tilt_max_deg": 3.9,
+   "fell": false
+  },
+  {
+   "task": "turning_on_radio",
+   "hold_s": 2.0,
+   "force_N": 20.0,
+   "hands": [
+    "right"
+   ],
+   "hand_height_m_approx": {
+    "right": 1.065
+   },
+   "pelvis_along_heading_end_of_hold_m": 0.877,
+   "pelvis_max_during_hold_m": 0.878,
+   "pelvis_end_m": 1.332,
+   "feet_moved_m": {
+    "left": 1.335,
+    "right": 1.353
+   },
+   "stepped": true,
+   "yaw_change_deg": 4.56,
+   "tilt_max_deg": 5.5,
+   "fell": false
+  },
+  {
+   "task": "turning_on_radio",
+   "hold_s": 2.0,
+   "force_N": 30.0,
+   "hands": [
+    "right"
+   ],
+   "hand_height_m_approx": {
+    "right": 1.065
+   },
+   "pelvis_along_heading_end_of_hold_m": 1.861,
+   "pelvis_max_during_hold_m": 1.873,
+   "pelvis_end_m": 1.912,
+   "feet_moved_m": {
+    "left": 1.837,
+    "right": 1.517
+   },
+   "stepped": true,
+   "yaw_change_deg": 51.42,
+   "tilt_max_deg": 136.1,
+   "fell": true
+  },
+  {
+   "task": "turning_on_radio",
+   "hold_s": 2.0,
+   "force_N": -10.0,
+   "hands": [
+    "right"
+   ],
+   "hand_height_m_approx": {
+    "right": 1.065
+   },
+   "pelvis_along_heading_end_of_hold_m": -0.491,
+   "pelvis_max_during_hold_m": 0.493,
+   "pelvis_end_m": 0.721,
+   "feet_moved_m": {
+    "left": 0.716,
+    "right": 0.719
+   },
+   "stepped": true,
+   "yaw_change_deg": -0.84,
+   "tilt_max_deg": 13.1,
+   "fell": false
+  },
+  {
+   "task": "turning_on_radio",
+   "hold_s": 2.0,
+   "force_N": -20.0,
+   "hands": [
+    "right"
+   ],
+   "hand_height_m_approx": {
+    "right": 1.065
+   },
+   "pelvis_along_heading_end_of_hold_m": -1.301,
+   "pelvis_max_during_hold_m": 1.302,
+   "pelvis_end_m": 2.174,
+   "feet_moved_m": {
+    "left": 2.102,
+    "right": 2.351
+   },
+   "stepped": true,
+   "yaw_change_deg": -108.15,
+   "tilt_max_deg": 15.4,
+   "fell": false
+  },
+  {
+   "task": "turning_on_radio",
+   "hold_s": 2.0,
+   "force_N": -30.0,
+   "hands": [
+    "right"
+   ],
+   "hand_height_m_approx": {
+    "right": 1.065
+   },
+   "pelvis_along_heading_end_of_hold_m": -2.03,
+   "pelvis_max_during_hold_m": 2.033,
+   "pelvis_end_m": 3.56,
+   "feet_moved_m": {
+    "left": 3.744,
+    "right": 3.508
+   },
+   "stepped": true,
+   "yaw_change_deg": 125.63,
+   "tilt_max_deg": 18.6,
+   "fell": false
+  },
+  {
+   "task": "turning_on_radio",
+   "hold_s": 2.0,
+   "force_N": -40.0,
+   "hands": [
+    "right"
+   ],
+   "hand_height_m_approx": {
+    "right": 1.065
+   },
+   "pelvis_along_heading_end_of_hold_m": -2.871,
+   "pelvis_max_during_hold_m": 2.872,
+   "pelvis_end_m": 3.851,
+   "feet_moved_m": {
+    "left": 3.976,
+    "right": 3.806
+   },
+   "stepped": true,
+   "yaw_change_deg": -174.45,
+   "tilt_max_deg": 31.0,
+   "fell": false
+  },
+  {
+   "task": "turning_on_radio",
+   "hold_s": 2.0,
+   "force_N": -50.0,
+   "hands": [
+    "right"
+   ],
+   "hand_height_m_approx": {
+    "right": 1.065
+   },
+   "pelvis_along_heading_end_of_hold_m": -2.994,
+   "pelvis_max_during_hold_m": 2.995,
+   "pelvis_end_m": 3.229,
+   "feet_moved_m": {
+    "left": 3.005,
+    "right": 2.479
+   },
+   "stepped": true,
+   "yaw_change_deg": 89.84,
+   "tilt_max_deg": 118.5,
+   "fell": true
+  },
+  {
+   "task": "turning_on_radio",
+   "hold_s": 2.0,
+   "force_N": 10.0,
+   "hands": [
+    "left",
+    "right"
+   ],
+   "hand_height_m_approx": {
+    "left": 1.081,
+    "right": 1.083
+   },
+   "pelvis_along_heading_end_of_hold_m": 0.024,
+   "pelvis_max_during_hold_m": 0.034,
+   "pelvis_end_m": 0.005,
+   "feet_moved_m": {
+    "left": 0.0,
+    "right": 0.001
+   },
+   "stepped": false,
+   "yaw_change_deg": -0.03,
+   "tilt_max_deg": 6.3,
+   "fell": false
+  },
+  {
+   "task": "turning_on_radio",
+   "hold_s": 2.0,
+   "force_N": 20.0,
+   "hands": [
+    "left",
+    "right"
+   ],
+   "hand_height_m_approx": {
+    "left": 1.081,
+    "right": 1.083
+   },
+   "pelvis_along_heading_end_of_hold_m": 0.993,
+   "pelvis_max_during_hold_m": 0.993,
+   "pelvis_end_m": 1.46,
+   "feet_moved_m": {
+    "left": 1.52,
+    "right": 1.401
+   },
+   "stepped": true,
+   "yaw_change_deg": -33.92,
+   "tilt_max_deg": 6.7,
+   "fell": false
+  },
+  {
+   "task": "turning_on_radio",
+   "hold_s": 2.0,
+   "force_N": 30.0,
+   "hands": [
+    "left",
+    "right"
+   ],
+   "hand_height_m_approx": {
+    "left": 1.081,
+    "right": 1.083
+   },
+   "pelvis_along_heading_end_of_hold_m": 1.84,
+   "pelvis_max_during_hold_m": 1.843,
+   "pelvis_end_m": 2.478,
+   "feet_moved_m": {
+    "left": 2.729,
+    "right": 2.364
+   },
+   "stepped": true,
+   "yaw_change_deg": 72.03,
+   "tilt_max_deg": 100.8,
+   "fell": true
+  },
+  {
+   "task": "turning_on_radio",
+   "hold_s": 2.0,
+   "force_N": -10.0,
+   "hands": [
+    "left",
+    "right"
+   ],
+   "hand_height_m_approx": {
+    "left": 1.081,
+    "right": 1.083
+   },
+   "pelvis_along_heading_end_of_hold_m": -0.525,
+   "pelvis_max_during_hold_m": 0.527,
+   "pelvis_end_m": 0.933,
+   "feet_moved_m": {
+    "left": 0.988,
+    "right": 0.901
+   },
+   "stepped": true,
+   "yaw_change_deg": 25.43,
+   "tilt_max_deg": 15.9,
+   "fell": false
+  },
+  {
+   "task": "turning_on_radio",
+   "hold_s": 2.0,
+   "force_N": -20.0,
+   "hands": [
+    "left",
+    "right"
+   ],
+   "hand_height_m_approx": {
+    "left": 1.081,
+    "right": 1.083
+   },
+   "pelvis_along_heading_end_of_hold_m": -1.498,
+   "pelvis_max_during_hold_m": 1.506,
+   "pelvis_end_m": 2.268,
+   "feet_moved_m": {
+    "left": 2.475,
+    "right": 2.148
+   },
+   "stepped": true,
+   "yaw_change_deg": 87.91,
+   "tilt_max_deg": 18.0,
+   "fell": false
+  },
+  {
+   "task": "turning_on_radio",
+   "hold_s": 2.0,
+   "force_N": -30.0,
+   "hands": [
+    "left",
+    "right"
+   ],
+   "hand_height_m_approx": {
+    "left": 1.081,
+    "right": 1.083
+   },
+   "pelvis_along_heading_end_of_hold_m": -2.225,
+   "pelvis_max_during_hold_m": 2.234,
+   "pelvis_end_m": 3.455,
+   "feet_moved_m": {
+    "left": 3.514,
+    "right": 3.534
+   },
+   "stepped": true,
+   "yaw_change_deg": 178.64,
+   "tilt_max_deg": 21.9,
+   "fell": false
+  },
+  {
+   "task": "turning_on_radio",
+   "hold_s": 2.0,
+   "force_N": -40.0,
+   "hands": [
+    "left",
+    "right"
+   ],
+   "hand_height_m_approx": {
+    "left": 1.081,
+    "right": 1.083
+   },
+   "pelvis_along_heading_end_of_hold_m": -2.762,
+   "pelvis_max_during_hold_m": 2.763,
+   "pelvis_end_m": 4.458,
+   "feet_moved_m": {
+    "left": 4.425,
+    "right": 4.64
+   },
+   "stepped": true,
+   "yaw_change_deg": -123.43,
+   "tilt_max_deg": 21.2,
+   "fell": false
+  },
+  {
+   "task": "turning_on_radio",
+   "hold_s": 2.0,
+   "force_N": -50.0,
+   "hands": [
+    "left",
+    "right"
+   ],
+   "hand_height_m_approx": {
+    "left": 1.081,
+    "right": 1.083
+   },
+   "pelvis_along_heading_end_of_hold_m": -3.347,
+   "pelvis_max_during_hold_m": 3.348,
+   "pelvis_end_m": 5.069,
+   "feet_moved_m": {
+    "left": 5.005,
+    "right": 5.233
+   },
+   "stepped": true,
+   "yaw_change_deg": -88.69,
+   "tilt_max_deg": 25.0,
+   "fell": false
+  }
+ ],
+ "release": {
+  "doors_released_at_rest_max_deg (canning_food, robot standing far, per door:angle)": {
+   "fridge_dszchb_0:j_link_0:90": 0.0,
+   "fridge_dszchb_0:j_link_0:45": 0.0,
+   "fridge_dszchb_0:j_link_0:108.5": 0.0,
+   "bottom_cabinet_no_top_gjeoer_0:j_doorleft2:60": 0.0,
+   "bottom_cabinet_no_top_gjeoer_0:j_doorleft2:30": 0.0,
+   "bottom_cabinet_no_top_gjeoer_0:j_doorleft2:85": 0.0,
+   "top_cabinet_lkxmne_0:j_leftdoor:90": 0.213,
+   "oven_ffitak_0:j_door:45": 45.0
+  },
+  "drawers_released_mm (legacy, 60 s)": {
+   "legacy @ 0.12 m": {
+    "bottom_cabinet_rhdbzv_0:j_left_drawer": 0.0,
+    "bottom_cabinet_rhdbzv_0:j_right_drawer": 0.0,
+    "bottom_cabinet_rhdbzv_1:j_left_drawer": 0.0,
+    "bottom_cabinet_rhdbzv_1:j_right_drawer": 0.0,
+    "dishwasher_ynrhuk_0:j_link_0": 0.0,
+    "dishwasher_ynrhuk_0:j_link_1": 0.0,
+    "oven_ffitak_0:j_rack1": 0.0,
+    "oven_ffitak_0:j_rack2": 0.0
+   },
+   "legacy @ 90%": {
+    "bottom_cabinet_rhdbzv_0:j_left_drawer": 0.0,
+    "bottom_cabinet_rhdbzv_0:j_right_drawer": 0.0,
+    "bottom_cabinet_rhdbzv_1:j_left_drawer": 0.0,
+    "bottom_cabinet_rhdbzv_1:j_right_drawer": 0.0,
+    "dishwasher_ynrhuk_0:j_link_0": 0.0,
+    "dishwasher_ynrhuk_0:j_link_1": 0.0,
+    "oven_ffitak_0:j_rack1": 0.0,
+    "oven_ffitak_0:j_rack2": 0.0
+   }
+  },
+  "drawer_hand_contact (legacy: drawer 12 cm open, open hand placed 1 cm from its front)": [
+   {
+    "model": "legacy",
+    "variant": "close_open_twice",
+    "drawer_open_m": 0.0767,
+    "drawer_moved_mm": -0.61,
+    "trace_mm": [
+     0.0,
+     -0.5,
+     -0.5,
+     -0.61
+    ],
+    "friction": [
+     0.3,
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   {
+    "model": "legacy",
+    "variant": "open_hand_3cm_forward_back",
+    "drawer_open_m": 0.12,
+    "drawer_moved_mm": 3.29,
+    "trace_mm": [
+     1.14,
+     0.93,
+     1.67,
+     3.29
+    ],
+    "friction": [
+     0.3,
+     0.0,
+     0.0,
+     0.0
+    ]
+   }
+  ]
+ },
+ "level": [
+  {
+   "object": "oven_ffitak_0",
+   "gravity_torque_Nm": 9.34,
+   "drift_after_3s_deg_from": {
+    "0": -0.0,
+    "15": 0.52,
+    "45": 45.0,
+    "75": 15.0
+   },
+   "breakaway_N": 10.75
+  },
+  {
+   "object": "dishwasher_ynrhuk_0",
+   "gravity_torque_Nm": 19.01,
+   "drift_after_3s_deg_from": {
+    "0": 0.0,
+    "15": 1.12,
+    "45": 45.0,
+    "75": 15.0
+   },
+   "breakaway_N": 11.4
+  },
+  {
+   "object": "car_xxsgpq_0",
+   "gravity_torque_Nm": 25.46,
+   "drift_after_3s_deg_from": {
+    "0": -0.0,
+    "15": -15.0,
+    "45": -45.0,
+    "75": -75.0
+   },
+   "breakaway_N": 24.65
+  },
+  {
+   "object": "charcoal_grill_crdaeu_0",
+   "gravity_torque_Nm": 19.47,
+   "drift_after_3s_deg_from": {
+    "0": 0.0,
+    "15": -15.0,
+    "45": -1.23,
+    "75": 0.76
+   },
+   "breakaway_N": 17.75
+  }
+ ]
+}

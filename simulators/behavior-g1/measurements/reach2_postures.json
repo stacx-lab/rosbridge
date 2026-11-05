@@ -1,0 +1,491 @@
+{
+ "source": "Native probe (turning_on_radio seed 0): the right arm straight at each shoulder pitch, held 5 s, per pelvis and waist pitch command; final_5s values",
+ "conditions": [
+  {
+   "pelvis_cmd": 0.74,
+   "waist_cmd": 0.0,
+   "postures": [
+    {
+     "shoulder_pitch": -0.6,
+     "waist": -0.0327,
+     "pelvis_pitch": -0.0206,
+     "pelvis_h": 0.7562
+    },
+    {
+     "shoulder_pitch": -0.9,
+     "waist": -0.0372,
+     "pelvis_pitch": -0.0369,
+     "pelvis_h": 0.756
+    },
+    {
+     "shoulder_pitch": -1.2,
+     "waist": -0.0296,
+     "pelvis_pitch": -0.0478,
+     "pelvis_h": 0.7559
+    },
+    {
+     "shoulder_pitch": -1.5,
+     "waist": -0.0135,
+     "pelvis_pitch": -0.0546,
+     "pelvis_h": 0.756
+    },
+    {
+     "shoulder_pitch": -1.8,
+     "waist": 0.0061,
+     "pelvis_pitch": -0.0578,
+     "pelvis_h": 0.7562
+    },
+    {
+     "shoulder_pitch": -2.1,
+     "waist": 0.0268,
+     "pelvis_pitch": -0.0581,
+     "pelvis_h": 0.7564
+    },
+    {
+     "shoulder_pitch": -2.4,
+     "waist": 0.0479,
+     "pelvis_pitch": -0.0567,
+     "pelvis_h": 0.7566
+    },
+    {
+     "shoulder_pitch": -2.7,
+     "waist": 0.0699,
+     "pelvis_pitch": -0.0543,
+     "pelvis_h": 0.7568
+    }
+   ]
+  },
+  {
+   "pelvis_cmd": 0.74,
+   "waist_cmd": 0.3,
+   "postures": [
+    {
+     "shoulder_pitch": -0.6,
+     "waist": 0.3095,
+     "pelvis_pitch": -0.0564,
+     "pelvis_h": 0.7577
+    },
+    {
+     "shoulder_pitch": -0.9,
+     "waist": 0.2375,
+     "pelvis_pitch": -0.1234,
+     "pelvis_h": 0.7556
+    },
+    {
+     "shoulder_pitch": -1.2,
+     "waist": 0.2299,
+     "pelvis_pitch": -0.141,
+     "pelvis_h": 0.7551
+    },
+    {
+     "shoulder_pitch": -1.5,
+     "waist": 0.236,
+     "pelvis_pitch": -0.1442,
+     "pelvis_h": 0.7549
+    },
+    {
+     "shoulder_pitch": -1.8,
+     "waist": 0.2561,
+     "pelvis_pitch": -0.1356,
+     "pelvis_h": 0.7552
+    },
+    {
+     "shoulder_pitch": -2.1,
+     "waist": 0.3231,
+     "pelvis_pitch": -0.0983,
+     "pelvis_h": 0.7564
+    },
+    {
+     "shoulder_pitch": -2.4,
+     "waist": 0.3913,
+     "pelvis_pitch": -0.0577,
+     "pelvis_h": 0.7576
+    },
+    {
+     "shoulder_pitch": -2.7,
+     "waist": 0.4334,
+     "pelvis_pitch": -0.029,
+     "pelvis_h": 0.7585
+    }
+   ]
+  },
+  {
+   "pelvis_cmd": 0.74,
+   "waist_cmd": 0.52,
+   "postures": [
+    {
+     "shoulder_pitch": -0.6,
+     "waist": 0.52,
+     "pelvis_pitch": 0.2954,
+     "pelvis_h": 0.7648
+    },
+    {
+     "shoulder_pitch": -0.9,
+     "waist": 0.5057,
+     "pelvis_pitch": 0.2245,
+     "pelvis_h": 0.7641
+    },
+    {
+     "shoulder_pitch": -1.2,
+     "waist": 0.4022,
+     "pelvis_pitch": -0.0518,
+     "pelvis_h": 0.7587
+    },
+    {
+     "shoulder_pitch": -1.5,
+     "waist": 0.2512,
+     "pelvis_pitch": -0.1964,
+     "pelvis_h": 0.7545
+    },
+    {
+     "shoulder_pitch": -1.8,
+     "waist": 0.2623,
+     "pelvis_pitch": -0.1905,
+     "pelvis_h": 0.7547
+    },
+    {
+     "shoulder_pitch": -2.1,
+     "waist": 0.2848,
+     "pelvis_pitch": -0.1742,
+     "pelvis_h": 0.7553
+    },
+    {
+     "shoulder_pitch": -2.4,
+     "waist": 0.5095,
+     "pelvis_pitch": 0.0521,
+     "pelvis_h": 0.7608
+    },
+    {
+     "shoulder_pitch": -2.7,
+     "waist": 0.52,
+     "pelvis_pitch": 0.2353,
+     "pelvis_h": 0.7639
+    }
+   ]
+  },
+  {
+   "pelvis_cmd": 0.6,
+   "waist_cmd": 0.0,
+   "postures": [
+    {
+     "shoulder_pitch": -0.6,
+     "waist": -0.1086,
+     "pelvis_pitch": 0.0838,
+     "pelvis_h": 0.6249
+    },
+    {
+     "shoulder_pitch": -0.9,
+     "waist": -0.1131,
+     "pelvis_pitch": 0.0704,
+     "pelvis_h": 0.6246
+    },
+    {
+     "shoulder_pitch": -1.2,
+     "waist": -0.1056,
+     "pelvis_pitch": 0.0622,
+     "pelvis_h": 0.6247
+    },
+    {
+     "shoulder_pitch": -1.5,
+     "waist": -0.0907,
+     "pelvis_pitch": 0.0575,
+     "pelvis_h": 0.6251
+    },
+    {
+     "shoulder_pitch": -1.8,
+     "waist": -0.0722,
+     "pelvis_pitch": 0.0551,
+     "pelvis_h": 0.6259
+    },
+    {
+     "shoulder_pitch": -2.1,
+     "waist": -0.0515,
+     "pelvis_pitch": 0.0541,
+     "pelvis_h": 0.6268
+    },
+    {
+     "shoulder_pitch": -2.4,
+     "waist": -0.0286,
+     "pelvis_pitch": 0.0533,
+     "pelvis_h": 0.6278
+    },
+    {
+     "shoulder_pitch": -2.7,
+     "waist": -0.0037,
+     "pelvis_pitch": 0.0517,
+     "pelvis_h": 0.6288
+    }
+   ]
+  },
+  {
+   "pelvis_cmd": 0.6,
+   "waist_cmd": 0.3,
+   "postures": [
+    {
+     "shoulder_pitch": -0.6,
+     "waist": 0.1845,
+     "pelvis_pitch": -0.0089,
+     "pelvis_h": 0.629
+    },
+    {
+     "shoulder_pitch": -0.9,
+     "waist": 0.1704,
+     "pelvis_pitch": -0.0258,
+     "pelvis_h": 0.6287
+    },
+    {
+     "shoulder_pitch": -1.2,
+     "waist": 0.1687,
+     "pelvis_pitch": -0.0364,
+     "pelvis_h": 0.6286
+    },
+    {
+     "shoulder_pitch": -1.5,
+     "waist": 0.1766,
+     "pelvis_pitch": -0.042,
+     "pelvis_h": 0.6288
+    },
+    {
+     "shoulder_pitch": -1.8,
+     "waist": 0.1919,
+     "pelvis_pitch": -0.0436,
+     "pelvis_h": 0.6292
+    },
+    {
+     "shoulder_pitch": -2.1,
+     "waist": 0.214,
+     "pelvis_pitch": -0.0418,
+     "pelvis_h": 0.6297
+    },
+    {
+     "shoulder_pitch": -2.4,
+     "waist": 0.2463,
+     "pelvis_pitch": -0.0372,
+     "pelvis_h": 0.6304
+    },
+    {
+     "shoulder_pitch": -2.7,
+     "waist": 0.3822,
+     "pelvis_pitch": -0.0172,
+     "pelvis_h": 0.6318
+    }
+   ]
+  },
+  {
+   "pelvis_cmd": 0.6,
+   "waist_cmd": 0.52,
+   "postures": [
+    {
+     "shoulder_pitch": -0.6,
+     "waist": 0.2244,
+     "pelvis_pitch": -0.0244,
+     "pelvis_h": 0.6296
+    },
+    {
+     "shoulder_pitch": -0.9,
+     "waist": 0.2058,
+     "pelvis_pitch": -0.0428,
+     "pelvis_h": 0.6294
+    },
+    {
+     "shoulder_pitch": -1.2,
+     "waist": 0.1993,
+     "pelvis_pitch": -0.0542,
+     "pelvis_h": 0.6295
+    },
+    {
+     "shoulder_pitch": -1.5,
+     "waist": 0.2032,
+     "pelvis_pitch": -0.0597,
+     "pelvis_h": 0.6298
+    },
+    {
+     "shoulder_pitch": -1.8,
+     "waist": 0.2152,
+     "pelvis_pitch": -0.0606,
+     "pelvis_h": 0.6302
+    },
+    {
+     "shoulder_pitch": -2.1,
+     "waist": 0.234,
+     "pelvis_pitch": -0.0578,
+     "pelvis_h": 0.6308
+    },
+    {
+     "shoulder_pitch": -2.4,
+     "waist": 0.2607,
+     "pelvis_pitch": -0.0511,
+     "pelvis_h": 0.6315
+    },
+    {
+     "shoulder_pitch": -2.7,
+     "waist": 0.3447,
+     "pelvis_pitch": -0.0273,
+     "pelvis_h": 0.6328
+    }
+   ]
+  },
+  {
+   "pelvis_cmd": 0.45,
+   "waist_cmd": 0.0,
+   "postures": [
+    {
+     "shoulder_pitch": -0.6,
+     "waist": -0.3061,
+     "pelvis_pitch": 0.313,
+     "pelvis_h": 0.4932
+    },
+    {
+     "shoulder_pitch": -0.9,
+     "waist": -0.2995,
+     "pelvis_pitch": 0.2945,
+     "pelvis_h": 0.4923
+    },
+    {
+     "shoulder_pitch": -1.2,
+     "waist": -0.2763,
+     "pelvis_pitch": 0.2805,
+     "pelvis_h": 0.491
+    },
+    {
+     "shoulder_pitch": -1.5,
+     "waist": -0.2514,
+     "pelvis_pitch": 0.2715,
+     "pelvis_h": 0.4902
+    },
+    {
+     "shoulder_pitch": -1.8,
+     "waist": -0.2208,
+     "pelvis_pitch": 0.2649,
+     "pelvis_h": 0.4897
+    },
+    {
+     "shoulder_pitch": -2.1,
+     "waist": -0.1875,
+     "pelvis_pitch": 0.2602,
+     "pelvis_h": 0.4894
+    },
+    {
+     "shoulder_pitch": -2.4,
+     "waist": -0.1585,
+     "pelvis_pitch": 0.2573,
+     "pelvis_h": 0.4894
+    },
+    {
+     "shoulder_pitch": -2.7,
+     "waist": -0.1335,
+     "pelvis_pitch": 0.2555,
+     "pelvis_h": 0.4893
+    }
+   ]
+  },
+  {
+   "pelvis_cmd": 0.45,
+   "waist_cmd": 0.3,
+   "postures": [
+    {
+     "shoulder_pitch": -0.6,
+     "waist": 0.0913,
+     "pelvis_pitch": 0.1864,
+     "pelvis_h": 0.4904
+    },
+    {
+     "shoulder_pitch": -0.9,
+     "waist": 0.0764,
+     "pelvis_pitch": 0.1671,
+     "pelvis_h": 0.4903
+    },
+    {
+     "shoulder_pitch": -1.2,
+     "waist": 0.0774,
+     "pelvis_pitch": 0.1532,
+     "pelvis_h": 0.4899
+    },
+    {
+     "shoulder_pitch": -1.5,
+     "waist": 0.0913,
+     "pelvis_pitch": 0.1433,
+     "pelvis_h": 0.4894
+    },
+    {
+     "shoulder_pitch": -1.8,
+     "waist": 0.1153,
+     "pelvis_pitch": 0.1363,
+     "pelvis_h": 0.4887
+    },
+    {
+     "shoulder_pitch": -2.1,
+     "waist": 0.1468,
+     "pelvis_pitch": 0.1317,
+     "pelvis_h": 0.488
+    },
+    {
+     "shoulder_pitch": -2.4,
+     "waist": 0.1849,
+     "pelvis_pitch": 0.1281,
+     "pelvis_h": 0.4873
+    },
+    {
+     "shoulder_pitch": -2.7,
+     "waist": 0.2325,
+     "pelvis_pitch": 0.1237,
+     "pelvis_h": 0.4867
+    }
+   ]
+  },
+  {
+   "pelvis_cmd": 0.45,
+   "waist_cmd": 0.52,
+   "postures": [
+    {
+     "shoulder_pitch": -0.6,
+     "waist": 0.1721,
+     "pelvis_pitch": 0.1629,
+     "pelvis_h": 0.4904
+    },
+    {
+     "shoulder_pitch": -0.9,
+     "waist": 0.1499,
+     "pelvis_pitch": 0.1427,
+     "pelvis_h": 0.4905
+    },
+    {
+     "shoulder_pitch": -1.2,
+     "waist": 0.1457,
+     "pelvis_pitch": 0.1278,
+     "pelvis_h": 0.4902
+    },
+    {
+     "shoulder_pitch": -1.5,
+     "waist": 0.1553,
+     "pelvis_pitch": 0.1182,
+     "pelvis_h": 0.4898
+    },
+    {
+     "shoulder_pitch": -1.8,
+     "waist": 0.1752,
+     "pelvis_pitch": 0.1128,
+     "pelvis_h": 0.4891
+    },
+    {
+     "shoulder_pitch": -2.1,
+     "waist": 0.2042,
+     "pelvis_pitch": 0.1107,
+     "pelvis_h": 0.4883
+    },
+    {
+     "shoulder_pitch": -2.4,
+     "waist": 0.2451,
+     "pelvis_pitch": 0.1111,
+     "pelvis_h": 0.4875
+    },
+    {
+     "shoulder_pitch": -2.7,
+     "waist": 0.52,
+     "pelvis_pitch": 0.1471,
+     "pelvis_h": 0.4868
+    }
+   ]
+  }
+ ]
+}

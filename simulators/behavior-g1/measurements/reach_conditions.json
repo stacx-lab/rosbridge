@@ -1,0 +1,137 @@
+{
+ "source": "Native probe (turning_on_radio seed 0): per pelvis and waist pitch command, the settled posture with the arms down and the largest tilt of the arm sweeps; scalar fields only",
+ "conditions": [
+  {
+   "pelvis_cmd": 0.74,
+   "waist_pitch_cmd": 0.0,
+   "pelvis_measured": 0.757,
+   "pelvis_tilt_deg": 0.3,
+   "pelvis_pitch_deg": -0.3,
+   "waist_pitch_measured": -0.014,
+   "sweep_tilt_max_deg": 4.2,
+   "sweep_pelvis_h_min": 0.755,
+   "sweep_base_drift_max_m": 0.03
+  },
+  {
+   "pelvis_cmd": 0.74,
+   "waist_pitch_cmd": 0.52,
+   "pelvis_measured": 0.762,
+   "pelvis_tilt_deg": 0.2,
+   "pelvis_pitch_deg": -0.1,
+   "waist_pitch_measured": 0.386,
+   "sweep_tilt_max_deg": 22.3,
+   "sweep_pelvis_h_min": 0.761,
+   "sweep_base_drift_max_m": 0.026
+  },
+  {
+   "pelvis_cmd": 0.6,
+   "waist_pitch_cmd": 0.0,
+   "pelvis_measured": 0.625,
+   "pelvis_tilt_deg": 5.9,
+   "pelvis_pitch_deg": 5.9,
+   "waist_pitch_measured": -0.093,
+   "sweep_tilt_max_deg": 9.3,
+   "sweep_pelvis_h_min": 0.622,
+   "sweep_base_drift_max_m": 0.043
+  },
+  {
+   "pelvis_cmd": 0.6,
+   "waist_pitch_cmd": 0.52,
+   "pelvis_measured": 0.629,
+   "pelvis_tilt_deg": 0.4,
+   "pelvis_pitch_deg": 0.4,
+   "waist_pitch_measured": 0.213,
+   "sweep_tilt_max_deg": 12.2,
+   "sweep_pelvis_h_min": 0.628,
+   "sweep_base_drift_max_m": 0.044
+  },
+  {
+   "pelvis_cmd": 0.45,
+   "waist_pitch_cmd": 0.0,
+   "pelvis_measured": 0.493,
+   "pelvis_tilt_deg": 19.4,
+   "pelvis_pitch_deg": 19.4,
+   "waist_pitch_measured": -0.294,
+   "sweep_tilt_max_deg": 24.1,
+   "sweep_pelvis_h_min": 0.488,
+   "sweep_base_drift_max_m": 0.056
+  },
+  {
+   "pelvis_cmd": 0.45,
+   "waist_pitch_cmd": 0.52,
+   "pelvis_measured": 0.491,
+   "pelvis_tilt_deg": 11.3,
+   "pelvis_pitch_deg": 11.3,
+   "waist_pitch_measured": 0.151,
+   "sweep_tilt_max_deg": 14.5,
+   "sweep_pelvis_h_min": 0.484,
+   "sweep_base_drift_max_m": 0.048
+  },
+  {
+   "pelvis_cmd": 0.3,
+   "waist_pitch_cmd": 0.0,
+   "pelvis_measured": 0.35,
+   "pelvis_tilt_deg": 27.0,
+   "pelvis_pitch_deg": 27.0,
+   "waist_pitch_measured": -0.39,
+   "sweep_tilt_max_deg": 32.3,
+   "sweep_pelvis_h_min": 0.342,
+   "sweep_base_drift_max_m": 0.044
+  },
+  {
+   "pelvis_cmd": 0.3,
+   "waist_pitch_cmd": 0.52,
+   "pelvis_measured": 0.345,
+   "pelvis_tilt_deg": 16.4,
+   "pelvis_pitch_deg": 16.4,
+   "waist_pitch_measured": 0.17,
+   "sweep_tilt_max_deg": 19.3,
+   "sweep_pelvis_h_min": 0.337,
+   "sweep_base_drift_max_m": 0.041
+  },
+  {
+   "pelvis_cmd": 0.26,
+   "waist_pitch_cmd": 0.0,
+   "pelvis_measured": 0.312,
+   "pelvis_tilt_deg": 26.7,
+   "pelvis_pitch_deg": 26.7,
+   "waist_pitch_measured": -0.385,
+   "sweep_tilt_max_deg": 31.5,
+   "sweep_pelvis_h_min": 0.303,
+   "sweep_base_drift_max_m": 0.036
+  },
+  {
+   "pelvis_cmd": 0.26,
+   "waist_pitch_cmd": 0.52,
+   "pelvis_measured": 0.307,
+   "pelvis_tilt_deg": 15.6,
+   "pelvis_pitch_deg": 15.6,
+   "waist_pitch_measured": 0.202,
+   "sweep_tilt_max_deg": 18.2,
+   "sweep_pelvis_h_min": 0.3,
+   "sweep_base_drift_max_m": 0.035
+  },
+  {
+   "pelvis_cmd": 0.2,
+   "waist_pitch_cmd": 0.0,
+   "pelvis_measured": 0.259,
+   "pelvis_tilt_deg": 26.2,
+   "pelvis_pitch_deg": 26.2,
+   "waist_pitch_measured": -0.38,
+   "sweep_tilt_max_deg": 30.4,
+   "sweep_pelvis_h_min": 0.251,
+   "sweep_base_drift_max_m": 0.03
+  },
+  {
+   "pelvis_cmd": 0.2,
+   "waist_pitch_cmd": 0.52,
+   "pelvis_measured": 0.253,
+   "pelvis_tilt_deg": 14.7,
+   "pelvis_pitch_deg": 14.7,
+   "waist_pitch_measured": 0.229,
+   "sweep_tilt_max_deg": 16.8,
+   "sweep_pelvis_h_min": 0.248,
+   "sweep_base_drift_max_m": 0.027
+  }
+ ]
+}

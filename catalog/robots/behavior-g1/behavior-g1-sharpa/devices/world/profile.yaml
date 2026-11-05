@@ -19,8 +19,16 @@ operations:
   wait:
     description: Advance or await duration_s of world time (finite and nonnegative). Zero
       is an observation barrier. Waits are sequential; one requested while another is pending
-      is rejected. A terminal episode rejects further progression without exposing benchmark
-      results.
+      is rejected. A terminal episode rejects further progression; a wait at or after the end states
+      the world time of the end and why the episode ended, which is known only then (a pending wait
+      answers "episode ended during wait; the episode ended at world time T s because the goal was
+      reached" or "... because the time limit was reached", a later one "the episode ended at world
+      time T s because ..."). A reply also names each command a device refused since the previous
+      reply, after "refused, so not executed", with the device and operation, the reason and the
+      world time (for example right_arm.joint_target, trajectory has no points); a refused command
+      changes nothing. A world step that runs a cooking, slicing or dicing transition can take minutes of wall
+      time while world time stands still; a wait that times out then has not lost the world, so
+      wait again.
     transport: service
     direction: input
     endpoint: /world/wait
@@ -62,7 +70,36 @@ meta:
 type: world
 description: Simulation clock of the BEHAVIOR house. Furniture, objects and the activity's
   BDDL goal are not devices; the robot is not localized in this frame. This device exposes
-  no task instructions or evaluator results.
+  no task instructions or evaluator results. Observations (world time, odometry, joint states, camera images and depth)
+  are current and exact, and every command a device accepts is executed, in order; none is dropped (a refused one is
+  named, with its reason, in the reply to the next world wait; a clipped one is described by its device). Furniture and room doors, drawers and lids move only along their joint,
+  in one direction from closed (a door turns open on its hinge, typically up to about 1.5 rad; a drawer slides out); a
+  push or pull toward the hinge line or past the closed position moves nothing, so a held handle opens a door only by
+  moving along the door's arc in the opening direction. They resist with a friction that grows with the part's weight.
+  Held for 1 s at the handle, a door of under 1 kg (most cabinet doors) turns 0.3 rad with about 2-5 N, one of 1-4 kg
+  (a fridge or microwave door, a large cabinet door) with 7-20 N and one of 4-7 kg (an oven's drop-down door, a large
+  fridge door) with 30-50 N; a drawer comes out 5 cm with about 7-15 N; a room door needs about 30 N at 7-8.5 kg,
+  30-50 N at 9.5-10.5 kg and 80 N at 11-15 kg; an 18 kg sliding door needs about 23 N along its track before it moves
+  at all and 80 N to slide 0.1 m in 1 s. The robot steps rather than braces (a steady 10 N pushing back on its hands or
+  20 N pulling them forward makes it step away), so a heavy room door that has to be pulled toward the robot opens
+  little by hand (a held
+  handle turned one at most 0.4 degrees as the robot walked backward and 19 degrees as the arm pulled in), while one
+  that swings away from the robot opens slowly to a walk into it chest first, forearms tucked (doors of 10-15 kg turned
+  30 degrees in 15-29 s). Lids and
+  drop-down doors on level hinges (an oven's or a dishwasher's door, a grill lid, a car's trunk) carry their own weight,
+  so released part-way open they can fall open or shut. They have no spring, so a released door on an upright hinge
+  or a drawer stays where it is; if it moves, part of the robot is touching it (or a hand is still
+  attached; an open hand resting on a drawer front pushes it in), so
+  after opening the hand keep the hand and arm clear of the panel and handle, and move the arm away from the door, not
+  across its swing. A free, open door swings away from closing fingers, so a pinch catches only a closed or held door.
+  Only the rooms the activity uses are loaded, as in BEHAVIOR's own evaluation, and past them there may be no floor; a
+  door may open onto empty space (a room that is not loaded, or the outside), and walking through such a door drops the
+  robot out of the world. A switchable
+  object (a radio, a lamp, a stove) carries a small marker that is red while it is off and green while it is on; a
+  finger held on the marker for 0.15 s toggles it, once per touch, also while that hand holds something (some machines
+  with a door stay off while it is open). Objects made to be attached to another (a camera to a tripod, a picture to a
+  hook) attach by themselves as soon as their mounting points touch within 5 cm and 15 degrees, with nothing to press
+  or release.
 source: default
 calibrated_at: null
 method: unknown

@@ -9,6 +9,7 @@ from std_msgs.msg import Float64
 from std_srvs.srv import Trigger
 from trajectory_msgs.msg import JointTrajectory
 
+from rosbridge.core.commands import check_trajectory_span
 from . import conversions as conv
 
 # Retain the latest sample even when DDS discovery completes after publication.
@@ -48,12 +49,13 @@ class Actuator:
         self.state.publish(conv.joint_state(stamp, self.state_names, positions[self.state_indices],
                                             velocities[self.state_indices]))
 
-    def _admit(self, apply):
+    def _admit(self, apply, operation):
         def run():
             try:
                 clipped = apply()
             except ValueError as error:
-                self.node.world.count('commands_refused')
+                # A topic publisher gets no reply: the next world wait's reply states the refusal and its reason.
+                self.node.world.refuse(f'{self.spec.name}.{operation}', error)
                 self.node.get_logger().error(f'{self.spec.name} rejected a command: {error}',
                                              throttle_duration_sec=1.)
                 return
@@ -65,7 +67,7 @@ class Actuator:
         self.node.world.submit(run)
 
     def target(self, msg):
-        self._admit(lambda: self.node.world.commands.set_group(self.group.name, [msg.data]))
+        self._admit(lambda: self.node.world.commands.set_group(self.group.name, [msg.data]), 'target')
 
     def joint_target(self, msg):
         # A trajectory may also name the group's measured joints (echoing its joint state); they are ignored.
@@ -79,13 +81,12 @@ class Actuator:
             if any(p.velocities or p.accelerations or p.effort for p in msg.points):
                 raise ValueError('only position trajectories are supported')
             start, times, points = conv.trajectory(msg, self.names, ignored=measured)
-            if not times or times[-1] > 120:
-                raise ValueError('trajectory must end within 120 seconds')
+            check_trajectory_span(times)
             if start is not None and start < world.time_s:
                 raise ValueError('trajectory start is in the past')
             return world.commands.set_trajectory(self.group.name, world.time_s if start is None else start,
                                                  times, points)
-        self._admit(apply)
+        self._admit(apply, 'joint_target')
 
     def _hold(self):
         return self.node.sim.state()[0][self.indices]
@@ -119,7 +120,7 @@ class Base(Actuator):
             world = self.node.world
             return world.commands.set_group(self.group.name, [msg.linear.x, msg.linear.y, msg.angular.z],
                                             world.time_s)
-        self._admit(apply)
+        self._admit(apply, 'velocity')
 
     def _hold(self):
         return [0.] * len(self.indices)

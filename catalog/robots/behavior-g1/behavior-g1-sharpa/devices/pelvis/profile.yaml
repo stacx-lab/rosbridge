@@ -26,7 +26,8 @@ operations:
       time_from_start and finishing within 120 seconds; velocities, accelerations and effort must be empty. A
       zero header stamp selects now; a nonzero stamp must not start in the past. Points are absolute heights,
       linearly interpolated at the native control period. Replacement clears pending references. A height beyond
-      0.20 to 0.78 is clipped to it; other invalid trajectories are ignored, so verify measured joint_state.
+      0.20 to 0.78 is clipped to it; any other invalid trajectory
+      (one without points, say) is refused (nothing of it is executed), and the reply to the next world wait names the device and the reason; verify measured joint_state.
     transport: topic
     direction: input
     endpoint: /pelvis/joint_target
@@ -61,8 +62,16 @@ description: G1 pelvis height, the base height command of GR00T's balance policy
   forward, about 9 with the waist also pitched 0.2 rad forward). joint_state reports that tilt as pelvis_pitch and
   pelvis_roll, and TF applies it. base/base and pelvis/base are level at the pelvis, pelvis/pelvis is the real,
   tilted pelvis, and the torso (hence arms, hands and head camera) mounts on pelvis/pelvis, so their TF poses hold
-  in any posture. The hands reach lower as the pelvis goes down (the fingertips get within a few centimetres of the
-  floor in a full squat, about 0.25 m in front of the pelvis). The legs walk only with the pelvis at 0.70 or higher,
+  in any posture. Heights in frames on the body (base/base and everything on it, the torso, arms, hands and head
+  camera) are relative to the pelvis and change whenever it moves, though nothing else did; base/odom keeps the
+  episode-start pelvis height, so in a squat its heights are off by the drop; pelvis/floor, the floor point below the
+  pelvis, gives heights above the floor. The hands reach lower as the pelvis goes down. The fingertips reach the floor
+  only in a deep squat (pelvis command 0.30 or lower; the pelvis then measures 0.35, and 0.26 at the 0.20 minimum), from
+  under the shoulder out to about 0.35 m in front of the pelvis (0.50 m with the waist pitched forward); the wrist
+  flange stays at least 0.16 m above the floor, and with the pelvis at 0.45 the fingertips stop 0.12-0.14 m above it.
+  Squatting leaves the feet in place but moves the pelvis, and with it base/base and odometry, back about 0.01 m at
+  0.60, 0.015 m at 0.45 and 0.045 m at 0.30; standing up returns it to within 3 mm. The legs walk only with the pelvis
+  at 0.70 or higher,
   so stand up before walking. The measured height trails the command by a few centimetres; verify joint_state.
   Geometry is the sibling pelvis.urdf; its tip link floor is the floor point below the pelvis, and pelvis_pitch and
   pelvis_roll are fixed joints there (so that the device commands pelvis_height alone) that its TF publisher turns
