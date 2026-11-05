@@ -15,6 +15,7 @@ import yaml
 
 from rosbridge.core import ActionLayout, CommandGroup
 from .backend import Overview
+from . import scene_doors
 from .environment import data_root, rotation, values
 from .g1_model import ARMS, BODY, CAMERA, LEGS, MODEL, SIDES, WAIST, WBC, arm_links, standing_height
 # The values a worker's outcome depends on live in g1_rules, which the device texts and the task note state.
@@ -157,6 +158,7 @@ class G1Sharpa:
     rendering = "on_demand"  # DLAA captures (backend.HISTORY_S, CUT_DELIVERIES)
     # This episode: periods since it started, how long the body has looked fallen, and whether (and when) it fell.
     ticks, lying_s, fallen, fall_time_s, frozen = 0, 0., False, None, None
+    doors = guard = None  # the scene's room doors and the boundary walls' guard (configure)
     frequencies = {"action_frequency": 50, "rendering_frequency": 50, "physics_frequency": 200}
     cameras = {"head_camera": f"{NAME}:{CAMERA}:Camera:0"}
 
@@ -204,6 +206,17 @@ class G1Sharpa:
         if robot.grasping_mode == "assisted":
             assisted_grasping(robot, self.hands, self._attached)
         self.attachments = 0
+        # The scene's room doors, read from the loaded scene: their facts for the world text, and an invisible wall in
+        # each doorway that opens onto no floor (a room the activity does not load), through which robots fell out of
+        # the world (scene_doors). A scene the code cannot read keeps its doors as they are; the log says why.
+        try:
+            self.doors = scene_doors.find(robot.scene, robot)
+            scene_doors.block(self.doors)
+        except Exception:
+            import traceback
+            print(f"scene doors not read: {traceback.format_exc()}", file=sys.stderr, flush=True)
+            self.doors = None
+        self.guard = scene_doors.Guard(self.doors)  # each wall is on only while the robot is near its doorway
 
     def _attached(self, arm):
         self.attachments += 1
@@ -309,6 +322,8 @@ class G1Sharpa:
             targets[device], start = command[start:start + len(joints)], start + len(joints)
         q, dq = values(robot.get_joint_positions()), values(robot.get_joint_velocities())
         position, quaternion = robot.get_position_orientation()
+        if self.guard is not None and self.guard.walls:
+            self.guard.update(values(position)[:2])
         x, y, z, w = values(quaternion)
         frame = rotation(quaternion)
         # MuJoCo's free joint, which GR00T observes, reports angular velocity in the body frame.

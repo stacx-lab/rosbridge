@@ -161,12 +161,22 @@ class BehaviorSim:
             self.layout = self.embodiment.layout(self.episode.robot)
             self.max_steps = self.episode.max_steps
         self.done = True
+        guard = getattr(self.embodiment, "guard", None)
+        if guard is not None:
+            guard.reset()  # the boundary walls the last episode made go before the scene reloads (scene_doors.Guard)
         self.episode.load(seed)
         # The evaluator's TaskMetric takes the goal options' satisfaction here, after the instance loads and before
         # the policy acts; its partial credit counts only what was not already satisfied.
         self.initial_literals = self._literals()
         self.embodiment.reset(self.episode)
         self.episode.origin = self.episode.base_pose()
+        doors = getattr(self.embodiment, "doors", None)
+        if hasattr(self.embodiment, "guard") and not getattr(self, "_doors_written", False):
+            # The scene's room doors at the first episode's start pose, for the world text (the start pose is the same
+            # in every episode of a run).
+            from .scene_doors import write
+            write(doors, self.episode.origin)
+            self._doors_written = True
         self.seed, self.steps, self.done = seed, 0, False
         self.success = bool(self.episode.env.task.success[0])
         self.reward, self._frames, self._spectator_frames = float(self.success), {}, {}

@@ -93,8 +93,9 @@ description: Simulation clock of the BEHAVIOR house. Furniture, objects and the 
   after opening the hand keep the hand and arm clear of the panel and handle, and move the arm away from the door, not
   across its swing. A free, open door swings away from closing fingers, so a pinch catches only a closed or held door.
   Only the rooms the activity uses are loaded, as in BEHAVIOR's own evaluation, and past them there may be no floor; a
-  door may open onto empty space (a room that is not loaded, or the outside), and walking through such a door drops the
-  robot out of the world. A switchable
+  door may open onto empty space (a room that is not loaded, or the outside), and then an invisible wall in its doorway
+  keeps the robot from passing through, although the door itself still opens. In a task, this description ends with the
+  scene's room doors, where each is, which way it swings and which lead out of the loaded rooms. A switchable
   object (a radio, a lamp, a stove) carries a small marker that is red while it is off and green while it is on; a
   finger held on the marker for 0.15 s toggles it, once per touch, also while that hand holds something (some machines
   with a door stay off while it is open). Objects made to be attached to another (a camera to a tripod, a picture to a

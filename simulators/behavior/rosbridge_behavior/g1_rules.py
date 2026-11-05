@@ -326,6 +326,7 @@ def rules():
     from rosbridge.core.commands import TRAJECTORY_MAX_S, VELOCITY_TIMEOUT_S
     from rosbridge.runtime.waits import ended
     from rosbridge.runtime.world import END_CAUSES, REFUSED
+    from . import scene_doors
 
     low, high = (f"{v:.2f}" for v in PELVIS_LIMITS)
     clipped = "A target beyond a joint's limits is clipped to the limit" if CLIP else "A target beyond a joint's limits"
@@ -374,8 +375,10 @@ def rules():
         Rule("PARTIAL_SCENE", "world.description",
              "Only the rooms the activity uses are loaded, as in BEHAVIOR's own evaluation, and past them there may be no floor"),
         Rule("SCENE_EDGE", "world.description",
-             "a door may open onto empty space (a room that is not loaded, or the outside), and walking through such a door "
-             "drops the robot out of the world"),
+             f"a door may open onto empty space (a room that is not loaded, or the outside), and then {scene_doors.BLOCKED}"),
+        Rule("SCENE_DOORS", "world.description",
+             "this description ends with the scene's room doors, where each is, which way it swings and which lead out of "
+             "the loaded rooms"),
         Rule("FURNITURE_JOINT_FRICTION", "world.description", "resist with a friction that grows with the part's weight"),
         Rule("DOOR_TURN_N", "world.description",
              "Held for 1 s at the handle, a door of under {1} kg (most cabinet doors) turns 0.3 rad with about {f0}, one of "
