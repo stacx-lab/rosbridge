@@ -29,6 +29,22 @@ DIGITS, GRASP_DIGITS = ("thumb", "index", "middle", "ring", "pinky"), 2
 # PhysX breaks an assisted grasp's joint beyond this force (N) and torque (GRASP_BREAK_N * GRASP_BREAK_TORQUE_M, N m),
 # and the hand lets go; None: unbreakable, as OmniGibson's. ROSBRIDGE_GRASP_BREAK_N overrides it (g1_sharpa).
 GRASP_BREAK_N, GRASP_BREAK_TORQUE_M = None, .1
+# Assisted grasping by opposition (g1_grasp; BEHAVIOR's R1Pro attaches an object both jaws touch while the gripper
+# closes).
+# A digit squeezes while one of its flexion joints (all but the abduction joints, _AA) is commanded at least
+# SQUEEZE_ON_RAD beyond its measured position; a held object stays attached while a gripping digit is commanded at least
+# SQUEEZE_OFF_RAD beyond (the lower value keeps a grip from chattering).
+SQUEEZE_ON_RAD, SQUEEZE_OFF_RAD = .15, .05
+# A touching digit also grips while it is commanded at least CLOSED_FRACTION of its flexion range closed (the mean over
+# its flexion joints) and, while a grasp forms, the hand has stopped closing and the digit has reached its targets
+# (within SQUEEZE_OFF_RAD): a hand closed round a thin handle reaches its targets and squeezes nothing, yet holds it, as
+# the R1Pro's jaws commanded closed on an object do. Counting closed digits while the hand still closed made grasps form
+# earlier than squeezing ones (the native grasp suite: a glass attached before its 12 kg mass was set).
+CLOSED_FRACTION = .5
+# A grasp forms when, over OmniGibson's window (GRASP_WINDOW_S), the object lay on a ray, touched the thumb or palm,
+# touched a finger and was squeezed, each on at least GRASP_EVIDENCE of the window's steps and within the last
+# GRASP_RECENT_S (contacts on thin lips and handles flicker from step to step).
+GRASP_EVIDENCE, GRASP_RECENT_S = .5, .05
 # A fall: FALL_HOLD_S of world time in all with the pelvis tilted more than FALL_TILT_DEG from upright or lower than
 # FALL_HEIGHT (m) above the floor, counted since it was last within FALL_UPRIGHT_DEG of upright (and higher); from then
 # on the legs hold still. Measured (native probes): squats and walking stay within 17 degrees and
