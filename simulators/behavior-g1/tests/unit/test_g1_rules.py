@@ -44,10 +44,12 @@ def test_a_value_changed_without_its_text_fails(monkeypatch):
             patch.setattr(g1_rules, name, value)
             assert name in {rule.name for rule in missing(rules())}
     # The note is rendered from the values, so it follows them.
-    monkeypatch.setattr(g1_rules, "GRASP_CLOSURE", .25)
-    assert missing(rules()) == [] and "above 25% of their closing range" in words(assisted_note())
-    monkeypatch.setattr(g1_rules, "GRASP_BREAK_N", 150)
-    assert missing(rules()) == [] and "when its load passes 150 N" in words(assisted_note())
+    monkeypatch.setattr(g1_rules, "SQUEEZE_ON_RAD", .25)
+    assert missing(rules()) == [] and "commanded at least 0.25 rad of flexion" in words(assisted_note())
+    monkeypatch.setattr(g1_rules, "LOAD_LIMIT_N", 120)
+    assert missing(rules()) == [] and "stays above 120 N for" in words(assisted_note())
+    monkeypatch.setattr(g1_rules, "LOAD_LIMIT_N", None)
+    assert missing(rules()) == [] and "An attachment does not break" in words(assisted_note())
 
 
 def test_the_code_and_the_structured_profiles_act_on_the_same_values():
