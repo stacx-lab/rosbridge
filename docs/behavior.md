@@ -207,6 +207,7 @@ position targets. Physics runs at GR00T's 200 Hz. Commands:
   without a drop, never a two-hand lock). A fixed object's base and
   the parts fixed to it are never attached (no hand is welded to the world); its doors,
   drawers and lids are. `ROSBRIDGE_GRASP_LOAD_N` sets another load limit (`off`: none).
+  `simulators/behavior-g1/tests/native/grasp_suite.py` is the native regression suite.
   `<side>_hand/attachment` (std_msgs/String, latched, republished on change) says what
   each hand holds: `none`, `held` (an object fixed to the hand) or `tethered` (a part on a
   movable joint of its object, such as a door, drawer or lid, through a pivot);
