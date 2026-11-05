@@ -171,7 +171,7 @@ class BehaviorSim:
         self.embodiment.reset(self.episode)
         self.episode.origin = self.episode.base_pose()
         doors = getattr(self.embodiment, "doors", None)
-        if doors is not None and not getattr(self, "_doors_written", False):
+        if hasattr(self.embodiment, "guard") and not getattr(self, "_doors_written", False):
             # The scene's room doors at the first episode's start pose, for the world text (the start pose is the same
             # in every episode of a run).
             from .scene_doors import write

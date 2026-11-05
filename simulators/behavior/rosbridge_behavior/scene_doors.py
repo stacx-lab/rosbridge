@@ -266,6 +266,10 @@ class Guard:
         with editing:
             for path in paths:
                 make_wall(stage, self.doors[path])
+        # Operator evidence (the world's stdout, in graph.log as the episode records are): which boundary doorways the
+        # robot came near (stderr would carry Kit's [Error] tag).
+        print(f"scene doors: wall made in the doorway of {', '.join(path.rsplit('/', 1)[1] for path in paths)} (the robot "
+              f"came within {GUARD_M:g} m)", flush=True)
 
     def _remove(self, paths):
         stage, editing = self._edit()
@@ -283,6 +287,7 @@ class Guard:
     def reset(self):
         if self.on:
             self._remove(sorted(self.on))
+            print(f"scene doors: {len(self.on)} wall(s) removed for the next episode", flush=True)
             self.on = set()
 
     def update(self, xy):
@@ -363,7 +368,8 @@ def write(doors, origin, folder=None):
     folder = folder or os.environ.get("ROSBRIDGE_RUN_DIR")
     if not folder:
         return None
-    text = describe(doors, origin)
+    # doors None: the scene could not be read (the log says why); an empty text tells a task runner to add nothing.
+    text = describe(doors, origin) if doors is not None else ""
     Path(folder, "scene-doors.json").write_text(json.dumps({"doors": doors, "text": text}, indent=1))
     Path(folder, "scene-doors.txt").write_text(text + "\n" if text else "")
     return text

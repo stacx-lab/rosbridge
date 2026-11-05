@@ -101,6 +101,7 @@ def test_the_record_and_text_go_to_the_run_directory(tmp_path):
     text = sd.write([door((2., 0., 1.), (1., 0., 0.), 1)], origin, folder=tmp_path)
     assert (tmp_path / "scene-doors.txt").read_text() == text + "\n"
     assert json.loads((tmp_path / "scene-doors.json").read_text())["text"] == text
+    assert sd.write(None, origin, folder=tmp_path) == "" and (tmp_path / "scene-doors.txt").read_text() == ""
 
 
 def test_a_handle_on_a_door_is_not_a_leaf():
