@@ -62,6 +62,11 @@ GRIP_CLAMP_RAD = .05
 # 11 of 12 trials (native grasp suite), while the legged-robot reasons for limiting tethers are gone (a body
 # held up by a hand on a handle is physics; two hands never hold one object, HAND_OVER).
 LOAD_LIMIT_N, LOAD_TAU_S, LOAD_HOLD_S = 150., .1, .3
+# That exemption holds only where the part's object is fixed in place (furniture, appliances, room doors). A tether to a
+# part of a loose object (a bin's or a toolbox's lid) has the held object's load limit: unlimited, the hand threw bins
+# 2.6-3.5 m, dragged toolboxes off counters and threw the robot 3 m when a lid was pushed against its stop. False: no
+# tether is let go by load (the previous rule).
+LOOSE_TETHER_LOAD = True
 # A released object leaves at the hand's velocity; while it still touches the hand (RELEASE_FOLLOW_S at most) it moves
 # from the hand no faster than RELEASE_MARGIN_MPS sideways or up, and no faster down than falling since the release gives
 # plus that margin, so the contacts it was squeezed with (fingers, palm) separate it from the hand without flinging it.
@@ -343,9 +348,12 @@ def load_text():
     """What the note says about the load an attachment carries."""
     if LOAD_LIMIT_N is None:
         return "An attachment does not break: a held object pressed into a wall carries the arm's full force."
-    return (f"A held object is let go when the load on the hand stays above {LOAD_LIMIT_N:g} N for {LOAD_HOLD_S:g} s "
-            f"(an object jammed against something, the body hanging on it; its weight counts); a tether to a door, "
-            f"drawer or lid is never let go by load.")
+    held = (f"A held object is let go when the load on the hand stays above {LOAD_LIMIT_N:g} N for {LOAD_HOLD_S:g} s "
+            f"(an object jammed against something, the body hanging on it; its weight counts); ")
+    if not LOOSE_TETHER_LOAD:
+        return held + "a tether to a door, drawer or lid is never let go by load."
+    return held + ("so is a tether to a lid or other part of a loose object (a bin, a box, a toolbox), while a tether to "
+                   "a door, drawer or lid of furniture or an appliance fixed in place is never let go by load.")
 
 
 def open_pose_text():
@@ -531,7 +539,10 @@ def rules():
         Rule("LOAD_LIMIT_N", "instruction.assisted", "An attachment does not break" if LOAD_LIMIT_N is None else
              f"stays above {LOAD_LIMIT_N:g} N for {LOAD_HOLD_S:g} s"),
         Rule("TETHER_UNLIMITED", "instruction.assisted", "An attachment does not break" if LOAD_LIMIT_N is None else
-             "a tether to a door, drawer or lid is never let go by load"),
+             "a tether to a door, drawer or lid of furniture or an appliance fixed in place is never let go by load"
+             if LOOSE_TETHER_LOAD else "a tether to a door, drawer or lid is never let go by load"),
+        *([Rule("LOOSE_TETHER_LOAD", "instruction.assisted", "so is a tether to a lid or other part of a loose object")]
+          if LOOSE_TETHER_LOAD and LOAD_LIMIT_N is not None else []),
         Rule("HAND_OVER", "instruction.assisted",
              "the object moves to the new hand and the first hand's attachment ends in the same step"),
         Rule("ARM_PAYLOAD", "instruction.assisted", f"{ARM_PAYLOAD[0]:g} kg sagged the hand {ARM_PAYLOAD[1]:g}-{ARM_PAYLOAD[2]:g} m"),

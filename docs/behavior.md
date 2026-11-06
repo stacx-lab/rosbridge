@@ -200,7 +200,8 @@ position targets. Physics runs at GR00T's 200 Hz. Commands:
   opened by 0.2 rad, and then let go once no finger touches it (at most 0.08 s later), so
   the opening fingers do not push it. While held,
   the fingers' targets stay within 0.05 rad of their positions (no penetration builds),
-  a held object (not a tether to a door, drawer or lid) lets go when the load the arm
+  a held object, or a tether to a part of a loose object (a bin's lid; not a tether to a
+  door, drawer or lid of a fixed object), lets go when the load the arm
   passes to the hand stays above 150 N for 0.3 s,
   and a released object leaves at the hand's velocity, no faster than falling from the
   hand while it still touches it. An object one hand holds is taken over by the other hand

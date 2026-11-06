@@ -320,3 +320,23 @@ def test_a_finger_pushed_back_but_commanded_closed_still_grips():
     assert g.keep(closing, measured, 0.) is None
     # a joint short of its open pose (flexed by the object) counts from where it is, as before
     assert excess(JOINTS, [.5] * len(JOINTS), [.2] * len(JOINTS), OPEN)["index"] == pytest.approx(.3)
+
+
+def test_a_tether_to_a_loose_objects_part_is_let_go_by_load_and_one_to_fixed_furniture_is_not():
+    from rosbridge_behavior.g1_grasp import load_limited
+    assert load_limited(tethered=False, fixed_base=False) and load_limited(tethered=False, fixed_base=True)  # held
+    assert load_limited(tethered=True, fixed_base=False)  # a bin's or a toolbox's lid
+    assert not load_limited(tethered=True, fixed_base=True)  # a cabinet's door, a room door: never by load
+    assert not load_limited(tethered=True, fixed_base=False, loose_tether_load=False)  # the previous rule
+    # the handler passes the load only where it applies (None otherwise): a loose lid pulled at 1.5x the limit lets go
+    # after LOAD_HOLD_S, as a held object does; a fixed door's tether keeps any load
+    limit = 150.
+    for fixed, ends in ((False, True), (True, False)):
+        g = grip(limit)
+        run(g, WINDOW, PINCH)
+        g.hold()
+        load = 1.5 * limit if load_limited(True, fixed) else None
+        steps = [keep(g, {"thumb": .5, "index": .5}, load) for _ in range(round(1. / DT))]
+        assert ("load" in steps) is ends
+        if ends:  # the filter (LOAD_TAU_S) passes the limit after ~0.11 s, then LOAD_HOLD_S
+            assert LOAD_HOLD_S / DT <= steps.index("load") + 1 <= (LOAD_HOLD_S + .2) / DT

@@ -20,8 +20,8 @@ g1_sharpa feeds these functions from OmniGibson's contacts, rays and joint state
 from collections import deque
 
 from .g1_rules import (CLOSED_FRACTION, DIGITS, GRASP_EVIDENCE, GRASP_RECENT_S, GRASP_WINDOW_S, GRIP_CLAMP_RAD,
-                       LET_GO_S, LOAD_HOLD_S, LOAD_LIMIT_N, LOAD_TAU_S, OPEN_RAD, RELEASE_MARGIN_MPS, SQUEEZE_OFF_RAD,
-                       SQUEEZE_ON_RAD)
+                       LET_GO_S, LOAD_HOLD_S, LOAD_LIMIT_N, LOAD_TAU_S, LOOSE_TETHER_LOAD, OPEN_RAD, RELEASE_MARGIN_MPS,
+                       SQUEEZE_OFF_RAD, SQUEEZE_ON_RAD)
 
 GRAVITY = 9.81  # m/s^2
 
@@ -102,6 +102,13 @@ def clamp(command, measured):
     where it is, so a finger blocked by the held object presses with a bounded force instead of driving into it (and
     no depenetration flings the object when it is let go); opening commands pass unchanged."""
     return min(command, measured + GRIP_CLAMP_RAD)
+
+
+def load_limited(tethered, fixed_base, loose_tether_load=LOOSE_TETHER_LOAD):
+    """Whether an attachment is let go by load: a held object always; a tether (a part on a hinge or slide of its object)
+    only when its object is loose (LOOSE_TETHER_LOAD), as a door, drawer or lid of furniture fixed in place is never let
+    go by load (OmniGibson's joints never break, and the heavy room door pressed by the closing hand passed the limit)."""
+    return not tethered or (loose_tether_load and not fixed_base)
 
 
 def leaving_velocity(relative, seconds):
@@ -205,8 +212,8 @@ class Grip:
         """One physics step while holding. Returns why the grasp ends now, else None (keep holding): "squeeze" when
         no gripping digit is commanded SQUEEZE_OFF_RAD beyond its measured flexion nor CLOSED_FRACTION closed (the
         hand opened), "open" when they are commanded OPEN_RAD open from their tightest, "load" when the load on the
-        grasp (N; None for a tether, which has no load limit), low-pass filtered with LOAD_TAU_S, has stayed above the
-        load limit for LOAD_HOLD_S. An opened hand
+        grasp (N; None for an attachment without a load limit, see load_limited), low-pass filtered with LOAD_TAU_S,
+        has stayed above the load limit for LOAD_HOLD_S. An opened hand
         keeps the object while fingers_on() says a phalanx still touches it, for LET_GO_S at most: it is let go once
         the fingers have left it (or just begin to), so they do not push it as they open. A grasp OmniGibson restored
         from a saved state is gripped by every digit."""
@@ -222,7 +229,7 @@ class Grip:
             self.why = "squeeze"
         elif mean <= self.tightest - OPEN_RAD:
             self.why = "open"
-        elif self.load_limit is not None and load_n is not None and load_n == load_n:  # None (a tether), NaN: no limit
+        elif self.load_limit is not None and load_n is not None and load_n == load_n:  # None (no limit), NaN: no limit
             self.load += (load_n - self.load) * self.dt / (LOAD_TAU_S + self.dt)
             self.over_s = self.over_s + self.dt if self.load > self.load_limit else 0.
             if self.over_s >= LOAD_HOLD_S - 1e-9:
