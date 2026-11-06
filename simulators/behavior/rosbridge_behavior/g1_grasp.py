@@ -5,8 +5,9 @@ it lies between them, and the gripper is commanded to close, for 0.3 s; it stays
 commanded open. On the Sharpa hand the same idea reads:
 - opposition: the object touches the thumb or the palm on one side and one of the four fingers on the other
   (two fingers side by side, or a finger's pad and bone, oppose nothing);
-- grip: a digit touching it is commanded to flex further than it is (position drives turn that excess into grip
-  force, as the R1Pro's closing command does on its blocked jaws), or is commanded at least half closed and has reached
+- grip: a digit touching it is commanded to flex further than it is, or than its open pose where the object pushes it
+  back past open (position drives turn that excess into grip force, as the R1Pro's closing command does on its blocked
+  jaws; a digit commanded open never grips), or is commanded at least half closed and has reached
   its targets (a hand closed round a thin handle presses nothing); a little-curled hand that only touches a thing, a
   hand still closing, or an opening hand, does not grip;
 - both hold over OmniGibson's 0.3 s window, judged on most of its steps so that flickering contacts on a thin lip or
@@ -19,8 +20,8 @@ g1_sharpa feeds these functions from OmniGibson's contacts, rays and joint state
 from collections import deque
 
 from .g1_rules import (CLOSED_FRACTION, DIGITS, GRASP_EVIDENCE, GRASP_RECENT_S, GRASP_WINDOW_S, GRIP_CLAMP_RAD,
-                       LET_GO_S, LOAD_HOLD_S, LOAD_LIMIT_N, LOAD_TAU_S, OPEN_RAD, RELEASE_MARGIN_MPS, SQUEEZE_OFF_RAD,
-                       SQUEEZE_ON_RAD)
+                       LET_GO_S, LOAD_HOLD_S, LOAD_LIMIT_N, LOAD_TAU_S, LOOSE_TETHER_LOAD, OPEN_RAD, RELEASE_MARGIN_MPS,
+                       SQUEEZE_OFF_RAD, SQUEEZE_ON_RAD)
 
 GRAVITY = 9.81  # m/s^2
 
@@ -84,10 +85,14 @@ def closure(joint_digits, command, lower, upper):
     return {d: sum(v) / len(v) for d, v in sums.items()}
 
 
-def excess(joint_digits, command, reference):
-    """Per digit, the most one of its flexion joints is commanded beyond a reference position (rad)."""
+def excess(joint_digits, command, reference, open_pose=None):
+    """Per digit, the most one of its flexion joints is commanded beyond a reference position (rad); with open_pose
+    (each joint's open position), beyond the reference or the open pose, whichever is more flexed, so that a joint an
+    object pushes back past open counts only what its command flexes it past open (SQUEEZE_FROM_OPEN_POSE)."""
     out = {}
-    for d, c, r in zip(joint_digits, command, reference):
+    for i, (d, c, r) in enumerate(zip(joint_digits, command, reference)):
+        if open_pose is not None:
+            r = max(r, open_pose[i])
         out[d] = max(out.get(d, float("-inf")), c - r)
     return out
 
@@ -97,6 +102,13 @@ def clamp(command, measured):
     where it is, so a finger blocked by the held object presses with a bounded force instead of driving into it (and
     no depenetration flings the object when it is let go); opening commands pass unchanged."""
     return min(command, measured + GRIP_CLAMP_RAD)
+
+
+def load_limited(tethered, fixed_base, loose_tether_load=LOOSE_TETHER_LOAD):
+    """Whether an attachment is let go by load: a held object always; a tether (a part on a hinge or slide of its object)
+    only when its object is loose (LOOSE_TETHER_LOAD), as a door, drawer or lid of furniture fixed in place is never let
+    go by load (OmniGibson's joints never break, and the heavy room door pressed by the closing hand passed the limit)."""
+    return not tethered or (loose_tether_load and not fixed_base)
 
 
 def leaving_velocity(relative, seconds):
@@ -120,9 +132,12 @@ class Grip:
     joint_digits names the digit of each flexion joint, in the order of the command and measured sequences the methods
     take."""
 
-    def __init__(self, dt, joint_digits, load_limit=LOAD_LIMIT_N, limits=None):
+    def __init__(self, dt, joint_digits, load_limit=LOAD_LIMIT_N, limits=None, open_pose=None):
         self.dt, self.joint_digits, self.load_limit = dt, tuple(joint_digits), load_limit
         self.limits = limits  # the flexion joints' (lower, upper) limits, for the commanded closure; None: squeeze only
+        # the flexion joints' open positions: a squeeze counts from the open pose when an object holds a joint back past
+        # it (SQUEEZE_FROM_OPEN_POSE); None: from where the joint is
+        self.open_pose = tuple(open_pose) if open_pose is not None else None
         self.steps = max(1, round(GRASP_WINDOW_S / dt))
         self.recent = max(1, round(GRASP_RECENT_S / dt))
         self.window = deque(maxlen=self.steps)
@@ -134,6 +149,11 @@ class Grip:
         self.tightest = None  # the gripping digits' tightest mean command while held
         self.yielded = False  # it handed its object to the other hand and grasps again only after opening
         self.letting_s = 0.  # how long the hand has been opened while a finger still touches the held object
+
+    def squeeze(self, command, measured):
+        """Per digit, its squeeze (excess) beyond where it is, or beyond its open pose where an object holds it back
+        past open."""
+        return excess(self.joint_digits, command, measured, getattr(self, "open_pose", None))
 
     def reset(self):
         self.window.clear()
@@ -154,7 +174,7 @@ class Grip:
             self.target = candidate
         if self.target is None:
             return None
-        squeeze = excess(self.joint_digits, command, measured)
+        squeeze = self.squeeze(command, measured)
         links = touching(self.target)
         sides = {surface(link) for link in links}
         self.touched.append(digits(links))
@@ -178,7 +198,7 @@ class Grip:
     def grips(self, links, command, measured):
         """Whether the touching hand links grip an object now: opposition, and a touching digit squeezes or is closed
         (the window's conditions on one step, less the ray)."""
-        squeeze = excess(self.joint_digits, command, measured)
+        squeeze = self.squeeze(command, measured)
         return opposed(links) and squeezing(links, squeeze, closed=self.closed(command, squeeze))
 
     def hold(self, gripping=None):
@@ -192,13 +212,13 @@ class Grip:
         """One physics step while holding. Returns why the grasp ends now, else None (keep holding): "squeeze" when
         no gripping digit is commanded SQUEEZE_OFF_RAD beyond its measured flexion nor CLOSED_FRACTION closed (the
         hand opened), "open" when they are commanded OPEN_RAD open from their tightest, "load" when the load on the
-        grasp (N; None for a tether, which has no load limit), low-pass filtered with LOAD_TAU_S, has stayed above the
-        load limit for LOAD_HOLD_S. An opened hand
+        grasp (N; None for an attachment without a load limit, see load_limited), low-pass filtered with LOAD_TAU_S,
+        has stayed above the load limit for LOAD_HOLD_S. An opened hand
         keeps the object while fingers_on() says a phalanx still touches it, for LET_GO_S at most: it is let go once
         the fingers have left it (or just begin to), so they do not push it as they open. A grasp OmniGibson restored
         from a saved state is gripped by every digit."""
         held = DIGITS if self.held is None else self.held
-        squeeze = excess(self.joint_digits, command, measured)
+        squeeze = self.squeeze(command, measured)
         gripping = [c for d, c in zip(self.joint_digits, command) if d in held] or list(command)
         mean = sum(gripping) / len(gripping)
         self.tightest = mean if getattr(self, "tightest", None) is None else max(self.tightest, mean)
@@ -209,7 +229,7 @@ class Grip:
             self.why = "squeeze"
         elif mean <= self.tightest - OPEN_RAD:
             self.why = "open"
-        elif self.load_limit is not None and load_n is not None and load_n == load_n:  # None (a tether), NaN: no limit
+        elif self.load_limit is not None and load_n is not None and load_n == load_n:  # None (no limit), NaN: no limit
             self.load += (load_n - self.load) * self.dt / (LOAD_TAU_S + self.dt)
             self.over_s = self.over_s + self.dt if self.load > self.load_limit else 0.
             if self.over_s >= LOAD_HOLD_S - 1e-9:

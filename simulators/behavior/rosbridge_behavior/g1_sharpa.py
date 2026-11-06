@@ -21,8 +21,8 @@ from .g1_model import ARMS, BODY, CAMERA, LEGS, MODEL, SIDES, WAIST, WBC, arm_li
 # The values a worker's outcome depends on live in g1_rules, which the device texts and the task note state.
 from .g1_rules import (CLIP, FALL_HEIGHT, FALL_HOLD_S, FALL_TILT_DEG, FALL_UPRIGHT_DEG, GRIP_CLAMP_RAD, LOAD_LIMIT_N,
                        PELVIS_LIMITS, RELEASE_FOLLOW_S, RELEASE_MARGIN_MPS, SELF_COLLISIONS,
-                       VELOCITY_LIMIT)
-from .g1_grasp import Grip, digit, digits, leaving_velocity, phalanx  # noqa: F401 (digits: for callers)
+                       SQUEEZE_FROM_OPEN_POSE, VELOCITY_LIMIT)
+from .g1_grasp import Grip, digit, digits, leaving_velocity, load_limited, phalanx  # noqa: F401 (digits: for callers)
 
 NAME = "robot_g1"
 LOWER = LEGS + WAIST
@@ -116,8 +116,9 @@ def assisted_grasping(robot, hands, attached=lambda arm: None, fallen=lambda: Fa
       hand opens while the other touches the object from both sides and grips it, the other takes it at once;
     - while it is held, the hand's flexion targets are clamped (g1_grasp.clamp), and the grasp lets go when the
       gripping digits stop gripping or are opened and no finger touches the object any more (LET_GO_S at most), or,
-      for a held object (not a tether to a door, drawer or lid, which OmniGibson never breaks either), when the load the
-      arm passes to the hand stays above grasp_load_limit();
+      for a held object or a tether to a part of a loose object (not a tether to a door, drawer or lid of a fixed
+      object, which OmniGibson never breaks either; g1_grasp.load_limited), when the load the arm passes to the hand
+      stays above grasp_load_limit();
     - a released free object leaves at the hand's velocity, and while it still touches the hand (RELEASE_FOLLOW_S at
       most) the fingers stay clamped and it moves no faster from the hand than falling gives (g1_grasp.leaving_velocity):
       no fling.
@@ -149,7 +150,12 @@ def assisted_grasping(robot, hands, attached=lambda arm: None, fallen=lambda: Fa
     own = set(robot.link_prim_paths)
     limits = {arm: (robot.joint_lower_limits[dofs[arm]].tolist(), robot.joint_upper_limits[dofs[arm]].tolist())
               for arm in hands}
-    grips = robot._g1_grips = {arm: Grip(dt, flexion_digit[arm], grasp_load_limit(), limits[arm]) for arm in hands}
+    # Each flexion joint's open pose (the robot's reset pose, the hands' home, within the joint's limits): a squeeze
+    # counts from it where an object pushes a finger back past open (SQUEEZE_FROM_OPEN_POSE), so an open hand never grips.
+    open_pose = {arm: [min(max(float(robot.reset_joint_pos[i]), lo), hi) for i, lo, hi in
+                       zip(dofs[arm].tolist(), *limits[arm])] if SQUEEZE_FROM_OPEN_POSE else None for arm in hands}
+    grips = robot._g1_grips = {arm: Grip(dt, flexion_digit[arm], grasp_load_limit(), limits[arm], open_pose[arm])
+                               for arm in hands}
     leaving = robot._g1_leaving = {arm: None for arm in hands}  # a released object near the hand: (obj, s, last touch s)
     offered = {arm: None for arm in hands}  # an object the other hand let go of this step: (obj, that hand)
     last = {arm: 0. for arm in hands}  # each hand's commanded closure at the previous physics step
@@ -288,7 +294,8 @@ def assisted_grasping(robot, hands, attached=lambda arm: None, fallen=lambda: Fa
                 fingers_on = lambda: any(phalanx(finger) for body, fingers in touching(arm).items() if body in links
                                          for finger in fingers)  # an opened hand keeps it until its fingers left it
                 tether = (_attached(self, arm) or {}).get("joint_type") == "SphericalJoint"
-                load_n = None if tether else load(arm)  # a tether to a door, drawer or lid has no load limit
+                # a tether to a door, drawer or lid of a fixed object has no load limit; one to a loose object's lid has
+                load_n = load(arm) if load_limited(tether, obj.fixed_base) else None
                 if state is None or grip.keep(state[0].tolist(), state[1].tolist(), load_n, fingers_on):
                     self._release_grasp(arm=arm)
                     let_go_gently(self, arm, obj, 0.)

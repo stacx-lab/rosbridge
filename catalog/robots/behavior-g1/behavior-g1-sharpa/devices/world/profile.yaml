@@ -95,10 +95,17 @@ description: Simulation clock of the BEHAVIOR house. Furniture, objects and the 
   Only the rooms the activity uses are loaded, as in BEHAVIOR's own evaluation, and past them there may be no floor; a
   door may open onto empty space (a room that is not loaded, or the outside), and then an invisible wall in its doorway
   keeps the robot from passing through, although the door itself still opens. In a task, this description ends with the
-  scene's room doors, where each is, which way it swings and which lead out of the loaded rooms. A switchable
+  scene's room doors, where each is, which way it swings and which lead out of the loaded rooms, and then with its heat
+  sources, saying which single element of each heats, where it is and what it needs. A switchable
   object (a radio, a lamp, a stove) carries a small marker that is red while it is off and green while it is on; a
   finger held on the marker for 0.15 s toggles it, once per touch, also while that hand holds something (some machines
-  with a door stay off while it is open). Objects made to be attached to another (a camera to a tripod, a picture to a
+  with a door stay off while it is open). An appliance that heats (a stove, a cooktop, an oven, a toaster, a grill) or
+  cools (a fridge, a freezer) heats or cools at one element only, the first in its model, so a stove or cooktop with
+  several burners heats at one burner alone; it heats what comes within about 0.2 m of that element (measured to the
+  nearest point of the thing itself), or, for some (an oven, a microwave, a fridge), only what is inside it; most work
+  only while switched on and some only while closed (the scene's list says which). A pot or pan does not pass heat on,
+  so the food itself must come that close. A goal that food be cooked, hot or frozen is about the food's state, however
+  it got so. Objects made to be attached to another (a camera to a tripod, a picture to a
   hook) attach by themselves, with nothing to press or release, at every step in which the object touches the other
   with their mounting points within 5 cm and 15 degrees, held in a hand or not; on attaching, the object snaps into
   exact alignment, moving a hand that holds it.

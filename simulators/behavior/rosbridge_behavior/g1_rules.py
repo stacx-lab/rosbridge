@@ -27,6 +27,13 @@ DIGITS = ("thumb", "index", "middle", "ring", "pinky")
 # SQUEEZE_ON_RAD beyond its measured position; a held object stays attached while a gripping digit is commanded at least
 # SQUEEZE_OFF_RAD beyond (the lower value keeps a grip from chattering).
 SQUEEZE_ON_RAD, SQUEEZE_OFF_RAD = .15, .05
+# The squeeze is measured from where the joint is or from its open pose (the hand's home, 0 rad), whichever is more
+# flexed: a finger pushed back past its open pose (a finger's MCP bends 0.17 rad backward, the thumb's 0.52) reads no
+# squeeze beyond what its command flexes it past open, so a digit commanded open never grips, for forming or keeping.
+# Measured from where the joint is alone, a pushed-back finger commanded open read as a 0.17 rad squeeze: open hands kept
+# holding or grabbed handles. False: from where the joint is (the previous rule).
+SQUEEZE_FROM_OPEN_POSE = True
+OPEN_POSE_RAD = 0.  # every hand joint's home (the hand profiles' home), which the code takes from the robot's reset pose
 # A touching digit also grips while it is commanded at least CLOSED_FRACTION of its flexion range closed (the mean over
 # its flexion joints) and, while a grasp forms, the hand has stopped closing and the digit has reached its targets
 # (within SQUEEZE_OFF_RAD): a hand closed round a thin handle reaches its targets and squeezes nothing, yet holds it, as
@@ -55,6 +62,11 @@ GRIP_CLAMP_RAD = .05
 # 11 of 12 trials (native grasp suite), while the legged-robot reasons for limiting tethers are gone (a body
 # held up by a hand on a handle is physics; two hands never hold one object, HAND_OVER).
 LOAD_LIMIT_N, LOAD_TAU_S, LOAD_HOLD_S = 150., .1, .3
+# That exemption holds only where the part's object is fixed in place (furniture, appliances, room doors). A tether to a
+# part of a loose object (a bin's or a toolbox's lid) has the held object's load limit: unlimited, the hand threw bins
+# 2.6-3.5 m, dragged toolboxes off counters and threw the robot 3 m when a lid was pushed against its stop. False: no
+# tether is let go by load (the previous rule).
+LOOSE_TETHER_LOAD = True
 # A released object leaves at the hand's velocity; while it still touches the hand (RELEASE_FOLLOW_S at most) it moves
 # from the hand no faster than RELEASE_MARGIN_MPS sideways or up, and no faster down than falling since the release gives
 # plus that margin, so the contacts it was squeezed with (fingers, palm) separate it from the hand without flinging it.
@@ -74,6 +86,10 @@ GRASP_WINDOW_S = .3  # OmniGibson robot.py m.GRASP_WINDOW: contact and closure h
 ASSIST_MASS_KG = 10.  # m.ASSIST_GRASP_MASS_THRESHOLD: heavier parts stick only as fixed furniture's doors and drawers
 ATTACH_DISTANCE_M, ATTACH_ANGLE_DEG = .05, 15.  # object_states/attached_to.py: AttachedTo's automatic attachment
 TOGGLE_HOLD_S = .15  # object_states/toggle.py m.CAN_TOGGLE_SECONDS: a finger on a toggle marker this long flips it
+# object_states/heat_source_or_sink.py: a heat (or cold) source heats what comes within m.DEFAULT_DISTANCE_THRESHOLD of
+# its heating element (unless its model sets another range), and keeps ONE element, the first of its heat-source meta
+# links (link_based_state_mixin.py: link is next(iter(links))), so only one burner of a stove heats
+HEAT_DISTANCE_M = .2
 # dataset_object.py: every revolute and prismatic joint of a dataset object (doors, drawers, lids) gets a drive of
 # stiffness 0 and damping only, so nothing springs back (a native probe: released fridge doors stay put)
 FURNITURE_JOINT_STIFFNESS = 0.
@@ -336,9 +352,20 @@ def load_text():
     """What the note says about the load an attachment carries."""
     if LOAD_LIMIT_N is None:
         return "An attachment does not break: a held object pressed into a wall carries the arm's full force."
-    return (f"A held object is let go when the load on the hand stays above {LOAD_LIMIT_N:g} N for {LOAD_HOLD_S:g} s "
-            f"(an object jammed against something, the body hanging on it; its weight counts); a tether to a door, "
-            f"drawer or lid is never let go by load.")
+    held = (f"A held object is let go when the load on the hand stays above {LOAD_LIMIT_N:g} N for {LOAD_HOLD_S:g} s "
+            f"(an object jammed against something, the body hanging on it; its weight counts); ")
+    if not LOOSE_TETHER_LOAD:
+        return held + "a tether to a door, drawer or lid is never let go by load."
+    return held + ("so is a tether to a lid or other part of a loose object (a bin, a box, a toolbox), while a tether to "
+                   "a door, drawer or lid of furniture or an appliance fixed in place is never let go by load.")
+
+
+def open_pose_text():
+    """What the note says about a digit commanded open (SQUEEZE_FROM_OPEN_POSE)."""
+    if not SQUEEZE_FROM_OPEN_POSE:
+        return ""
+    return (f"A digit commanded to its open pose ({OPEN_POSE_RAD:g} rad) or below never grips, even where the object "
+            f"pushes it back past open: its squeeze counts from the open pose, not from where the object holds it.")
 
 
 def assisted_note():
@@ -354,7 +381,7 @@ side, one fingertip, a hand less closed that only touches it, and an opening han
 does, whatever the other fingers do, and so does a hand closed round a thin handle. The object stays attached while a
 digit that grips it is commanded at least {SQUEEZE_OFF_RAD:g} rad beyond where it is or {percent(CLOSED_FRACTION)}
 closed, and until the gripping digits are commanded open by {OPEN_RAD:g} rad on average from their tightest command: to
-let go, open them. It is let go once no finger touches it any more, at the latest {LET_GO_S:g} s after the hand opened,
+let go, open them. {open_pose_text()} It is let go once no finger touches it any more, at the latest {LET_GO_S:g} s after the hand opened,
 so the opening fingers do not push it. While it is attached the fingers press it only lightly (each flexion target stays
 within {GRIP_CLAMP_RAD:g} rad of its joint); let go, it leaves with the hand's motion, and while it still touches the
 hand ({RELEASE_FOLLOW_S:g} s at most) it moves no faster from the hand than falling gives (plus {RELEASE_MARGIN_MPS:g}
@@ -432,6 +459,9 @@ def rules():
         Rule("ATTACH_DISTANCE_M", "world.description", f"within {ATTACH_DISTANCE_M * 100:g} cm"),
         Rule("ATTACH_ANGLE_DEG", "world.description", f"and {ATTACH_ANGLE_DEG:g} degrees"),
         Rule("TOGGLE_HOLD_S", "world.description", f"held on the marker for {TOGGLE_HOLD_S:g} s toggles it"),
+        Rule("HEAT_ONE_ELEMENT", "world.description", "heats or cools at one element only, the first in its model"),
+        Rule("HEAT_DISTANCE_M", "world.description", f"within about {HEAT_DISTANCE_M:g} m of that element"),
+        Rule("SCENE_HEAT", "world.description", "and then with its heat sources, saying which single element of each heats"),
         Rule("FURNITURE_JOINT_STIFFNESS", "world.description", "have no spring"),
         Rule("DOOR_RELEASE", "world.description", "if it moves, part of the robot is touching it"),
         Rule("DOOR_PINCH", "world.description", "a pinch catches only a closed or held door"),
@@ -497,6 +527,9 @@ def rules():
         Rule("SQUEEZE_ON_RAD", "instruction.assisted",
              f"commanded at least {SQUEEZE_ON_RAD:g} rad of flexion beyond where it is"),
         Rule("SQUEEZE_OFF_RAD", "instruction.assisted", f"commanded at least {SQUEEZE_OFF_RAD:g} rad beyond where it is"),
+        *([Rule("SQUEEZE_FROM_OPEN_POSE", "instruction.assisted",
+                f"A digit commanded to its open pose ({OPEN_POSE_RAD:g} rad) or below never grips")]
+          if SQUEEZE_FROM_OPEN_POSE else []),
         Rule("CLOSED_FRACTION", "instruction.assisted",
              f"at least {percent(CLOSED_FRACTION)} of the way closed and has stopped there"),
         Rule("LET_GO_S", "instruction.assisted", f"at the latest {LET_GO_S:g} s after the hand opened"),
@@ -513,7 +546,10 @@ def rules():
         Rule("LOAD_LIMIT_N", "instruction.assisted", "An attachment does not break" if LOAD_LIMIT_N is None else
              f"stays above {LOAD_LIMIT_N:g} N for {LOAD_HOLD_S:g} s"),
         Rule("TETHER_UNLIMITED", "instruction.assisted", "An attachment does not break" if LOAD_LIMIT_N is None else
-             "a tether to a door, drawer or lid is never let go by load"),
+             "a tether to a door, drawer or lid of furniture or an appliance fixed in place is never let go by load"
+             if LOOSE_TETHER_LOAD else "a tether to a door, drawer or lid is never let go by load"),
+        *([Rule("LOOSE_TETHER_LOAD", "instruction.assisted", "so is a tether to a lid or other part of a loose object")]
+          if LOOSE_TETHER_LOAD and LOAD_LIMIT_N is not None else []),
         Rule("HAND_OVER", "instruction.assisted",
              "the object moves to the new hand and the first hand's attachment ends in the same step"),
         Rule("ARM_PAYLOAD", "instruction.assisted", f"{ARM_PAYLOAD[0]:g} kg sagged the hand {ARM_PAYLOAD[1]:g}-{ARM_PAYLOAD[2]:g} m"),
