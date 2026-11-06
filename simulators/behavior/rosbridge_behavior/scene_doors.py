@@ -362,14 +362,15 @@ def describe(doors, origin):
     return HEADER + ": " + "; ".join(f"({i}) {line}" for i, line in enumerate(lines, 1)) + "."
 
 
-def write(doors, origin, folder=None):
+def write(doors, origin, folder=None, extra=""):
     """Keep the doors and the paragraph in the run directory (scene-doors.json, scene-doors.txt): an operator record,
-    and the text a task runner may add to the world device's description."""
+    and the text a task runner may add to the world device's description; extra: more of the scene's facts (its heat
+    sources, scene_heat), which follow the doors' paragraph."""
     folder = folder or os.environ.get("ROSBRIDGE_RUN_DIR")
     if not folder:
         return None
     # doors None: the scene could not be read (the log says why); an empty text tells a task runner to add nothing.
-    text = describe(doors, origin) if doors is not None else ""
+    text = " ".join(part for part in (describe(doors, origin) if doors is not None else "", extra) if part)
     Path(folder, "scene-doors.json").write_text(json.dumps({"doors": doors, "text": text}, indent=1))
     Path(folder, "scene-doors.txt").write_text(text + "\n" if text else "")
     return text

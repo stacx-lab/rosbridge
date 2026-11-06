@@ -86,6 +86,10 @@ GRASP_WINDOW_S = .3  # OmniGibson robot.py m.GRASP_WINDOW: contact and closure h
 ASSIST_MASS_KG = 10.  # m.ASSIST_GRASP_MASS_THRESHOLD: heavier parts stick only as fixed furniture's doors and drawers
 ATTACH_DISTANCE_M, ATTACH_ANGLE_DEG = .05, 15.  # object_states/attached_to.py: AttachedTo's automatic attachment
 TOGGLE_HOLD_S = .15  # object_states/toggle.py m.CAN_TOGGLE_SECONDS: a finger on a toggle marker this long flips it
+# object_states/heat_source_or_sink.py: a heat (or cold) source heats what comes within m.DEFAULT_DISTANCE_THRESHOLD of
+# its heating element (unless its model sets another range), and keeps ONE element, the first of its heat-source meta
+# links (link_based_state_mixin.py: link is next(iter(links))), so only one burner of a stove heats
+HEAT_DISTANCE_M = .2
 # dataset_object.py: every revolute and prismatic joint of a dataset object (doors, drawers, lids) gets a drive of
 # stiffness 0 and damping only, so nothing springs back (a native probe: released fridge doors stay put)
 FURNITURE_JOINT_STIFFNESS = 0.
@@ -455,6 +459,9 @@ def rules():
         Rule("ATTACH_DISTANCE_M", "world.description", f"within {ATTACH_DISTANCE_M * 100:g} cm"),
         Rule("ATTACH_ANGLE_DEG", "world.description", f"and {ATTACH_ANGLE_DEG:g} degrees"),
         Rule("TOGGLE_HOLD_S", "world.description", f"held on the marker for {TOGGLE_HOLD_S:g} s toggles it"),
+        Rule("HEAT_ONE_ELEMENT", "world.description", "heats or cools at one element only, the first in its model"),
+        Rule("HEAT_DISTANCE_M", "world.description", f"within about {HEAT_DISTANCE_M:g} m of that element"),
+        Rule("SCENE_HEAT", "world.description", "and then with its heat sources, saying which single element of each heats"),
         Rule("FURNITURE_JOINT_STIFFNESS", "world.description", "have no spring"),
         Rule("DOOR_RELEASE", "world.description", "if it moves, part of the robot is touching it"),
         Rule("DOOR_PINCH", "world.description", "a pinch catches only a closed or held door"),

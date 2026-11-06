@@ -174,8 +174,11 @@ class BehaviorSim:
         if hasattr(self.embodiment, "guard") and not getattr(self, "_doors_written", False):
             # The scene's room doors at the first episode's start pose, for the world text (the start pose is the same
             # in every episode of a run).
+            # Then the scene's heat sources: which single element of each heats (OmniGibson heats at the first one only).
             from .scene_doors import write
-            write(doors, self.episode.origin)
+            from . import scene_heat
+            write(doors, self.episode.origin, extra=scene_heat.text(self.episode.env.scene, self.episode.origin,
+                                                                    getattr(self.embodiment, "floor", None)))
             self._doors_written = True
         self.seed, self.steps, self.done = seed, 0, False
         self.success = bool(self.episode.env.task.success[0])

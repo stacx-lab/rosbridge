@@ -103,6 +103,14 @@ def test_upstream_values_match_their_sources():
     toggle = source("OmniGibson/omnigibson/object_states/toggle.py")
     assert float(re.search(r"^m\.CAN_TOGGLE_SECONDS = ([\d.]+)", toggle, re.M)[1]) == g1_rules.TOGGLE_HOLD_S
     assert "COLOR_ON = th.tensor([0, 1.0, 0])  # green" in toggle and "COLOR_OFF = th.tensor([1.0, 0, 0])  # red" in toggle
+    heat = source("OmniGibson/omnigibson/object_states/heat_source_or_sink.py")
+    assert float(re.search(r"^m\.DEFAULT_DISTANCE_THRESHOLD = ([\d.]+)", heat, re.M)[1]) == g1_rules.HEAT_DISTANCE_M
+    assert "link = scene_state.link" in heat  # one element per source: the state's link
+    mixin = source("OmniGibson/omnigibson/object_states/link_based_state_mixin.py")
+    assert "return next(iter(self.links.values()))" in mixin  # ... which is its first meta link
+    from rosbridge_behavior import scene_heat
+    temperature = source("OmniGibson/omnigibson/object_states/temperature.py")
+    assert float(re.search(r"^m\.DEFAULT_TEMPERATURE = ([\d.]+)", temperature, re.M)[1]) == scene_heat.AMBIENT_C
     joints = source("OmniGibson/omnigibson/objects/dataset_object.py")
     assert [float(v) for v in re.findall(r'drive:(?:linear|angular):physics:stiffness"\)\.Set\(([\d.]+)\)', joints)] == [
         g1_rules.FURNITURE_JOINT_STIFFNESS] * 2
