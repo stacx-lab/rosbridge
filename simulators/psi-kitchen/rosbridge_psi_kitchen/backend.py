@@ -38,14 +38,17 @@ SPLITS = {'target': {'obj_instance_split': 'target',
 def controller_config():
     """JOINT_POSITION arm and torso; native base velocity and gripper.
 
-    Both joint parts start with native delta input, so the zero actions with which a
-    kitchen settles during reset hold the initial posture; reset then makes them absolute.
+    The arm takes upstream's arm stiffness (its OSC_POSE kp): robosuite scales both controllers by the
+    mass matrix, so equal gains give the hand the same stiffness, and RoboCasa's demonstrations,
+    recorded under OSC, replay as joint targets (dataset.py). Both joint parts start with native
+    delta input, so the zero actions with which a kitchen settles during reset hold the initial
+    posture; reset then makes them absolute.
     """
     from robosuite.controllers import load_composite_controller_config, load_part_controller_config
     config = load_composite_controller_config(robot=ROBOT)
     parts = config['body_parts']
     parts['right'] = {**load_part_controller_config(default_controller='JOINT_POSITION'),
-                      'gripper': parts['right']['gripper']}
+                      'kp': parts['right']['kp'], 'gripper': parts['right']['gripper']}
     return config
 
 
@@ -118,14 +121,12 @@ class PsiKitchenSim:
 
         self.task, self.seed = spec['native_task'], seed
         horizon = ({**ATOMIC_TASK_DATASETS, **COMPOSITE_TASK_DATASETS}.get(self.task, {}).get('horizon')
-                   or spec.get('horizon'))  # tasks.toml's, for tasks upstream gives none
-        if not (self.requested_max_steps or horizon):
-            raise ValueError(f'{self.task} has no horizon: give it a time limit (PSI_TIME_LIMIT_S)')
-        split = dict(SPLITS.get(spec.get('split'), {}))
+                   or spec['horizon'])  # tasks.toml's, for tasks upstream gives none
+        split = dict(SPLITS[spec['split']])
         self.scene = int(os.environ['PSI_SCENE']) if os.environ.get('PSI_SCENE') else None
         if self.scene is not None:
-            if (self.scene, self.scene) not in split.get('layout_and_style_ids', ()):
-                raise ValueError(f'unknown scene {self.scene} for split {spec.get("split")}')
+            if (self.scene, self.scene) not in split['layout_and_style_ids']:
+                raise ValueError(f'unknown scene {self.scene} for split {spec["split"]}')
             env = REGISTERED_ENVS[self.task]
             if self.scene in env.EXCLUDE_LAYOUTS or self.scene in env.EXCLUDE_STYLES:
                 raise ValueError(f'{self.task} excludes kitchen {self.scene}')
@@ -138,24 +139,10 @@ class PsiKitchenSim:
             camera_widths=self.width, camera_heights=self.height, camera_depths=False,
             ignore_done=True, translucent_robot=False, seed=seed, **split)
         self.env.reset()
-        # Measurements and frames describe the current state, not the last substep's start.
-        self.env.sim.forward()
-        # The kitchen has settled under native zero-delta holds; goals are absolute from now on.
-        for part in ('right', 'torso'):
-            self.robot.part_controllers[part].input_type = 'absolute'
+        self.settle()
         for camera in (*self.cameras, *(v.source for v in self.spectators)):
             if mj.mj_name2id(self.model, mj.mjtObj.mjOBJ_CAMERA, camera) < 0:
                 raise ValueError(f'unknown camera: {camera}')
-        self._index()
-        # Seed the integrated gripper command from the fingers, so stop holds them.
-        gripper = self.robot.part_controllers['right_gripper']
-        fingers = self.data.qpos[gripper.qpos_index]
-        self.robot.gripper['right'].current_action = np.clip(
-            2 * (fingers - gripper.actuator_min) / (gripper.actuator_max - gripper.actuator_min) - 1,
-            -1, 1)
-        self._grip_rate = 0.
-        self._origin = self.data.xpos[self._base].copy(), self.data.xmat[self._base].reshape(3, 3).copy()
-        self.steps, self.done, self.success, self.reward = 0, False, False, 0.
         self.max_steps = self.requested_max_steps or horizon
         print(f'[psi-kitchen] {self.task} scene {self.scene} seed {seed}: '
               f'{self.env.get_ep_meta().get("lang", "")}', flush=True)
@@ -173,6 +160,25 @@ class PsiKitchenSim:
                                                restore_context=context.gl_ctx, options=context.vopt)
             for view in self.spectators:
                 self._spectator.capture(view.name)
+
+    def settle(self):
+        """Start an episode in the kitchen as built (or as restored into self.env, dataset.py): absolute goals,
+        the gripper command, the odometry origin and a zero clock."""
+        # Measurements and frames describe the current state, not the last substep's start.
+        self.env.sim.forward()
+        # The kitchen has settled under native zero-delta holds; goals are absolute from now on.
+        for part in ('right', 'torso'):
+            self.robot.part_controllers[part].input_type = 'absolute'
+        self._index()
+        # Seed the integrated gripper command from the fingers, so stop holds them.
+        gripper = self.robot.part_controllers['right_gripper']
+        fingers = self.data.qpos[gripper.qpos_index]
+        self.robot.gripper['right'].current_action = np.clip(
+            2 * (fingers - gripper.actuator_min) / (gripper.actuator_max - gripper.actuator_min) - 1,
+            -1, 1)
+        self._grip_rate = 0.
+        self._origin = self.data.xpos[self._base].copy(), self.data.xmat[self._base].reshape(3, 3).copy()
+        self.steps, self.done, self.success, self.reward = 0, False, False, 0.
 
     def _index(self):
         parts, model = self.robot.part_controllers, self.model

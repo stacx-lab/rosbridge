@@ -140,6 +140,7 @@ imageio = "==2.37.4"
 h5py = "==3.16.0"
 termcolor = "==3.3.0"
 tqdm = "==4.70.0"
+pyarrow = "==21.0.0"
 pyyaml = "*"
 
 [feature.psi-kitchen.tasks]

@@ -15,6 +15,9 @@ PSI_SCENE=3 rosbridge launch psi-kitchen/open-drawer --seed 0 --execution-mode s
   instances. Unset, the seed draws one of the ten as upstream does.
 - **Time limit.** `PSI_TIME_LIMIT_S` ends the episode after that much robot time (rounded up to whole 0.05 s
   periods); 0 or unset keeps the dataset horizon.
+- **Arm stiffness.** The arm's joint-position controller takes upstream's arm gain (kp 150, its OSC_POSE gain,
+  instead of robosuite's joint default of 50). Both controllers scale by the mass matrix, so the hand is as stiff as
+  upstream's, and demonstrations recorded under upstream's Cartesian controller replay as joint targets.
 - **No reset.** The launch builds the kitchen once. The backend declares `resettable = False`, so the world node
   offers no `world/reset` and the rig's world device has no `reset` operation. A new attempt is a new launch.
 - **Evidence.** The build writes `episode-0/` in the run directory: `meta.json` (task, scene, seed, instruction,
@@ -34,8 +37,32 @@ problems), and the build says so; at seed 0, 25 more fail to place their fixture
 pairs. Every task builds in at least one kitchen, 240 in all ten. The robot rig is `psi-kitchen/panda-omron`, a copy of RoboCasa's described in robot
 terms.
 
+## Demonstrations
+
+`python -m rosbridge_psi_kitchen.dataset TASK --out DIR [--kitchens 1-5] [--size 128] [--jobs N]` turns RoboCasa365's
+target-split human demonstrations of a task (500 teleoperated episodes over the ten target kitchens, downloaded once
+into `--cache`) into the robot's own terms. Each episode from the chosen kitchens is restored from its recorded
+states into a psi-kitchen robot (`PsiKitchenSim.settle`, the live robot's controllers and device readings):
+
+- **state** (12): arm joints, gripper command, torso, base odometry (x, y, yaw from the episode start), as the
+  devices report them;
+- **images**: the three cameras at 256 × 256, resized with `cv2.INTER_AREA` to `--size`;
+- **action** (12, the backend's step vector): the recorded command in the devices' terms. The arm target is the
+  joints for the hand pose upstream's Cartesian controller aimed at: the current hand pose moved by the recorded
+  command (in base mode, the previous goal moved by it), as joint angles by mass-weighted Newton steps from the
+  recorded joints. The torso target is its position plus the recorded torso command; the gripper target is the
+  recorded direction; the base velocity is the recorded one.
+
+An episode is kept only if its commands, replayed open-loop from its first state, do the task again. `DIR` gets raw
+arrays (`camera_{left,right,wrist}.u8` `(N, S, S, 3)`, `state.f32` and `action.f32` `(N, 12)`, `episode_end.i32`),
+`episodes.jsonl` (rows, kitchen, instruction) and `meta.json` (layouts, units, counts); no simulator state, model or
+object name. The smoke test checks that a restored episode reads and renders as the live robot did, and that a
+Cartesian command becomes the joints for the hand pose it commands.
+
 ## Checks
 
 ```bash
-pixi run -e psi-kitchen smoke   # scene, evidence, no reset, re-rendering matches the live camera, time limit
+pixi run -e psi-kitchen smoke   # scene, evidence, no reset, re-rendering matches the live camera, time limit,
+                                # demonstrations restored as the live robot reads and sees them, commands aimed
+                                # at the hand pose they command
 ```
