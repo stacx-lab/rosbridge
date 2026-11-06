@@ -5,8 +5,9 @@ it lies between them, and the gripper is commanded to close, for 0.3 s; it stays
 commanded open. On the Sharpa hand the same idea reads:
 - opposition: the object touches the thumb or the palm on one side and one of the four fingers on the other
   (two fingers side by side, or a finger's pad and bone, oppose nothing);
-- grip: a digit touching it is commanded to flex further than it is (position drives turn that excess into grip
-  force, as the R1Pro's closing command does on its blocked jaws), or is commanded at least half closed and has reached
+- grip: a digit touching it is commanded to flex further than it is, or than its open pose where the object pushes it
+  back past open (position drives turn that excess into grip force, as the R1Pro's closing command does on its blocked
+  jaws; a digit commanded open never grips), or is commanded at least half closed and has reached
   its targets (a hand closed round a thin handle presses nothing); a little-curled hand that only touches a thing, a
   hand still closing, or an opening hand, does not grip;
 - both hold over OmniGibson's 0.3 s window, judged on most of its steps so that flickering contacts on a thin lip or
@@ -84,10 +85,14 @@ def closure(joint_digits, command, lower, upper):
     return {d: sum(v) / len(v) for d, v in sums.items()}
 
 
-def excess(joint_digits, command, reference):
-    """Per digit, the most one of its flexion joints is commanded beyond a reference position (rad)."""
+def excess(joint_digits, command, reference, open_pose=None):
+    """Per digit, the most one of its flexion joints is commanded beyond a reference position (rad); with open_pose
+    (each joint's open position), beyond the reference or the open pose, whichever is more flexed, so that a joint an
+    object pushes back past open counts only what its command flexes it past open (SQUEEZE_FROM_OPEN_POSE)."""
     out = {}
-    for d, c, r in zip(joint_digits, command, reference):
+    for i, (d, c, r) in enumerate(zip(joint_digits, command, reference)):
+        if open_pose is not None:
+            r = max(r, open_pose[i])
         out[d] = max(out.get(d, float("-inf")), c - r)
     return out
 
@@ -120,9 +125,12 @@ class Grip:
     joint_digits names the digit of each flexion joint, in the order of the command and measured sequences the methods
     take."""
 
-    def __init__(self, dt, joint_digits, load_limit=LOAD_LIMIT_N, limits=None):
+    def __init__(self, dt, joint_digits, load_limit=LOAD_LIMIT_N, limits=None, open_pose=None):
         self.dt, self.joint_digits, self.load_limit = dt, tuple(joint_digits), load_limit
         self.limits = limits  # the flexion joints' (lower, upper) limits, for the commanded closure; None: squeeze only
+        # the flexion joints' open positions: a squeeze counts from the open pose when an object holds a joint back past
+        # it (SQUEEZE_FROM_OPEN_POSE); None: from where the joint is
+        self.open_pose = tuple(open_pose) if open_pose is not None else None
         self.steps = max(1, round(GRASP_WINDOW_S / dt))
         self.recent = max(1, round(GRASP_RECENT_S / dt))
         self.window = deque(maxlen=self.steps)
@@ -134,6 +142,11 @@ class Grip:
         self.tightest = None  # the gripping digits' tightest mean command while held
         self.yielded = False  # it handed its object to the other hand and grasps again only after opening
         self.letting_s = 0.  # how long the hand has been opened while a finger still touches the held object
+
+    def squeeze(self, command, measured):
+        """Per digit, its squeeze (excess) beyond where it is, or beyond its open pose where an object holds it back
+        past open."""
+        return excess(self.joint_digits, command, measured, getattr(self, "open_pose", None))
 
     def reset(self):
         self.window.clear()
@@ -154,7 +167,7 @@ class Grip:
             self.target = candidate
         if self.target is None:
             return None
-        squeeze = excess(self.joint_digits, command, measured)
+        squeeze = self.squeeze(command, measured)
         links = touching(self.target)
         sides = {surface(link) for link in links}
         self.touched.append(digits(links))
@@ -178,7 +191,7 @@ class Grip:
     def grips(self, links, command, measured):
         """Whether the touching hand links grip an object now: opposition, and a touching digit squeezes or is closed
         (the window's conditions on one step, less the ray)."""
-        squeeze = excess(self.joint_digits, command, measured)
+        squeeze = self.squeeze(command, measured)
         return opposed(links) and squeezing(links, squeeze, closed=self.closed(command, squeeze))
 
     def hold(self, gripping=None):
@@ -198,7 +211,7 @@ class Grip:
         the fingers have left it (or just begin to), so they do not push it as they open. A grasp OmniGibson restored
         from a saved state is gripped by every digit."""
         held = DIGITS if self.held is None else self.held
-        squeeze = excess(self.joint_digits, command, measured)
+        squeeze = self.squeeze(command, measured)
         gripping = [c for d, c in zip(self.joint_digits, command) if d in held] or list(command)
         mean = sum(gripping) / len(gripping)
         self.tightest = mean if getattr(self, "tightest", None) is None else max(self.tightest, mean)

@@ -194,7 +194,8 @@ position targets. Physics runs at GR00T's 200 Hz. Commands:
   challenge's R1Pro uses, with its two jaws read as opposition (`g1_grasp`): an object
   touched by the thumb or the palm and by a finger, crossed by a ray from the thumb or
   the palm to a finger pad, and gripped (a touching digit commanded 0.15 rad beyond its
-  position, or at least 50% closed and still) over most of OmniGibson's 0.3 s window, while the hand
+  position, or beyond its open pose where the object pushes it back past open, or at least
+  50% closed and still; a digit commanded open never grips) over most of OmniGibson's 0.3 s window, while the hand
   is not opening, is attached to the hand until the gripping digits stop gripping or are
   opened by 0.2 rad, and then let go once no finger touches it (at most 0.08 s later), so
   the opening fingers do not push it. While held,

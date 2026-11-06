@@ -27,6 +27,13 @@ DIGITS = ("thumb", "index", "middle", "ring", "pinky")
 # SQUEEZE_ON_RAD beyond its measured position; a held object stays attached while a gripping digit is commanded at least
 # SQUEEZE_OFF_RAD beyond (the lower value keeps a grip from chattering).
 SQUEEZE_ON_RAD, SQUEEZE_OFF_RAD = .15, .05
+# The squeeze is measured from where the joint is or from its open pose (the hand's home, 0 rad), whichever is more
+# flexed: a finger pushed back past its open pose (a finger's MCP bends 0.17 rad backward, the thumb's 0.52) reads no
+# squeeze beyond what its command flexes it past open, so a digit commanded open never grips, for forming or keeping.
+# Measured from where the joint is alone, a pushed-back finger commanded open read as a 0.17 rad squeeze: open hands kept
+# holding or grabbed handles. False: from where the joint is (the previous rule).
+SQUEEZE_FROM_OPEN_POSE = True
+OPEN_POSE_RAD = 0.  # every hand joint's home (the hand profiles' home), which the code takes from the robot's reset pose
 # A touching digit also grips while it is commanded at least CLOSED_FRACTION of its flexion range closed (the mean over
 # its flexion joints) and, while a grasp forms, the hand has stopped closing and the digit has reached its targets
 # (within SQUEEZE_OFF_RAD): a hand closed round a thin handle reaches its targets and squeezes nothing, yet holds it, as
@@ -341,6 +348,14 @@ def load_text():
             f"drawer or lid is never let go by load.")
 
 
+def open_pose_text():
+    """What the note says about a digit commanded open (SQUEEZE_FROM_OPEN_POSE)."""
+    if not SQUEEZE_FROM_OPEN_POSE:
+        return ""
+    return (f"A digit commanded to its open pose ({OPEN_POSE_RAD:g} rad) or below never grips, even where the object "
+            f"pushes it back past open: its squeeze counts from the open pose, not from where the object holds it.")
+
+
 def assisted_note():
     """The instruction's note for a task set with assisted grasping (physical grasping says nothing)."""
     mass = f"{ASSIST_MASS_KG:g} kg"
@@ -354,7 +369,7 @@ side, one fingertip, a hand less closed that only touches it, and an opening han
 does, whatever the other fingers do, and so does a hand closed round a thin handle. The object stays attached while a
 digit that grips it is commanded at least {SQUEEZE_OFF_RAD:g} rad beyond where it is or {percent(CLOSED_FRACTION)}
 closed, and until the gripping digits are commanded open by {OPEN_RAD:g} rad on average from their tightest command: to
-let go, open them. It is let go once no finger touches it any more, at the latest {LET_GO_S:g} s after the hand opened,
+let go, open them. {open_pose_text()} It is let go once no finger touches it any more, at the latest {LET_GO_S:g} s after the hand opened,
 so the opening fingers do not push it. While it is attached the fingers press it only lightly (each flexion target stays
 within {GRIP_CLAMP_RAD:g} rad of its joint); let go, it leaves with the hand's motion, and while it still touches the
 hand ({RELEASE_FOLLOW_S:g} s at most) it moves no faster from the hand than falling gives (plus {RELEASE_MARGIN_MPS:g}
@@ -497,6 +512,9 @@ def rules():
         Rule("SQUEEZE_ON_RAD", "instruction.assisted",
              f"commanded at least {SQUEEZE_ON_RAD:g} rad of flexion beyond where it is"),
         Rule("SQUEEZE_OFF_RAD", "instruction.assisted", f"commanded at least {SQUEEZE_OFF_RAD:g} rad beyond where it is"),
+        *([Rule("SQUEEZE_FROM_OPEN_POSE", "instruction.assisted",
+                f"A digit commanded to its open pose ({OPEN_POSE_RAD:g} rad) or below never grips")]
+          if SQUEEZE_FROM_OPEN_POSE else []),
         Rule("CLOSED_FRACTION", "instruction.assisted",
              f"at least {percent(CLOSED_FRACTION)} of the way closed and has stopped there"),
         Rule("LET_GO_S", "instruction.assisted", f"at the latest {LET_GO_S:g} s after the hand opened"),

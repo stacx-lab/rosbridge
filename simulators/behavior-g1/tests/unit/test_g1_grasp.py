@@ -266,3 +266,57 @@ def test_a_released_object_falls_or_rests_but_is_not_flung():
     x, y, z = leaving_velocity((2., 0., 1.5), .1)  # pushed sideways and up by the fingers: cut to the margin
     assert (x, y, z) == pytest.approx((m, 0., m))
     assert leaving_velocity((0., 0., -5.), .1)[2] == pytest.approx(-(9.81 * .1 + m))  # shot downward: cut to falling
+
+
+# A digit an object pushes back past its open pose. The Sharpa fingers' MCP joints bend 0.17 rad backward
+# (the thumb's 0.52): measured from where the joint is, a finger pushed back to -0.17 and commanded open (0) read as a
+# 0.17 rad squeeze, so an open hand kept holding a light pinch (its tightest command below OPEN_RAD, so "open" never
+# came) and an open hand pressed onto a handle grabbed it. From the open pose it reads none.
+OPEN = [0.] * len(JOINTS)
+PUSHED_BACK = -.17  # a finger MCP's lower limit
+
+
+def light_pinch(open_pose):
+    """A light pinch held (the gripping digits commanded 0.15 rad, below OPEN_RAD), the index pushed back to its limit."""
+    from rosbridge_behavior.g1_rules import OPEN_RAD
+    g = Grip(DT, JOINTS, None, None, open_pose)
+    tight = [.15 if d in ("thumb", "index") else 0. for d in JOINTS]
+    measured = [PUSHED_BACK if d == "index" else .1 if d == "thumb" else 0. for d in JOINTS]
+    assert .15 < OPEN_RAD
+    g.hold({"thumb", "index"})
+    assert g.keep(tight, measured, 0.) is None
+    return g, measured
+
+
+def test_a_pushed_back_finger_commanded_open_kept_the_grasp_when_measured_from_where_it_is():
+    g, measured = light_pinch(None)  # the previous measure: the defect
+    assert all(g.keep(OPEN, measured, 0.) is None for _ in range(round(1. / DT)))  # opened, held for 1 s and on
+
+
+def test_a_pushed_back_finger_commanded_open_lets_go_within_let_go_s():
+    g, measured = light_pinch(OPEN)
+    steps = [g.keep(OPEN, measured, 0., fingers_on=lambda: True) for _ in range(round(2 * LET_GO_S / DT))]
+    assert "squeeze" in steps and steps.index("squeeze") <= round(LET_GO_S / DT)
+    g, measured = light_pinch(OPEN)  # opened below the open pose (a client's "fingers to the lower limit")
+    assert g.keep([-.17] * len(JOINTS), measured, 0.) == "squeeze"
+
+
+def test_an_open_hand_pressed_onto_a_handle_does_not_grab_it():
+    # every digit commanded open, the handle pushing the index back to its limit, thumb and index touching it
+    pressed = lambda k: [PUSHED_BACK if d == "index" else 0. for d in JOINTS]
+    for open_pose, grabs in ((None, True), (OPEN, False)):  # measured from where it is (the defect), from the open pose
+        g = Grip(DT, JOINTS, None, None, open_pose)
+        grasped = any(g.observe(TARGET, lambda t: PINCH, lambda t: True, OPEN, pressed(k)) for k in range(400))
+        assert grasped is grabs
+
+
+def test_a_finger_pushed_back_but_commanded_closed_still_grips():
+    g = Grip(DT, JOINTS, None, None, OPEN)
+    closing = [.3] * len(JOINTS)
+    measured = [PUSHED_BACK if d == "index" else .3 for d in JOINTS]  # the object holds the index back past open
+    assert g.squeeze(closing, measured)["index"] == pytest.approx(.3)  # counted from the open pose, not from -0.17
+    assert any(g.observe(TARGET, lambda t: PINCH, lambda t: True, closing, measured) for _ in range(400))
+    g.hold({"thumb", "index"})
+    assert g.keep(closing, measured, 0.) is None
+    # a joint short of its open pose (flexed by the object) counts from where it is, as before
+    assert excess(JOINTS, [.5] * len(JOINTS), [.2] * len(JOINTS), OPEN)["index"] == pytest.approx(.3)

@@ -21,7 +21,7 @@ from .g1_model import ARMS, BODY, CAMERA, LEGS, MODEL, SIDES, WAIST, WBC, arm_li
 # The values a worker's outcome depends on live in g1_rules, which the device texts and the task note state.
 from .g1_rules import (CLIP, FALL_HEIGHT, FALL_HOLD_S, FALL_TILT_DEG, FALL_UPRIGHT_DEG, GRIP_CLAMP_RAD, LOAD_LIMIT_N,
                        PELVIS_LIMITS, RELEASE_FOLLOW_S, RELEASE_MARGIN_MPS, SELF_COLLISIONS,
-                       VELOCITY_LIMIT)
+                       SQUEEZE_FROM_OPEN_POSE, VELOCITY_LIMIT)
 from .g1_grasp import Grip, digit, digits, leaving_velocity, phalanx  # noqa: F401 (digits: for callers)
 
 NAME = "robot_g1"
@@ -149,7 +149,12 @@ def assisted_grasping(robot, hands, attached=lambda arm: None, fallen=lambda: Fa
     own = set(robot.link_prim_paths)
     limits = {arm: (robot.joint_lower_limits[dofs[arm]].tolist(), robot.joint_upper_limits[dofs[arm]].tolist())
               for arm in hands}
-    grips = robot._g1_grips = {arm: Grip(dt, flexion_digit[arm], grasp_load_limit(), limits[arm]) for arm in hands}
+    # Each flexion joint's open pose (the robot's reset pose, the hands' home, within the joint's limits): a squeeze
+    # counts from it where an object pushes a finger back past open (SQUEEZE_FROM_OPEN_POSE), so an open hand never grips.
+    open_pose = {arm: [min(max(float(robot.reset_joint_pos[i]), lo), hi) for i, lo, hi in
+                       zip(dofs[arm].tolist(), *limits[arm])] if SQUEEZE_FROM_OPEN_POSE else None for arm in hands}
+    grips = robot._g1_grips = {arm: Grip(dt, flexion_digit[arm], grasp_load_limit(), limits[arm], open_pose[arm])
+                               for arm in hands}
     leaving = robot._g1_leaving = {arm: None for arm in hands}  # a released object near the hand: (obj, s, last touch s)
     offered = {arm: None for arm in hands}  # an object the other hand let go of this step: (obj, that hand)
     last = {arm: 0. for arm in hands}  # each hand's commanded closure at the previous physics step
