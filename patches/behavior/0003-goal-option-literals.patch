@@ -1,0 +1,45 @@
+diff --git a/OmniGibson/omnigibson/tasks/behavior_task.py b/OmniGibson/omnigibson/tasks/behavior_task.py
+index 9aa8bd4..46eb761 100644
+--- a/OmniGibson/omnigibson/tasks/behavior_task.py
++++ b/OmniGibson/omnigibson/tasks/behavior_task.py
+@@ -132,6 +132,8 @@ class BehaviorTask(BaseTask):
+         self.activity_initial_conditions = None
+         self.activity_goal_conditions = None
+         self.ground_goal_state_options = None
++        # (ground_goal_state_options, their distinct literals, each option as indices into them)
++        self._goal_option_index = None
+         self.feedback = None  # None or str
+         self.sampler = None  # BDDLSampler
+ 
+@@ -222,17 +224,24 @@ class BehaviorTask(BaseTask):
+                 has one bool per grounded predicate in that option (True iff currently satisfied for
+                 this env).
+         """
+-        from bddl.condition_evaluation import evaluate_state
+ 
+         def evaluate_fn(predicate_name, *entities):
+             return self._evaluate_predicate(env_idx, predicate_name, *entities)
+ 
+-        option_masks = []
+-        for option in self.ground_goal_state_options:
+-            _, results = evaluate_state(option, evaluate_fn)
+-            satisfied = set(results["satisfied"])
+-            option_masks.append([i in satisfied for i in range(len(option))])
+-        return option_masks
++        options = self.ground_goal_state_options
++        if self._goal_option_index is None or self._goal_option_index[0] is not options:
++            # The options of a quantified goal repeat the same grounded literals, one option per combination of
++            # objects (assembling_gift_baskets: 331,776 options of 16 literals, 64 distinct). Index the options by
++            # their distinct literals once, keyed by tokens since every option is compiled separately.
++            distinct = {}
++            rows = [
++                [distinct.setdefault(repr(literal.body), (len(distinct), literal))[0] for literal in option]
++                for option in options
++            ]
++            self._goal_option_index = (options, [literal for _, literal in distinct.values()], rows)
++        _, literals, rows = self._goal_option_index
++        values = [bool(literal.evaluate(evaluate_fn)) for literal in literals]
++        return [[values[i] for i in row] for row in rows]
+ 
+     def _create_termination_conditions(self):
+         # Initialize termination conditions dict and fill in with Timeout and PredicateGoal

@@ -30,7 +30,10 @@ def test_manifest_shares_the_adapter_and_the_g1s_sharpa_source():
     assert config["nested_sources"] == [sharpa]  # one clone, one revision
     series = PROJECT / "patches/behavior-dex/series"
     patches = [line for line in series.read_text().splitlines() if line and not line.startswith("#")]
-    assert all((series.parent / patch).is_file() for patch in patches) and len(patches) == 2
+    shared = [line for line in (PROJECT / "patches/behavior/series").read_text().splitlines()
+              if line and not line.startswith("#")]
+    assert patches == [f"../behavior/{patch}" for patch in shared]  # all of BEHAVIOR's first
+    assert all((series.parent / patch).is_file() for patch in patches)
 
 
 def write(path, text):

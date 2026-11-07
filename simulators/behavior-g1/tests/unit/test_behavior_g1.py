@@ -27,7 +27,10 @@ def test_manifest_shares_the_adapter_and_pins_the_robot_sources():
         ("third_party/unitree_ros", 40), ("third_party/sharpa", 40), ("third_party/decoupled_wbc", 40)]
     series = PROJECT / "patches/behavior-g1/series"
     patches = [line for line in series.read_text().splitlines() if line and not line.startswith("#")]
-    assert all((series.parent / patch).is_file() for patch in patches) and len(patches) == 3
+    shared = [line for line in (PROJECT / "patches/behavior/series").read_text().splitlines()
+              if line and not line.startswith("#")]
+    assert patches == [f"../behavior/{patch}" for patch in shared] + ["0003-wbc-metric-command.patch"]
+    assert all((series.parent / patch).is_file() for patch in patches)
 
 
 def write(path, text):
