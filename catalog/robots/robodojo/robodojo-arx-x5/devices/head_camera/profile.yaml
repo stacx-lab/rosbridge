@@ -37,6 +37,7 @@ meta:
   created_at: '2026-10-24T00:00:00Z'
   updated_at: '2026-10-24T00:00:00Z'
 type: rgb
+layout: mono
 description: Fixed RGB head camera (Gemini 345Lg model) above the table, rendered by RoboDojo's
   tiled Isaac renderer. Calibration and the optical-frame mount are in the profile.
 source: introspected
