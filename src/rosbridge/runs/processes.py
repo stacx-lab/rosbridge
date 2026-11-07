@@ -15,15 +15,18 @@ def parent_death_signal(parent_pid):
         os._exit(1)
 
 
+# Unified system call numbers, the same on every Linux architecture (pidfd_open needs Linux 5.3).
+SYS_PIDFD_SEND_SIGNAL, SYS_PIDFD_OPEN = 424, 434
+
+
 def signal_owner(owner, sig):
     """A pidfd prevents PID reuse between identity validation and signal delivery."""
     from .records import identity
-    # Some uv-provided CPython builds omit os.pidfd_open even on a capable
-    # Linux host. Use glibc's wrappers rather than falling back to a racy kill().
+    # Raw system calls: some uv-provided CPython builds omit os.pidfd_open, and glibc only wraps
+    # them since 2.36 (Ubuntu 22.04 has 2.35). Never fall back to a racy kill().
     libc = ctypes.CDLL("libc.so.6", use_errno=True)
-    libc.pidfd_open.argtypes = [ctypes.c_int, ctypes.c_uint]
-    libc.pidfd_send_signal.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_void_p, ctypes.c_uint]
-    fd = libc.pidfd_open(owner["pid"], 0)
+    libc.syscall.restype = ctypes.c_long
+    fd = libc.syscall(ctypes.c_long(SYS_PIDFD_OPEN), ctypes.c_long(owner["pid"]), ctypes.c_long(0))
     if fd < 0:
         error = ctypes.get_errno()
         if error == errno.ESRCH:
@@ -32,7 +35,8 @@ def signal_owner(owner, sig):
     try:
         if identity(owner["pid"]) != owner:
             raise ValueError("Run process identity changed; refusing to signal it")
-        if libc.pidfd_send_signal(fd, sig, None, 0) < 0:
+        if libc.syscall(ctypes.c_long(SYS_PIDFD_SEND_SIGNAL), ctypes.c_long(fd), ctypes.c_long(sig),
+                        None, ctypes.c_long(0)) < 0:
             error = ctypes.get_errno()
             if error != errno.ESRCH:
                 raise OSError(error, "Cannot signal run process handle")
