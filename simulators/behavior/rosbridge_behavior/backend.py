@@ -10,7 +10,7 @@ from typing import NamedTuple
 import numpy as np
 
 from rosbridge.catalog import resolve
-from rosbridge.core.devices import SpectatorView, device_inventory
+from rosbridge.core.devices import device_inventory, spectator_views
 from rosbridge.project import project_root
 from .assets import check_dex_task, check_g1_task, check_task
 from .environment import Episode, boot, rotation, values
@@ -73,10 +73,10 @@ class BehaviorSim:
     def devices(self):
         return device_inventory(self.layout, {name: name for name in self.cameras}, depth=self.cameras)
 
-    def configure_spectators(self, width=960, height=720):
-        # Overviews that follow the base, and the head camera's view.
-        self.spectators = (*(SpectatorView(name, "base", width, height) for name in OVERVIEWS),
-                           SpectatorView("head", "head_camera", width, height))
+    def configure_spectators(self, width=960, height=720, views=None):
+        # Overviews that follow the base, and the head camera's view; only the selected ones get render products.
+        self.spectators = spectator_views((*((name, "base") for name in OVERVIEWS), ("head", "head_camera")),
+                                          width, height, views)
 
     # Episode lifecycle ------------------------------------------------------------------
 

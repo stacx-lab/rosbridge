@@ -7,6 +7,7 @@ import pytest
 from rosbridge.cli.main import main, parser
 from rosbridge.recording import destination, reserve
 from rosbridge.recording.video import VideoStream, encoder_path
+from rosbridge.runs.api import recording_settings
 
 
 def test_record_cli_and_empty_destination(tmp_path, monkeypatch):
@@ -21,6 +22,18 @@ def test_record_cli_and_empty_destination(tmp_path, monkeypatch):
     with pytest.raises(ValueError, match='empty'):
         reserve(path, 'another-run', 'abc')
     assert main(['launch', 'abc', '--record-type', 'bag']) == 1
+    for flag, value in (('--record-rate', '5'), ('--record-size', '640x480'), ('--record-views', 'wrist'),
+                        ('--record-quality', '28')):
+        assert main(['launch', 'abc', flag, value]) == 1  # each requires --record
+
+
+def test_recording_settings_default_and_check_their_ranges():
+    assert recording_settings({}) == (10., 960, 720, [], 20)
+    assert recording_settings({'record_rate': 5, 'record_size': '640X480', 'record_views': 'head,,front_left',
+                               'record_quality': 28}) == (5., 640, 480, ['head', 'front_left'], 28)
+    for options in ({'record_rate': 60}, {'record_size': '8x8'}, {'record_quality': 52}):
+        with pytest.raises(ValueError):
+            recording_settings(options)
 
 
 def frames(path):

@@ -42,10 +42,10 @@ def close_streams(streams, timeout=10., kill_timeout=2.):
 
 class VideoStream:
     """One camera, at most sixteen pending frames, and a file per reset segment."""
-    def __init__(self, directory, name, fps, executable):
+    def __init__(self, directory, name, fps, executable, crf=20):
         if not math.isfinite(fps) or fps <= 0:
             raise ValueError('recording requires a positive, finite spectator rate')
-        self.directory, self.name, self.fps = Path(directory), name, fps
+        self.directory, self.name, self.fps, self.crf = Path(directory), name, fps, int(crf)
         self.executable = executable
         self.queue = queue.Queue(maxsize=16)
         self.received = self.dropped = 0
@@ -108,7 +108,7 @@ class VideoStream:
         command = [self.executable, '-hide_banner', '-loglevel', 'error', '-nostdin', '-n',
                    '-f', 'rawvideo', '-pixel_format', 'rgb24', '-video_size', f'{width}x{height}',
                    '-framerate', str(self.fps), '-i', 'pipe:0', '-an', '-c:v', 'libx264',
-                   '-preset', 'veryfast', '-crf', '20', '-threads', '2',
+                   '-preset', 'veryfast', '-crf', str(self.crf), '-threads', '2',
                    '-vf', 'pad=ceil(iw/2)*2:ceil(ih/2)*2', '-pix_fmt', 'yuv420p',
                    '-g', str(max(1, round(self.fps * 2))),
                    '-movflags', '+frag_keyframe+empty_moov+default_base_moof', str(path)]

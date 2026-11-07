@@ -8,7 +8,7 @@ import mujoco as mj  # noqa: E402
 import numpy as np  # noqa: E402
 
 from rosbridge.core import ActionLayout, CommandGroup
-from rosbridge.core.devices import SpectatorView, device_inventory
+from rosbridge.core.devices import device_inventory, spectator_views
 from .assets import check_task, configure, task_files, task_spec
 
 OPTICAL = np.diag([1., -1., -1.])
@@ -49,9 +49,9 @@ class LiberoSim:
     def devices(self):
         return device_inventory(self.layout, {CAMERAS[camera]: camera for camera in self.cameras})
 
-    def configure_spectators(self, width=960, height=720):
-        self.spectators = tuple(SpectatorView(role, source, width, height) for role, source in
-                               (('third_person', 'agentview'), ('wrist', 'robot0_eye_in_hand')))
+    def configure_spectators(self, width=960, height=720, views=None):
+        self.spectators = spectator_views((('third_person', 'agentview'), ('wrist', 'robot0_eye_in_hand')),
+                                          width, height, views)
 
     def reset(self, task, seed, randomize=True):
         runtime = configure()

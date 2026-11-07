@@ -29,7 +29,13 @@ class SimNode(Node):
         self.sim = load_backend(p["backend"])(max_steps=p["max_steps"] or None,
                                               terminate_on_success=p["terminate_on_success"])
         if p["spectator_rate_hz"]:
-            self.sim.configure_spectators(960, 720)
+            # The views a recording asked for (comma-separated; empty: every view the simulator offers). The
+            # simulator sets up only these, so views nobody records cost no rendering.
+            selected = [name for name in p["spectator_select"].split(",") if name]
+            self.sim.configure_spectators(p["spectator_width"], p["spectator_height"], selected or None)
+            unknown = sorted(set(selected) - {view.name for view in self.sim.spectators})
+            if unknown:
+                raise ValueError(f"this simulator offers no spectator views {unknown}")
         self.reset_options = (p["task"] or self.sim.default_task, p["seed"], p["randomize"])
         self.sim.reset(*self.reset_options)
         self.world = WorldRuntime(self.sim, p["mode"], lambda reset: self.observations.publish(reset))
@@ -49,7 +55,8 @@ class SimNode(Node):
 
     def _read_parameters(self):
         defaults = {"backend": "", "task": "", "seed": 0, "randomize": True, "mode": "realtime",
-                    "max_steps": 0, "terminate_on_success": False, "spectator_rate_hz": 0.}
+                    "max_steps": 0, "terminate_on_success": False, "spectator_rate_hz": 0.,
+                    "spectator_width": 960, "spectator_height": 720, "spectator_select": ""}
         for name, value in defaults.items():
             self.declare_parameter(name, value, ParameterDescriptor(read_only=True))
         params = {name: self.get_parameter(name).value for name in defaults}
@@ -59,6 +66,8 @@ class SimNode(Node):
             raise ValueError("max_steps must be nonnegative")
         if not math.isfinite(params["spectator_rate_hz"]) or params["spectator_rate_hz"] < 0:
             raise ValueError("spectator_rate_hz must be finite and nonnegative")
+        if params["spectator_width"] < 16 or params["spectator_height"] < 16:
+            raise ValueError("spectator_width and spectator_height must be at least 16 pixels")
         return params
 
     async def request(self, function):

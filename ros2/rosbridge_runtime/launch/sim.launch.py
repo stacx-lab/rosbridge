@@ -6,6 +6,7 @@ from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
 TYPES = {"backend": str, "task": str, "seed": int, "mode": str, "spectator_rate_hz": float,
+         "spectator_width": int, "spectator_height": int, "spectator_select": str,
          "terminate_on_success": lambda value: {"true": True, "false": False}[value.lower()]}
 
 

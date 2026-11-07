@@ -159,8 +159,8 @@ class WorkerBackend:
             raise ERRORS[kind](message)
         raise WorkerError(f"native {kind}: {message}\n{trace}")
 
-    def configure_spectators(self, width=960, height=720):
-        return self._call("configure_spectators", width, height)
+    def configure_spectators(self, width=960, height=720, views=None):
+        return self._call("configure_spectators", width, height, views)
 
     def reset(self, task, seed, randomize=True):
         return self._call("reset", task, seed, randomize)
