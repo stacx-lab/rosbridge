@@ -109,6 +109,9 @@ class BehaviorSim:
             self.max_steps = self.episode.max_steps
         self.done = True
         self.episode.load(seed)
+        # The evaluator's TaskMetric takes the goal options' satisfaction here, once the instance has loaded and
+        # before the policy acts: its partial credit counts only literals the episode newly satisfies.
+        self.initial_goal_options = self.episode.env.task.get_goal_option_satisfaction(0)
         self.embodiment.reset(self.episode)
         self.episode.origin = self.episode.base_pose()
         self.seed, self.steps, self.done = seed, 0, False
@@ -147,6 +150,14 @@ class BehaviorSim:
             # While recording, render every step as the evaluator does, so spectator captures
             # keep the renderer's history.
             self._render()
+
+    def measures(self):
+        """The evaluator's partial credit, TaskMetric's q_score: 1 on success, else the best grounded goal
+        option's fraction of literals that hold now and did not at the episode start."""
+        from omnigibson.metrics.task_metric import compute_q_score
+
+        now = self.episode.env.task.get_goal_option_satisfaction(0)
+        return {"q_score": float(compute_q_score(self.success, now, self.initial_goal_options))}
 
     # Cameras ----------------------------------------------------------------------------
 

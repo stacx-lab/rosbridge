@@ -17,7 +17,7 @@ class FakeEpisode:
         sensor = SimpleNamespace(image_height=2, image_width=2, get_obs=lambda: (
             {"rgb": np.zeros((2, 2, 4), np.uint8), "depth_linear": np.ones((2, 2))}, {}))
         self.robot = SimpleNamespace(sensors={"head": sensor})
-        self.env = SimpleNamespace(task=SimpleNamespace(success=[False]))
+        self.env = SimpleNamespace(task=SimpleNamespace(success=[False], get_goal_option_satisfaction=lambda env: []))
         self.max_steps = 100
 
     def load(self, seed):

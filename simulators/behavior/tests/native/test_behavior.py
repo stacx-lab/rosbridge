@@ -110,6 +110,7 @@ def test_step_limit_ends_the_episode_and_reset_restores_the_instance(sim):
     while not sim.done:
         sim.step(initial)
     assert sim.steps == 90 and not sim.success
+    assert sim.native("measures") == {"q_score": 0.}  # the radio, the goal's one literal, is still off
     with pytest.raises(RuntimeError, match="done"):
         sim.step(initial)
     sim.reset("turning_on_radio", 0)
@@ -167,6 +168,7 @@ def test_catalog_task_loads_steps_and_records(task):
         start = sim.native("render_count")
         sim.step(sim.state()[0])
         assert sim.steps == 1 and np.isfinite(sim.state()[0]).all() and sim.reward in (0., 1.)
+        assert 0. <= sim.native("measures")["q_score"] <= 1.
         sim.step(sim.state()[0])
         # Recording renders every step; the reset settled the spectators at their new pose.
         assert sim.native("render_count") == start + 2

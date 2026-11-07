@@ -52,6 +52,13 @@ average human demonstrations (`task.jsonl`), for example 3224 steps (107 s) for
 `turning_on_radio`. `behavior-dex` keeps the R1Pro's 30 Hz and horizon. The G1 steps at
 50 Hz instead of the evaluator's 30 Hz and gets the same time, 5374 steps. The world node's `max_steps` parameter overrides the horizon.
 
+Episode records add the evaluator's partial credit, `q_score`, as its `TaskMetric`
+computes it: 1 on success, else the best grounded goal option's fraction of literals
+that hold at the end and did not when the instance loaded. Quantified goals ground to
+many options that repeat the same literals (`assembling_gift_baskets`: 331,776
+options of 16 literals, 64 distinct), so OmniGibson is patched to evaluate each
+distinct literal once (`patches/behavior/0003-goal-option-literals.patch`).
+
 Isaac hosts one environment per process: a worker serves the one activity and
 instance it was launched with.
 
