@@ -50,6 +50,30 @@ def test_round_trip_keeps_layout_state_and_errors():
         sim.state()
 
 
+def test_a_call_interrupted_awaiting_its_reply_keeps_calls_and_replies_paired():
+    """A stop's KeyboardInterrupt lands while the world awaits a step, and the worker completes the step anyway."""
+    sim = worker()
+    try:
+        connection = sim._connection
+
+        class Interrupted:
+            def send(self, data):
+                connection.send(data)
+
+            def recv(self):
+                sim._connection = connection
+                raise KeyboardInterrupt
+        sim._connection = Interrupted()
+        with pytest.raises(KeyboardInterrupt):
+            sim.step(np.array([.5, -.25, 1.]))
+        positions, _ = sim.state()  # its own reply, not the step's
+        np.testing.assert_array_equal(positions, [.5, -.25, 1.])
+        assert sim.steps == 1
+    finally:
+        sim.close()
+    assert sim._process.returncode == 0
+
+
 def test_worker_death_is_reported():
     sim = worker()
     try:
