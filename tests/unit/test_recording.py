@@ -43,24 +43,31 @@ def frames(path):
     return json.loads(result)['streams'][0]
 
 
-def test_video_simulation_timing_reset_segments_and_decoding(tmp_path):
+def test_video_simulation_timing_and_decoding(tmp_path):
     stream = VideoStream(tmp_path, 'overview', 10., encoder_path())
     pixels = bytes([180, 40, 20]) * (31 * 23)  # Odd dimensions pad for yuv420p.
-    for timestamp in (0, 100_000_000, 400_000_000, 400_000_000, 0):
+    for timestamp in (0, 100_000_000, 400_000_000, 400_000_000):
         stream.submit(timestamp, 31, 23, pixels)
     stream.close()
-    first, second = frames(tmp_path / 'overview.mp4'), frames(tmp_path / 'overview_episode001.mp4')
-    assert (first['width'], first['height'], int(first['nb_read_frames'])) == (32, 24, 5)
-    assert int(second['nb_read_frames']) == 1
+    video = frames(tmp_path / 'overview.mp4')
+    assert (video['width'], video['height'], int(video['nb_read_frames'])) == (32, 24, 5)
     rows = [json.loads(line) for line in (tmp_path / 'overview.frames.jsonl').read_text().splitlines()]
     assert [r['frame_index'] for r in rows] == [0, 1, 4]
     assert rows[-1]['held_frames_before'] == 2
     assert stream.snapshot()['dropped'] == 0
 
 
+def test_world_time_going_backwards_fails_the_recording(tmp_path):
+    stream = VideoStream(tmp_path, 'overview', 10., encoder_path())
+    for timestamp in (100_000_000, 0):
+        stream.submit(timestamp, 16, 16, bytes(16 * 16 * 3))
+    with pytest.raises(RuntimeError, match="backwards"):
+        stream.close()
+
+
 def test_an_open_segment_is_readable_up_to_the_frame_before_the_latest(tmp_path):
     """A stepped world sends nothing after its episode ends, and a harness may copy a step's artifacts before the
-    reset closes the segment: the open file must already hold the episode (it lacked 4-8 s at 5 Hz)."""
+    run stops and closes the file: the open file must already hold the episode (it lacked 4-8 s at 5 Hz)."""
     import shutil
     stream = VideoStream(tmp_path, 'overview', 5., encoder_path())
     pixels = [bytes([20 * i % 256, 40, 200 - 5 * i]) * (64 * 48) for i in range(30)]

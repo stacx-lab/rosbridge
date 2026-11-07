@@ -64,9 +64,7 @@ class SampleSchedule:
         self.rate = rate
         self.next_s = 0.
 
-    def due(self, time_s, reset=False):
-        if reset:
-            self.next_s = time_s
+    def due(self, time_s):
         if not self.rate or time_s + 1e-9 < self.next_s:
             return False
         intervals = max(1, math.floor((time_s - self.next_s + 1e-9) * self.rate) + 1)

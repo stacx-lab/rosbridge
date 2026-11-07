@@ -10,7 +10,7 @@ from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from rosbridge_runtime.devices import STREAM_QOS
 from tests.ros.support import Graph
 
-STARTUP_S, RESET_S = 1800., 600.
+STARTUP_S = 1800.
 
 
 def workers(graph):
@@ -63,9 +63,6 @@ def test_behavior_g1_graph_walks_and_moves_the_hands(tmp_path, mode):
         assert max(abs(a - b) for a, b in zip(last["hand"].position, goal)) < .1
         image, depth = graph.frame("head_camera", depth=True, timeout=120.)
         assert (image.width, image.height, depth.encoding) == (720, 720, "16UC1")
-        assert graph.reset(RESET_S).success
-        graph.spin(.5)
-        assert abs(last["base"].pose.pose.position.x) < 1e-3
     finally:
         graph.close()
     assert not any(process.is_running() and process.status() != psutil.STATUS_ZOMBIE for process in native)

@@ -65,6 +65,5 @@ def test_robocasa_graph_serves_the_mobile_kinex_devices(tmp_path):
         assert image.header.frame_id == 'camera_wrist/base' and depth.encoding == '16UC1'
         assert len(image.data) == 256 * 256 * 3
         assert seconds(image.header.stamp) == seconds(graph.last['clock'].clock)
-        assert graph.reset(120.).success
     finally:
         graph.close()

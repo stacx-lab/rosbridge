@@ -22,8 +22,7 @@ OPERATIONS = {
 }
 WORLD = {"time": ("/clock", "rosgraph_msgs/msg/Clock"),
          "wait": ("/world/wait", "kinex_interfaces/srv/Wait"),
-         "stop": ("/world/stop", "std_srvs/srv/Trigger"),
-         "reset": ("/world/reset", "std_srvs/srv/Trigger")}
+         "stop": ("/world/stop", "std_srvs/srv/Trigger")}
 
 
 def manifest(simulator):

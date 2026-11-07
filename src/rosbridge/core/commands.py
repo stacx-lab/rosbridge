@@ -75,7 +75,7 @@ class CommandBuffer:
 
     def _group(self, name, values):
         if not self._open:
-            raise CommandError("episode is done; call world/reset")
+            raise CommandError("episode is done")
         if name not in self._groups:
             raise CommandError(f"unknown command group: {name}")
         group = self._groups[name]

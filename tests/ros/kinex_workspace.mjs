@@ -40,7 +40,7 @@ asyncio.run(main())`,timeout_s})
 }
 try {
   const profiles = await runtime.devices.list()
-  assert.deepEqual(Object.keys(profiles.find(d=>d.name==='world').operations), ['time','wait','stop','reset'])
+  assert.deepEqual(Object.keys(profiles.find(d=>d.name==='world').operations), ['time','wait','stop'])
   assert.deepEqual(Object.keys(profiles.find(d=>d.name==='gripper').operations), ['joint_state','target','stop'])
   for (const name of ['world','arm','gripper','camera_agentview','camera_wrist']) {
     await (await runtime.devices.load(name)).ready

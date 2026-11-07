@@ -42,7 +42,7 @@ ROSBRIDGE_ASSET_SEED=../RoboEnv/.cache/roboenv/assets rosbridge prepare robocasa
 
 | Device | Kinex type | Interfaces |
 | --- | --- | --- |
-| `world` | world | `/clock`, `world/wait`, `world/stop`, `world/reset`, `world/spectator/*` while recording |
+| `world` | world | `/clock`, `world/wait`, `world/stop`, `world/spectator/*` while recording |
 | `base` | locomotion | `base/velocity`, `base/odometry`, `base/stop` |
 | `torso` | joint | `torso/joint_state`, `torso/joint_target`, `torso/stop` |
 | `arm` | joint | `arm/joint_state`, `arm/joint_target`, `arm/stop` |
@@ -91,15 +91,15 @@ Each `stop` holds the measured joint positions, the gripper's integrated command
 
 Each action interval advances 0.05 simulation seconds (25 MuJoCo substeps). The
 seed fully determines the kitchen layout and style, objects, placements and
-instruction; a reset builds a new kitchen (about 10 s). Tasks marked
+instruction; building the kitchen takes about 10 s. Tasks marked
 `split = "target"` in `tasks.toml` use upstream's evaluation split, as
 `create_env(split="target")` does: held-out object instances in kitchens 1–10 with
 matching layout and style. The other tasks sample all kitchens and objects. The
 default horizon is upstream's dataset horizon for the task (for example 750 steps
 for `PickPlaceCounterToCabinet`), or none when upstream has no dataset; `--max-steps`
 overrides it. Success is Kitchen's native predicate, evaluated once per step. The
-native language instruction is printed to the run log at each reset; rosbridge
-does not publish it. A failed reset preserves the previous live environment.
+native language instruction is printed to the run log when the episode starts;
+rosbridge does not publish it.
 
 ## Cameras, recording and demo
 

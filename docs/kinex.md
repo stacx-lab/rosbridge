@@ -12,7 +12,7 @@ joint and gripper devices run in Kinex. rosbridge builds `Wait` from its own cop
 
 | Device type | Operations (endpoint, type) |
 |---|---|
-| `world` | `time` (`/clock`, Clock), `wait` (`/world/wait`, Wait), `stop` (`/world/stop`), `reset` (`/world/reset`) |
+| `world` | `time` (`/clock`, Clock), `wait` (`/world/wait`, Wait), `stop` (`/world/stop`) |
 | `joint` (arm, torso) | `joint_state` (`/<arm>/joint_state`, JointState), `joint_target` (`/<arm>/joint_target`, JointTrajectory), `stop` |
 | `gripper` | `joint_state`, `target` (`/<gripper>/target`, Float64 position), `stop` |
 | `locomotion` (base) | `velocity` (`/<base>/velocity`, Twist), `odometry` (`/<base>/odometry`, Odometry), `stop` |
@@ -43,7 +43,7 @@ other devices from it (`torso` on `base:base`, the arm on `torso:top`).
 
 World waits are sequential: one requested while another is pending is rejected, and
 `world/stop` cancels the pending wait. Realtime observes progress; stepped mode
-advances only for a pending wait; reset and shutdown interrupt it. Commands are
+advances only for a pending wait; shutdown interrupts it. Commands are
 validated on the simulator owner thread; invalid ones are logged and keep the held
 target. A device's `stop` holds the measured position (a base commands zero
 velocity) and is created after its command subscription, so a Kinex client that
@@ -116,9 +116,10 @@ Task instructions and judging are not device operations or ROS topics. Supply
 the agent objective in the user prompt; the operator reads native outcomes with
 `rosbridge judge RUN_ID --json`.
 
-An episode ending on success or a step limit pauses physics. The graph remains
-available for images, clock and reset; new commands are rejected until reset. Each
-terminal, reset or explicitly stopped episode appends its native outcome once to
-`episode-results.jsonl` in rosbridge's run directory. An interrupted run is marked
-stopped, not a successful terminal episode. Judge records are separate from the
-agent workspace; this separation is not an OS security sandbox.
+A run is one episode; the world offers no reset, so starting over is the operator's:
+stop the run and launch another. An episode ending on success or a step limit pauses
+physics. The graph remains available for images and clock; new commands are
+rejected. The episode's native outcome is appended once, when it ends or the run
+stops, to `episode-results.jsonl` in rosbridge's run directory. An interrupted run
+is marked stopped, not a successful terminal episode. Judge records are separate
+from the agent workspace; this separation is not an OS security sandbox.

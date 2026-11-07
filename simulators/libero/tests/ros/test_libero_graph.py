@@ -52,6 +52,5 @@ def test_libero_graph_serves_the_kinex_devices(tmp_path, mode):
         assert image.header.frame_id == 'camera_wrist/base' and len(image.data) == 256 * 256 * 3
         if mode == 'stepped':  # a paused world still yields its current frame
             assert seconds(image.header.stamp) == seconds(graph.last['clock'].clock)
-        assert graph.reset().success
     finally:
         graph.close()

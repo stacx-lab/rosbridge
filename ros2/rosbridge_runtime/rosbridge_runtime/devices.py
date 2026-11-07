@@ -130,9 +130,6 @@ class Camera:
                       if spec.kind == 'rgbd' else None)
         self.info = node.create_publisher(CameraInfo, f'{spec.name}/camera_info', STREAM_QOS)
 
-    def reset(self):
-        self.latest = self.latest_depth = None
-
     def render(self, stamp):
         if self.latest is None or self.latest.header.stamp != stamp:
             self.latest = conv.image(stamp, self.frame, self.node.sim.render(self.spec.source))

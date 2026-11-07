@@ -31,7 +31,7 @@ def test_non_abc_layout_and_atomic_rejection():
     commands.stop("arm", [5., 5.])  # a measured hold may lie outside command limits
     assert commands.action(21).tolist() == [-0.5, 5., 5.]
     commands.close()
-    with pytest.raises(CommandError, match="world/reset"):
+    with pytest.raises(CommandError, match="episode is done"):
         commands.set_group("finger", [0.])
 
 

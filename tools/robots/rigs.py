@@ -65,11 +65,6 @@ def world(description):
             timeout_s=120),
         "stop": operation("Cancel the pending wait.", "service", "input", "/world/stop",
                           "std_srvs/srv/Trigger"),
-        "reset": operation(
-            "Reset the configured episode and clock. Invalidates old observations and the "
-            "pending wait; observe fresh state afterward. Task selection and judging belong to "
-            "the external environment operator.", "service", "input", "/world/reset",
-            "std_srvs/srv/Trigger", timeout_s=120),
     }
     value = device("world", "world", description, ops, observation="time")
     value.update(source="default", method="unknown", bounds=None, surfaces=[],

@@ -13,7 +13,7 @@ rosbridge launch libero/libero-spatial-01 --execution-mode stepped --record ../r
 
 `libero` selects `libero/libero-spatial-01`. Preparation is noninteractive and
 prepares all 130 tasks; `prepare libero --task libero-spatial-01` narrows it.
-Launch and reset never download assets. Upstream LIBERO is pinned to
+Launch never downloads assets. Upstream LIBERO is pinned to
 `8f1084e3132a39270c3a13ebe37270a43ece2a01`, with a managed namespace-packaging
 patch. The isolated environment pins robosuite 1.4.0, MuJoCo 3.2.3, NumPy 1.26.4
 and CPU PyTorch 2.5.1.
@@ -25,7 +25,7 @@ the [robot catalog](kinex.md).
 
 | Device | Interfaces |
 | --- | --- |
-| `world` | `/clock`, `world/wait`, `world/stop`, `world/reset`, `world/spectator/*` while recording |
+| `world` | `/clock`, `world/wait`, `world/stop`, `world/spectator/*` while recording |
 | `arm` | `arm/joint_state`, `arm/joint_target`, `arm/stop` |
 | `gripper` | `gripper/joint_state`, `gripper/target`, `gripper/stop` |
 | `camera_agentview` | `camera_agentview/{image,camera_info}` |
@@ -37,7 +37,7 @@ a run's environment and domain.
 ```mermaid
 flowchart LR
   client[Kinex or a controller] -->|joint and gripper targets, stops| world
-  client -->|wait / stop / reset| world
+  client -->|wait / stop| world
   world -->|one native interval| native[LIBERO / robosuite]
   native -->|state, images| world
   world --> recorder[Managed MP4 / ROS bag recorder]
@@ -59,7 +59,7 @@ interval the backend steers LIBERO's integrated direction command toward it with
 oscillate by a few millimetres. `gripper/joint_state` reports `finger_joint1`.
 
 Each `stop` (`std_srvs/srv/Trigger`) holds the measured position. Commands to a
-finished episode are rejected until `world/reset`.
+finished episode are rejected.
 
 ## Episode timing
 
@@ -67,12 +67,12 @@ Each action interval advances 0.05 simulation seconds (25 MuJoCo substeps).
 Stepped mode advances only through `world/wait`; realtime mode advances on its
 own and a wait observes elapsed time. See the shared [wait semantics](README.md).
 
-Reset loads an official initial state. `randomize: true` chooses a state with a
-seeded NumPy generator; `false` selects state zero. Five native initialization
-intervals hold the initial arm pose and finger position before the episode's
-public clock and step counter start at zero. Native reward and success are
-available through `rosbridge judge RUN_ID`; `--stop-on-success` ends the episode
-on success. A failed reset preserves the previous live environment.
+The episode starts from an official initial state. `randomize: true` chooses a state
+with a seeded NumPy generator; `false` selects state zero. Five native
+initialization intervals hold the initial arm pose and finger position before the
+episode's public clock and step counter start at zero. Native reward and success are
+available through `rosbridge judge RUN_ID`; `--stop-on-success` ends the episode on
+success.
 
 ## Cameras, recording and demo
 

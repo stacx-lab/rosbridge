@@ -41,19 +41,6 @@ operations:
       reliability: reliable
       durability: volatile
     timeout_s: 10
-  reset:
-    description: Reset the configured episode and clock. Invalidates old observations and
-      the pending wait; observe fresh state afterward. Task selection and judging belong to
-      the external environment operator.
-    transport: service
-    direction: input
-    endpoint: /world/reset
-    type: std_srvs/srv/Trigger
-    qos:
-      depth: 1
-      reliability: reliable
-      durability: volatile
-    timeout_s: 120
 loaded: false
 meta:
   created_at: '2026-10-24T00:00:00Z'

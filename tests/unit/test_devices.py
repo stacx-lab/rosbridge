@@ -26,17 +26,16 @@ def test_spectator_views_keep_only_the_selected_ones():
     assert spectator_views(pairs, 640, 480, ['head', 'missing']) == (SpectatorView('head', 'head_camera', 640, 480),)
 
 
-def test_sampling_uses_sim_time_skips_gaps_and_resets():
+def test_sampling_uses_sim_time_and_skips_gaps():
     schedule = SampleSchedule(10)
-    assert schedule.due(0, reset=True)
+    assert schedule.due(0)
     assert not schedule.due(0)
     assert not schedule.due(.034)
     assert schedule.due(.102)
     assert not schedule.due(.136)
     assert schedule.due(3.04)
     assert not schedule.due(3.05)
-    assert schedule.due(0, reset=True)
-    assert not SampleSchedule(0).due(0, reset=True)
+    assert not SampleSchedule(0).due(0)
     for rate in (-1, float('nan'), float('inf')):
         with pytest.raises(ValueError):
             SampleSchedule(rate)

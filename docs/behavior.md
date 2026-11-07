@@ -41,9 +41,9 @@ environment. The activity loads in its scene with the rooms the evaluator loads
 (`B100_task_misc.csv`), with its three disabled transition rules (toggleable
 machines, mixing tools and cooking systems) and light synchronization for
 `turning_out_all_lights_before_sleep`. The seed selects public test instance
-`301 + seed % 20` and seeds Python, NumPy, Torch and Warp. Reset restores the
-instance's objects and the robot's start pose, settles 25 physics steps holding
-task entities still, and restarts the clock, as the evaluator's `load_batch` does.
+`301 + seed % 20` and seeds Python, NumPy, Torch and Warp. Loading it restores the
+instance's objects and the robot's start pose and settles 25 physics steps holding
+task entities still, as the evaluator's `load_batch` does.
 
 Success is the activity's BDDL goal predicate, evaluated every step; the reward is
 1 while it holds. `--stop-on-success` ends the episode at the first success, as the
@@ -52,10 +52,8 @@ average human demonstrations (`task.jsonl`), for example 3224 steps (107 s) for
 `turning_on_radio`. `behavior-dex` keeps the R1Pro's 30 Hz and horizon. The G1 steps at
 50 Hz instead of the evaluator's 30 Hz and gets the same time, 5374 steps. The world node's `max_steps` parameter overrides the horizon.
 
-Isaac hosts one environment per process: a worker serves the one activity it was
-launched with, and a reset reloads the instance in the live environment (seconds).
-A reset that fails after the reload starts leaves the episode done until a reset
-succeeds.
+Isaac hosts one environment per process: a worker serves the one activity and
+instance it was launched with.
 
 ## Native worker
 
@@ -168,11 +166,11 @@ OmniGibson makes the links below a robot's moving joints weightless, as ideal gr
 compensation. The G1 needs its weight to walk, so gravity acts on the pelvis, legs
 and torso; the arms and hands keep OmniGibson's compensation, as RoboEnv's SIMPLE G1
 compensates its arms, and track their targets without sagging (their own weight does
-not load the torso). Each reset places the pelvis at standing height above the
+not load the torso). Loading places the pelvis at standing height above the
 instance's R1Pro start pose and runs GR00T's standing initialization outside the
 episode, as RoboEnv's SIMPLE G1 does, until the base is still (within 6 s). The
 policies were trained for a G1 with Dex3 hands in MuJoCo; here they balance the
-heavier Sharpa hands in PhysX. A fall is not recovered; reset the world.
+heavier Sharpa hands in PhysX. A fall is not recovered.
 
 The head camera is an RGB-D camera on the G1's D435 mount with the R1Pro head
 camera's optics (720×720, fx = 306). The rig `behavior-g1/behavior-g1-sharpa` chains
@@ -237,12 +235,12 @@ current state (the evaluator's frames lag its physics by one step).
   never render. Without a render at the previous step the renderer has no recent
   history, so a read renders three times, as OmniGibson re-renders after a reset;
   `turning_out_all_lights_before_sleep` adds the evaluator's three re-renders after
-  its light sync. A reset's frames come from its own renders. In a house, a step takes
-  about 40 ms unread and 85 ms with every camera read.
+  its light sync. The first frames come from the load's own renders. In a house, a
+  step takes about 40 ms unread and 85 ms with every camera read.
 - The G1 renders on demand: a capture renders until the renderer delivers two frames
   of the current state (the first after a change carries the renderer's temporal
   history of an older state). When cameras were last rendered more than 0.25 s of
-  world time earlier (after a reset, or when a stream starts), a capture renders 16
+  world time earlier (after loading, or when a stream starts), a capture renders 16
   frames, about a second, to reach the noise of streamed captures. It anti-aliases with
   DLAA at native resolution instead of DLSS Performance upscaling, which cuts the
   frame-to-frame noise of on-demand captures by a third.
@@ -261,7 +259,7 @@ the distance and heights of RoboEnv's BEHAVIOR overview: 2.6 m out, the eye 2.4 
 above the floor and aimed at 0.9 m. For the G1 they stand 1.8 m out, the eye 1.4 m
 above the floor and aimed at 0.8 m, so the whole body and the hands stay in view.
 With the R1Pro embodiments, recording renders every step, so the spectators keep the
-renderer's history; a reset settles them at their new pose with 16 renders, and each
+renderer's history; loading settles them at their start pose with 16 renders, and each
 spectator sample renders once for every recorded view.
 
 ```bash

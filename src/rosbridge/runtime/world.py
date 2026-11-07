@@ -1,6 +1,5 @@
 """Main-thread episode execution, request admission and observation ordering."""
 from concurrent.futures import Future
-from dataclasses import dataclass
 import json
 import os
 from pathlib import Path
@@ -12,14 +11,8 @@ from .pacing import Pacer
 from .waits import WaitScheduler
 
 
-@dataclass(frozen=True)
-class ResetResult:
-    success: bool
-    message: str
-
-
 class WorldRuntime:
-    """Own an already-reset backend; publish(reset) runs on the same owner thread.
+    """Run the one episode a backend has loaded; publish() runs on the same owner thread.
 
     submit() is the only cross-thread entry point: queued functions run on the
     owner thread between steps, so callback threads never touch native state.
@@ -30,21 +23,15 @@ class WorldRuntime:
         self._requests = queue.SimpleQueue()
         self._lock = threading.Lock()
         self._closed = False
-        self.episode = -1
+        self._judged = False
+        self.time_s, self.steps = sim.time_s, sim.steps
+        self.commands = CommandBuffer(sim.layout, sim.state()[0])
         self.waits = WaitScheduler()
         self.pacer = Pacer(mode, sim.period, **pacer_options)
-        self._snapshot_reset()
 
     def _assert_owner(self):
         if threading.get_ident() != self._owner:
             raise RuntimeError("native simulator access must stay on its owner thread")
-
-    def _snapshot_reset(self):
-        self.episode += 1
-        self.time_s, self.steps = self.sim.time_s, self.sim.steps
-        self._judged = False
-        self.commands = CommandBuffer(self.sim.layout, self.sim.state()[0])
-        self.pacer.reset(self.sim.period)
 
     def submit(self, request):
         """Run request() on the owner thread; the future carries its result."""
@@ -55,20 +42,6 @@ class WorldRuntime:
             else:
                 self._requests.put((request, future))
         return future
-
-    def reset(self, task, seed, randomize):
-        self._assert_owner()
-        self.waits.interrupt(self.time_s, "interrupted by reset")
-        previous = self._outcome("reset")
-        try:
-            self.sim.reset(task, seed, randomize)
-        except Exception:
-            return ResetResult(False, "reset failed")
-        self._record_terminal(result=previous)
-        self.commands.close()
-        self._snapshot_reset()
-        self.publish(True)
-        return ResetResult(True, "episode reset")
 
     def drain(self, timeout=0.):
         self._assert_owner()
@@ -97,7 +70,7 @@ class WorldRuntime:
         self.sim.step(self.commands.action(self.time_s + self.sim.period))
         self.pacer.advanced()
         self.time_s, self.steps = self.sim.time_s, self.sim.steps
-        self.publish(False)
+        self.publish()
         if self.sim.done:
             self.commands.close()
             self._record_terminal()
@@ -107,17 +80,17 @@ class WorldRuntime:
 
     def _outcome(self, reason=None):
         limit = self.sim.max_steps
-        return {"episode": self.episode, "task": self.sim.task, "seed": self.sim.seed,
+        return {"task": self.sim.task, "seed": self.sim.seed,
                 "step": self.steps, "time_s": self.time_s, "reward": self.sim.reward,
                 "success": bool(self.sim.success), "done": bool(self.sim.done),
                 "reason": reason or ("success" if self.sim.success else "max_steps"
                            if limit and self.steps >= limit else "episode_done")}
 
-    def _record_terminal(self, reason=None, *, result=None, error=None):
+    def _record_terminal(self, reason=None, *, error=None):
         if self._judged:
             return
         self._judged = True
-        result = self._outcome(reason) if result is None else result
+        result = self._outcome(reason)
         if error:
             result = dict(result, error=error)
         folder = os.environ.get("ROSBRIDGE_RUN_DIR")

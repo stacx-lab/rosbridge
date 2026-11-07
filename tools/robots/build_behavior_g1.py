@@ -39,7 +39,7 @@ def main():
             "own the legs and waist at 50 Hz. Commands are a body twist (vx, vy in m/s, wz in rad/s) "
             f"within GR00T's navigation limits of {VELOCITY_LIMIT}; the gait balances the body while "
             "the arms and hands move. The base frame is the pelvis; odometry starts at the "
-            "episode-start pose. A fall is not recovered; reset the world.",
+            "episode-start pose. A fall is not recovered.",
             {axis: (-VELOCITY_LIMIT, VELOCITY_LIMIT) for axis in ("vx", "vy", "wz")},
             {"parent": None, "translation_m": None, "rotation_xyzw": None},
             timeout_s=VELOCITY_TIMEOUT_S, units="si"),

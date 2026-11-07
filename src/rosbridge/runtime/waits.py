@@ -32,7 +32,7 @@ class WaitScheduler:
         elif duration_s == 0:
             complete(WaitResult(True, "ok", 0., time_s))
         elif done:
-            complete(WaitResult(False, "episode is done; call reset", 0., time_s))
+            complete(WaitResult(False, "episode is done", 0., time_s))
         else:
             # Integer deadlines avoid accumulated floating-point drift. Move one ULP
             # toward zero so e.g. 0.3 / 0.1 does not accidentally request an extra tick.

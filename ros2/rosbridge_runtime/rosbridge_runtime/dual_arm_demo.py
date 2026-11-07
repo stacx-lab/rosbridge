@@ -12,7 +12,6 @@ from rclpy.node import Node
 from rosgraph_msgs.msg import Clock
 from sensor_msgs.msg import CameraInfo, Image, JointState
 from std_msgs.msg import Float64
-from std_srvs.srv import Trigger
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 
 from rosbridge.clients import WorldClockClient
@@ -32,7 +31,6 @@ class ControlDemo(Node):
         self.targets = {side: self.create_publisher(JointTrajectory, f"{side}_arm/joint_target", 1)
                         for side in ("left", "right")}
         self.gripper = self.create_publisher(Float64, "right_gripper/target", 1)
-        self.reset = self.create_client(Trigger, "world/reset")
         self.world = WorldClockClient(self)
 
     def on_info(self, msg):
@@ -99,12 +97,6 @@ class ControlDemo(Node):
         # Backends may build scenes or start renderers for minutes before serving devices.
         self.wait(lambda: all(pub.get_subscription_count() for pub in (*self.targets.values(), self.gripper)),
                   timeout=900)
-        if not self.reset.wait_for_service(timeout_sec=60):
-            raise RuntimeError("world/reset unavailable")
-        future = self.reset.call_async(Trigger.Request())
-        self.wait(future.done, timeout=300)
-        if not future.result().success:
-            raise RuntimeError(f"reset failed: {future.result().message}")
         self.wait(lambda: all(key in self.last for key in ("left_arm", "right_arm", "right_gripper", "clock")))
         # Settle before taking a reference position or measuring throughput.
         self.advance(0.34)

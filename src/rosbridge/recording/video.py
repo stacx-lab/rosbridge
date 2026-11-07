@@ -41,7 +41,7 @@ def close_streams(streams, timeout=10., kill_timeout=2.):
 
 
 class VideoStream:
-    """One camera, at most sixteen pending frames, and a file per reset segment."""
+    """One camera, at most sixteen pending frames, and one file: `segments` lists it once it opens."""
     def __init__(self, directory, name, fps, executable, crf=20):
         if not math.isfinite(fps) or fps <= 0:
             raise ValueError('recording requires a positive, finite spectator rate')
@@ -96,19 +96,17 @@ class VideoStream:
                     'segments': [dict(segment) for segment in self.segments], 'error': self._error}
 
     def _open(self, stamp_ns, width, height):
-        index = len(self.segments)
-        stem = self.name if index == 0 else f'{self.name}_episode{index:03d}'
-        path = self.directory / f'{stem}.mp4'
+        path = self.directory / f'{self.name}.mp4'
         self.segment = {'file': path.name, 'frames': 0, 'width': width, 'height': height,
                         'fps': self.fps, 'first_stamp_ns': stamp_ns, 'last_stamp_ns': stamp_ns}
         with self._lock:
             self.segments.append(self.segment)
-        log = self._files.enter_context((self.directory / f'{stem}.ffmpeg.log').open('wb'))
-        self.journal = self._files.enter_context((self.directory / f'{stem}.frames.jsonl').open('x'))
+        log = self._files.enter_context((self.directory / f'{self.name}.ffmpeg.log').open('wb'))
+        self.journal = self._files.enter_context((self.directory / f'{self.name}.frames.jsonl').open('x'))
         # The file stays readable while the segment is open, up to the frame before the latest: no encoder lookahead
         # or B-frames (zerolatency), a fragment per frame, flushed at once. A stepped world sends nothing after its
-        # episode ends, and a harness may copy the file before the reset that closes the segment (to score the
-        # step, for example); x264's lookahead and keyframe fragments held back 4-8 s there.
+        # episode ends, and a harness may copy the file before the run stops and closes it (to score the step, for
+        # example); x264's lookahead and keyframe fragments held back 4-8 s there.
         command = [self.executable, '-hide_banner', '-loglevel', 'error', '-nostdin', '-n',
                    '-f', 'rawvideo', '-pixel_format', 'rgb24', '-video_size', f'{width}x{height}',
                    '-framerate', str(self.fps), '-i', 'pipe:0', '-an', '-c:v', 'libx264',
@@ -133,7 +131,7 @@ class VideoStream:
 
     def _frame(self, stamp_ns, width, height, pixels):
         if self._process is not None and stamp_ns < self.segment['last_stamp_ns']:
-            self._finish_segment()
+            raise ValueError('world time went backwards')  # a run is one episode; its clock never rewinds
         if self._process is None:
             self._open(stamp_ns, width, height)
         elif (width, height) != (self.segment['width'], self.segment['height']):

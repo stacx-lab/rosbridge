@@ -44,7 +44,7 @@ The simulator hosts these devices on one `world` node:
 
 | Device | Interfaces |
 |---|---|
-| `world` | `/clock`, `world/wait`, `world/stop`, `world/reset`, `world/spectator/*` while recording |
+| `world` | `/clock`, `world/wait`, `world/stop`, `world/spectator/*` while recording |
 | `left_arm`, `right_arm` | `<arm>/joint_state`, `<arm>/joint_target`, `<arm>/stop` |
 | `left_gripper`, `right_gripper` | `<gripper>/joint_state`, `<gripper>/target`, `<gripper>/stop` |
 | `camera_top`, `camera_left`, `camera_right` | `<camera>/image`, `<camera>/depth`, `<camera>/camera_info` |
@@ -97,7 +97,7 @@ held for one second). These rules only read state.
 | Spectators, with `--record` only | third_person, wrist, right_wrist; 960×720; 10 Hz |
 
 Rates throttle publication at native control boundaries and never change control
-frequency. Reset preserves the graph and restarts native time.
+frequency.
 
 The spectator roles use top, left-wrist, and right-wrist native camera poses.
 They render live state into a dedicated MuJoCo GL context and framebuffer, without
@@ -129,5 +129,5 @@ and `test_kinex_geometry.py` checks the exported rig's arm FK, finger mimics, TC
 and camera mounts against MuJoCo on patched and unpatched scenes.
 All 33 cataloged tasks also have a native load-and-step check, which validates
 actual XML/mesh references beyond cached asset inventories. ROS tests check
-observations, initial and advancing spectator streams and reset in stepped and
-realtime modes.
+observations and initial and advancing spectator streams in stepped and realtime
+modes.

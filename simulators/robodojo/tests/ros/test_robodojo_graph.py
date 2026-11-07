@@ -11,8 +11,8 @@ from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from rosbridge_runtime.devices import STREAM_QOS
 from tests.ros.support import Graph, seconds
 
-# Isaac Sim boots and compiles shaders before the first reset; layouts reload on reset.
-STARTUP_S, RESET_S = 1200., 600.
+# Isaac Sim boots, compiles shaders and loads the layout before serving.
+STARTUP_S = 1200.
 
 
 def workers(graph):
@@ -75,7 +75,6 @@ def test_robodojo_graph_serves_the_kinex_devices_from_a_native_worker(tmp_path, 
         before = seconds(last["spectator"].header.stamp)
         assert graph.wait(.2).success
         graph.until(lambda: seconds(last["spectator"].header.stamp) > before, 60.)
-        assert graph.reset(RESET_S).success
     finally:
         graph.close()
     assert not any(process.is_running() and process.status() != psutil.STATUS_ZOMBIE for process in native)

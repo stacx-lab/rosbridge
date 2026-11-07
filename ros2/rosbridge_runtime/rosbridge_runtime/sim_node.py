@@ -40,9 +40,9 @@ class SimNode(Node):
             unknown = sorted(set(selected) - {view.name for view in self.sim.spectators})
             if unknown:
                 raise ValueError(f"this simulator offers no spectator views {unknown}")
-        self.reset_options = (p["task"] or self.sim.default_task, p["seed"], p["randomize"])
-        self.sim.reset(*self.reset_options)
-        self.world = WorldRuntime(self.sim, p["mode"], lambda reset: self.observations.publish(reset))
+        # A run is one episode: the launch's task and seed, loaded once.
+        self.sim.reset(p["task"] or self.sim.default_task, p["seed"], p["randomize"])
+        self.world = WorldRuntime(self.sim, p["mode"], lambda: self.observations.publish())
         self.devices = [device(spec, self) for spec in self.sim.devices]
         self.declare_parameter("spectator_views", [v.name for v in self.sim.spectators],
                                ParameterDescriptor(read_only=True), ignore_override=True)
@@ -52,8 +52,7 @@ class SimNode(Node):
         services = ReentrantCallbackGroup()
         self.create_service(Wait, "world/wait", self._wait, callback_group=services)
         self.create_service(Trigger, "world/stop", self._stop, callback_group=services)
-        self.create_service(Trigger, "world/reset", self._reset, callback_group=services)
-        self.observations.publish(True)
+        self.observations.publish()
         self.get_logger().info(f"task={self.sim.task} seed={self.sim.seed} mode={p['mode']} "
                                f"period={self.sim.period:.4f}s")
 
@@ -117,14 +116,6 @@ class SimNode(Node):
         try:
             await self.request(stop)
             response.success = True
-        except Exception as error:
-            response.success, response.message = False, str(error)
-        return response
-
-    async def _reset(self, request, response):
-        try:
-            result = await self.request(lambda: self.world.reset(*self.reset_options))
-            response.success, response.message = result.success, result.message
         except Exception as error:
             response.success, response.message = False, str(error)
         return response

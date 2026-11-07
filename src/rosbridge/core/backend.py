@@ -63,8 +63,8 @@ class ActionLayout:
 class SimulatorBackend(Protocol):
     """Created, reset, stepped, rendered and closed only on the main thread.
 
-    Layout, device and camera names stay fixed across resets. Failed resets
-    preserve the previous episode. Every step advances exactly one `period`.
+    A run is one episode: the world resets the backend once, to load the launch's
+    task and seed, then steps it. Every step advances exactly one `period`.
     A backend whose native command is not a position, such as a gripper
     direction, converts the position target inside step().
     """

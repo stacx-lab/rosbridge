@@ -85,7 +85,6 @@ def test_terminal_episode_rejects_commands_and_stays_stoppable(tmp_path, mode):
     try:
         states, publisher, stop = endpoints(graph, 'finger', 'target', Float64)
         # Realtime may already have terminated while the clients discovered each other.
-        assert graph.reset().success
         result = graph.wait(3.)
         assert not result.success
         assert 'episode' in result.message or 'terminal' in result.message
@@ -94,6 +93,5 @@ def test_terminal_episode_rejects_commands_and_stays_stoppable(tmp_path, mode):
         assert graph.owner.poll() is None
         assert states[-1].position[0] == 0.
         assert graph.call(stop, Trigger.Request()).success
-        assert graph.reset().success
     finally:
         graph.close()
