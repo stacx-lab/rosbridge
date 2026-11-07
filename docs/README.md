@@ -160,9 +160,15 @@ initial frame.
 rosbridge launch abc/pouring --execution-mode stepped --detach --record ./recordings/pouring
 rosbridge launch abc --record ./recordings/bag --record-type bag
 rosbridge launch abc --record ./recordings/both --record-type both
+rosbridge launch abc --record ./recordings/wrist --record-views wrist --record-size 640x480 --record-rate 5
 ```
 
-`--record-type` accepts `mp4` (default), `bag`, or `both`, and requires `--record`.
+`--record-type` accepts `mp4` (default), `bag`, or `both`. By default every view the
+simulator offers is recorded at 960×720, 10 frames per world second, H.264 CRF 20.
+`--record-views NAME,...` records only the named views; the simulator sets up no
+others, so they cost no rendering. `--record-size WxH` (16×16 to 3840×2160),
+`--record-rate HZ` (at most 50) and `--record-quality CRF` (0–51, lower is sharper)
+change the rest. Each of these options requires `--record`.
 Paths are relative to the invoking terminal, including with `--project`. The output
 directory must be new or empty; existing recordings are never overwritten. The CLI
 prints its absolute path and includes `recording_dir` in JSON output. `status`

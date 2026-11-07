@@ -105,8 +105,14 @@ def key(store):
                 from omnigibson.macros import gm
                 from omnigibson.utils.asset_utils import download_key
 
-                gm.DATA_PATH = temporary
-                download_key()
+                # Importing OmniGibson already read DATA_PATH; the key goes to a temporary root, and
+                # DATA_PATH points back at the data root afterwards.
+                with gm.unlocked():
+                    previous, gm.DATA_PATH = gm.DATA_PATH, temporary
+                    try:
+                        download_key()
+                    finally:
+                        gm.DATA_PATH = previous
             pending.chmod(0o600)
             pending.replace(path)
     return path

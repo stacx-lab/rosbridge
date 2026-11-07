@@ -223,3 +223,15 @@ def test_operator_judge_reads_results_without_ros(tmp_path, monkeypatch):
     (tmp_path / 'episode-results.jsonl').write_text(json.dumps(outcome) + '\n')
     assert judge(str(run))['episodes'] == [outcome]
     assert main(['judge', str(run), '--json']) == 0
+
+
+def test_a_world_stopped_by_an_error_records_it(tmp_path, monkeypatch):
+    import json
+    monkeypatch.setenv('ROSBRIDGE_RUN_DIR', str(tmp_path))
+    runtime, _ = world()
+    pending = wait(runtime, 1.)
+    runtime.drain()
+    runtime.close(error="WorkerError: native worker exited (exit -9)")
+    assert pending.result().message == "runtime stopped"  # all a worker sees
+    outcome, = [json.loads(line) for line in (tmp_path / 'episode-results.jsonl').read_text().splitlines()]
+    assert (outcome['reason'], outcome['error']) == ('stopped', "WorkerError: native worker exited (exit -9)")

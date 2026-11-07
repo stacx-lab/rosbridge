@@ -250,16 +250,19 @@ current state (the evaluator's frames lag its physics by one step).
 A house's physics dominates the step time; stepping is slower than real time.
 
 With `--record`, spectators `front_left`, `rear_left` and `head` (the head camera's
-optics) render at 960×720. The two overviews stand 45° and 135° to the left of the
-robot's heading and keep those bearings. They turn after the robot with a one-second
-lag, so gait sway does not shake them, and an overview moves in only when something
-stands between it and the robot. For the R1Pro they keep the distance and heights of
-RoboEnv's BEHAVIOR overview: 2.6 m out, the eye 2.4 m above the floor and aimed at
-0.9 m. For the G1 they stand 1.8 m out, the eye 1.4 m above the floor and aimed at
-0.8 m, so the whole body and the hands stay in view. With the R1Pro embodiments,
-recording renders every step, so the spectators keep the renderer's history; a reset
-settles them at their new pose with 16 renders, and each spectator sample renders once
-for all three views.
+optics) render at 960×720. Every rendered view costs stepping time; `--record-views`
+and `--record-size` (see the [README](README.md)) make a recorded run faster. The two
+overviews stand 45° and 135° to the left of the robot's heading and keep those
+bearings. They turn after the robot with a one-second lag, so gait sway does not
+shake them. An overview moves in when something stands between it and the robot, or
+when it would leave the robot's room by the scene's room segmentation (a ray test
+alone let it film through windows from outside the house). For the R1Pro they keep
+the distance and heights of RoboEnv's BEHAVIOR overview: 2.6 m out, the eye 2.4 m
+above the floor and aimed at 0.9 m. For the G1 they stand 1.8 m out, the eye 1.4 m
+above the floor and aimed at 0.8 m, so the whole body and the hands stay in view.
+With the R1Pro embodiments, recording renders every step, so the spectators keep the
+renderer's history; a reset settles them at their new pose with 16 renders, and each
+spectator sample renders once for every recorded view.
 
 ```bash
 pixi run -e behavior-native smoke        # R1Pro: controls, cameras, reset, rig geometry

@@ -113,11 +113,13 @@ class WorldRuntime:
                 "reason": reason or ("success" if self.sim.success else "max_steps"
                            if limit and self.steps >= limit else "episode_done")}
 
-    def _record_terminal(self, reason=None, *, result=None):
+    def _record_terminal(self, reason=None, *, result=None, error=None):
         if self._judged:
             return
         self._judged = True
         result = self._outcome(reason) if result is None else result
+        if error:
+            result = dict(result, error=error)
         folder = os.environ.get("ROSBRIDGE_RUN_DIR")
         if folder:
             with (Path(folder) / "episode-results.jsonl").open("a") as stream:
@@ -129,7 +131,9 @@ class WorldRuntime:
     def idle_s(self):
         return 0.05 if self.sim.done else self.pacer.wait_s(self.waits.pending)
 
-    def close(self):
+    def close(self, error=None):
+        """Stop: interrupt the pending wait, fail queued requests and record the open episode as stopped (with the
+        error that stopped the world, if one did)."""
         self._assert_owner()
         with self._lock:
             self._closed = True
@@ -141,7 +145,7 @@ class WorldRuntime:
                 break
             future.set_exception(RuntimeError("runtime stopped"))
         try:
-            self._record_terminal("stopped")
+            self._record_terminal("stopped", error=error)
         finally:
             self.commands.close()
             self.sim.close()

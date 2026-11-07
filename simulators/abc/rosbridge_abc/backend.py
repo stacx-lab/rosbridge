@@ -10,7 +10,7 @@ import mujoco  # noqa: E402
 import numpy as np  # noqa: E402
 
 from rosbridge.core import ActionLayout, CommandGroup
-from rosbridge.core.devices import SpectatorView, device_inventory
+from rosbridge.core.devices import device_inventory, spectator_views
 from .assets import require_assets
 from .scoring import supplemental_evaluator
 
@@ -40,9 +40,9 @@ class AbcSim:
         self._spectator = self._supplemental = None
         self.spectators = ()
 
-    def configure_spectators(self, width=960, height=720):
-        self.spectators = tuple(SpectatorView(role, source, width, height) for role, source in
-                                (("third_person", "top"), ("wrist", "left"), ("right_wrist", "right")))
+    def configure_spectators(self, width=960, height=720, views=None):
+        self.spectators = spectator_views((("third_person", "top"), ("wrist", "left"), ("right_wrist", "right")),
+                                          width, height, views)
 
     @property
     def devices(self):

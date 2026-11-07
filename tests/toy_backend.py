@@ -24,7 +24,7 @@ class ToyBackend:
         self.closed = False
         self.reset("toy", 0, False)
 
-    def configure_spectators(self, width, height):
+    def configure_spectators(self, width, height, views=None):
         pass
 
     def reset(self, task, seed, randomize):

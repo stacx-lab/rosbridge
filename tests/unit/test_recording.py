@@ -7,6 +7,7 @@ import pytest
 from rosbridge.cli.main import main, parser
 from rosbridge.recording import destination, reserve
 from rosbridge.recording.video import VideoStream, encoder_path
+from rosbridge.runs.api import recording_settings
 
 
 def test_record_cli_and_empty_destination(tmp_path, monkeypatch):
@@ -21,6 +22,18 @@ def test_record_cli_and_empty_destination(tmp_path, monkeypatch):
     with pytest.raises(ValueError, match='empty'):
         reserve(path, 'another-run', 'abc')
     assert main(['launch', 'abc', '--record-type', 'bag']) == 1
+    for flag, value in (('--record-rate', '5'), ('--record-size', '640x480'), ('--record-views', 'wrist'),
+                        ('--record-quality', '28')):
+        assert main(['launch', 'abc', flag, value]) == 1  # each requires --record
+
+
+def test_recording_settings_default_and_check_their_ranges():
+    assert recording_settings({}) == (10., 960, 720, [], 20)
+    assert recording_settings({'record_rate': 5, 'record_size': '640X480', 'record_views': 'head,,front_left',
+                               'record_quality': 28}) == (5., 640, 480, ['head', 'front_left'], 28)
+    for options in ({'record_rate': 60}, {'record_size': '8x8'}, {'record_quality': 52}):
+        with pytest.raises(ValueError):
+            recording_settings(options)
 
 
 def frames(path):
@@ -43,6 +56,25 @@ def test_video_simulation_timing_reset_segments_and_decoding(tmp_path):
     assert [r['frame_index'] for r in rows] == [0, 1, 4]
     assert rows[-1]['held_frames_before'] == 2
     assert stream.snapshot()['dropped'] == 0
+
+
+def test_an_open_segment_is_readable_up_to_the_frame_before_the_latest(tmp_path):
+    """A stepped world sends nothing after its episode ends, and a harness may copy a step's artifacts before the
+    reset closes the segment: the open file must already hold the episode (it lacked 4-8 s at 5 Hz)."""
+    import shutil
+    stream = VideoStream(tmp_path, 'overview', 5., encoder_path())
+    pixels = [bytes([20 * i % 256, 40, 200 - 5 * i]) * (64 * 48) for i in range(30)]
+    for i, frame in enumerate(pixels):
+        stream.submit(i * 200_000_000, 64, 48, frame)
+        time.sleep(.02)  # within the 16-frame queue
+    deadline = time.monotonic() + 20
+    while time.monotonic() < deadline and sum(s['frames'] for s in stream.snapshot()['segments']) < 30:
+        time.sleep(.05)
+    time.sleep(.5)
+    shutil.copy(tmp_path / 'overview.mp4', tmp_path / 'copy.mp4')
+    assert int(frames(tmp_path / 'copy.mp4')['nb_read_frames']) >= 29
+    stream.close()
+    assert int(frames(tmp_path / 'overview.mp4')['nb_read_frames']) == 30
 
 
 def test_encoder_failure_is_reported(tmp_path):
