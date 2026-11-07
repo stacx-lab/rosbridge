@@ -1,5 +1,6 @@
 """Native worker: construct one backend and serve its calls on this main thread. No ROS."""
 import ctypes
+import faulthandler
 import importlib
 import os
 import signal
@@ -52,6 +53,9 @@ def main():
     descriptor, target = int(sys.argv[1]), sys.argv[2]
     # The proxy owns shutdown; a terminal interrupt must not tear down native state first.
     signal.signal(signal.SIGINT, signal.SIG_IGN)
+    # SIGUSR1 writes every thread's Python stack to stderr (the run's graph.log), so a call that hangs in the native
+    # simulator can be located without stopping it.
+    faulthandler.register(signal.SIGUSR1, all_threads=True)
     libc = ctypes.CDLL("libc.so.6", use_errno=True)
     # Native runtimes such as Kit handle SIGTERM; an orphaned worker has nothing to save.
     if libc.prctl(1, signal.SIGKILL, 0, 0, 0) != 0:  # PR_SET_PDEATHSIG

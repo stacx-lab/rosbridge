@@ -250,10 +250,13 @@ current state (the evaluator's frames lag its physics by one step).
 A house's physics dominates the step time; stepping is slower than real time.
 
 With `--record`, spectators `front_left`, `rear_left` and `head` (the head camera's
-optics) render at 960×720. The two overviews stand 45° and 135° to the left of the
+optics) render at 960×720, 10 frames per world second, H.264 CRF 20; `--record-rate`,
+`--record-size WxH`, `--record-views front_left,head` and `--record-quality CRF` change
+that. Every rendered view costs stepping time. The two overviews stand 45° and 135° to the left of the
 robot's heading and keep those bearings. They turn after the robot with a one-second
 lag, so gait sway does not shake them, and an overview moves in only when something
-stands between it and the robot. For the R1Pro they keep the distance and heights of
+stands between it and the robot or when it would leave the robot's room (the scene's room
+segmentation; a ray test alone let it film through windows from outside the house). For the R1Pro they keep the distance and heights of
 RoboEnv's BEHAVIOR overview: 2.6 m out, the eye 2.4 m above the floor and aimed at
 0.9 m. For the G1 they stand 1.8 m out, the eye 1.4 m above the floor and aimed at
 0.8 m, so the whole body and the hands stay in view. With the R1Pro embodiments,

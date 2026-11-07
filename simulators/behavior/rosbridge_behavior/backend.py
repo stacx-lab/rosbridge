@@ -4,6 +4,7 @@ OmniGibson needs Isaac Sim 5.1 on Python 3.11, so the world node proxies this cl
 rosbridge.core.worker. The episode follows the official evaluator (environment.py); an
 embodiment maps rosbridge channels to native actions (r1pro.py, r1pro_sharpa.py, g1_sharpa.py).
 """
+import os
 import secrets
 from typing import NamedTuple
 
@@ -28,11 +29,25 @@ RERENDERS = 3
 # this close in world time: as cameras move between them, two renders clean a capture. After a
 # longer gap (a reset, or cameras unrendered since moving), sixteen bring the path tracer to
 # the same noise.
-HISTORY_S, CUT_DELIVERIES = .25, 16
+HISTORY_S, CUT_DELIVERIES = .25, int(os.environ.get("ROSBRIDGE_BEHAVIOR_CUT_RENDERS", 16))
+# (After a gap, depth is exact from the first render; RGB keeps converging: mean absolute difference from a 48-render
+# image, 0-255 scale, 6.0 after 1 render, 2.9 after 4, 1.2 after 16; a render costs about 20 ms, so a capture after a
+# gap costs 0.5-0.9 s at 16. ROSBRIDGE_BEHAVIOR_CUT_RENDERS trades that noise for time.)
 # Overview spectators keep these bearings from the robot's heading (radians counterclockwise).
 OVERVIEWS = {"front_left": np.pi / 4, "rear_left": 3 * np.pi / 4}
 FOLLOW_S = 1.  # the overviews turn after the robot this slowly, so gait sway does not shake them
 FOLLOW_GAP_S = .25  # after a longer pause in the overviews, as after a cut, they face the heading
+WALL_MARGIN = .2  # an overview stays this far (m) in front of what it would otherwise stand behind
+
+
+def inside(offset, contains, step):
+    """The fraction of the horizontal offset (2-vector, m) from a point that stays where contains(fraction) holds,
+    sampled every `step` metres from the point outward, less WALL_MARGIN; 1 if it holds all the way."""
+    length = float(np.linalg.norm(offset))
+    for fraction in np.arange(step, length + step, step) / max(length, 1e-9):
+        if not contains(min(fraction, 1.)):
+            return max(.01, (fraction * length - step - WALL_MARGIN) / length)
+    return 1.
 
 
 class Overview(NamedTuple):
@@ -253,7 +268,14 @@ class BehaviorSim:
         hit = raytest(target.tolist(), (target + offset).tolist(),
                       ignore_bodies=[link.prim_path for link in robot.links.values()])
         if hit["hit"]:
-            offset *= max(0.01, float(hit["distance"]) - 0.2) / np.linalg.norm(offset)
+            offset *= max(0.01, float(hit["distance"]) - WALL_MARGIN) / np.linalg.norm(offset)
+        # The ray passes windows and gaps in walls (an overview filmed a room through a window from outside the
+        # house): keep the overview inside the robot's room, by the scene's room segmentation.
+        rooms = getattr(self.episode.env.scene, "seg_map", None)
+        room = rooms.get_room_instance_by_point(target[:2]) if rooms is not None else None
+        if room is not None:
+            offset *= inside(offset[:2], lambda f: rooms.get_room_instance_by_point(target[:2] + f * offset[:2]) == room,
+                             float(rooms.map_resolution) / 2)
         backward = offset / np.linalg.norm(offset)
         right = np.cross([0, 0, 1], backward)
         right /= np.linalg.norm(right)

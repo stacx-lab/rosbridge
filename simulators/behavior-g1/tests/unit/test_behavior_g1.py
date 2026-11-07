@@ -4,6 +4,7 @@ import xml.etree.ElementTree as ET
 
 import numpy as np
 import pytest
+import yaml
 
 from rosbridge.catalog import simulator, tasks
 from rosbridge_behavior import g1_model
@@ -168,3 +169,26 @@ def test_g1_channels_command_the_lower_body_through_the_policy_and_the_rest_dire
     np.testing.assert_allclose(observation["floating_base_pose"][3:], [np.cos(.25), 0, 0, np.sin(.25)])
     np.testing.assert_allclose(observation["floating_base_vel"][3:], [0, 0, 2], atol=1e-12)
     np.testing.assert_allclose(observation["floating_base_vel"][:3], [np.cos(.5), -np.sin(.5), 0], atol=1e-12)
+
+
+def test_the_g1_crate_names_its_usd_and_keeps_the_rest_of_the_definition():
+    from rosbridge_behavior import g1_crate
+
+    text = {"raw_controller_order": ["trunk", "arm_left"], "default_joint_pos": [0.0, 0.0],
+            "manipulation": {"finger_joint_names": {"left": ["left_index_MCP_FE"]}}}
+    crate = g1_crate.definition(text)
+    assert next(iter(crate)) == "usd_path" and crate["usd_path"] == "models/g1_sharpa/usd/g1_sharpa.usd"
+    assert {key: value for key, value in crate.items() if key != "usd_path"} == text
+    assert yaml.safe_load(yaml.safe_dump(crate, sort_keys=False)) == crate
+    with pytest.raises(ValueError, match="already names"):
+        g1_crate.definition(crate)
+
+
+def test_the_g1_pin_follows_the_import_and_the_converter(tmp_path):
+    from rosbridge_behavior import assets
+
+    (tmp_path / ".prepared.json").write_text('{"revision": "a"}')
+    first = assets.crate_key(tmp_path)
+    assert first != assets.model_key(tmp_path, "g1") and assets.pins(tmp_path, "g1")["g1"] == first
+    (tmp_path / ".prepared.json").write_text('{"revision": "b"}')
+    assert assets.crate_key(tmp_path) != first  # a new import makes a new crate

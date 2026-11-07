@@ -1,9 +1,13 @@
 """The world node: ROS callbacks queue work; the main thread owns the simulator and publishers."""
+import faulthandler
 import math
 import os
 from pathlib import Path
+import signal
+import sys
 import threading
 import time
+import traceback
 
 import rclpy
 from kinex_interfaces.srv import Wait
@@ -29,14 +33,21 @@ class SimNode(Node):
         self.sim = load_backend(p["backend"])(max_steps=p["max_steps"] or None,
                                               terminate_on_success=p["terminate_on_success"])
         if p["spectator_rate_hz"]:
-            self.sim.configure_spectators(960, 720)
+            self.sim.configure_spectators(p["spectator_width"], p["spectator_height"])
         self.reset_options = (p["task"] or self.sim.default_task, p["seed"], p["randomize"])
         self.sim.reset(*self.reset_options)
         self.world = WorldRuntime(self.sim, p["mode"], lambda reset: self.observations.publish(reset))
         self.devices = [device(spec, self) for spec in self.sim.devices]
-        self.declare_parameter("spectator_views", [v.name for v in self.sim.spectators],
+        # The views a recording asked for (spectator_select, comma-separated; empty: every view the backend offers).
+        offered = [v.name for v in self.sim.spectators]
+        selected = [name for name in p["spectator_select"].split(",") if name] or offered
+        unknown = sorted(set(selected) - set(offered))
+        if unknown:
+            raise ValueError(f"unknown spectator views {unknown}; this simulator offers {offered}")
+        views = [v for v in self.sim.spectators if v.name in selected]
+        self.declare_parameter("spectator_views", [v.name for v in views],
                                ParameterDescriptor(read_only=True), ignore_override=True)
-        self.observations = ObservationPublisher(self, p["spectator_rate_hz"])
+        self.observations = ObservationPublisher(self, p["spectator_rate_hz"], views)
         # World waits are sequential; stop cancels the pending one.
         self.pending_wait = None
         services = ReentrantCallbackGroup()
@@ -49,7 +60,8 @@ class SimNode(Node):
 
     def _read_parameters(self):
         defaults = {"backend": "", "task": "", "seed": 0, "randomize": True, "mode": "realtime",
-                    "max_steps": 0, "terminate_on_success": False, "spectator_rate_hz": 0.}
+                    "max_steps": 0, "terminate_on_success": False, "spectator_rate_hz": 0.,
+                    "spectator_width": 960, "spectator_height": 720, "spectator_select": ""}
         for name, value in defaults.items():
             self.declare_parameter(name, value, ParameterDescriptor(read_only=True))
         params = {name: self.get_parameter(name).value for name in defaults}
@@ -59,6 +71,8 @@ class SimNode(Node):
             raise ValueError("max_steps must be nonnegative")
         if not math.isfinite(params["spectator_rate_hz"]) or params["spectator_rate_hz"] < 0:
             raise ValueError("spectator_rate_hz must be finite and nonnegative")
+        if params["spectator_width"] < 16 or params["spectator_height"] < 16:
+            raise ValueError("spectator_width and spectator_height must be at least 16 pixels")
         return params
 
     async def request(self, function):
@@ -133,10 +147,12 @@ class SimNode(Node):
 
 
 def main():
+    # SIGUSR1 writes every thread's Python stack to stderr (graph.log): a world that stops answering can be located.
+    faulthandler.register(signal.SIGUSR1, all_threads=True)
     rclpy.init()
     node = SimNode.__new__(SimNode)
     executor = MultiThreadedExecutor(num_threads=4)
-    spinner = None
+    spinner, error = None, None
     try:
         node.__init__()
         executor.add_node(node)
@@ -153,9 +169,15 @@ def main():
         node.run()
     except (KeyboardInterrupt, ExternalShutdownException):
         pass
+    except Exception as failure:
+        # A world that stops on an error says why in its log (graph.log, an operator artifact) and in the episode's
+        # record; a worker only sees its pending wait end with "runtime stopped".
+        error = f"{type(failure).__name__}: {failure}"[:500]
+        print(f"world stopped by an error: {error}\n{traceback.format_exc()}", file=sys.stderr, flush=True)
+        raise
     finally:
         if hasattr(node, 'world'):
-            node.world.close()
+            node.world.close(error=error)
         elif getattr(node, 'sim', None) is not None:
             node.sim.close()
         executor.shutdown(timeout_sec=5.)

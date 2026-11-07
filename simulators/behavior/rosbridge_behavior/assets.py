@@ -105,7 +105,8 @@ def key(store):
                 from omnigibson.macros import gm
                 from omnigibson.utils.asset_utils import download_key
 
-                gm.DATA_PATH = temporary
+                with gm.unlocked():  # importing OmniGibson already read DATA_PATH; the key goes to a temporary root
+                    gm.DATA_PATH = temporary
                 download_key()
             pending.chmod(0o600)
             pending.replace(path)
@@ -151,10 +152,22 @@ def model_key(runtime, pin):
     return digest.hexdigest()
 
 
+def crate_key(runtime):
+    """The G1 crate's cache key: the G1 import's key and the converter."""
+    from . import g1_crate
+
+    digest = hashlib.sha256(model_key(runtime, "g1").encode())
+    digest.update(Path(g1_crate.__file__).read_bytes())
+    return digest.hexdigest()
+
+
 def pins(runtime, model=None):
-    """What a prepared data root links: the pinned archives and an extra robot model's import."""
+    """What a prepared data root links: the pinned archives and an extra robot model's import
+    (the G1's as a crate)."""
     archives = {name: checksum for name, (_, _, checksum, _) in ARCHIVES.items()}
-    return {**archives, model: model_key(runtime, model)} if model else archives
+    if not model:
+        return archives
+    return {**archives, model: crate_key(runtime) if model == "g1" else model_key(runtime, model)}
 
 
 def prepare(runtime, task, store=None):
@@ -198,6 +211,42 @@ def model_files(name):
     return f"usd/{name}.usda", f"{name}.yaml", "drives.json"
 
 
+def linked_files(pin):
+    """The files of the model a prepared data root links; the G1's USD is its crate."""
+    model = importlib.import_module(f"{__package__}.{MODELS[pin]}")
+    if pin == "g1":
+        from .g1_crate import USD
+        return USD, f"{model.MODEL}.yaml", "drives.json"
+    return model_files(model.MODEL)
+
+
+def g1_crate(runtime, store, text):
+    """The imported G1 (text) with its USD as a binary crate (g1_crate.py), keyed by the import and the converter."""
+    from . import g1_crate as crate
+
+    key = crate_key(runtime)
+    data = store.cached("behavior", crate.MODEL, key)
+    if data is not None:
+        return data / crate.MODEL
+    parent = store.root / "behavior" / crate.MODEL
+    parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix=".crate-", dir=parent) as temporary:
+        staging = Path(temporary) / "model"
+        print("[assets] storing the G1's USD as a binary crate", flush=True)
+        subprocess.run([sys.executable, "-m", "rosbridge_behavior.g1_crate", str(text), str(staging / crate.MODEL)],
+                       check=True)
+
+        def verify(directory):
+            model = directory / crate.MODEL
+            for name in (crate.USD, f"{crate.MODEL}.yaml", "drives.json"):
+                if not (model / name).is_file():
+                    raise ValueError(f"the G1 crate has no {name}")
+            if yaml.safe_load((model / f"{crate.MODEL}.yaml").read_text()).get("usd_path") != \
+                    f"models/{crate.MODEL}/{crate.USD}":
+                raise ValueError("the G1 crate's definition does not name its USD")
+        return store.adopt("behavior", crate.MODEL, key, staging, verify=verify) / crate.MODEL
+
+
 def prepare_model(runtime, task, store, pin):
     check = {"g1": check_g1_task, "dex": check_dex_task}[pin]
     try:
@@ -206,7 +255,10 @@ def prepare_model(runtime, task, store, pin):
         pass
     store = store or AssetStore()
     link_data(runtime, store, robots=[])  # the import reads the data root
-    link_data(runtime, store, robots=[import_model(runtime, store, pin)])
+    model = import_model(runtime, store, pin)
+    if pin == "g1":
+        model = g1_crate(runtime, store, model)  # boots open the crate, not the text import
+    link_data(runtime, store, robots=[model])
     write_json(Path(runtime) / MARKER, pins(runtime, pin))
     check(runtime, task)
     title = importlib.import_module(f"{__package__}.{MODELS[pin]}").TITLE
@@ -225,7 +277,7 @@ def check_model_task(runtime, task, pin):
     model = importlib.import_module(f"{__package__}.{MODELS[pin]}")
     check_task(runtime, task, pin)
     directory = Path(runtime) / "datasets/omnigibson-robot-assets/models" / model.MODEL
-    if not all((directory / name).is_file() for name in model_files(model.MODEL)):
+    if not all((directory / name).is_file() for name in linked_files(pin)):
         raise RuntimeError(f"{model.TITLE} is not prepared. Run: {LICENSE}=YES rosbridge prepare "
                            f"{Path(runtime).name} --task {shlex.quote(task)}")
 
