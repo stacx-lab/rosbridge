@@ -67,6 +67,9 @@ class SimulatorBackend(Protocol):
     task and seed, then steps it. Every step advances exactly one `period`.
     A backend whose native command is not a position, such as a gripper
     direction, converts the position target inside step().
+
+    Optionally, measures() returns the backend's own measures of the episode as
+    JSON fields, such as BEHAVIOR's q_score; the episode record adds them.
     """
 
     default_task: str

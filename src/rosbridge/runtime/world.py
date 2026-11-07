@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import queue
 import threading
+import traceback
 
 from rosbridge.core import CommandBuffer
 from .pacing import Pacer
@@ -91,8 +92,16 @@ class WorldRuntime:
             return
         self._judged = True
         result = self._outcome(reason)
+        if error is None and hasattr(type(self.sim), "measures"):
+            # The backend's own measures (BEHAVIOR: q_score). A world stopped by an error records none, since the
+            # error may have broken the backend; a measure that fails is the record's error.
+            try:
+                result.update(self.sim.measures())
+            except Exception as failure:
+                traceback.print_exc()
+                error = f"measures: {type(failure).__name__}: {failure}"[:500]
         if error:
-            result = dict(result, error=error)
+            result["error"] = error
         folder = os.environ.get("ROSBRIDGE_RUN_DIR")
         if folder:
             with (Path(folder) / "episode-results.jsonl").open("a") as stream:

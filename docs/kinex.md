@@ -120,6 +120,7 @@ A run is one episode; the world offers no reset, so starting over is the operato
 stop the run and launch another. An episode ending on success or a step limit pauses
 physics. The graph remains available for images and clock; new commands are
 rejected. The episode's native outcome is appended once, when it ends or the run
-stops, to `episode-results.jsonl` in rosbridge's run directory. An interrupted run
+stops, to `episode-results.jsonl` in rosbridge's run directory; a simulator may add
+its own measures, such as BEHAVIOR's partial credit `q_score`. An interrupted run
 is marked stopped, not a successful terminal episode. Judge records are separate
 from the agent workspace; this separation is not an OS security sandbox.

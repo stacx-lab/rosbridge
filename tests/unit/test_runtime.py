@@ -9,9 +9,9 @@ from rosbridge.runtime.world import WorldRuntime
 
 
 
-def world(mode="stepped", max_steps=None, **kwargs):
+def world(mode="stepped", max_steps=None, backend=ToyBackend, **kwargs):
     published = []
-    sim = ToyBackend(max_steps)
+    sim = backend(max_steps)
     runtime = WorldRuntime(sim, mode, lambda: published.append(sim.steps), **kwargs)
     return runtime, published
 
@@ -181,3 +181,49 @@ def test_a_world_stopped_by_an_error_records_it(tmp_path, monkeypatch):
     assert pending.result().message == "runtime stopped"  # all a worker sees
     outcome, = [json.loads(line) for line in (tmp_path / 'episode-results.jsonl').read_text().splitlines()]
     assert (outcome['reason'], outcome['error']) == ('stopped', "WorkerError: native worker exited (exit -9)")
+
+
+class MeasuredToy(ToyBackend):
+    """A backend with its own measure of the episode, which fails once the position goes negative."""
+    measured = 0
+
+    def measures(self):
+        self.measured += 1
+        if self.position.min() < 0:
+            raise RuntimeError("cannot measure a negative position")
+        return {"progress": self.steps / 4}
+
+
+def records(folder):
+    import json
+    return [json.loads(line) for line in (folder / 'episode-results.jsonl').read_text().splitlines()]
+
+
+def test_records_add_a_backends_measures(tmp_path, monkeypatch):
+    monkeypatch.setenv('ROSBRIDGE_RUN_DIR', str(tmp_path))
+    runtime, _ = world(max_steps=1, backend=MeasuredToy)
+    wait(runtime, .1)
+    finish(runtime)
+    runtime.close()
+    outcome, = records(tmp_path)
+    assert (outcome['reason'], outcome['progress'], runtime.sim.measured) == ('max_steps', .25, 1)
+
+
+def test_a_world_stopped_by_an_error_records_no_measures(tmp_path, monkeypatch):
+    monkeypatch.setenv('ROSBRIDGE_RUN_DIR', str(tmp_path))
+    runtime, _ = world(backend=MeasuredToy)
+    runtime.close(error="WorkerError: native worker exited (exit -9)")
+    outcome, = records(tmp_path)
+    assert 'progress' not in outcome and runtime.sim.measured == 0  # the error may have broken the backend
+    assert outcome['error'] == "WorkerError: native worker exited (exit -9)"
+
+
+def test_a_measure_that_fails_is_the_records_error(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv('ROSBRIDGE_RUN_DIR', str(tmp_path))
+    runtime, _ = world(backend=MeasuredToy)
+    runtime.sim.position[:] = -1.
+    runtime.close()
+    outcome, = records(tmp_path)
+    assert outcome['reason'] == 'stopped' and 'progress' not in outcome
+    assert outcome['error'] == "measures: RuntimeError: cannot measure a negative position"
+    assert "Traceback" in capsys.readouterr().err and runtime.sim.closed
