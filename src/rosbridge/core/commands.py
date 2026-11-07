@@ -6,6 +6,10 @@ import numpy as np
 
 # A base stops this long in world time after its last velocity command (Kinex locomotion watchdog).
 VELOCITY_TIMEOUT_S = 0.5
+# Targets this close outside a limit (rad or m) are held at it, not refused. Measured positions sit past their limits
+# (Sharpa hand joints driven to them read up to 1e-6 rad beyond; 5e-4 rad was seen on a Sharpa pinky), so a client that
+# sends a measured posture back, or interpolates and rounds past a limit, sends a valid target.
+LIMIT_TOLERANCE = 1e-3
 
 
 class CommandError(ValueError):
@@ -81,12 +85,12 @@ class CommandBuffer:
         group = self._groups[name]
         q = self._vector(values, len(group.indices), f"{name} target")
         lo, hi = np.asarray(group.lower), np.asarray(group.upper)
-        bad = np.flatnonzero((q < lo) | (q > hi))
+        bad = np.flatnonzero((q < lo - LIMIT_TOLERANCE) | (q > hi + LIMIT_TOLERANCE))
         if bad.size:
             i = bad[0]
             joint = self.layout.joint_names[group.indices[i]]
             raise CommandError(f"{joint}={q[i]:.4f} outside [{lo[i]:.4f}, {hi[i]:.4f}]")
-        return q
+        return np.clip(q, lo, hi)
 
     def set_group(self, name, values, time_s=None):
         """time_s: world time of a velocity command, which expires VELOCITY_TIMEOUT_S later."""
