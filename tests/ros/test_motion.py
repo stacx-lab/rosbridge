@@ -40,12 +40,14 @@ def test_arm_target_validates_replaces_and_stops(tmp_path):
         graph.until(lambda: position() == pytest.approx([.2, .1]))
         # Invalid replacements are refused and keep the active reference; the next wait's reply names them.
         for invalid in (trajectory([math.nan, .2]), trajectory([.2, .1], names=('slide',)),
-                        trajectory([.2, .1], velocities=[0., 0.]), trajectory([9., .1])):
+                        trajectory([.2, .1], velocities=[0., 0.]), trajectory([9., .1]),
+                        JointTrajectory(joint_names=['slide', 'rotate'])):
             send(graph, publisher, invalid)
         result = graph.wait(.5)
         assert result.success and result.message.startswith('ok; refused since the previous wait reply: ')
         for reason in ('axes target has non-finite values', 'trajectory must name each of',
-                       'only position trajectories are supported', 'slide=9.0000 outside'):
+                       'only position trajectories are supported', 'slide=9.0000 outside',
+                       'trajectory needs one time per point and at least one point'):
             assert f'/axes/joint_target: {reason}' in result.message
         graph.spin(.1)
         assert position() == pytest.approx([.2, .1])

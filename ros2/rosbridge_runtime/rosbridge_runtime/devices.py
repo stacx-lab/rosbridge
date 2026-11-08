@@ -68,7 +68,7 @@ class Actuator:
             if any(p.velocities or p.accelerations or p.effort for p in msg.points):
                 raise ValueError('only position trajectories are supported')
             start, times, points = conv.trajectory(msg, self.names)
-            if not times or times[-1] > 120:
+            if times and times[-1] > 120:  # the command buffer refuses one without points
                 raise ValueError('trajectory must end within 120 seconds')
             if start is not None and start < world.time_s:
                 raise ValueError('trajectory start is in the past')
