@@ -89,6 +89,61 @@ def test_terminal_tick_completes_due_waits_then_fails_others():
     assert zero.result().success and not future.result().success
 
 
+def replied(runtime, duration):
+    """A world wait as the world node admits it: its reply names the commands refused since the previous one."""
+    result = Future()
+    runtime.submit(lambda: runtime.waits.admit(duration, runtime.time_s, runtime.steps, runtime.sim.period,
+                                               runtime.sim.done, lambda done: result.set_result(runtime.reply(done))))
+    return result
+
+
+def refuse(runtime, endpoint, reason, times=1):
+    for _ in range(times):
+        runtime.submit(lambda: runtime.refuse(endpoint, CommandError(reason)))
+
+
+def test_a_wait_reply_names_the_commands_refused_since_the_previous_reply():
+    runtime, _ = world()
+    plain = replied(runtime, 0.)
+    refuse(runtime, "/arm/joint_target", "arm_joint1=9.0000 outside [-1.0000, 1.0000]", times=2)
+    refuse(runtime, "/finger/target", "finger target has non-finite values")
+    named = replied(runtime, .1)
+    finish(runtime)
+    assert plain.result().message == "ok"
+    assert named.result().success and named.result().message == (
+        "ok; refused since the previous wait reply: /arm/joint_target: arm_joint1=9.0000 outside [-1.0000, 1.0000] "
+        "(2 commands); /finger/target: finger target has non-finite values")
+    again = replied(runtime, 0.)
+    runtime.drain()
+    assert again.result().message == "ok"  # named once
+    for kind in range(7):
+        refuse(runtime, f"/device{kind}/target", "device target has non-finite values", times=kind + 1)
+    many = replied(runtime, 0.)
+    runtime.drain()
+    message = many.result().message
+    assert "/device4/target" in message and "/device5/target" not in message
+    assert message.endswith("(5 commands); and 13 more")  # devices 5 and 6: 6 + 7 commands
+
+
+def test_a_refusal_reaches_a_wait_that_the_end_or_stop_completes():
+    runtime, _ = world(max_steps=2)
+    pending = replied(runtime, 1.)
+    runtime.drain()
+    runtime.tick()
+    refuse(runtime, "/arm/joint_target", "trajectory start is in the past")
+    finish(runtime)
+    assert not pending.result().success
+    assert pending.result().message == ("episode ended during wait; refused since the previous wait reply: "
+                                        "/arm/joint_target: trajectory start is in the past")
+    runtime, _ = world()
+    stopped = replied(runtime, 1.)
+    runtime.drain()
+    runtime.refuse("/finger/target", "finger target has non-finite values")
+    runtime.close()
+    assert stopped.result().message == ("runtime stopped; refused since the previous wait reply: /finger/target: "
+                                        "finger target has non-finite values")
+
+
 def test_realtime_runs_without_waits_and_wait_does_not_add_extra_ticks():
     now = [0.]
     runtime, _ = world("realtime", clock=lambda: now[0])

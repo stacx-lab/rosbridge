@@ -130,8 +130,10 @@ Mobile bases (Kinex
 held for 0.5 s of world time after the last one, and publish `nav_msgs/msg/Odometry`
 on `<base>/odometry`. Invalid targets are logged
 and rejected; a target within 0.001 (rad or m) of a limit, such as a measured
-position slightly past it, is held at the limit. The latest valid target is held
-until replaced or stopped. `<device>/stop` holds the measured position; a base's stop
+position slightly past it, is held at the limit. A topic publisher gets no reply,
+so the message of the next `world/wait` reply names each refused command's topic
+and reason, once (at most five kinds, then a count). The latest valid target is
+held until replaced or stopped. `<device>/stop` holds the measured position; a base's stop
 commands zero velocity. Each command
 subscription is created before its device's stop service. Cameras publish RGB8
 `Image` on `<camera>/image` and `CameraInfo`; frames are `<camera>/base`. RGB-D

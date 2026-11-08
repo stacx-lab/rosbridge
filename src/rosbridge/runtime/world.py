@@ -1,5 +1,6 @@
 """Main-thread episode execution, request admission and observation ordering."""
 from concurrent.futures import Future
+from dataclasses import replace
 import json
 import os
 from pathlib import Path
@@ -10,6 +11,9 @@ import traceback
 from rosbridge.core import CommandBuffer
 from .pacing import Pacer
 from .waits import WaitScheduler
+
+# A wait's reply names at most this many kinds of refused command (endpoint and reason), then counts the rest.
+REFUSALS_LISTED = 5
 
 
 class WorldRuntime:
@@ -29,6 +33,7 @@ class WorldRuntime:
         self.commands = CommandBuffer(sim.layout, sim.state()[0])
         self.waits = WaitScheduler()
         self.pacer = Pacer(mode, sim.period, **pacer_options)
+        self.refused = {}  # (endpoint, reason) -> commands refused since the last wait reply
 
     def _assert_owner(self):
         if threading.get_ident() != self._owner:
@@ -43,6 +48,26 @@ class WorldRuntime:
             else:
                 self._requests.put((request, future))
         return future
+
+    def refuse(self, endpoint, reason):
+        """A device refused a command published on endpoint; the next wait's reply names it. Owner thread."""
+        self._assert_owner()
+        key = (endpoint, str(reason))
+        self.refused[key] = self.refused.get(key, 0) + 1
+
+    def reply(self, result):
+        """A wait's result with the commands refused since the previous reply added to its message: a client
+        publishing commands on topics learns of a refusal no other way. Owner thread."""
+        self._assert_owner()
+        if not self.refused:
+            return result
+        refused, self.refused = list(self.refused.items()), {}
+        named = [f"{endpoint}: {reason}" + (f" ({count} commands)" if count > 1 else "")
+                 for (endpoint, reason), count in refused[:REFUSALS_LISTED]]
+        rest = sum(count for _, count in refused[REFUSALS_LISTED:])
+        if rest:
+            named.append(f"and {rest} more")
+        return replace(result, message=f"{result.message}; refused since the previous wait reply: " + "; ".join(named))
 
     def drain(self, timeout=0.):
         self._assert_owner()
