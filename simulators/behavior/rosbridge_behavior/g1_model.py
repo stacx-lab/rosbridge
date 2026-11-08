@@ -17,7 +17,7 @@ import numpy as np
 import yaml
 
 from .sharpa import (SHARPA, SIDES, absolute_meshes, apply_drives, attach, axis_angle,  # noqa: F401
-                     hand_drives, hand_joints, high_fidelity_hands, origin, paint)
+                     finger_links, hand_drives, hand_joints, high_fidelity_hands, origin, paint)
 from .sharpa import colors as link_colors
 
 MODEL = "g1_sharpa"
@@ -135,7 +135,7 @@ def definition(source):
                                for side in SIDES},
             "arm_joint_names": ARMS,
             "eef_link_names": {side: f"{side}_eef_link" for side in SIDES},
-            "finger_link_names": {side: hands[side][1] for side in SIDES},
+            "finger_link_names": {side: finger_links(source, side) for side in SIDES},
             "finger_joint_names": {side: hands[side][0] for side in SIDES},
         },
     }

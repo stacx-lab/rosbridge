@@ -23,8 +23,8 @@ import xml.etree.ElementTree as ET
 import numpy as np
 import yaml
 
-from .sharpa import (SIDES, absolute_meshes, apply_drives, attach, colors, filtered_pairs, hand_drives,
-                     hand_joints, high_fidelity_hands, origin, paint, set_origin)
+from .sharpa import (SIDES, absolute_meshes, apply_drives, attach, colors, filtered_pairs, finger_links,
+                     hand_drives, hand_joints, high_fidelity_hands, origin, paint, set_origin)
 
 MODEL = "r1pro_sharpa"
 TITLE = "the R1Pro with Sharpa hands"
@@ -138,7 +138,7 @@ def definition(source):
         len(robot["manipulation"]["arm_joint_names"][side]) + len(hands[side][0]) for side in SIDES)
     robot["default_joint_pos"] = [0.] * dofs
     manipulation = robot["manipulation"]
-    manipulation["finger_link_names"] = {side: hands[side][1] for side in SIDES}
+    manipulation["finger_link_names"] = {side: finger_links(source, side) for side in SIDES}
     manipulation["finger_joint_names"] = {side: hands[side][0] for side in SIDES}
     manipulation["gripper_link_names"] = {side: [f"{side}_hand_flange", f"{side}_hand_wrist", f"{side}_hand_C_MC",
                                                  f"{side}_realsense_link"] for side in SIDES}

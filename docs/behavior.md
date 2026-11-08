@@ -215,7 +215,9 @@ resolution and sensor names (the wrist cameras move to the backs of the hands).
 - `left_hand`, `right_hand` (22 joints each, as on the G1) take absolute joint
   positions on Sharpa's calibrated position drives and start open and flat (all
   zero); the torso starts in the evaluator's posture. Grasping is physical, by the
-  fingers' contacts: there is no assisted-grasp constraint.
+  fingers' contacts: there is no assisted-grasp constraint. The fingertips' elastomer
+  pads count as finger links, so a press with a fingertip toggles a switch (OmniGibson
+  counts only finger links' contacts, and a fingertip touches through its pad).
 
 Preparation imports both hands with OmniGibson's URDF importer (convex hulls of
 Sharpa's meshes, Sharpa's drive calibration and textured high-fidelity visuals) at

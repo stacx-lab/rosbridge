@@ -87,6 +87,13 @@ def sources(root):
     <axis xyz="0 1 0"/><limit lower="-0.1745" upper="1.9199" effort="2" velocity="16"/></joint>
   <joint name="{side}_index_MCP_FE" type="revolute"><parent link="{side}_hand_C_MC"/><child link="{side}_index_PP"/>
     <axis xyz="0 0 1"/><limit lower="0" upper="1.5" effort="2" velocity="16"/></joint>
+  <link name="{side}_index_elastomer"><collision><geometry><mesh filename="package://{package}/meshes/pad.STL"/>
+    </geometry></collision></link>
+  <link name="{side}_index_fingertip"/>
+  <joint name="{side}_index_elastomer_fix_joint" type="fixed"><parent link="{side}_index_PP"/>
+    <child link="{side}_index_elastomer"/></joint>
+  <joint name="{side}_index_fingertip_fix_joint" type="fixed"><parent link="{side}_index_elastomer"/>
+    <child link="{side}_index_fingertip"/></joint>
 </robot>''')
         write(root / SHARPA / package / f"{package}_with_flange.usda", f'''
     over "{side}_hand_C_MC" (
@@ -159,7 +166,8 @@ def test_definition_drives_the_hands_by_joint(tmp_path):
     assert robot["default_joint_pos"] == [0.] * (6 + 4 + 14 + 2 * 2)
     manipulation = robot["manipulation"]
     assert manipulation["finger_joint_names"]["right"] == ["right_thumb_CMC_FE", "right_index_MCP_FE"]
-    assert manipulation["finger_link_names"]["left"] == ["left_thumb_CMC_VL", "left_index_PP"]
+    # The fingertip's pad is fixed to its phalanx and touches first; its frame has nothing to touch with.
+    assert manipulation["finger_link_names"]["left"] == ["left_thumb_CMC_VL", "left_index_PP", "left_index_elastomer"]
     assert "left_realsense_link" in manipulation["gripper_link_names"]["left"]
     pairs = robot["disabled_collision_pairs"]
     assert ["base_link", "wheel_motor_link1"] in pairs and not any("gripper" in link for pair in pairs for link in pair)

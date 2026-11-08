@@ -77,6 +77,21 @@ def hand_joints(source, side):
     return [joint.get("name") for joint in joints], [joint.find("child").get("link") for joint in joints]
 
 
+def finger_links(source, side):
+    """The links the finger joints move that can touch: each actuated joint's child, then the links fixed to them
+    with collision geometry. These are the fingertips' elastomer pads, which reach past the distal phalanges, so a
+    fingertip press or pinch touches through a pad first; OmniGibson counts only finger links' contacts for toggles
+    and assisted grasps."""
+    links = hand_joints(source, side)[1]
+    robot = hand(source, side)
+    touching = {link.get("name") for link in robot.findall("link") if link.find("collision") is not None}
+    for joint in robot.findall("joint"):  # in tree order: a fixed link follows the link it is fixed to
+        parent, child = joint.find("parent").get("link"), joint.find("child").get("link")
+        if joint.get("type") == "fixed" and parent in links and child in touching:
+            links.append(child)
+    return links
+
+
 def filtered_pairs(source, side):
     """Link pairs that Sharpa's own USD keeps from colliding (PhysicsFilteredPairsAPI), such as
     the palm and the thumb's metacarpal; the URDF import drops them."""
