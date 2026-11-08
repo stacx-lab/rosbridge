@@ -23,16 +23,16 @@ RECORDING_CRF = 20
 
 
 def recording_settings(options):
-    """The spectator rate, size, views and encoder quality a recording asks for, checked."""
-    rate = float(options.get("record_rate") or SPECTATOR_RATE_HZ)
+    """The spectator rate, size, views and encoder quality a recording asks for, checked; an option not given takes
+    its default."""
+    rate, size, crf = (options.get(name) for name in ("record_rate", "record_size", "record_quality"))
+    rate = SPECTATOR_RATE_HZ if rate is None else float(rate)
     if not 0 < rate <= 50:
         raise ValueError("--record-rate must be in (0, 50] frames per world second")
-    size = options.get("record_size")
-    width, height = (map(int, size.lower().split("x")) if size else SPECTATOR_SIZE)
+    width, height = SPECTATOR_SIZE if size is None else map(int, size.lower().split("x"))
     if not (16 <= width <= 3840 and 16 <= height <= 2160):
         raise ValueError("--record-size must be WxH within 16x16..3840x2160")
     views = [v for v in (options.get("record_views") or "").split(",") if v]
-    crf = options.get("record_quality")
     crf = RECORDING_CRF if crf is None else int(crf)
     if not 0 <= crf <= 51:
         raise ValueError("--record-quality must be a CRF in 0..51")

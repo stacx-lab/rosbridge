@@ -31,7 +31,8 @@ def test_recording_settings_default_and_check_their_ranges():
     assert recording_settings({}) == (10., 960, 720, [], 20)
     assert recording_settings({'record_rate': 5, 'record_size': '640X480', 'record_views': 'head,,front_left',
                                'record_quality': 28}) == (5., 640, 480, ['head', 'front_left'], 28)
-    for options in ({'record_rate': 60}, {'record_size': '8x8'}, {'record_quality': 52}):
+    assert recording_settings({'record_quality': 0})[4] == 0  # lossless, not the default
+    for options in ({'record_rate': 60}, {'record_rate': 0}, {'record_size': '8x8'}, {'record_quality': 52}):
         with pytest.raises(ValueError):
             recording_settings(options)
 
