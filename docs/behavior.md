@@ -43,7 +43,10 @@ machines, mixing tools and cooking systems) and light synchronization for
 `turning_out_all_lights_before_sleep`. The seed selects public test instance
 `301 + seed % 20` and seeds Python, NumPy, Torch and Warp. Loading it restores the
 instance's objects and the robot's start pose and settles 25 physics steps holding
-task entities still, as the evaluator's `load_batch` does.
+task entities still, as the evaluator's `load_batch` does. OmniGibson loads every door of
+the scene but the floors of the loaded rooms only, so a door can open onto no floor: a door
+with a loaded room on one side of the scene's room segmentation and none on the other is
+closed and locked. No such door is part of an activity.
 
 Success is the activity's BDDL goal predicate, evaluated every step; the reward is
 1 while it holds. `--stop-on-success` ends the episode at the first success, as the
