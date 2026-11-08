@@ -21,7 +21,8 @@ def test_catalog_holds_robocasa365_with_the_evaluation_split():
         assert task['id'] == 'robocasa/' + SLUG.sub('-', task['native_task']).lower()
         assert resolve(task['id'])[2] == task
     assert resolve('robocasa')[2]['id'] == 'robocasa/pick-place-counter-to-cabinet'
-    assert resolve('PrepareVeggieDip')[2]['id'] == 'robocasa/prepare-veggie-dip'
+    # psi-kitchen (branch psi-bench) shares RoboCasa365's task names, so a bare one is ambiguous there.
+    assert resolve('robocasa/PrepareVeggieDip')[2]['id'] == 'robocasa/prepare-veggie-dip'
 
 
 def test_seeded_prepare_adopts_verified_archives_and_overlays_the_upstream_tree(tmp_path,
