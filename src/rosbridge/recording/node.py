@@ -82,7 +82,8 @@ class Recorder(Node):
         self.metadata.update(spectator_views=self.views)
         for view in self.views:
             if self.executable is not None:
-                self.streams[view] = VideoStream(self.directory, view, fps, self.executable)
+                self.streams[view] = VideoStream(self.directory, view, fps, self.executable,
+                                                 crf=self.record['recording_crf'])
             image_topic = self._topic(f'world/spectator/{view}/image_raw', 'sensor_msgs/msg/Image')
             info_topic = self._topic(f'world/spectator/{view}/camera_info', 'sensor_msgs/msg/CameraInfo')
             self.create_subscription(Image, image_topic,

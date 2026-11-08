@@ -9,10 +9,10 @@ from rosbridge.runtime.world import WorldRuntime
 
 
 
-def world(mode="stepped", max_steps=None, **kwargs):
+def world(mode="stepped", max_steps=None, backend=ToyBackend, **kwargs):
     published = []
-    sim = ToyBackend(max_steps)
-    runtime = WorldRuntime(sim, mode, lambda reset: published.append((sim.steps, reset)), **kwargs)
+    sim = backend(max_steps)
+    runtime = WorldRuntime(sim, mode, lambda: published.append(sim.steps), **kwargs)
     return runtime, published
 
 
@@ -22,10 +22,6 @@ def wait(runtime, duration):
     runtime.submit(lambda: runtime.waits.admit(duration, runtime.time_s, runtime.steps,
                                                runtime.sim.period, runtime.sim.done, result.set_result))
     return result
-
-
-def reset(runtime, task, seed=0, randomize=False):
-    return runtime.submit(lambda: runtime.reset(task, seed, randomize))
 
 
 def finish(runtime):
@@ -61,7 +57,7 @@ def test_zero_rounding_and_shared_deadlines():
     assert first.result() == same.result()
     assert first.result().waited_s == pytest.approx(.3)
     assert later.result().waited_s == pytest.approx(.2)
-    assert published[-1][0] == 3  # completion follows observation publication
+    assert published[-1] == 3  # completion follows observation publication
     assert not longer.done()
     finish(runtime)
     assert longer.result().waited_s == pytest.approx(.5)
@@ -72,43 +68,9 @@ def test_zero_rounding_and_shared_deadlines():
 def test_wait_completion_after_publication():
     runtime, published = world()
     future = wait(runtime, .1)
-    future.add_done_callback(lambda _: published.append(("completed", False)))
+    future.add_done_callback(lambda _: published.append("completed"))
     finish(runtime)
-    assert published == [(1, False), ("completed", False)]
-
-
-def test_reset_interrupts_with_old_time_and_discards_commands():
-    runtime, _ = world()
-    runtime.commands.set_group("finger", [-.5])
-    future = wait(runtime, 10.)
-    runtime.drain()
-    runtime.tick()
-    restarted = reset(runtime, "toy", 3, True)
-    runtime.drain()
-    assert restarted.result().success
-    assert not future.result().success
-    assert future.result().time_s == pytest.approx(.1)
-    assert future.result().waited_s == pytest.approx(.1)
-    assert runtime.time_s == 0 and runtime.sim.seed == 3
-    assert runtime.commands.action(0).tolist() == [0., 0., 0.]
-    assert not runtime.tick()
-
-
-def test_failed_reset_preserves_episode_and_held_target():
-    runtime, _ = world()
-    runtime.commands.set_group("finger", [-.5])
-    future = wait(runtime, 10.)
-    runtime.drain()
-    runtime.tick()
-    restarted = reset(runtime, "missing", 3, False)
-    runtime.drain()
-    assert not restarted.result().success
-    assert not future.result().success
-    assert runtime.time_s == .1
-    assert runtime.commands.action(10)[1] == -.5
-    next_wait = wait(runtime, .1)
-    finish(runtime)
-    assert next_wait.result().success
+    assert published == [1, "completed"]
 
 
 def test_terminal_tick_completes_due_waits_then_fails_others():
@@ -125,6 +87,61 @@ def test_terminal_tick_completes_due_waits_then_fails_others():
     future = wait(runtime, .1)
     runtime.drain()
     assert zero.result().success and not future.result().success
+
+
+def replied(runtime, duration):
+    """A world wait as the world node admits it: its reply names the commands refused since the previous one."""
+    result = Future()
+    runtime.submit(lambda: runtime.waits.admit(duration, runtime.time_s, runtime.steps, runtime.sim.period,
+                                               runtime.sim.done, lambda done: result.set_result(runtime.reply(done))))
+    return result
+
+
+def refuse(runtime, endpoint, reason, times=1):
+    for _ in range(times):
+        runtime.submit(lambda: runtime.refuse(endpoint, CommandError(reason)))
+
+
+def test_a_wait_reply_names_the_commands_refused_since_the_previous_reply():
+    runtime, _ = world()
+    plain = replied(runtime, 0.)
+    refuse(runtime, "/arm/joint_target", "arm_joint1=9.0000 outside [-1.0000, 1.0000]", times=2)
+    refuse(runtime, "/finger/target", "finger target has non-finite values")
+    named = replied(runtime, .1)
+    finish(runtime)
+    assert plain.result().message == "ok"
+    assert named.result().success and named.result().message == (
+        "ok; refused since the previous wait reply: /arm/joint_target: arm_joint1=9.0000 outside [-1.0000, 1.0000] "
+        "(2 commands); /finger/target: finger target has non-finite values")
+    again = replied(runtime, 0.)
+    runtime.drain()
+    assert again.result().message == "ok"  # named once
+    for kind in range(7):
+        refuse(runtime, f"/device{kind}/target", "device target has non-finite values", times=kind + 1)
+    many = replied(runtime, 0.)
+    runtime.drain()
+    message = many.result().message
+    assert "/device4/target" in message and "/device5/target" not in message
+    assert message.endswith("(5 commands); and 13 more")  # devices 5 and 6: 6 + 7 commands
+
+
+def test_a_refusal_reaches_a_wait_that_the_end_or_stop_completes():
+    runtime, _ = world(max_steps=2)
+    pending = replied(runtime, 1.)
+    runtime.drain()
+    runtime.tick()
+    refuse(runtime, "/arm/joint_target", "trajectory start is in the past")
+    finish(runtime)
+    assert not pending.result().success
+    assert pending.result().message == ("episode ended during wait; refused since the previous wait reply: "
+                                        "/arm/joint_target: trajectory start is in the past")
+    runtime, _ = world()
+    stopped = replied(runtime, 1.)
+    runtime.drain()
+    runtime.refuse("/finger/target", "finger target has non-finite values")
+    runtime.close()
+    assert stopped.result().message == ("runtime stopped; refused since the previous wait reply: /finger/target: "
+                                        "finger target has non-finite values")
 
 
 def test_realtime_runs_without_waits_and_wait_does_not_add_extra_ticks():
@@ -167,47 +184,31 @@ def test_shutdown_resolves_pending_and_fails_queued_requests():
         queued.result()
 
 
-def test_terminal_result_is_persisted_once_per_episode(tmp_path, monkeypatch):
+def test_the_episode_is_recorded_once_when_it_ends(tmp_path, monkeypatch):
     import json
-    monkeypatch.setenv('ROSBRIDGE_RUN_DIR',str(tmp_path))
-    sim = ToyBackend(max_steps=1)
-    runtime = WorldRuntime(sim, 'stepped', lambda reset: None)
-    for episode in range(2):
-        pending = wait(runtime, 1.)
-        runtime.drain()
-        assert runtime.tick()
-        assert not pending.result().success
-        assert not runtime.tick()
-        result = [json.loads(line) for line in (tmp_path/'episode-results.jsonl').read_text().splitlines()]
-        assert len(result)==episode+1
-        assert result[-1]['episode']==episode
-        assert result[-1]['done'] and not result[-1]['success']
-        assert result[-1]['step']==1
-        restarted = reset(runtime, 'toy',0,False)
-        runtime.drain()
-        assert restarted.result().success
-    runtime.close()
+    monkeypatch.setenv('ROSBRIDGE_RUN_DIR', str(tmp_path))
+    runtime, _ = world(max_steps=1)
+    pending = wait(runtime, 1.)
+    runtime.drain()
+    assert runtime.tick()
+    assert not pending.result().success
+    assert not runtime.tick()
+    runtime.close()  # stopping a run whose episode has ended adds no second record
+    outcome, = [json.loads(line) for line in (tmp_path / 'episode-results.jsonl').read_text().splitlines()]
+    assert outcome['done'] and not outcome['success']
+    assert (outcome['reason'], outcome['step']) == ('max_steps', 1)
 
 
-def test_judge_stop_reset_and_failed_reset(tmp_path, monkeypatch):
+def test_stopping_records_the_open_episode(tmp_path, monkeypatch):
     import json
     monkeypatch.setenv('ROSBRIDGE_RUN_DIR', str(tmp_path))
     runtime, _ = world()
     wait(runtime, .2)
     finish(runtime)
-    bad = reset(runtime, 'missing', 0, False)
-    runtime.drain()
-    assert not bad.result().success
     assert not (tmp_path / 'episode-results.jsonl').exists()
-    restarted = reset(runtime, 'toy', 3, False)
-    runtime.drain()
-    assert restarted.result().success
     runtime.close()
-    outcomes = [json.loads(line) for line in (tmp_path / 'episode-results.jsonl').read_text().splitlines()]
-    assert [item['reason'] for item in outcomes] == ['reset', 'stopped']
-    assert [item['step'] for item in outcomes] == [2, 0]
-    assert [item['seed'] for item in outcomes] == [0, 3]
-    assert all(not item['done'] for item in outcomes)
+    outcome, = [json.loads(line) for line in (tmp_path / 'episode-results.jsonl').read_text().splitlines()]
+    assert (outcome['reason'], outcome['step'], outcome['seed'], outcome['done']) == ('stopped', 2, 0, False)
 
 
 def test_operator_judge_reads_results_without_ros(tmp_path, monkeypatch):
@@ -223,3 +224,61 @@ def test_operator_judge_reads_results_without_ros(tmp_path, monkeypatch):
     (tmp_path / 'episode-results.jsonl').write_text(json.dumps(outcome) + '\n')
     assert judge(str(run))['episodes'] == [outcome]
     assert main(['judge', str(run), '--json']) == 0
+
+
+def test_a_world_stopped_by_an_error_records_it(tmp_path, monkeypatch):
+    import json
+    monkeypatch.setenv('ROSBRIDGE_RUN_DIR', str(tmp_path))
+    runtime, _ = world()
+    pending = wait(runtime, 1.)
+    runtime.drain()
+    runtime.close(error="WorkerError: native worker exited (exit -9)")
+    assert pending.result().message == "runtime stopped"  # all a worker sees
+    outcome, = [json.loads(line) for line in (tmp_path / 'episode-results.jsonl').read_text().splitlines()]
+    assert (outcome['reason'], outcome['error']) == ('stopped', "WorkerError: native worker exited (exit -9)")
+
+
+class MeasuredToy(ToyBackend):
+    """A backend with its own measure of the episode, which fails once the position goes negative."""
+    measured = 0
+
+    def measures(self):
+        self.measured += 1
+        if self.position.min() < 0:
+            raise RuntimeError("cannot measure a negative position")
+        return {"progress": self.steps / 4}
+
+
+def records(folder):
+    import json
+    return [json.loads(line) for line in (folder / 'episode-results.jsonl').read_text().splitlines()]
+
+
+def test_records_add_a_backends_measures(tmp_path, monkeypatch):
+    monkeypatch.setenv('ROSBRIDGE_RUN_DIR', str(tmp_path))
+    runtime, _ = world(max_steps=1, backend=MeasuredToy)
+    wait(runtime, .1)
+    finish(runtime)
+    runtime.close()
+    outcome, = records(tmp_path)
+    assert (outcome['reason'], outcome['progress'], runtime.sim.measured) == ('max_steps', .25, 1)
+
+
+def test_a_world_stopped_by_an_error_records_no_measures(tmp_path, monkeypatch):
+    monkeypatch.setenv('ROSBRIDGE_RUN_DIR', str(tmp_path))
+    runtime, _ = world(backend=MeasuredToy)
+    runtime.close(error="WorkerError: native worker exited (exit -9)")
+    outcome, = records(tmp_path)
+    assert 'progress' not in outcome and runtime.sim.measured == 0  # the error may have broken the backend
+    assert outcome['error'] == "WorkerError: native worker exited (exit -9)"
+
+
+def test_a_measure_that_fails_is_the_records_error(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv('ROSBRIDGE_RUN_DIR', str(tmp_path))
+    runtime, _ = world(backend=MeasuredToy)
+    runtime.sim.position[:] = -1.
+    runtime.close()
+    outcome, = records(tmp_path)
+    assert outcome['reason'] == 'stopped' and 'progress' not in outcome
+    assert outcome['error'] == "measures: RuntimeError: cannot measure a negative position"
+    assert "Traceback" in capsys.readouterr().err and runtime.sim.closed

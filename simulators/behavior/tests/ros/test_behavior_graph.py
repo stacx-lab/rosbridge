@@ -10,11 +10,11 @@ from std_msgs.msg import Float64
 from std_srvs.srv import Trigger
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 
-from rosbridge_runtime.devices import STREAM_QOS
+from rosbridge_runtime.devices import FRAME_QOS, STREAM_QOS
 from tests.ros.support import Graph, seconds
 
-# OmniGibson boots Isaac Sim and loads the house before the first reset; resets reload the instance.
-STARTUP_S, RESET_S = 1800., 600.
+# OmniGibson boots Isaac Sim and loads the house and the instance before serving.
+STARTUP_S = 1800.
 
 
 def workers(graph):
@@ -78,12 +78,18 @@ def test_behavior_graph_serves_the_r1pro_from_a_native_worker(tmp_path, mode):
         assert (image.width, image.height, depth.encoding) == (720, 720, "16UC1")
         assert np.frombuffer(bytes(image.data), np.uint8).std() > 1
         assert (np.frombuffer(bytes(depth.data), np.uint16) > 0).mean() > .9
+        # A stream renders once per step: a frame of every step reaches a steady subscriber.
+        stamps = []
+        stream = node.create_subscription(Image, "head_camera/image",
+                                          lambda msg: stamps.append(seconds(msg.header.stamp)), FRAME_QOS)
+        graph.spin(1.)
+        assert graph.wait(.5).success
+        graph.spin(.5)
+        assert stamps == sorted(stamps) and len(set(stamps)) >= 10
+        node.destroy_subscription(stream)
         before = seconds(last["spectator"].header.stamp)
         assert graph.wait(.2).success
         graph.until(lambda: seconds(last["spectator"].header.stamp) > before, 60.)
-        assert graph.reset(RESET_S).success
-        graph.spin(.5)
-        assert abs(last["base"].pose.pose.position.x) < 1e-3
     finally:
         graph.close()
     assert not any(process.is_running() and process.status() != psutil.STATUS_ZOMBIE for process in native)

@@ -1,6 +1,13 @@
 # One git patch filename per line, applied in order to .runtime/behavior (and
-# .runtime/behavior-g1). Ported from RoboEnv:
+# .runtime/behavior-g1 and .runtime/behavior-dex). Ported from RoboEnv:
 # 0001 OmniGibson's dataset-recording and LeRobot wrappers become optional imports and extras;
 # 0002 OMNIGIBSON_RENDER_GPU selects Isaac's Vulkan renderer apart from the CUDA physics device.
+# And rosbridge's own:
+# 0003 BehaviorTask.get_goal_option_satisfaction (the evaluator's q_score) evaluates each distinct
+#      grounded goal literal once; a quantified goal repeats them across many options.
+# 0004 Macro particle systems update the physics handles once per batch of physical particles
+#      added or removed, not per particle, and not for visual particles, which are in no physics view.
 0001-optional-workflows.patch
 0002-gpu-selection.patch
+0003-goal-option-literals.patch
+0004-particle-handle-updates.patch

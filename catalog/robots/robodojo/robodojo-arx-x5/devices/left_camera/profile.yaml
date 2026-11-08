@@ -37,6 +37,7 @@ meta:
   created_at: '2026-10-24T00:00:00Z'
   updated_at: '2026-10-24T00:00:00Z'
 type: rgb
+layout: mono
 description: RGB camera (D435 model) on the left wrist, rendered by RoboDojo's tiled Isaac
   renderer. Calibration and the optical-frame mount on the left_arm flange are in the profile.
 source: introspected

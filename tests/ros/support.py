@@ -35,7 +35,6 @@ class Graph:
         self.node.create_subscription(Clock, "/clock", lambda msg: self.last.update(clock=msg), STREAM_QOS)
         self.wait_client = self.node.create_client(Wait, "world/wait")
         self.stop_client = self.node.create_client(Trigger, "world/stop")
-        self.reset_client = self.node.create_client(Trigger, "world/reset")
         self.tmp_path = tmp_path
         try:
             if backend == "toy":
@@ -46,8 +45,7 @@ class Graph:
                                          f"backend:={backend}", f"mode:={mode}",
                                          *(["spectator_rate_hz:=10.0"] if spectators else [])])
             # Some backends build scenes or start renderers for minutes before serving.
-            self.until(lambda: self.wait_client.service_is_ready() and self.reset_client.service_is_ready(),
-                       startup_s)
+            self.until(self.wait_client.service_is_ready, startup_s)
             # Confirm that the owner loop is servicing requests after discovery.
             deadline = time.monotonic() + 5.
             while not self.wait(0.).success:
@@ -112,9 +110,6 @@ class Graph:
 
     def wait(self, duration):
         return self.call(self.wait_client, Wait.Request(duration_s=float(duration)))
-
-    def reset(self, timeout=15.):
-        return self.call(self.reset_client, Trigger.Request(), timeout)
 
     def stop(self, process):
         if process.poll() is None:

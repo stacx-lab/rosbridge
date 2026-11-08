@@ -45,20 +45,17 @@ class ObservationPublisher:
         self.spectator_schedule = SampleSchedule(spectator_rate_hz)
         self.spectators = [Spectator(node, view) for view in self.sim.spectators]
 
-    def publish(self, reset=False):
+    def publish(self):
         time_s = self.node.world.time_s
         stamp = conv.stamp(time_s)
         positions, velocities = self.sim.state()
         self.clock.publish(conv.clock(stamp))
-        cameras = self.cameras.due(time_s, reset)
+        cameras = self.cameras.due(time_s)
         for device in self.node.devices:
             if not isinstance(device, Camera):
                 device.publish(stamp, positions, velocities)
-                continue
-            if reset:
-                device.reset()
-            if cameras:
+            elif cameras:
                 device.publish(stamp)
-        if self.spectators and self.spectator_schedule.due(time_s, reset):
+        if self.spectators and self.spectator_schedule.due(time_s):
             for spectator in self.spectators:
                 spectator.submit(stamp, self.sim)

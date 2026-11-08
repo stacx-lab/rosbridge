@@ -1,0 +1,97 @@
+name: left_camera
+runtime:
+  domain_id: 0
+  nodes: []
+  ready_timeout_s: 30
+operations:
+  image:
+    description: RGB image measurements with encoding, dimensions, row stride and acquisition
+      timestamp in the Image header. The frame_id identifies the calibrated optical frame;
+      use its stamp for tf2 lookup. A new subscriber receives the current frame at once, also
+      while the world is paused, then one per camera sample; reading never advances world
+      time.
+    transport: topic
+    direction: output
+    endpoint: /left_camera/image
+    type: sensor_msgs/msg/Image
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: volatile
+    timeout_s: 10
+  depth:
+    description: '16UC1 depth registered to image in millimetres along the optical axis; 0
+      marks missing or out-of-range samples. Rendered with its image: same stamp and frame_id,
+      so pair the two by stamp.'
+    transport: topic
+    direction: output
+    endpoint: /left_camera/depth
+    type: sensor_msgs/msg/Image
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: volatile
+    timeout_s: 10
+  camera_info:
+    description: CameraInfo mirroring the profile, with K and P from color.projection, zero
+      plumb_bob distortion, image size and optical frame. Kinex reads camera geometry from
+      the profile, not from this topic; intrinsics are not TF transforms.
+    transport: topic
+    direction: output
+    endpoint: /left_camera/camera_info
+    type: sensor_msgs/msg/CameraInfo
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: transient_local
+    timeout_s: 10
+loaded: false
+meta:
+  created_at: '2026-10-24T00:00:00Z'
+  updated_at: '2026-10-24T00:00:00Z'
+type: rgbd
+description: RGB-D camera on the left hand's back, looking along the fingers past the fingertips
+  (BEHAVIOR's left_realsense_link sensor at the evaluator's full resolution). Image and registered
+  depth calibration and the optical-frame mount are in the profile.
+source: introspected
+calibrated_at: null
+method: introspection
+color:
+  width: 480
+  height: 480
+  fps: null
+  projection:
+    model: pinhole
+    fx: 388.663952075267
+    fy: 388.663952075267
+    cx: 239.5
+    cy: 239.5
+    skew: 0
+  distortion:
+    model: none
+depth:
+  width: 480
+  height: 480
+  fps: null
+  quantity: z
+  scale_m_per_unit: 0.001
+  invalid_value: 0
+  valid_range_m:
+    min: 0.001
+    max: 65.535
+  reliable_range_m:
+    min: 0.001
+    max: 65.535
+  registration: color
+frames:
+  base:
+    translation_m:
+    - -0.029500345561
+    - 0.100000401678
+    - -0.069999987194
+    rotation_xyzw:
+    - 0.996194701676
+    - 9.6555e-08
+    - 4.0724e-08
+    - 0.087155701783
+    parent: left_arm:flange

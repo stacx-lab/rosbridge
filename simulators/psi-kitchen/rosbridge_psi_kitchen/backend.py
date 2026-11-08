@@ -3,7 +3,6 @@ simulators/robocasa, plus PSI additions:
 
 - scene: PSI_SCENE=k builds target kitchen k (layout k, style k) instead of drawing one from the seed;
 - time limit: PSI_TIME_LIMIT_S (robot seconds) overrides the dataset horizon (0 or unset keeps it);
-- no reset: the launch builds the kitchen once and the world offers no world/reset (resettable = False);
 - evidence: the build writes meta.json and model.xml, and every step appends [time, action, qpos] to
   steps.f64, under $ROSBRIDGE_RUN_DIR/episode-0/ (render.py replays it).
 No ROS dependencies.
@@ -55,7 +54,6 @@ def controller_config():
 class PsiKitchenSim:
     default_task = 'OpenDrawer'
     period = 1 / 20
-    resettable = False  # the world node offers no world/reset
 
     def __init__(self, *, cameras=tuple(CAMERAS), width=256, height=256,
                  max_steps=None, terminate_on_success=False):
@@ -89,9 +87,8 @@ class PsiKitchenSim:
                                 for role, source in SPECTATORS)
 
     def reset(self, task, seed, randomize=True):
-        """Build the kitchen, once: PSI_SCENE and the seed fully determine it, its objects and the instruction."""
-        if self.env is not None:
-            raise RuntimeError('psi-kitchen builds its kitchen once and does not reset')
+        """Build the kitchen (a run's one episode): PSI_SCENE and the seed fully determine it, its objects and the
+        instruction."""
         spec = resolve('psi-kitchen', task=task)[2]
         check_task(project_root() / '.runtime/psi-kitchen', spec['native_task'])
         self._initialize(spec, seed)

@@ -14,7 +14,7 @@ import numpy as np
 
 from rosbridge.catalog import resolve
 from rosbridge.core import ActionLayout, CommandGroup
-from rosbridge.core.devices import SpectatorView, device_inventory
+from rosbridge.core.devices import device_inventory, spectator_views
 from rosbridge.project import project_root
 from .assets import check_task
 
@@ -138,8 +138,8 @@ class RoboDojoSim:
     def devices(self):
         return device_inventory(self.layout, {name: name for name in CAMERAS})
 
-    def configure_spectators(self, width=960, height=720):
-        self.spectators = tuple(SpectatorView(role, source, width, height) for role, source in SPECTATORS)
+    def configure_spectators(self, width=960, height=720, views=None):
+        self.spectators = spectator_views(SPECTATORS, width, height, views)
 
     # Episode lifecycle ------------------------------------------------------------------
 

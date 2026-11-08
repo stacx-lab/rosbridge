@@ -16,6 +16,10 @@ from .rendering import apply_render_settings, capture_launch_settings
 
 LIGHT_TASKS = {"turning_out_all_lights_before_sleep"}  # evaluator.LIGHT_EVAL_TASKS
 SETTLE_STEPS = 25  # evaluator._settle_and_finalize
+DOORS = ("door", "sliding_door", "garage_door")
+# A door's rooms are read on the scene's room map this far beyond its faces. A locked door's joints keep this range
+# above their closed position: OmniGibson reads equal limits as no limits.
+DOOR_SIDE_M, DOOR_LOCKED = .5, 1e-3
 
 
 def values(value):
@@ -31,6 +35,36 @@ def rotation(quaternion_xyzw):
     return np.array([[1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w)],
                      [2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w)],
                      [2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)]])
+
+
+def doors_out(scene, rooms):
+    """The doors with one side in a loaded room and the other not, on the scene's room map. A partial scene loads every
+    door but only the loaded rooms' floors, so such a door opens onto no floor."""
+    doors = []
+    for door in scene.objects:
+        if door.category not in DOORS or not door.joints:
+            continue
+        position, orientation = door.get_position_orientation()
+        turn = rotation(orientation)
+        size = values(door.native_bbox) * values(door.scale)  # the closed door, in its own frame
+        centre = values(position) + turn @ values(door.scaled_bbox_center_in_base_frame)
+        thin = int(np.argmin(size[:2]))
+        across = turn[:, thin] * (size[thin] / 2 + DOOR_SIDE_M)
+        if len({scene.seg_map.get_room_instance_by_point((centre + side * across)[:2]) in rooms
+                for side in (1, -1)}) == 2:
+            doors.append(door)
+    return doors
+
+
+def lock_doors_out(scene, rooms):
+    """Close and lock the doors out of the loaded rooms (doors_out); returns them."""
+    doors = doors_out(scene, rooms)
+    for door in doors:
+        for joint in door.joints.values():
+            joint.set_pos(0.)  # a BEHAVIOR door's closed position
+            joint.upper_limit = DOOR_LOCKED  # before the lower limit, which is at most 0, so the range never collapses
+            joint.lower_limit = 0.
+    return doors
 
 
 def data_root(simulator):
@@ -84,13 +118,17 @@ class Episode:
         self.task, self.embodiment = task, embodiment
         with capture_launch_settings():
             self.env = og.Environment(configs=cfg)
-        apply_render_settings()
+        if embodiment.rendering == "on_demand":
+            apply_render_settings()  # DLAA; the R1Pro embodiments keep OmniGibson's anti-aliasing
         if self.env.num_envs != 1 or len(self.env.scene.robots) != 1:
             raise ValueError("BEHAVIOR episodes hold one scene with one robot")
         self.robot = self.env.scene.robots[0]
         embodiment.configure(self.robot)
         # Physics views must exist before the first load reads or restores robot joint state.
         og.sim.update_handles()
+        # The robot cannot pass a door onto a room without its floor: such doors are closed and locked.
+        self.locked_doors = [door.name for door in lock_doors_out(self.env.scene, cfg["scene"]["load_room_instances"])]
+        print(f"doors locked out of the loaded rooms: {self.locked_doors}", flush=True)
         self.lights = None
 
     def load(self, seed):
@@ -161,8 +199,8 @@ class Episode:
     def step(self, action):
         """Advance one action period on the native action vector; returns native success.
 
-        Physics steps exactly as the evaluator's; cameras render on demand (render_for_capture),
-        not every period.
+        Physics steps exactly as the evaluator's but without rendering, so it does not depend on
+        whether cameras are read; reads render afterwards (BehaviorSim._render).
         """
         import omnigibson as og
         import torch

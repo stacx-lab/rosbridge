@@ -35,9 +35,9 @@ environments used by active managed runs.
 `launch` accepts `SIMULATOR/TASK`, an unambiguous native task name or task slug,
 or a simulator's default-task alias. It takes `--execution-mode`, `--seed`,
 `--stop-on-success`, `--domain-id`, `--timeout`, `--record DIR` and
-`--record-type`. It requires preparation; launch and reset never download assets.
+`--record-type`. It requires preparation; launch never downloads assets.
 Launch remains in the foreground unless `--detach` is supplied. Ctrl-C stops the
-complete graph. Detached launch returns once the world node, its clock and reset
+complete graph. Detached launch returns once the world node, its clock and wait
 service are discoverable and, when recording, the recorder holds every initial
 frame. Startup failures stop the graph and retain logs.
 
@@ -66,17 +66,17 @@ Management commands accept `--project` and `--json`.
 
 A run has one process containing a `world` node that hosts every device's
 endpoints: `<device>/...` for each arm, gripper and observation camera, plus the
-world clock, waits, stop, reset and, when recording, spectator streams. A simulator
+world clock, waits, stop and, when recording, spectator streams. A simulator
 whose native stack cannot share the ROS interpreter declares `native_environment`
 and `native_backend` in its manifest: the world node then holds a proxy
 (`rosbridge.core.worker`) and the backend runs on the main thread of a worker
 process in that environment. Calls are sequential over a private socket; arrays
 cross it independently of the NumPy versions on either side, and a dead worker
 terminates the graph like an executor failure. World owns
-the backend, stepping, reset and clock; native judging stays internal. Kinex owns
+the backend, stepping and clock; native judging stays internal. Kinex owns
 frame publication and composition outside the simulator.
 
-The main thread exclusively creates, resets, steps, renders and destroys native
+The main thread exclusively creates, loads, steps, renders and destroys native
 objects. ROS callbacks queue functions that the main thread runs between steps, so
 they never read native state. Wait handlers await futures, so pending waits cannot
 exhaust executor workers. State and camera publication happen on the owner thread
@@ -98,12 +98,12 @@ Rendering can make realtime slower than wall time; it never changes simulated dt
 `message`, `time_s` and actual `waited_s` out. Positive durations round up to whole
 native control steps; zero is immediate; negative, nonfinite or unrepresentable
 waits fail. Waits are sequential: a wait requested while another is pending is
-rejected, and `world/stop` (`std_srvs/srv/Trigger`) cancels the pending one.
-`world/reset` restarts the launch task and seed and interrupts a pending wait with
-its old-episode time and partial elapsed time. Termination completes a wait due
-on that tick and fails an unfinished one. A wait admitted before a client times out
-stays pending until it completes or `world/stop` cancels it; abrupt process loss
-may prevent a response, so use wall timeouts.
+rejected, and `world/stop` (`std_srvs/srv/Trigger`) cancels the pending one. A run
+is one episode, of the task and seed it was launched with. There is no reset: to
+start over, stop the run and launch another. Termination completes a wait due on
+that tick and fails an unfinished one. A wait admitted before a client times out
+stays pending until it completes or `world/stop` cancels it; abrupt process loss may
+prevent a response, so use wall timeouts.
 
 ```python
 from rosbridge.clients import WorldClockClient
@@ -114,10 +114,9 @@ assert result.success, result.message
 result = await world.wait_async(1.0)
 ```
 
-Failed backend reconstruction retains the old episode; successful reset clears
-held commands and restarts simulated time. The ROS graph inventory remains fixed
-during a run. Native evaluator results are available to the operator through
-`rosbridge judge RUN_ID`; task instructions and evaluator state are not published.
+The ROS graph inventory remains fixed during a run. Native evaluator results are
+available to the operator through `rosbridge judge RUN_ID`; task instructions and
+evaluator state are not published.
 
 Arms accept `trajectory_msgs/msg/JointTrajectory` on `<arm>/joint_target`:
 position-only points over every arm joint, strictly increasing times ending within
@@ -130,8 +129,11 @@ Mobile bases (Kinex
 `locomotion`) accept a body-frame `geometry_msgs/msg/Twist` on `<base>/velocity`,
 held for 0.5 s of world time after the last one, and publish `nav_msgs/msg/Odometry`
 on `<base>/odometry`. Invalid targets are logged
-and rejected without clamping; the latest valid target is held until replaced,
-stopped or reset. `<device>/stop` holds the measured position; a base's stop
+and rejected; a target within 0.001 (rad or m) of a limit, such as a measured
+position slightly past it, is held at the limit. A topic publisher gets no reply,
+so the message of the next `world/wait` reply names each refused command's topic
+and reason, once (at most five kinds, then a count). The latest valid target is
+held until replaced or stopped. `<device>/stop` holds the measured position; a base's stop
 commands zero velocity. Each command
 subscription is created before its device's stop service. Cameras publish RGB8
 `Image` on `<camera>/image` and `CameraInfo`; frames are `<camera>/base`. RGB-D
@@ -153,16 +155,21 @@ transient-local QoS: initial frames are available to matching late subscribers,
 and slow consumers do not accumulate an unbounded queue. Frames can be dropped;
 this is a live inspection stream, not lossless recording. Sampling includes the
 initial state and follows native control boundaries, skipping missed sample
-deadlines. Paused stepped worlds produce no repeated frames. Reset publishes a new
-initial frame.
+deadlines. Paused stepped worlds produce no repeated frames.
 
 ```bash
 rosbridge launch abc/pouring --execution-mode stepped --detach --record ./recordings/pouring
 rosbridge launch abc --record ./recordings/bag --record-type bag
 rosbridge launch abc --record ./recordings/both --record-type both
+rosbridge launch abc --record ./recordings/wrist --record-views wrist --record-size 640x480 --record-rate 5
 ```
 
-`--record-type` accepts `mp4` (default), `bag`, or `both`, and requires `--record`.
+`--record-type` accepts `mp4` (default), `bag`, or `both`. By default every view the
+simulator offers is recorded at 960×720, 10 frames per world second, H.264 CRF 20.
+`--record-views NAME,...` records only the named views; the simulator sets up no
+others, so they cost no rendering. `--record-size WxH` (16×16 to 3840×2160),
+`--record-rate HZ` (at most 50) and `--record-quality CRF` (0–51, lower is sharper)
+change the rest. Each of these options requires `--record`.
 Paths are relative to the invoking terminal, including with `--project`. The output
 directory must be new or empty; existing recordings are never overwritten. The CLI
 prints its absolute path and includes `recording_dir` in JSON output. `status`
@@ -179,18 +186,17 @@ calibration, clock, and the initial frame of every spectator view before allowin
 any physics steps. `world/wait` still controls stepped execution; recording itself
 never advances simulation. MP4 timing follows simulation timestamps: paused
 thinking time adds no footage, and missing sampling intervals hold the last frame.
-Odd image dimensions are padded to even dimensions for H.264. When a reset moves
-time backwards, MP4 starts another file named `<view>_episode001.mp4`, then `002`,
-and so on. Bags preserve the original simulation stamps, including clock resets.
+Odd image dimensions are padded to even dimensions for H.264. Each view is one
+file, `<view>.mp4`. Bags preserve the original simulation stamps.
 
 Ctrl-C in foreground mode or `rosbridge stop RUN_ID` stops the producer, drains the
 recorder and finalizes files. Encoder workers drain concurrently under one shutdown
 deadline. Recording metadata is written only when it changes. A recorder failure
-fails the run and stops the simulation. Forced termination may leave partial
-output. `recording.json` records completion, errors, received frames,
-encoder-queue drops and segment files; check it before treating a recording as
-complete. The bounded live ROS pipeline can drop frames before the recorder sees
-them, so recording is not a lossless capture guarantee.
+fails the run and stops the simulation. Forced termination may leave partial output.
+`recording.json` records completion, errors, received frames, encoder-queue drops
+and each view's file (`segments`); check it before treating a recording as complete.
+The bounded live ROS pipeline can drop frames before the recorder sees them, so
+recording is not a lossless capture guarantee.
 
 ## Sources, caches and extension
 
@@ -230,11 +236,10 @@ odometry), a `device_inventory` naming its devices by Kinex device type (`joint`
 declare the inventory in the manifest's `[devices]` table. A manifest's `install`
 lists the generated tree's directories installed editable without dependencies
 (default `["."]`; `[]` imports the tree in place).
-Native methods run only on the owner thread; reset must preserve the previous
-episode on failure. New device kinds require an explicit contract and endpoint
-implementation. Provide a manifest, task catalog, independent Pixi environment,
-asset preparer and checker, demo, a catalog rig built by `tools/robots`, and
-unit/native/geometry/ROS tests.
+Native methods run only on the owner thread. New device kinds require an explicit
+contract and endpoint implementation. Provide a manifest, task catalog, independent
+Pixi environment, asset preparer and checker, demo, a catalog rig built by
+`tools/robots`, and unit/native/geometry/ROS tests.
 
 ## Verification
 
@@ -248,6 +253,7 @@ pixi run -e robodojo-native smoke && pixi run -e robodojo test-ros
 pixi run -e robocasa smoke && pixi run -e robocasa test-ros
 pixi run -e behavior-native smoke && pixi run -e behavior test-ros
 pixi run -e behavior-g1-native smoke && pixi run -e behavior-g1 test-ros
+pixi run -e behavior-dex-native smoke && pixi run -e behavior-dex test-ros
 pixi run -e abc python -m pytest -q tests/integration
 rosbridge demo abc
 rosbridge demo libero --execution-mode realtime
@@ -256,6 +262,7 @@ rosbridge demo robodojo
 rosbridge demo robocasa
 rosbridge demo behavior --timeout 1800
 rosbridge demo behavior-g1 --timeout 1800
+rosbridge demo behavior-dex --timeout 1800
 ```
 
 Kinex-backed checks (rig geometry against each simulator, Kinex client tests)
@@ -270,7 +277,7 @@ The Kinex frame-host tests (`tests/ros/test_kinex_frames.py`) also need Kinex's 
 Unit tests cover the command buffer, scheduling, the robot catalog, source
 preparation and caches. Native checks compare actions and timing with upstream and
 verify spectator state/image isolation. ROS checks verify the device endpoints,
-waits, stops, reset and spectator streams in both modes on the synthetic backend,
+waits, stops and spectator streams in both modes on the synthetic backend,
 ABC, LIBERO, RoboTwin and RoboCasa, and RoboDojo and BEHAVIOR through their native workers.
 Integration checks exercise actual CLI runs, two domains, failure
 cleanup, foreground/detached shutdown and MP4/MCAP recording. Skipped checks are

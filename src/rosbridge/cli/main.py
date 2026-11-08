@@ -45,6 +45,14 @@ def parser():
                              help="Save spectator recordings to a new or empty directory")
         command.add_argument("--record-type", choices=("mp4", "bag", "both"),
                              help="Recording format (default: mp4); requires --record")
+        command.add_argument("--record-rate", type=float, metavar="HZ",
+                             help="Spectator frames per world second (default: 10); requires --record")
+        command.add_argument("--record-size", metavar="WxH",
+                             help="Spectator image size in pixels (default: 960x720); requires --record")
+        command.add_argument("--record-views", metavar="NAME,...",
+                             help="The spectator views to record (default: all the simulator offers); requires --record")
+        command.add_argument("--record-quality", type=int, metavar="CRF",
+                             help="H.264 constant rate factor, lower is sharper (default: 20); requires --record")
         success = command.add_mutually_exclusive_group()
         success.add_argument("--stop-on-success", dest="stop_on_success", action="store_true")
         success.add_argument("--no-stop-on-success", dest="stop_on_success", action="store_false")
@@ -127,8 +135,9 @@ def main(argv=None):
             return 0
         from rosbridge.runs import api
         if args.command in ("launch", "demo"):
-            if args.record_type is not None and args.record is None:
-                raise ValueError("--record-type requires --record DIR")
+            for flag in ("record_type", "record_rate", "record_size", "record_views", "record_quality"):
+                if getattr(args, flag, None) is not None and args.record is None:
+                    raise ValueError(f"--{flag.replace('_', '-')} requires --record DIR")
             record, process = api.launch(args.selection, project=args.project, options=vars(args),
                                          demo=args.command == "demo")
             emit(record, args.json)

@@ -38,11 +38,17 @@ def test_arm_target_validates_replaces_and_stops(tmp_path):
         send(graph, publisher, trajectory([.2, .1]))
         assert graph.wait(1.5).success
         graph.until(lambda: position() == pytest.approx([.2, .1]))
-        # Invalid replacements are ignored and keep the active reference.
+        # Invalid replacements are refused and keep the active reference; the next wait's reply names them.
         for invalid in (trajectory([math.nan, .2]), trajectory([.2, .1], names=('slide',)),
-                        trajectory([.2, .1], velocities=[0., 0.]), trajectory([9., .1])):
+                        trajectory([.2, .1], velocities=[0., 0.]), trajectory([9., .1]),
+                        JointTrajectory(joint_names=['slide', 'rotate'])):
             send(graph, publisher, invalid)
-        assert graph.wait(.5).success
+        result = graph.wait(.5)
+        assert result.success and result.message.startswith('ok; refused since the previous wait reply: ')
+        for reason in ('axes target has non-finite values', 'trajectory must name each of',
+                       'only position trajectories are supported', 'slide=9.0000 outside',
+                       'trajectory needs one time per point and at least one point'):
+            assert f'/axes/joint_target: {reason}' in result.message
         graph.spin(.1)
         assert position() == pytest.approx([.2, .1])
         send(graph, publisher, trajectory([.3, .2]))
@@ -68,7 +74,9 @@ def test_gripper_target_persists_until_stop_holds_it(tmp_path):
         assert states[-1].position[0] == -1.
         for value in (math.nan, math.inf, -2., 2.):
             send(graph, publisher, Float64(data=value))
-        assert graph.wait(.1).success
+        result = graph.wait(.1)
+        assert result.success and '/finger/target: finger target has non-finite values (2 commands)' in result.message
+        assert graph.wait(0.).message == 'ok'  # named once
         graph.spin(.1)
         assert states[-1].position[0] == -1.
         assert graph.call(stop, Trigger.Request()).success
@@ -85,7 +93,6 @@ def test_terminal_episode_rejects_commands_and_stays_stoppable(tmp_path, mode):
     try:
         states, publisher, stop = endpoints(graph, 'finger', 'target', Float64)
         # Realtime may already have terminated while the clients discovered each other.
-        assert graph.reset().success
         result = graph.wait(3.)
         assert not result.success
         assert 'episode' in result.message or 'terminal' in result.message
@@ -94,6 +101,5 @@ def test_terminal_episode_rejects_commands_and_stays_stoppable(tmp_path, mode):
         assert graph.owner.poll() is None
         assert states[-1].position[0] == 0.
         assert graph.call(stop, Trigger.Request()).success
-        assert graph.reset().success
     finally:
         graph.close()

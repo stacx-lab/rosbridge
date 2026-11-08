@@ -18,6 +18,25 @@ from .records import SCHEMA, alive, directory, read, select, wait_stopped
 from .processes import signal_owner
 
 SPECTATOR_RATE_HZ = 10.
+SPECTATOR_SIZE = (960, 720)
+RECORDING_CRF = 20
+
+
+def recording_settings(options):
+    """The spectator rate, size, views and encoder quality a recording asks for, checked; an option not given takes
+    its default."""
+    rate, size, crf = (options.get(name) for name in ("record_rate", "record_size", "record_quality"))
+    rate = SPECTATOR_RATE_HZ if rate is None else float(rate)
+    if not 0 < rate <= 50:
+        raise ValueError("--record-rate must be in (0, 50] frames per world second")
+    width, height = SPECTATOR_SIZE if size is None else map(int, size.lower().split("x"))
+    if not (16 <= width <= 3840 and 16 <= height <= 2160):
+        raise ValueError("--record-size must be WxH within 16x16..3840x2160")
+    views = [v for v in (options.get("record_views") or "").split(",") if v]
+    crf = RECORDING_CRF if crf is None else int(crf)
+    if not 0 <= crf <= 51:
+        raise ValueError("--record-quality must be a CRF in 0..51")
+    return rate, width, height, views, crf
 
 
 def launch(selection, *, project=None, options=None, demo=False):
@@ -37,7 +56,10 @@ def launch(selection, *, project=None, options=None, demo=False):
         if value is not None:
             arguments.append(f"{name}:={str(value).lower() if isinstance(value, bool) else value}")
     if recording_dir is not None:
-        arguments.append(f"spectator_rate_hz:={SPECTATOR_RATE_HZ}")
+        rate, width, height, views, crf = recording_settings(options)
+        arguments += [f"spectator_rate_hz:={rate}", f"spectator_width:={width}", f"spectator_height:={height}"]
+        if views:
+            arguments.append(f"spectator_select:={','.join(views)}")
     if demo:
         arguments.append(f"demo:={config['ros_package']}")
     run_id = uuid.uuid4().hex[:12]
@@ -50,6 +72,7 @@ def launch(selection, *, project=None, options=None, demo=False):
               "demo": demo, "launch_arguments": arguments, "created_at": time.time(),
               "recording_dir": str(recording_dir) if recording_dir is not None else None,
               "recording_type": recording_type if recording_dir is not None else None,
+              "recording_crf": crf if recording_dir is not None else None,
               "log": str(folder / "graph.log"), "run_file": str(folder / "run.json")}
     path = folder / "run.json"
     supervisor_env = dict(os.environ, **run_environment(folder))

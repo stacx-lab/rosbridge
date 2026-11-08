@@ -36,6 +36,7 @@ meta:
   created_at: '2026-10-19T00:00:00Z'
   updated_at: '2026-10-20T17:24:01.464Z'
 type: rgb
+layout: mono
 description: Wrist-mounted RGB camera moving with the arm. Use the image acquisition
   timestamp when looking up its optical-frame transform; calibration and mounting
   facts are in the profile.

@@ -24,7 +24,6 @@ def ticks(graph):
 
 def test_stepped_pause_validation_and_rounding(stepped):
     graph = stepped
-    assert graph.reset().success
     result = graph.wait(0.)
     assert result.success and result.waited_s == 0 and result.time_s == 0
     pub = graph.node.create_publisher(Float64, "finger/target", 1)
@@ -43,19 +42,12 @@ def test_stepped_pause_validation_and_rounding(stepped):
     assert graph.node.count_publishers("/clock") == 1
 
 
-def test_waits_are_sequential_and_reset_or_stop_ends_them(stepped):
+def test_waits_are_sequential_and_stop_ends_them(stepped):
     graph = stepped
     assert set(Wait.Request.get_fields_and_field_types()) == {"duration_s"}
     pending = graph.wait_client.call_async(Wait.Request(duration_s=1e8))
     graph.spin(.2)
     assert "sequential" in graph.wait(0.).message
-    assert graph.reset().success
-    graph.until(pending.done)
-    assert not pending.result().success and "reset" in pending.result().message
-    graph.spin(.1)
-    assert ticks(graph) == 0
-    pending = graph.wait_client.call_async(Wait.Request(duration_s=1e8))
-    graph.spin(.2)
     assert graph.call(graph.stop_client, Trigger.Request()).success
     graph.until(pending.done)
     assert not pending.result().success and "cancelled" in pending.result().message
@@ -70,7 +62,6 @@ def test_waits_are_sequential_and_reset_or_stop_ends_them(stepped):
 def test_realtime_runs_autonomously(tmp_path):
     graph = Graph(tmp_path, mode="realtime")
     try:
-        assert graph.reset().success
         graph.spin(.3)
         before = ticks(graph)
         graph.spin(.3)
@@ -89,9 +80,6 @@ def test_terminal_tick_and_runtime_unavailable(tmp_path):
         result = graph.wait(.2)
         assert result.success and result.waited_s == pytest.approx(.2)
         assert not graph.wait(.1).success
-        assert graph.reset().success
-        result = graph.wait(.3)
-        assert not result.success and result.waited_s == pytest.approx(.2)
         graph.stop(graph.owner)
         graph.until(lambda: not graph.wait_client.service_is_ready(), 15.)
         with pytest.raises(TimeoutError, match="unavailable"):
@@ -109,7 +97,6 @@ def test_wall_timeout_leaves_the_admitted_wait_to_stop(stepped):
     graph.spin(.1)
     assert ticks(graph) > before
     assert graph.call(graph.stop_client, Trigger.Request()).success
-    assert graph.reset().success
 
 
 def test_runtime_loss_interrupts_an_inflight_wait(tmp_path):
@@ -143,10 +130,10 @@ def test_device_endpoints_share_the_world_node(stepped):
     assert states[-1].name == ["finger"]
 
 
-def test_no_task_or_judge_topics_and_reset_payload(stepped):
+def test_no_task_judge_or_reset_interfaces(stepped):
     graph = stepped
     graph.spin(.2)
     topics = {name for name, _ in graph.node.get_topic_names_and_types()}
     assert not {"/task/status", "/task/instruction", "/joint_states", "/action"} & topics
-    result = graph.reset()
-    assert result.success and "toy" not in result.message
+    services = {name for name, _ in graph.node.get_service_names_and_types()}
+    assert "/world/wait" in services and "/world/reset" not in services

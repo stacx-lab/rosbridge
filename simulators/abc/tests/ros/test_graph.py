@@ -14,7 +14,6 @@ def test_abc_observations_without_spectators(tmp_path):
         for kind, topic, key in ((JointState, "left_arm/joint_state", "joints"),
                                  (CameraInfo, "camera_top/camera_info", "info")):
             node.create_subscription(kind, topic, lambda msg, k=key: last.update({k: msg}), STREAM_QOS)
-        assert graph.reset().success
         assert graph.wait(.34).success
         graph.until(lambda: all(k in last for k in ("joints", "info")))
         assert last["joints"].name == [f"left_joint{i}" for i in range(1, 7)]
@@ -66,8 +65,5 @@ def test_world_publishes_spectator_streams(tmp_path, mode):
             stamps = {k: seconds(v.header.stamp) for k, v in frames.items()}
             graph.spin(.3)
             assert stamps == {k: seconds(v.header.stamp) for k, v in frames.items()}
-        assert graph.reset().success
-        if mode == 'stepped':
-            graph.until(lambda: all(seconds(m.header.stamp) == 0 for m in frames.values()))
     finally:
         graph.close()

@@ -23,7 +23,10 @@ EVAL_HEAD_HORIZONTAL_APERTURE = 40.
 
 
 class R1Pro:
+    parts = PARTS
+    scalar_grippers = True  # the smooth gripper command; R1ProSharpa's hands are joint devices
     pose_key = None
+    rendering = "evaluator"  # one render after each step that cameras read (backend.RERENDERS)
     frequencies = {"action_frequency": 30, "rendering_frequency": 30, "physics_frequency": 120}
     # RoboEnv's BEHAVIOR overview: 2.6 m out, the eye 2.4 m and the target 0.9 m above the floor.
     overview = Overview(2.6, 2.4, .9)
@@ -61,11 +64,11 @@ class R1Pro:
 
     def layout(self, robot):
         """Channels in the native action order; grippers are scalars named after their device."""
-        if list(robot.controller_order) != list(PARTS.values()):
+        if list(robot.controller_order) != list(self.parts.values()):
             raise ValueError(f"unexpected R1Pro controllers: {robot.controller_order}")
         lower, upper = values(robot.joint_lower_limits), values(robot.joint_upper_limits)
         names, groups, self.dofs, self.grips = [], [], {}, {}
-        for device, part in PARTS.items():
+        for device, part in self.parts.items():
             dofs = values(robot.controller_joint_idx[part]).astype(int)
             action = values(robot.controller_action_idx[part]).astype(int)
             if list(action) != list(range(len(names), len(names) + len(action))):
@@ -75,7 +78,7 @@ class R1Pro:
             if part == "base":
                 names += [robot.dof_names_ordered[i] for i in dofs]
                 groups.append(CommandGroup(device, channels, (-1.,) * 3, (1.,) * 3, velocity=True))
-            elif part.startswith("gripper"):
+            elif part.startswith("gripper") and self.scalar_grippers:
                 names.append(device)
                 groups.append(CommandGroup(device, channels, (-1.,), (1.,), scalar=True))
                 # The smooth controller maps [-1, 1] onto the mean finger range.
@@ -93,13 +96,13 @@ class R1Pro:
         the base as odometry (x, y, yaw) and body twist (vx, vy, wz)."""
         q, dq = values(episode.robot.get_joint_positions()), values(episode.robot.get_joint_velocities())
         positions, velocities = [], []
-        for device, part in PARTS.items():
+        for device, part in self.parts.items():
             dofs = self.dofs[device]
             if part == "base":
                 pose, twist = episode.odometry()
                 positions += list(pose)
                 velocities += list(twist)
-            elif part.startswith("gripper"):
+            elif part.startswith("gripper") and self.scalar_grippers:
                 low, high = self.grips[device]
                 positions.append(2 * (q[dofs].mean() - low) / (high - low) - 1)
                 velocities.append(2 * dq[dofs].mean() / (high - low))

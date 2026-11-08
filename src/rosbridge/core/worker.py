@@ -100,7 +100,7 @@ class WorkerBackend:
     close_timeout_s = 60.
 
     def __init__(self, *, max_steps=None, terminate_on_success=False, python=None, env=None):
-        self._cache, self._process, self._connection = {}, None, None
+        self._cache, self._process, self._connection, self._unread = {}, None, None, False
         if python is None:
             python, env = native_environment(self.simulator)
         env = dict(os.environ if env is None else env)
@@ -139,19 +139,28 @@ class WorkerBackend:
         else:
             self._call("__setattr__", name, value)
 
+    def _receive(self):
+        status, payload, snapshot = decode(self._connection.recv())
+        self._unread = False
+        if snapshot:
+            self._cache.update(snapshot)
+        return status, payload
+
     def _call(self, method, *args, **kwargs):
         if self._connection is None:
             raise WorkerError("native worker is closed")
         try:
+            if self._unread:
+                # The previous call was interrupted awaiting its reply (a stop's KeyboardInterrupt during a step).
+                # The worker completed it regardless, so its reply comes before this call's.
+                self._receive()
             self._connection.send(encode((method, args, kwargs)))
-            reply = decode(self._connection.recv())
+            self._unread = True
+            status, payload = self._receive()
         except (EOFError, OSError) as error:
             self._kill(5.)
             code = self._process.returncode if self._process else None
             raise WorkerError(f"native worker exited (exit {code})") from error
-        status, payload, snapshot = reply
-        if snapshot:
-            self._cache.update(snapshot)
         if status == "ok":
             return payload
         kind, message, trace = payload
@@ -159,8 +168,8 @@ class WorkerBackend:
             raise ERRORS[kind](message)
         raise WorkerError(f"native {kind}: {message}\n{trace}")
 
-    def configure_spectators(self, width=960, height=720):
-        return self._call("configure_spectators", width, height)
+    def configure_spectators(self, width=960, height=720, views=None):
+        return self._call("configure_spectators", width, height, views)
 
     def reset(self, task, seed, randomize=True):
         return self._call("reset", task, seed, randomize)

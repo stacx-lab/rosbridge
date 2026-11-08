@@ -1,9 +1,13 @@
 """The world node: ROS callbacks queue work; the main thread owns the simulator and publishers."""
+import faulthandler
 import math
 import os
 from pathlib import Path
+import signal
+import sys
 import threading
 import time
+import traceback
 
 import rclpy
 from kinex_interfaces.srv import Wait
@@ -29,10 +33,16 @@ class SimNode(Node):
         self.sim = load_backend(p["backend"])(max_steps=p["max_steps"] or None,
                                               terminate_on_success=p["terminate_on_success"])
         if p["spectator_rate_hz"]:
-            self.sim.configure_spectators(960, 720)
-        self.reset_options = (p["task"] or self.sim.default_task, p["seed"], p["randomize"])
-        self.sim.reset(*self.reset_options)
-        self.world = WorldRuntime(self.sim, p["mode"], lambda reset: self.observations.publish(reset))
+            # The views a recording asked for (comma-separated; empty: every view the simulator offers). The
+            # simulator sets up only these, so views nobody records cost no rendering.
+            selected = [name for name in p["spectator_select"].split(",") if name]
+            self.sim.configure_spectators(p["spectator_width"], p["spectator_height"], selected or None)
+            unknown = sorted(set(selected) - {view.name for view in self.sim.spectators})
+            if unknown:
+                raise ValueError(f"this simulator offers no spectator views {unknown}")
+        # A run is one episode: the launch's task and seed, loaded once.
+        self.sim.reset(p["task"] or self.sim.default_task, p["seed"], p["randomize"])
+        self.world = WorldRuntime(self.sim, p["mode"], lambda: self.observations.publish())
         self.devices = [device(spec, self) for spec in self.sim.devices]
         self.declare_parameter("spectator_views", [v.name for v in self.sim.spectators],
                                ParameterDescriptor(read_only=True), ignore_override=True)
@@ -42,15 +52,14 @@ class SimNode(Node):
         services = ReentrantCallbackGroup()
         self.create_service(Wait, "world/wait", self._wait, callback_group=services)
         self.create_service(Trigger, "world/stop", self._stop, callback_group=services)
-        if getattr(self.sim, "resettable", True):  # a backend may build its world only once
-            self.create_service(Trigger, "world/reset", self._reset, callback_group=services)
-        self.observations.publish(True)
+        self.observations.publish()
         self.get_logger().info(f"task={self.sim.task} seed={self.sim.seed} mode={p['mode']} "
                                f"period={self.sim.period:.4f}s")
 
     def _read_parameters(self):
         defaults = {"backend": "", "task": "", "seed": 0, "randomize": True, "mode": "realtime",
-                    "max_steps": 0, "terminate_on_success": False, "spectator_rate_hz": 0.}
+                    "max_steps": 0, "terminate_on_success": False, "spectator_rate_hz": 0.,
+                    "spectator_width": 960, "spectator_height": 720, "spectator_select": ""}
         for name, value in defaults.items():
             self.declare_parameter(name, value, ParameterDescriptor(read_only=True))
         params = {name: self.get_parameter(name).value for name in defaults}
@@ -60,6 +69,8 @@ class SimNode(Node):
             raise ValueError("max_steps must be nonnegative")
         if not math.isfinite(params["spectator_rate_hz"]) or params["spectator_rate_hz"] < 0:
             raise ValueError("spectator_rate_hz must be finite and nonnegative")
+        if params["spectator_width"] < 16 or params["spectator_height"] < 16:
+            raise ValueError("spectator_width and spectator_height must be at least 16 pixels")
         return params
 
     async def request(self, function):
@@ -85,7 +96,7 @@ class SimNode(Node):
 
             def complete(result):
                 self.pending_wait = None
-                ready.set_result(result)
+                ready.set_result(self.world.reply(result))  # with the commands refused since the previous reply
             self.pending_wait = complete
             self.world.waits.admit(request.duration_s, self.world.time_s, self.world.steps,
                                    self.sim.period, self.sim.done, complete)
@@ -109,14 +120,6 @@ class SimNode(Node):
             response.success, response.message = False, str(error)
         return response
 
-    async def _reset(self, request, response):
-        try:
-            result = await self.request(lambda: self.world.reset(*self.reset_options))
-            response.success, response.message = result.success, result.message
-        except Exception as error:
-            response.success, response.message = False, str(error)
-        return response
-
     def run(self):
         ready = os.environ.get("ROSBRIDGE_RECORDING_READY")
         while ready and rclpy.ok() and not Path(ready).is_file():
@@ -134,10 +137,12 @@ class SimNode(Node):
 
 
 def main():
+    # SIGUSR1 writes every thread's Python stack to stderr (graph.log): a world that stops answering can be located.
+    faulthandler.register(signal.SIGUSR1, all_threads=True)
     rclpy.init()
     node = SimNode.__new__(SimNode)
     executor = MultiThreadedExecutor(num_threads=4)
-    spinner = None
+    spinner, error = None, None
     try:
         node.__init__()
         executor.add_node(node)
@@ -154,9 +159,16 @@ def main():
         node.run()
     except (KeyboardInterrupt, ExternalShutdownException):
         pass
+    except Exception as failure:
+        # A world that stops on an error says why in its log (graph.log, an operator artifact) and in the episode's
+        # record; a client only sees its pending wait end with "runtime stopped". The traceback goes out before
+        # cleanup, which waits on the native worker and may be killed.
+        error = f"{type(failure).__name__}: {failure}"[:500]
+        print("world stopped by an error:", file=sys.stderr, flush=True)
+        traceback.print_exc()
     finally:
         if hasattr(node, 'world'):
-            node.world.close()
+            node.world.close(error=error)
         elif getattr(node, 'sim', None) is not None:
             node.sim.close()
         executor.shutdown(timeout_sec=5.)
@@ -165,6 +177,8 @@ def main():
         if hasattr(node, '_handle'):
             node.destroy_node()
         rclpy.try_shutdown()
+    if error:
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

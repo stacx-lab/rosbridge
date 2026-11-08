@@ -9,7 +9,7 @@ import numpy as np  # noqa: E402
 
 from rosbridge.catalog import resolve
 from rosbridge.core import ActionLayout, CommandGroup
-from rosbridge.core.devices import SpectatorView, device_inventory
+from rosbridge.core.devices import device_inventory, spectator_views
 from rosbridge.project import project_root
 from .assets import check_task
 
@@ -66,9 +66,8 @@ class RoboCasaSim:
         cameras = {CAMERAS[camera]: camera for camera in self.cameras}
         return device_inventory(self.layout, cameras, depth=tuple(cameras))
 
-    def configure_spectators(self, width=960, height=720):
-        self.spectators = tuple(SpectatorView(role, source, width, height)
-                                for role, source in SPECTATORS)
+    def configure_spectators(self, width=960, height=720, views=None):
+        self.spectators = spectator_views(SPECTATORS, width, height, views)
 
     def reset(self, task, seed, randomize=True):
         """The seed fully determines the kitchen, its objects and the instruction."""

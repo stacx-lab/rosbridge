@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT / "simulators/behavior"), str(Path(__file__).parent)]
 
 import rigs  # noqa: E402
+import sharpa_rig  # noqa: E402
 from rosbridge.core.commands import VELOCITY_TIMEOUT_S  # noqa: E402
 from rosbridge_behavior import g1_model  # noqa: E402
 from rosbridge_behavior.backend import G1SharpaSim  # noqa: E402
@@ -38,7 +39,7 @@ def main():
             "own the legs and waist at 50 Hz. Commands are a body twist (vx, vy in m/s, wz in rad/s) "
             f"within GR00T's navigation limits of {VELOCITY_LIMIT}; the gait balances the body while "
             "the arms and hands move. The base frame is the pelvis; odometry starts at the "
-            "episode-start pose. A fall is not recovered; reset the world.",
+            "episode-start pose. A fall is not recovered.",
             {axis: (-VELOCITY_LIMIT, VELOCITY_LIMIT) for axis in ("vx", "vy", "wz")},
             {"parent": None, "translation_m": None, "rotation_xyzw": None},
             timeout_s=VELOCITY_TIMEOUT_S, units="si"),
@@ -69,20 +70,8 @@ def main():
             source, arm, f"g1_{side}_arm",
             f"Unitree G1 {side} arm from g1_29dof_rev_1_0.urdf: torso_link..{side}_wrist_yaw_link; "
             "flange is the wrist_yaw_link frame.")
-        hand = sim.embodiment.hands[side]
-        devices[f"{side}_hand"] = rigs.joint(
-            f"{side}_hand",
-            f"Sharpa Wave 22-joint {side} hand on the {side}_arm flange, palm toward the body's "
-            "midline. Geometry is the sibling hand.urdf from the flange to the fingertips, with no "
-            "single tip link; commands are absolute native joint positions on Sharpa's calibrated "
-            "position drives, and contact is physical.",
-            hand, [home.get(joint, 0.) for joint in hand],
-            rigs.pose_frame(f"{side}_arm:flange", rigs.urdf_origin(source[f"{side}_hand_mount_joint"])),
-            part="hand", tip=None, model="hand.urdf")
-        files[f"devices/{side}_hand/hand.urdf"] = rigs.source_tree(
-            source, f"{side}_hand_flange", f"sharpa_wave_{side}",
-            f"Sharpa Wave {side} hand from {side}_sharpa_wave_with_flange.urdf: base_link is the "
-            f"{side}_hand_flange frame on the G1 wrist mount.")
+        devices[f"{side}_hand"], files[f"devices/{side}_hand/hand.urdf"] = sharpa_rig.hand(
+            source, side, sim.embodiment.hands[side], home, "on the G1 wrist mount")
     sensor = sim._sensor("head_camera")
     devices["head_camera"] = rigs.camera(
         "head_camera",

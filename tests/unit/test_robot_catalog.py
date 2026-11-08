@@ -22,8 +22,7 @@ OPERATIONS = {
 }
 WORLD = {"time": ("/clock", "rosgraph_msgs/msg/Clock"),
          "wait": ("/world/wait", "kinex_interfaces/srv/Wait"),
-         "stop": ("/world/stop", "std_srvs/srv/Trigger"),
-         "reset": ("/world/reset", "std_srvs/srv/Trigger")}
+         "stop": ("/world/stop", "std_srvs/srv/Trigger")}
 
 
 def manifest(simulator):
@@ -49,13 +48,10 @@ def test_every_rig_exports_unloaded_profiles_on_rosbridge_endpoints(tmp_path, id
     kinds = manifest(identifier.split("/")[0])["devices"]
     assert kinds | {"world": "world"} == {
         name: profile["type"] for name, profile in profiles.items()}
-    # psi-kitchen builds its world once: it offers no world/reset.
-    world = {op: value for op, value in WORLD.items()
-             if not (op == "reset" and identifier.startswith("psi-kitchen/"))}
     for name, profile in profiles.items():
         assert profile["name"] == name and profile["loaded"] is False
         assert profile["runtime"]["domain_id"] == 83
-        expected = world if name == "world" else {
+        expected = WORLD if name == "world" else {
             op: (f"/{name}/{op}", kind) for op, kind in OPERATIONS[profile["type"]].items()}
         assert {op: (spec["endpoint"], spec["type"]) for op, spec in profile["operations"].items()} == expected
         assert all(isinstance(op["description"], str) and op["description"]

@@ -18,8 +18,6 @@ PSI_SCENE=3 rosbridge launch psi-kitchen/open-drawer --seed 0 --execution-mode s
 - **Arm stiffness.** The arm's joint-position controller takes upstream's arm gain (kp 150, its OSC_POSE gain,
   instead of robosuite's joint default of 50). Both controllers scale by the mass matrix, so the hand is as stiff as
   upstream's, and demonstrations recorded under upstream's Cartesian controller replay as joint targets.
-- **No reset.** The launch builds the kitchen once. The backend declares `resettable = False`, so the world node
-  offers no `world/reset` and the rig's world device has no `reset` operation. A new attempt is a new launch.
 - **Evidence.** The build writes `episode-0/` in the run directory: `meta.json` (task, scene, seed, instruction,
   built layout and style, time limit, row layout), `model.xml` (the compiled scene) and `steps.f64`, one float64
   row `[time_s, action(12), qpos]` for the start and after every control step. Nothing is recorded live.
@@ -62,7 +60,7 @@ Cartesian command becomes the joints for the hand pose it commands.
 ## Checks
 
 ```bash
-pixi run -e psi-kitchen smoke   # scene, evidence, no reset, re-rendering matches the live camera, time limit,
+pixi run -e psi-kitchen smoke   # scene, evidence, re-rendering matches the live camera, time limit,
                                 # demonstrations restored as the live robot reads and sees them, commands aimed
                                 # at the hand pose they command
 ```

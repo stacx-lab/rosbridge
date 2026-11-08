@@ -1,0 +1,38 @@
+name = "behavior-dex"
+source = "third_party/behavior"
+source_url = "https://github.com/StanfordVL/BEHAVIOR-1K.git"
+source_revision = "a8247a8cc1633fe1ca0cc66aa07243d46c64f155"
+patches = "patches/behavior-dex"
+# The shared BEHAVIOR adapter (simulators/behavior) serves this embodiment too.
+python_path = "simulators/behavior"
+install = ["bddl3", "OmniGibson"]
+asset_preparer = "rosbridge_behavior.assets:prepare_dex"
+asset_checker = "rosbridge_behavior.assets:check_dex_task"
+default_task = "turning_on_radio"
+ros_package = "rosbridge_behavior_dex"
+task_catalog = "tasks.toml"
+# The world node runs in the ROS environment; OmniGibson (Isaac Sim 5.1, Python 3.11) with the
+# R1Pro and Sharpa hands runs in a separate worker (rosbridge.core.worker).
+environment = "behavior-dex"
+native_environment = "behavior-dex-native"
+native_backend = "rosbridge_behavior.backend:R1ProSharpaSim"
+
+# The Sharpa hands, exported into the generated tree; prepare grafts them onto the R1Pro in
+# place of its grippers. The clone is shared with behavior-g1 at the same revision.
+[[nested_sources]]
+path = "third_party/sharpa"
+source = "third_party/behavior-g1-sharpa"
+source_url = "https://github.com/sharpa-robotics/sharpa-urdf-usd-xml.git"
+source_revision = "0d19cac602f46456b819e4b6a2c09a74982c9a3e"
+
+# The backend's device inventory; catalog rigs must declare exactly these devices.
+[devices]
+base = "locomotion"
+torso = "joint"
+left_arm = "joint"
+left_hand = "joint"
+right_arm = "joint"
+right_hand = "joint"
+head_camera = "rgbd"
+left_camera = "rgbd"
+right_camera = "rgbd"

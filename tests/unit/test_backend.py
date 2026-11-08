@@ -31,8 +31,26 @@ def test_non_abc_layout_and_atomic_rejection():
     commands.stop("arm", [5., 5.])  # a measured hold may lie outside command limits
     assert commands.action(21).tolist() == [-0.5, 5., 5.]
     commands.close()
-    with pytest.raises(CommandError, match="world/reset"):
+    with pytest.raises(CommandError, match="episode is done"):
         commands.set_group("finger", [0.])
+
+
+def test_targets_within_a_tolerance_of_a_limit_are_held_at_it():
+    """A measured position slightly past a limit, or a client's interpolation rounding past one, is a valid target;
+    anything further out is still refused whole."""
+    layout = ActionLayout(("lift", "pinky"), (CommandGroup("lift", (0,), (.2,), (.78,)),
+                                              CommandGroup("pinky", (1,), (0.,), (1.6,))))
+    commands = CommandBuffer(layout, [.74, 0.])
+    commands.set_group("lift", [0.19999999999999996])
+    commands.set_group("pinky", [-0.0005])
+    assert commands.action(0).tolist() == [.2, 0.]
+    commands.set_trajectory("lift", 0, [1.], [[.78 + 1e-6]])
+    assert commands.action(1.).tolist() == [.78, 0.]
+    with pytest.raises(CommandError, match="outside"):
+        commands.set_trajectory("lift", 1, [1., 2.], [[.5], [.78 + 2e-3]])
+    with pytest.raises(CommandError, match="outside"):
+        commands.set_group("pinky", [-0.01])
+    assert commands.action(2.).tolist() == [.78, 0.]
 
 
 @pytest.mark.parametrize("indices,lower,upper", [

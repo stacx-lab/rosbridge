@@ -61,15 +61,12 @@ def world(description):
             "Advance or await duration_s of world time (finite and nonnegative). Zero is an "
             "observation barrier. Waits are sequential; one requested while another is pending "
             "is rejected. A terminal episode rejects further progression without exposing "
-            "benchmark results.", "service", "input", "/world/wait", "kinex_interfaces/srv/Wait",
+            "benchmark results. The reply's message also names the device commands refused since "
+            "the previous reply, with their reasons.", "service", "input", "/world/wait",
+            "kinex_interfaces/srv/Wait",
             timeout_s=120),
         "stop": operation("Cancel the pending wait.", "service", "input", "/world/stop",
                           "std_srvs/srv/Trigger"),
-        "reset": operation(
-            "Reset the configured episode and clock. Invalidates old observations and the "
-            "pending wait; observe fresh state afterward. Task selection and judging belong to "
-            "the external environment operator.", "service", "input", "/world/reset",
-            "std_srvs/srv/Trigger", timeout_s=120),
     }
     value = device("world", "world", description, ops, observation="time")
     value.update(source="default", method="unknown", bounds=None, surfaces=[],

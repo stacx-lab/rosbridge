@@ -6,3 +6,7 @@ class BehaviorG1Worker(WorkerBackend):
     simulator = "behavior-g1"
     # Isaac Sim shutdown can take a while; the proxy kills the worker after this.
     close_timeout_s = 120.
+
+    def measures(self):
+        """The episode's q_score, as BEHAVIOR's evaluator computes it (BehaviorSim.measures)."""
+        return self._call("measures")

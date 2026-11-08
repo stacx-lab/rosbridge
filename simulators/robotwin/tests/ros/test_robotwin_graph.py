@@ -10,8 +10,8 @@ from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from rosbridge_runtime.devices import STREAM_QOS
 from tests.ros.support import Graph, seconds
 
-# Scene construction runs upstream's expert dry run; allow minutes to start or reset.
-STARTUP_S = RESET_S = 600.
+# Scene construction runs upstream's expert dry run; allow minutes to start.
+STARTUP_S = 600.
 
 
 @pytest.mark.parametrize("mode", ["stepped", "realtime"])
@@ -58,6 +58,5 @@ def test_robotwin_graph_serves_the_kinex_devices(tmp_path, mode):
         before = seconds(last["spectator"].header.stamp)
         assert graph.wait(.2).success
         graph.until(lambda: seconds(last["spectator"].header.stamp) > before)
-        assert graph.reset(RESET_S).success
     finally:
         graph.close()

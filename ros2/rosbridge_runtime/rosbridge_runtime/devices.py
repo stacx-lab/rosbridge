@@ -37,10 +37,11 @@ class Actuator:
         node, name = self.node, self.spec.name
         self.state = node.create_publisher(JointState, f'{name}/joint_state', STREAM_QOS)
         if self.group.scalar:
-            node.create_subscription(Float64, f'{name}/target', self.target, 10, callback_group=callbacks)
+            self.command = node.create_subscription(Float64, f'{name}/target', self.target, 10,
+                                                    callback_group=callbacks)
         else:
-            node.create_subscription(JointTrajectory, f'{name}/joint_target', self.joint_target, 10,
-                                     callback_group=callbacks)
+            self.command = node.create_subscription(JointTrajectory, f'{name}/joint_target', self.joint_target, 10,
+                                                    callback_group=callbacks)
 
     def publish(self, stamp, positions, velocities):
         self.state.publish(conv.joint_state(stamp, self.names, positions[self.indices], velocities[self.indices]))
@@ -50,6 +51,8 @@ class Actuator:
             try:
                 apply()
             except ValueError as error:
+                # A topic publisher gets no reply; the next world wait's reply names the refusal.
+                self.node.world.refuse(self.command.topic_name, error)
                 self.node.get_logger().error(f'{self.spec.name} rejected a command: {error}',
                                              throttle_duration_sec=1.)
         self.node.world.submit(run)
@@ -65,7 +68,7 @@ class Actuator:
             if any(p.velocities or p.accelerations or p.effort for p in msg.points):
                 raise ValueError('only position trajectories are supported')
             start, times, points = conv.trajectory(msg, self.names)
-            if not times or times[-1] > 120:
+            if times and times[-1] > 120:  # the command buffer refuses one without points
                 raise ValueError('trajectory must end within 120 seconds')
             if start is not None and start < world.time_s:
                 raise ValueError('trajectory start is in the past')
@@ -91,7 +94,8 @@ class Base(Actuator):
     def _endpoints(self, callbacks):
         node, name = self.node, self.spec.name
         self.odometry = node.create_publisher(Odometry, f'{name}/odometry', STREAM_QOS)
-        node.create_subscription(Twist, f'{name}/velocity', self.velocity, 10, callback_group=callbacks)
+        self.command = node.create_subscription(Twist, f'{name}/velocity', self.velocity, 10,
+                                                callback_group=callbacks)
 
     def publish(self, stamp, positions, velocities):
         self.odometry.publish(conv.odometry(stamp, self.spec.name, positions[self.indices],
@@ -129,9 +133,6 @@ class Camera:
                                             event_callbacks=events)
                       if spec.kind == 'rgbd' else None)
         self.info = node.create_publisher(CameraInfo, f'{spec.name}/camera_info', STREAM_QOS)
-
-    def reset(self):
-        self.latest = self.latest_depth = None
 
     def render(self, stamp):
         if self.latest is None or self.latest.header.stamp != stamp:

@@ -1,4 +1,4 @@
-"""PSI additions on a real kitchen: scene choice, evidence logging, no reset, offline re-rendering, time limit."""
+"""PSI additions on a real kitchen: scene choice, evidence logging, offline re-rendering, time limit."""
 import json
 
 import numpy as np
@@ -19,19 +19,16 @@ def make_sim():
         sim.close()
 
 
-def test_scene_evidence_no_reset_and_rerender(tmp_path, monkeypatch):
+def test_scene_evidence_and_rerender(tmp_path, monkeypatch):
     monkeypatch.setenv('ROSBRIDGE_RUN_DIR', str(tmp_path))
     monkeypatch.setenv('PSI_SCENE', '3')
     monkeypatch.delenv('PSI_TIME_LIMIT_S', raising=False)
-    assert PsiKitchenSim.resettable is False
     sim = PsiKitchenSim(cameras=(CAMERA,))
     try:
         sim.reset('OpenDrawer', 0)
         assert sim.max_steps == 750
         for _ in range(5):
             sim.step(sim.state()[0])
-        with pytest.raises(RuntimeError, match='does not reset'):
-            sim.reset('OpenDrawer', 0)
         assert sim.steps == 5
         live = sim.render(CAMERA)
     finally:

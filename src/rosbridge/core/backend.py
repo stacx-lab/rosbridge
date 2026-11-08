@@ -63,10 +63,13 @@ class ActionLayout:
 class SimulatorBackend(Protocol):
     """Created, reset, stepped, rendered and closed only on the main thread.
 
-    Layout, device and camera names stay fixed across resets. Failed resets
-    preserve the previous episode. Every step advances exactly one `period`.
+    A run is one episode: the world resets the backend once, to load the launch's
+    task and seed, then steps it. Every step advances exactly one `period`.
     A backend whose native command is not a position, such as a gripper
     direction, converts the position target inside step().
+
+    Optionally, measures() returns the backend's own measures of the episode as
+    JSON fields, such as BEHAVIOR's q_score; the episode record adds them.
     """
 
     default_task: str
@@ -93,7 +96,8 @@ class SimulatorBackend(Protocol):
     def render(self, camera: str) -> np.ndarray: ...
     # RGB-D cameras only: float32 (H, W) metres along the optical axis; 0 or nonfinite is invalid.
     def render_depth(self, camera: str) -> np.ndarray: ...
-    def configure_spectators(self, width: int, height: int) -> None: ...
+    # Spectator views at width x height; with `views`, only the named ones (the others cost nothing).
+    def configure_spectators(self, width: int, height: int, views: list[str] | None = None) -> None: ...
     def render_spectator(self, name: str) -> np.ndarray: ...
     def spectator_intrinsics(self, name: str) -> tuple: ...
     def close(self) -> None: ...

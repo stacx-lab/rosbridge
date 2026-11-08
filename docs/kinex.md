@@ -12,7 +12,7 @@ joint and gripper devices run in Kinex. rosbridge builds `Wait` from its own cop
 
 | Device type | Operations (endpoint, type) |
 |---|---|
-| `world` | `time` (`/clock`, Clock), `wait` (`/world/wait`, Wait), `stop` (`/world/stop`), `reset` (`/world/reset`) |
+| `world` | `time` (`/clock`, Clock), `wait` (`/world/wait`, Wait), `stop` (`/world/stop`) |
 | `joint` (arm, torso) | `joint_state` (`/<arm>/joint_state`, JointState), `joint_target` (`/<arm>/joint_target`, JointTrajectory), `stop` |
 | `gripper` | `joint_state`, `target` (`/<gripper>/target`, Float64 position), `stop` |
 | `locomotion` (base) | `velocity` (`/<base>/velocity`, Twist), `odometry` (`/<base>/odometry`, Odometry), `stop` |
@@ -30,11 +30,12 @@ normalized value they were trained on. RoboCasa's grip joint `gripper` is robosu
 integrated command, limits [-1, 1] with `open: -1` and `closed: 1`, which its finger
 joints mimic from their actuator ranges. BEHAVIOR's R1Pro grip joint `<side>_gripper`
 is the evaluator's smooth command, limits [-1, 1] with `open: 1` and `closed: -1`. The
-G1's Sharpa hands are `joint` devices: 22 commanded joints each and no tip link.
+Sharpa hands, on the G1 and on the R1Pro of `behavior-dex`, are `joint` devices: 22
+commanded joints each and no tip link.
 
 A base is a Kinex `locomotion` device in the single mode `drive`: `velocity`
 declares the commandable axes in native units (RoboCasa and BEHAVIOR's R1Pro:
-normalized `vx`, `vy`, `wz`; the BEHAVIOR G1: `vx`, `vy`, `wz` in m/s and rad/s within
+normalized `vx`, `vy`, `wz`, also with Sharpa hands; the BEHAVIOR G1: `vx`, `vy`, `wz` in m/s and rad/s within
 GR00T's navigation limits), the base stops 0.5 s of world time after the last twist, and `odometry`
 reports the twist in `<base>/base` with a pose in `<base>/odom` relative to the
 episode start. Its `frames.base` is an unlocalized root; a mobile rig chains its
@@ -42,7 +43,7 @@ other devices from it (`torso` on `base:base`, the arm on `torso:top`).
 
 World waits are sequential: one requested while another is pending is rejected, and
 `world/stop` cancels the pending wait. Realtime observes progress; stepped mode
-advances only for a pending wait; reset and shutdown interrupt it. Commands are
+advances only for a pending wait; shutdown interrupts it. Commands are
 validated on the simulator owner thread; invalid ones are logged and keep the held
 target. A device's `stop` holds the measured position (a base commands zero
 velocity) and is created after its command subscription, so a Kinex client that
@@ -65,7 +66,7 @@ from the arm URDF, publishes calibrated mounts and fixed frames such as
 
 `rosbridge robots list` lists every rig. Builders in `tools/robots` measure each
 rig from its simulator (`build_abc.py`, `build_robotwin.py`, `build_robodojo.py`,
-`build_robocasa.py`, `build_behavior.py`, `build_behavior_g1.py`);
+`build_robocasa.py`, `build_behavior.py`, `build_behavior_g1.py`, `build_behavior_dex.py`);
 native geometry tests check the exported profiles with Kinex's own FK against the
 simulator.
 
@@ -77,6 +78,7 @@ simulator.
 | `robocasa/robocasa-panda-omron` | `base` (Omron, locomotion), `torso` (lift), `arm` (Panda, `robot0_joint1..7`), integrated-command `gripper`, RGB-D `camera_left`, `camera_right`, `camera_wrist` | 365 |
 | `behavior/behavior-r1pro` | `base` (holonomic, locomotion), `torso` (`torso_joint1..4`), `left_arm`, `right_arm` (`<side>_arm_joint1..7`), smooth grippers, RGB-D `head_camera` (720²), `left_camera`, `right_camera` (480²) | 100 |
 | `behavior-g1/behavior-g1-sharpa` | `base` (legged, locomotion), `torso` (waist), `left_arm`, `right_arm` (G1, 7 joints), `left_hand`, `right_hand` (Sharpa Wave, 22 joints), RGB-D `head_camera` | 100 |
+| `behavior-dex/behavior-r1pro-sharpa` | `base` (holonomic, locomotion), `torso` (`torso_joint1..4`), `left_arm`, `right_arm` (`<side>_arm_joint1..7`), `left_hand`, `right_hand` (Sharpa Wave, 22 joints, in place of the grippers), RGB-D `head_camera` (720²), `left_camera`, `right_camera` (480², on the backs of the hands) | 100 |
 
 The LIBERO rigs are the same Panda arm and gripper
 with distinct fixed mounts and camera calibration. Each rig directory is a complete
@@ -114,9 +116,11 @@ Task instructions and judging are not device operations or ROS topics. Supply
 the agent objective in the user prompt; the operator reads native outcomes with
 `rosbridge judge RUN_ID --json`.
 
-An episode ending on success or a step limit pauses physics. The graph remains
-available for images, clock and reset; new commands are rejected until reset. Each
-terminal, reset or explicitly stopped episode appends its native outcome once to
-`episode-results.jsonl` in rosbridge's run directory. An interrupted run is marked
-stopped, not a successful terminal episode. Judge records are separate from the
-agent workspace; this separation is not an OS security sandbox.
+A run is one episode; the world offers no reset, so starting over is the operator's:
+stop the run and launch another. An episode ending on success or a step limit pauses
+physics. The graph remains available for images and clock; new commands are
+rejected. The episode's native outcome is appended once, when it ends or the run
+stops, to `episode-results.jsonl` in rosbridge's run directory; a simulator may add
+its own measures, such as BEHAVIOR's partial credit `q_score`. An interrupted run
+is marked stopped, not a successful terminal episode. Judge records are separate
+from the agent workspace; this separation is not an OS security sandbox.

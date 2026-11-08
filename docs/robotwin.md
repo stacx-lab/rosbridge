@@ -43,7 +43,7 @@ the store instead of being downloaded.
 
 | Device | Interfaces |
 |---|---|
-| `world` | `/clock`, `world/wait`, `world/stop`, `world/reset`, `world/spectator/*` while recording |
+| `world` | `/clock`, `world/wait`, `world/stop`, `world/spectator/*` while recording |
 | `left_arm`, `right_arm` | `<arm>/joint_state`, `<arm>/joint_target`, `<arm>/stop` |
 | `left_gripper`, `right_gripper` | `<gripper>/joint_state`, `<gripper>/target`, `<gripper>/stop` |
 | `head_camera`, `left_camera`, `right_camera` | `<camera>/image`, `<camera>/depth`, `<camera>/camera_info` |
@@ -73,11 +73,11 @@ keeping its saturation and per-call rate limit. Upstream's own `take_action`
 retimes each action with TOPP over a variable number of substeps; that timing is
 not reproduced, as in RoboEnv.
 
-Reset follows upstream evaluation: `setup_demo` for the seed, the expert dry run
-(`play_once`, whose planning may fail without consequence), then `setup_demo` again
-in evaluation mode. It takes about a minute. Success is upstream's `check_success`,
-evaluated on every substep and latched; the episode horizon is the native
-`step_lim` unless a maximum is given. A failed reset keeps the previous episode.
+The episode starts as upstream evaluation does: `setup_demo` for the seed, the
+expert dry run (`play_once`, whose planning may fail without consequence), then
+`setup_demo` again in evaluation mode. It takes about a minute. Success is
+upstream's `check_success`, evaluated on every substep and latched; the episode
+horizon is the native `step_lim` unless a maximum is given.
 
 ## Recording and checks
 

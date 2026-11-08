@@ -50,6 +50,12 @@ class SpectatorView:
             raise ValueError('spectator dimensions must be positive')
 
 
+def spectator_views(pairs, width, height, views=None):
+    """The spectator views of (name, source) pairs at width x height; only those named in `views`, if given."""
+    return tuple(SpectatorView(name, source, width, height) for name, source in pairs
+                 if views is None or name in views)
+
+
 class SampleSchedule:
     """At most one sample per control boundary; skip missed sampling deadlines."""
     def __init__(self, rate):
@@ -58,9 +64,7 @@ class SampleSchedule:
         self.rate = rate
         self.next_s = 0.
 
-    def due(self, time_s, reset=False):
-        if reset:
-            self.next_s = time_s
+    def due(self, time_s):
         if not self.rate or time_s + 1e-9 < self.next_s:
             return False
         intervals = max(1, math.floor((time_s - self.next_s + 1e-9) * self.rate) + 1)

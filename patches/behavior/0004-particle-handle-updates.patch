@@ -1,0 +1,134 @@
+diff --git a/OmniGibson/omnigibson/systems/macro_particle_system.py b/OmniGibson/omnigibson/systems/macro_particle_system.py
+index b2ed750..f0baf42 100644
+--- a/OmniGibson/omnigibson/systems/macro_particle_system.py
++++ b/OmniGibson/omnigibson/systems/macro_particle_system.py
+@@ -1,3 +1,5 @@
++import contextlib
++
+ import torch as th
+ import trimesh
+ 
+@@ -56,6 +58,9 @@ class MacroParticleSystem(BaseSystem):
+ 
+         # Color associated with this system (NOTE: external queries should call self.color)
+         self._color = None
++
++        # None outside _updating_handles_once, else whether the physics handles went stale in it
++        self._stale_handles = None
+         return super().__init__(name=name, **kwargs)
+ 
+     def initialize(self, scene):
+@@ -122,8 +127,9 @@ class MacroParticleSystem(BaseSystem):
+     def remove_all_particles(self):
+         # Use list explicitly to prevent mid-loop mutation of dict
+         if self.particles is not None:
+-            for particle_name in tuple(self.particles.keys()):
+-                self.remove_particle_by_name(name=particle_name)
++            with self._updating_handles_once():
++                for particle_name in tuple(self.particles.keys()):
++                    self.remove_particle_by_name(name=particle_name)
+ 
+     def reset(self):
+         # Call super first
+@@ -255,7 +261,9 @@ class MacroParticleSystem(BaseSystem):
+     def remove_particle_by_name(self, name):
+         assert name in self.particles, f"Got invalid name for particle to remove {name}"
+         particle = self.particles.pop(name)
+-        og.sim.remove_prim(particle)
++        # Not og.sim.remove_prim, which updates every physics handle: a visual particle is in no physics view, and
++        # MacroPhysicalParticleSystem updates the handles itself
++        particle.remove()
+ 
+     def remove_particles(
+         self,
+@@ -263,8 +271,38 @@ class MacroParticleSystem(BaseSystem):
+         **kwargs,
+     ):
+         particle_names = tuple(self.particles.keys()) if self.particles else []
+-        for idx in idxs:
+-            self.remove_particle_by_name(particle_names[idx])
++        with self._updating_handles_once():
++            for idx in idxs:
++                self.remove_particle_by_name(particle_names[idx])
++
++    @contextlib.contextmanager
++    def _updating_handles_once(self):
++        """
++        Context in which adding or removing particles (_handles_changed) updates the physics handles once, on exit,
++        instead of once per particle: each update rebuilds every physics view of the simulator. Nothing in it may
++        read this system's physics state.
++        """
++        if self._stale_handles is not None:
++            # Nested: the outermost context updates them
++            yield
++            return
++        self._stale_handles = False
++        try:
++            yield
++        finally:
++            stale, self._stale_handles = self._stale_handles, None
++            if stale:
++                og.sim.update_handles()
++
++    def _handles_changed(self):
++        """
++        Updates the physics handles after a particle was added or removed, or once at the end of the enclosing
++        _updating_handles_once context
++        """
++        if self._stale_handles is None:
++            og.sim.update_handles()
++        else:
++            self._stale_handles = True
+ 
+     def generate_particles(
+         self,
+@@ -285,8 +323,9 @@ class MacroParticleSystem(BaseSystem):
+         orientations = th.cat([current_orientations, orientations], dim=0)
+ 
+         # Add particles
+-        for scale in scales:
+-            self.add_particle(relative_prim_path=f"{self.relative_prim_path}/particles", scale=scale)
++        with self._updating_handles_once():
++            for scale in scales:
++                self.add_particle(relative_prim_path=f"{self.relative_prim_path}/particles", scale=scale)
+ 
+         # Set the tfs
+         self.set_particles_position_orientation(positions=positions, orientations=orientations)
+@@ -1284,18 +1323,19 @@ class MacroPhysicalParticleSystem(MacroParticleSystem, PhysicalParticleSystem):
+         og.sim.remove_callback_on_play(name=f"{self.name}_particles_view")
+ 
+     def remove_particle_by_name(self, name):
+-        # Run super first
+-        super().remove_particle_by_name(name=name)
++        # Run super first. Removing a rigid body invalidates the physics views
++        with suppress_omni_log(channels=["omni.physx.tensors.plugin"]):
++            super().remove_particle_by_name(name=name)
+ 
+         # Update the handles
+-        og.sim.update_handles()
++        self._handles_changed()
+ 
+     def add_particle(self, relative_prim_path, scale, idn=None):
+         # Run super first
+         particle = super().add_particle(relative_prim_path=relative_prim_path, scale=scale, idn=idn)
+ 
+         # Update the handles
+-        og.sim.update_handles()
++        self._handles_changed()
+ 
+         return particle
+ 
+@@ -1488,9 +1528,10 @@ class MacroPhysicalParticleSystem(MacroParticleSystem, PhysicalParticleSystem):
+ 
+         # If positive, add particles
+         if n_particles_to_generate > 0:
+-            for i in range(n_particles_to_generate):
+-                # Min scale == max scale, so no need for sampling
+-                self.add_particle(relative_prim_path=f"{self.relative_prim_path}/particles", scale=self.max_scale)
++            with self._updating_handles_once():
++                for i in range(n_particles_to_generate):
++                    # Min scale == max scale, so no need for sampling
++                    self.add_particle(relative_prim_path=f"{self.relative_prim_path}/particles", scale=self.max_scale)
+         else:
+             # Remove excess particles
+             self.remove_particles(idxs=th.arange(-n_particles_to_generate))

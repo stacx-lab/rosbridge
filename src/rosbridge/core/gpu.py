@@ -24,6 +24,10 @@ def cuda_uuid(ordinal=0):
 
 
 def vulkan_uuids():
+    """Vulkan physical devices' UUIDs in the order the Linux Vulkan loader defines: discrete GPUs, then
+    integrated, virtual, other and CPU devices, each kind by PCI address. Kit enumerates through its own bundled
+    loader, not the one this probe loads; the order is computed from the devices' properties, so the index does
+    not depend on how the probe's loader enumerates them."""
     class Application(c.Structure):
         _fields_ = [("sType", c.c_uint32), ("pNext", c.c_void_p), ("name", c.c_char_p),
                     ("version", c.c_uint32), ("engine", c.c_char_p),
@@ -41,9 +45,13 @@ def vulkan_uuids():
                     ("deviceLUID", c.c_ubyte * 8), ("deviceNodeMask", c.c_uint32),
                     ("deviceLUIDValid", c.c_uint32)]
 
+    class PCIBusInfo(c.Structure):
+        _fields_ = [("sType", c.c_uint32), ("pNext", c.c_void_p), ("domain", c.c_uint32),
+                    ("bus", c.c_uint32), ("device", c.c_uint32), ("function", c.c_uint32)]
+
     class Properties(c.Structure):
-        # Output-only VkPhysicalDeviceProperties: reserve more than its size.
-        _fields_ = [("sType", c.c_uint32), ("pNext", c.c_void_p), ("properties", c.c_uint64 * 128)]
+        # Output-only VkPhysicalDeviceProperties: reserve more than its size. Its fifth uint32 is the device type.
+        _fields_ = [("sType", c.c_uint32), ("pNext", c.c_void_p), ("properties", c.c_uint32 * 256)]
 
     vk = c.CDLL("libvulkan.so.1")
     vk.vkCreateInstance.argtypes = [c.POINTER(InstanceInfo), c.c_void_p, c.POINTER(c.c_void_p)]
@@ -58,18 +66,22 @@ def vulkan_uuids():
     instance = c.c_void_p()
     check(vk.vkCreateInstance(c.byref(InstanceInfo(sType=1, application=c.pointer(app))), None,
                               c.byref(instance)))
+    # VkPhysicalDeviceType: other 0, integrated 1, discrete 2, virtual 3, cpu 4; ranked as the loader does
+    rank = {2: 0, 1: 1, 3: 2, 0: 3, 4: 4}
     try:
         count = c.c_uint32()
         check(vk.vkEnumeratePhysicalDevices(instance, c.byref(count), None))
         devices = (c.c_void_p * count.value)()
         check(vk.vkEnumeratePhysicalDevices(instance, c.byref(count), devices))
-        result = []
+        found = []
         for device in devices[:count.value]:
-            identity = DeviceID(sType=1000071004)
-            vk.vkGetPhysicalDeviceProperties2(device, c.byref(Properties(
-                sType=1000059001, pNext=c.cast(c.pointer(identity), c.c_void_p))))
-            result.append(uuid.UUID(bytes=bytes(identity.deviceUUID)))
-        return result
+            pci = PCIBusInfo(sType=1000212000)
+            identity = DeviceID(sType=1000071004, pNext=c.cast(c.pointer(pci), c.c_void_p))
+            properties = Properties(sType=1000059001, pNext=c.cast(c.pointer(identity), c.c_void_p))
+            vk.vkGetPhysicalDeviceProperties2(device, c.byref(properties))
+            key = (rank.get(properties.properties[4], 5), pci.domain, pci.bus, pci.device, pci.function)
+            found.append((key, uuid.UUID(bytes=bytes(identity.deviceUUID))))
+        return [identity for _, identity in sorted(found, key=lambda item: item[0])]
     finally:
         vk.vkDestroyInstance(instance, None)
 

@@ -34,7 +34,7 @@ Vulkan device: on IOMMU hosts Kit otherwise validates peer-to-peer access betwee
 every GPU, holding each for minutes. It imports torch before Kit starts, since
 torch's bundled OpenMP needs static TLS that Kit's plugins would otherwise use up.
 
-Isaac starts, compiles shaders and builds the scene before the first reset: allow
+Isaac starts, compiles shaders and builds the scene before the episode starts: allow
 several minutes (the default launch timeout is 900 s; the first launch on a host
 may need `--timeout 1800`). A worker serves the one task it was launched with.
 
@@ -57,7 +57,7 @@ once at a polite request rate.
 
 | Device | Interfaces |
 |---|---|
-| `world` | `/clock`, `world/wait`, `world/stop`, `world/reset`, `world/spectator/*` while recording |
+| `world` | `/clock`, `world/wait`, `world/stop`, `world/spectator/*` while recording |
 | `left_arm`, `right_arm` | `<arm>/joint_state`, `<arm>/joint_target`, `<arm>/stop` |
 | `left_gripper`, `right_gripper` | `<gripper>/joint_state`, `<gripper>/target`, `<gripper>/stop` |
 | `head_camera`, `left_camera`, `right_camera` | `<camera>/image`, `<camera>/camera_info` |
@@ -87,11 +87,8 @@ frame, as RoboEnv does. Success is native completion and success; graded tasks
 report upstream's 0..100 score as a reward in [0, 1]. The horizon is the native
 `step_lim` unless a maximum is given.
 
-Reset loads saved layout `ids[seed % len(ids)]`. Reloading a layout after another
-occasionally fails upstream's settle check; the same layout is retried up to three
-times, so a seed keeps its layout. Isaac hosts one environment per process, so the
-reload happens in the live environment: a reset that fails after reloading starts
-leaves the episode done until a reset succeeds.
+The episode loads saved layout `ids[seed % len(ids)]`, retried up to three times
+when it fails upstream's settle check, so a seed keeps its layout.
 
 ## Recording and checks
 

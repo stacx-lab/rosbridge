@@ -1,0 +1,62 @@
+name: world
+runtime:
+  domain_id: 0
+  observation: time
+  nodes: []
+  ready_timeout_s: 30
+operations:
+  time:
+    description: Authoritative world clock
+    transport: topic
+    direction: output
+    endpoint: /clock
+    type: rosgraph_msgs/msg/Clock
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: transient_local
+    timeout_s: 10
+  wait:
+    description: Advance or await duration_s of world time (finite and nonnegative). Zero
+      is an observation barrier. Waits are sequential; one requested while another is pending
+      is rejected. A terminal episode rejects further progression without exposing benchmark
+      results. The reply's message also names the device commands refused since the previous
+      reply, with their reasons.
+    transport: service
+    direction: input
+    endpoint: /world/wait
+    type: kinex_interfaces/srv/Wait
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: volatile
+    timeout_s: 120
+  stop:
+    description: Cancel the pending wait.
+    transport: service
+    direction: input
+    endpoint: /world/stop
+    type: std_srvs/srv/Trigger
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: volatile
+    timeout_s: 10
+loaded: false
+meta:
+  created_at: '2026-10-24T00:00:00Z'
+  updated_at: '2026-10-24T00:00:00Z'
+type: world
+description: Simulation clock of the BEHAVIOR house. Furniture, objects and the activity's
+  BDDL goal are not devices; the mobile robot is not localized in this frame. This device
+  exposes no task instructions or evaluator results.
+source: default
+calibrated_at: null
+method: unknown
+bounds: null
+surfaces: []
+frames:
+  base:
+    parent: null
+    translation_m: null
+    rotation_xyzw: null
