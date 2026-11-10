@@ -1,9 +1,10 @@
 """BEHAVIOR's R1Pro with SharpaWave hands in place of its parallel grippers (dex_model).
 
 Everything but the hands is the evaluator's R1Pro (r1pro.R1Pro): its base, torso and arm
-controllers, its cameras at their full resolution and pose, its base mass and head optics. Each
-hand is a joint device of its 22 joints, tracking absolute targets in radians on position drives
-with Sharpa's Isaac gains; grasping is physical, by the fingers' contacts alone.
+controllers, its cameras at their full resolution and pose, its base mass and head optics, except
+that its base drive is limited, on frictionless wheels (drive_effort). Each hand is a joint
+device of its 22 joints, tracking absolute targets in radians on position drives with Sharpa's
+Isaac gains; grasping is physical, by the fingers' contacts alone.
 """
 import copy
 import json
@@ -24,6 +25,9 @@ class R1ProSharpa(R1Pro):
     parts = PARTS
     scalar_grippers = False
     pose_key = "r1pro"  # the presampled R1Pro start of each task instance
+    # The one physics departure from the evaluator's R1Pro (docs/behavior.md): a base that stops against furniture
+    # instead of climbing it (r1pro.limit_base_drive).
+    drive_effort = (500., 150.)
 
     def __init__(self):
         super().__init__()

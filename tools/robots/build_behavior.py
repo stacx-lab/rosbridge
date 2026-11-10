@@ -33,7 +33,7 @@ def body(sim, source, wrist="wrist, looking along the fingers"):
         "world": rigs.world(
             "Simulation clock of the BEHAVIOR house. Furniture, objects and the activity's BDDL goal "
             "are not devices; the mobile robot is not localized in this frame."),
-        "base": rigs.r1pro_base(VELOCITY_TIMEOUT_S),
+        "base": rigs.r1pro_base(VELOCITY_TIMEOUT_S, sim.embodiment.drive_effort),
         "torso": rigs.joint(
             "torso",
             "R1Pro four-joint torso on the base. Geometry is the sibling torso.urdf with top "

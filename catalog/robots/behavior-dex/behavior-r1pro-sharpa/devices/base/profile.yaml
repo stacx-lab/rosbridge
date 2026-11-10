@@ -58,11 +58,14 @@ description: 'R1Pro holonomic wheeled base carrying the torso. Commands are the 
   to 0.75 m/s and 1 rad/s in the base frame. The base frame is base_link at the floor; odometry
   starts at the episode-start pose and is on TF (base/odom -> base/base), so frames resolve
   against the episode-start pose. The base starts upright, and odometry carries its roll and
-  pitch. Its drive has no effort limit and its roll and pitch are free, so pushed against
-  furniture the base climbs it, tilts and can tip over; every world wait reply states a tilt
-  of more than 15 degrees from upright. Approach furniture slowly, and at the first tilt notice
-  drive back out the way you came: on open floor the base rights itself from up to about 45
-  degrees, but propped against furniture it stays tilted until driven out.'
+  pitch. Its drive pushes with at most about 500 N (150 N m turning) on frictionless wheels.
+  From rest it reaches full speed in 0.3 to 0.6 s, and from full speed it coasts 0.1 to 0.3
+  m when it stops (about 1 cm from 0.3 of it). Against furniture, walls and closed doors it
+  stops instead of climbing them, and it still pushes chairs, tables and sofas along; a door
+  that resists can turn the base or push it aside before it swings far, so line up square
+  to it and push again. Odometry that makes no progress while a twist is commanded means the
+  base is in contact: back off the way it came. Its roll and pitch are free; every world wait
+  reply states a tilt of more than 15 degrees from upright.'
 source: introspected
 calibrated_at: null
 method: introspection

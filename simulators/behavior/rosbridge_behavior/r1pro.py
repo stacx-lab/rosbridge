@@ -20,6 +20,11 @@ PARTS = {"base": "base", "torso": "trunk", "left_arm": "arm_left", "left_gripper
 ROLES = {"head": "head_camera", "left_wrist": "left_camera", "right_wrist": "right_camera"}
 EVAL_BASE_LINK_MASS = 250.  # evaluator._apply_robot_eval_settings
 EVAL_HEAD_HORIZONTAL_APERTURE = 40.
+# The holonomic base's driven virtual joints, by the kind of their USD drive, and its wheel links (limit_base_drive).
+BASE_DRIVES = {"base_footprint_x_joint": "linear", "base_footprint_y_joint": "linear",
+               "base_footprint_rz_joint": "angular"}
+WHEELS = ("wheel_motor_link1", "wheel_motor_link2", "wheel_motor_link3")
+WHEEL_MATERIAL = "Looks/wheel_physics_material"  # under the robot's prim
 
 
 class R1Pro:
@@ -33,6 +38,9 @@ class R1Pro:
     # The base's odometry carries its full attitude (Episode.attitude): its z, roll and pitch joints are free, so it
     # tilts and can tip over when it pushes against something, and a planar pose showed a tipped robot upright.
     attitude = True
+    # The base drive's effort limit (N along x and y, N m about z) on frictionless wheels (limit_base_drive), or None
+    # for the evaluator's base, whose drive has no limit.
+    drive_effort = None
 
     def __init__(self):
         # Read without importing OmniGibson, which fixes its data path on import (environment.boot).
@@ -54,11 +62,14 @@ class R1Pro:
         return config
 
     def configure(self, robot):
-        """A heavier base, so world contact does not shove it, and the evaluator's head optics."""
+        """A heavier base, so world contact does not shove it, and the evaluator's head optics; with drive_effort, a
+        base drive of that effort on frictionless wheels (limit_base_drive)."""
         import omnigibson as og
 
-        og.sim.stop()  # base mass writes require a stopped simulation
+        og.sim.stop()  # base mass writes require a stopped simulation, and so does binding the wheels' material
         robot.base_footprint_link.mass = EVAL_BASE_LINK_MASS
+        if self.drive_effort is not None:
+            limit_base_drive(robot, *self.drive_effort)
         og.sim.play()
         robot.sensors[self.cameras["head_camera"]].horizontal_aperture = EVAL_HEAD_HORIZONTAL_APERTURE
 
@@ -116,3 +127,42 @@ class R1Pro:
 
     def action(self, episode, command):
         return np.asarray(command, dtype=np.float32)
+
+
+def limit_base_drive(robot, force, torque):
+    """Limit the base drive to force (N) along x and y and torque (N m) about z, on frictionless wheels. Call it while
+    the simulator is stopped (R1Pro.configure).
+
+    The base is three virtual drive joints (x and y along the robot's spawn pose, and yaw; z, roll and pitch are free)
+    on three wheel spheres fixed to base_link. OmniGibson writes a 1000 N and N m limit to the drives through the
+    articulation view at initialization, but the stop and play that sets the base mass (the evaluator's, and
+    configure's) makes PhysX read the USD again, where the drives have none: PhysX holds FLT_MAX, and in contact the
+    drive pushes with 100 kN and more, so the base climbs furniture and tips over (backing into a fridge: 89 degrees).
+    The wheel spheres slide on the floor with PhysX's default friction, 0.5, which takes 1248 N at speed: with the
+    1000 N limit back the base reached 0.45 of 0.75 m/s, and a limit that drives it (1600 N) still tilted it 23
+    degrees sliding along a counter. On frictionless wheels (combined with any floor by the minimum) the drive alone
+    moves the base, and its limit caps what the base pushes with. Measured on behavior-dex: at 500 N the base stays
+    within 4 degrees against furniture, walls and doors and pushes a chair, a table and a 50 kg sofa as far as the
+    unlimited drive, but a door that resists can turn it or push it aside; 700 N tilts it 9 to 21 degrees pushing a
+    closed door or sliding along a counter, 300 N swings a room door open a quarter as far, and a wheel friction of 0.1
+    eats 300 N of the limit. 150 N m turns the base pressed on a counter, where 100 N m turned it 18 of 120 degrees,
+    and pushes with under 400 N at its corners.
+
+    Both settings are USD, written here while the simulator is stopped: a material bound while it plays does not reach
+    PhysX, and PhysX reads both at every later play, so they also hold after another stop and play (attaching an object
+    does one: AttachedTo). The x and y limits act along the spawn pose's axes, so at headings between them the base
+    pushes with up to sqrt(2) times force."""
+    import omnigibson as og
+    import omnigibson.lazy as lazy
+
+    with og.sim.editing_usd():
+        material = lazy.isaacsim.core.api.materials.physics_material.PhysicsMaterial(
+            prim_path=f"{robot.prim_path}/{WHEEL_MATERIAL}", name="wheel_physics_material",
+            static_friction=0., dynamic_friction=0., restitution=0.)
+        lazy.pxr.PhysxSchema.PhysxMaterialAPI.Apply(material.prim).CreateFrictionCombineModeAttr().Set("min")
+        for name, kind in BASE_DRIVES.items():
+            effort = force if kind == "linear" else torque
+            lazy.pxr.UsdPhysics.DriveAPI.Get(robot.joints[name].prim, kind).GetMaxForceAttr().Set(float(effort))
+    for link in WHEELS:
+        for mesh in robot.links[link].collision_meshes.values():
+            mesh.apply_physics_material(material)  # in its own editing_usd()
