@@ -11,7 +11,8 @@ Isaac Sim 5.1, as three simulators that share one adapter
 | `behavior-dex` | BEHAVIOR's R1Pro with two SharpaWave hands in place of its grippers | `base`, `torso`, `left_arm`, `right_arm`, `left_hand`, `right_hand`, RGB-D `head_camera`, `left_camera`, `right_camera` |
 
 The activity, scene, task instance and judging are the same in all three; only the
-embodiment differs. Upstream is pinned to
+embodiment differs (and with it, for `behavior-dex`, the friction of doors and
+drawers: see its departures from the evaluator). Upstream is pinned to
 `a8247a8cc1633fe1ca0cc66aa07243d46c64f155`, as RoboEnv pins it. See the
 [design and CLI guide](README.md) for shared lifecycle and timing contracts.
 
@@ -241,7 +242,8 @@ are `joint` devices without a tip link.
 SharpaWave hand from the G1's pinned `sharpa-urdf-usd-xml` source (one clone serves
 both). Everything else is the R1Pro's: its base, torso and arm controllers and
 commands, the 250 kg base, the head camera, and the wrist cameras' optics,
-resolution and sensor names (the wrist cameras move to the backs of the hands).
+resolution and sensor names (the wrist cameras move to the backs of the hands),
+but for the departures from the evaluator listed at the end of this section.
 
 - Each hand's flange sits on `<side>_arm_link7` at the gripper's mount face, the top
   of the gripper body: 29.5 mm behind link7's axis and 84 mm below its origin. The
@@ -279,6 +281,39 @@ so the heavier hands (1.3 kg each, the gripper and camera 0.5 kg) do not load th
 arms. The rig `behavior-dex/behavior-r1pro-sharpa` is the R1Pro rig with each hand a
 `joint` device without a tip link on its arm's flange (`<side>_arm_link7`), and each
 wrist camera mounted from that flange at its place on the back of the hand.
+
+`behavior-dex` departs from the evaluator where a physical hand cannot do what the
+evaluator's assisted grasp does. Each departure is an attribute of its embodiment
+(`R1ProSharpa`); the `behavior` simulator keeps OmniGibson's physics.
+
+- Doors, lids and drawers (`door_friction`, `door_friction.py`). OmniGibson's joint
+  friction is a coefficient (0.2 on a hinge, 0.3 on a slide) on the load the joint
+  carries, so the effort that starts a part grows with its mass, and below it the part
+  creeps instead of holding. The evaluator's gripper holds a handle with a rigid joint;
+  a hand's grip is physical. After the doors out of the loaded rooms are locked, every
+  single-axis joint of a fixed object gets PhysX's load-independent friction instead: a
+  static effort equal to what the coefficient gives the part at rest (the weight its
+  joint carries and that weight's moment), at most 1.5 N m on a hinge and 6 N on a
+  slide, and a dynamic effort of 0.7 of that. Movable objects are left as they are, and
+  locked doors keep their locking limits. Measured in five scenes as the effort that has
+  moved a part 0.02 rad or 5 mm:
+
+  | Part | Evaluator | `behavior-dex` |
+  |---|---|---|
+  | room doors, 8 to 13 kg | 10 to 17 N m | 1.8 to 2.2 N m |
+  | fridge, washer and dryer doors | 2.6 to 6.6 N m | 1.6 to 1.9 N m |
+  | drawers, dishwasher racks, sliding windows and doors | 7 to 34 N | 6.2 to 7.8 N |
+  | parts below the cap: small cabinet doors, light drawers, oven racks | 0.6 to 7 N m or N | their friction at rest, 0.5 to 6.2 |
+
+  Nothing moves in 10 s idle, the `Open` and `ToggledOn` states read as before, and a
+  door set swinging at 0.5 rad/s stops within 0.12 rad (0.02 before), braked by
+  OmniGibson's own joint damping. Following a door's arc with its fingers round the
+  handle, the hand opened the heavier fridge door 0.39 rad and a 13 kg room door 0.42
+  rad; with the evaluator's friction it lost the handles after 0.14 and 0.04 rad. A
+  handle whose collision hull leaves no gap behind its bar (the dishwasher's, the
+  single-door fridge's, the car trunk's) gives the fingers no hold either way, and some
+  doors have nothing to pull (the two-storey house's garden doors, the dryer, several
+  kitchen cabinets); the open hand pushes doors open with either friction.
 
 ## Timing, cameras and recording
 

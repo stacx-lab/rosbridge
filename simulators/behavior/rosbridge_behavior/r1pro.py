@@ -33,6 +33,9 @@ class R1Pro:
     # The base's odometry carries its full attitude (Episode.attitude): its z, roll and pitch joints are free, so it
     # tilts and can tip over when it pushes against something, and a planar pose showed a tipped robot upright.
     attitude = True
+    # The joints of doors, lids and drawers keep OmniGibson's friction, a coefficient on the load each carries, as in
+    # the evaluator; R1ProSharpa's door_friction departs from it (door_friction.py).
+    door_friction = None
 
     def __init__(self):
         # Read without importing OmniGibson, which fixes its data path on import (environment.boot).
