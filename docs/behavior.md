@@ -11,7 +11,7 @@ Isaac Sim 5.1, as three simulators that share one adapter
 | `behavior-dex` | BEHAVIOR's R1Pro with two SharpaWave hands in place of its grippers | `base`, `torso`, `left_arm`, `right_arm`, `left_hand`, `right_hand`, RGB-D `head_camera`, `left_camera`, `right_camera` |
 
 The activity, scene and task instance are the same in all three; only the embodiment
-differs, and with it, for `behavior-dex`, one of the rules OmniGibson judges by
+differs, and with it, for `behavior-dex`, two of the rules OmniGibson judges by
 ([below](#rules-behavior-dex-changes)). Upstream is pinned to
 `a8247a8cc1633fe1ca0cc66aa07243d46c64f155`, as RoboEnv pins it. See the
 [design and CLI guide](README.md) for shared lifecycle and timing contracts.
@@ -69,14 +69,15 @@ instance it was launched with.
 ### Rules `behavior-dex` changes
 
 `behavior` and `behavior-g1` judge by OmniGibson's rules as upstream has them.
-`behavior-dex` applies one more source patch, listed only in
-`patches/behavior-dex/series`, to a rule that a robot meets differently when it holds
-a tool by its fingers alone. A prepared runtime names the patches it was generated
-with in `.runtime/<simulator>/.prepared.json`.
+`behavior-dex` applies two more source patches, listed only in
+`patches/behavior-dex/series`, to two rules that a robot meets differently when it
+holds and moves a tool by its fingers alone. A prepared runtime names the patches it
+was generated with in `.runtime/<simulator>/.prepared.json`.
 
 | Patch | OmniGibson (`behavior`, `behavior-g1`) | `behavior-dex` |
 |---|---|---|
 | `0001-slicer-blade.patch` | A sliceable object is halved, and a half diced, when it touches any part of any slicer while any slicer of the scene is active. A slicer turns inactive the step after it touched whole food, and active again 2 s after it last touched whole food. | An object is cut by a slicer that is active, touches it and reaches it with its blade: the box of the slicer's meta link, which BEHAVIOR's asset guide defines as the cutting volume, where that link is at the step, 5 mm larger on every side. The slicer that cut turns inactive, and active again 2 s after it last touched whole or cut food. A slicer without such a meta link cuts with its whole body. |
+| `0002-projection-remover-margin.patch` | A particle remover by projection takes a visual particle whose centre lies inside its volume. | It takes one whose centre lies within 1 cm of its volume. |
 
 The slicer rule decides the nine activities that have a slicer and food it cuts:
 `chopping_wood`, `halve_an_egg`, `cook_brussels_sprouts`, `chop_an_onion`,
@@ -101,6 +102,21 @@ an egg and a cupcake, OmniGibson's rule against the patch:
 
 So dicing takes a cut, 2 s with the slicer clear of every whole and cut piece, and
 the blade on each half.
+
+`vacuuming_floors`' vacuum is the only particle remover by projection in BEHAVIOR's
+taxonomy. OmniGibson sets a projection volume below its meta link
+(`ParticleModifier._initialize`), and the vacuum's link lies in its sole: its box
+(30 x 12 x 2 cm) ends 1.1 mm under the floor it stands on, beneath the dust. OmniGibson's
+rule removes floor dust only where that box holds the floor's plane: under a vacuum
+held 1.2 to 21.5 mm above the floor, as a robot with an assisted grasp can carry its
+3.2 kg, or one that leans by a degree or more, as it does on the R1Pro's base when the
+base pushes it (5 to 10 degrees). Standing flat, or pushed without tipping, it removes
+nothing. With the margin it removes the dust under it standing, pushed, leaning up to
+10 degrees and lifted up to 3 cm. A particle 1.5 cm beside the box stays, and so does
+one under a 5 cm plate the vacuum stands on. The margin is the patch's own constant
+(`PROJECTION_REMOVER_VISUAL_MARGIN`), for every such remover and shape of volume. The
+R1Pro with Sharpa hands switches the vacuum on with a fingertip on its button, or by
+closing a hand around the handle there.
 
 ## Native worker
 
@@ -342,7 +358,7 @@ spectator sample renders once for every recorded view.
 ```bash
 pixi run -e behavior-native smoke        # R1Pro: controls, cameras, reset, rig geometry
 pixi run -e behavior-g1-native smoke     # G1: standing, walking, turning, arms, hands, rig geometry
-pixi run -e behavior-dex-native smoke    # R1Pro with hands: cameras, mount, hands, rig geometry, slicer rule
+pixi run -e behavior-dex-native smoke    # R1Pro with hands: cameras, mount, hands, rig geometry, slicer and vacuum rules
 pixi run -e behavior test-ros
 pixi run -e behavior-g1 test-ros
 pixi run -e behavior-dex test-ros
