@@ -158,6 +158,19 @@ def test_rig_matches_native_chains_grippers_and_cameras(tmp_path, sim):
                         measured(f"{side}_gripper_finger_link{link}"), atol=2e-3)
 
 
+def test_goal_particles_beyond_a_locked_door_are_removed_at_every_load_and_recorded():
+    """sweeping_garage's instance 301 has a sand and a dust particle on the floor slab outside its garage door, which
+    is locked: the room map places them in the garden, which the activity does not load."""
+    sim = native()
+    try:
+        for _ in range(2):  # a reset reloads the instance, and the same two go
+            sim.reset("sweeping_garage", 0)
+            assert sim.native("measures") == {
+                "q_score": 0., "particles_removed_out_of_loaded_rooms": ["sandParticle11", "dustParticle6"]}
+    finally:
+        sim.close()
+
+
 @pytest.mark.parametrize("task", SELECTED)
 def test_catalog_task_loads_steps_and_records(task):
     sim = native()

@@ -67,6 +67,44 @@ def lock_doors_out(scene, rooms):
     return doors
 
 
+def not_covered_goals(conditions):
+    """The (object, system) instance names of each (not (covered object system)) literal of a compiled BDDL goal, in
+    first-seen order without repeats. conditions are the goal's top-level conditions (BehaviorTask's
+    activity_goal_conditions); each one's flattened options hold its grounded literals as token lists, such as
+    ['not', ['covered', 'floor.n.01_1', 'dust.n.01_1']]. The goal's grounded options are their product, which a
+    quantified goal makes large (assembling_gift_baskets: 331,776 options of 16 literals)."""
+    found = []
+    for condition in conditions or ():
+        for option in condition.flattened_condition_options:
+            for literal in option:
+                if literal[0] == "not" and literal[1][0] == "covered" and tuple(literal[1][1:]) not in found:
+                    found.append(tuple(literal[1][1:]))
+    return found
+
+
+def particles_out(scene, task, rooms):
+    """The goal's particles in rooms that are not loaded, as [(system, [particle names])]: for each goal literal
+    (not (covered O S)) with S a visual particle system and O fixed in place, the particles of S on O that the scene's
+    room map (as doors_out reads it) places in a room other than the loaded ones; where it names no room, a particle
+    stays. BEHAVIOR's sampler accepts a floor particle wherever the floor is traversable, not only in the floor's own
+    room, and a floor can reach past its room's doors. The doors out of the loaded rooms are locked (lock_doors_out),
+    and covered holds while one particle is left, so one such particle makes the goal impossible."""
+    scope, found = task.object_scopes[0], []
+    for obj_name, system_name in not_covered_goals(task.activity_goal_conditions):
+        obj, system = scope.get(obj_name), scope.get(system_name)
+        if obj is None or system is None or not obj.fixed_base or not scene.is_visual_particle_system(system.name):
+            continue
+        group = system.get_group_name(obj)
+        if group not in system.groups:
+            continue
+        places = values(system.get_group_particles_position_orientation(group)[0]).reshape(-1, 3)
+        out = [name for name, place in zip(system._group_particles[group], places)
+               if scene.seg_map.get_room_instance_by_point(place[:2]) not in (None, *rooms)]
+        if out:
+            found.append((system, out))
+    return found
+
+
 def data_root(simulator):
     return project_root() / ".runtime" / simulator / "datasets"
 
@@ -127,7 +165,8 @@ class Episode:
         # Physics views must exist before the first load reads or restores robot joint state.
         og.sim.update_handles()
         # The robot cannot pass a door onto a room without its floor: such doors are closed and locked.
-        self.locked_doors = [door.name for door in lock_doors_out(self.env.scene, cfg["scene"]["load_room_instances"])]
+        self.rooms = list(cfg["scene"]["load_room_instances"])
+        self.locked_doors = [door.name for door in lock_doors_out(self.env.scene, self.rooms)]
         print(f"doors locked out of the loaded rooms: {self.locked_doors}", flush=True)
         self.lights = None
 
@@ -173,6 +212,15 @@ class Episode:
             for entity_name, entity in scope.items():
                 if entity is not None and not is_system_bddl_inst(entity_name):
                     entity.keep_still()
+        # The goal's particles beyond the locked doors (particles_out) go before the scene's initial state is saved, so
+        # env.reset restores the instance without them; the episode record names them.
+        self.particles_removed = []
+        for system, names in particles_out(scene, task, self.rooms):
+            index = {name: i for i, name in enumerate(system.particles)}
+            system.remove_particles(idxs=sorted(index[name] for name in names))
+            self.particles_removed += names
+        if self.particles_removed:
+            print(f"goal particles removed out of the loaded rooms: {self.particles_removed}", flush=True)
         scene.update_initial_file()
         env.reset()
         self.lights = LightToggleSynchronizer(scene) if self.task in LIGHT_TASKS else None

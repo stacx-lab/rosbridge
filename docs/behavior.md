@@ -48,6 +48,13 @@ the scene but the floors of the loaded rooms only, so a door can open onto no fl
 with a loaded room on one side of the scene's room segmentation and none on the other is
 closed and locked. No such door is part of an activity.
 
+A floor can reach past its room's doors, and BEHAVIOR's sampler places a goal's particles
+wherever the floor is traversable, so loading removes the particles of a
+`(not (covered O S))` goal literal, with `S` a visual particle system and `O` fixed in
+place, that the room segmentation places in a room that is not loaded, and the episode
+record names them in `particles_removed_out_of_loaded_rooms` (at seed 0, the sand and
+dust particle on the slab outside `sweeping_garage`'s locked garage door).
+
 Success is the activity's BDDL goal predicate, evaluated every step; the reward is
 1 while it holds. `--stop-on-success` ends the episode at the first success, as the
 evaluator's termination does. The default horizon is the evaluator's timeout, 1.5

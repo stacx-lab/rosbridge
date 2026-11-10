@@ -153,11 +153,15 @@ class BehaviorSim:
 
     def measures(self):
         """The evaluator's partial credit, TaskMetric's q_score: 1 on success, else the best grounded goal
-        option's fraction of literals that hold now and did not at the episode start."""
+        option's fraction of literals that hold now and did not at the episode start. An episode whose load
+        removed goal particles lying in rooms that are not loaded (Episode.load) also names them."""
         from omnigibson.metrics.task_metric import compute_q_score
 
         now = self.episode.env.task.get_goal_option_satisfaction(0)
-        return {"q_score": float(compute_q_score(self.success, now, self.initial_goal_options))}
+        measures = {"q_score": float(compute_q_score(self.success, now, self.initial_goal_options))}
+        if self.episode.particles_removed:
+            measures["particles_removed_out_of_loaded_rooms"] = list(self.episode.particles_removed)
+        return measures
 
     # Cameras ----------------------------------------------------------------------------
 
