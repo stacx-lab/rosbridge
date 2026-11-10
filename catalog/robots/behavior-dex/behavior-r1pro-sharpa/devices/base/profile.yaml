@@ -2,7 +2,9 @@ name: base
 runtime:
   domain_id: 0
   observation: odometry
-  nodes: []
+  nodes:
+  - entry: odom.py
+    factory: create
   ready_timeout_s: 30
 operations:
   velocity:
@@ -21,7 +23,8 @@ operations:
     timeout_s: 10
   odometry:
     description: Measured body twist in base/base (m/s and rad/s at the body origin) and the
-      planar pose in base/odom, the body frame at episode start; never a global pose.
+      planar pose in base/odom, the body frame at episode start; never a global pose. The
+      pose is also on TF as base/odom -> base/base, with the message's stamp.
     transport: topic
     direction: output
     endpoint: /base/odometry
@@ -50,7 +53,8 @@ type: locomotion
 description: R1Pro holonomic wheeled base carrying the torso. Commands are the official BEHAVIOR
   evaluator's normalized base action (vx, vy, wz in [-1, 1]), which its controller scales
   to 0.75 m/s and 1 rad/s in the base frame. The base frame is base_link at the floor; odometry
-  starts at the episode-start pose.
+  starts at the episode-start pose and is on TF (base/odom -> base/base), so frames resolve
+  against the episode-start pose.
 source: introspected
 calibrated_at: null
 method: introspection

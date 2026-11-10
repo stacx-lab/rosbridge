@@ -20,6 +20,44 @@ from kinex.node import LinkPublisher
 def create(profile, context):
     return LinkPublisher(profile, context, Path(__file__).parent)
 '''
+ODOM = '''"""Publish the base's odometry on TF as <base>/odom -> <base>/base with each message's stamp, so frames
+resolve against the episode-start pose (the odometry topic alone left <base>/odom off the TF tree)."""
+import asyncio
+
+from nav_msgs.msg import Odometry
+from rclpy.node import Node
+from tf2_ros import TransformBroadcaster
+
+from kinex.communication import qos
+from kinex.lib.frames import dynamic_qos, transform
+from kinex.node import node_name
+
+
+class OdometryPublisher(Node):
+    def __init__(self, profile, context):
+        super().__init__(node_name(profile, "odom"), context=context)
+        self.broadcaster = TransformBroadcaster(self, qos=dynamic_qos())
+        self.observed = False
+        odometry = profile["operations"]["odometry"]
+        self.create_subscription(Odometry, odometry["endpoint"], self.odometry, qos(odometry))
+
+    def odometry(self, message):
+        p, q = message.pose.pose.position, message.pose.pose.orientation
+        self.broadcaster.sendTransform(transform(message.header.frame_id, message.child_frame_id,
+                                                 [p.x, p.y, p.z, q.x, q.y, q.z, q.w], message.header.stamp))
+        self.observed = True
+
+    async def ready(self):
+        while not self.observed:
+            await asyncio.sleep(.02)
+
+
+def create(profile, context):
+    return OdometryPublisher(profile, context)
+'''
+# The Kinex node file of each entry a device's runtime lists, written beside its profile. Profiles
+# borrow rosbridge's endpoints, so the nodes Kinex runs are TF publishers only.
+NODES = {"links.py": LINKS, "odom.py": ODOM}
 
 
 def qos(reliability="reliable", durability="volatile"):
@@ -136,9 +174,10 @@ def gripper(name, description, joint, target, base, tcp, *, state=None, hold=Non
                   grip={"joint": joint, "open": opened, "closed": closed})
 
 
-def locomotion(name, description, axes, base, *, timeout_s, units="normalized"):
+def locomotion(name, description, axes, base, *, timeout_s, units="normalized", tf=False):
     """A velocity-driven base: axes maps vx, vy, ... to native (min, max) bounds, in [-1, 1] of
-    the controller range (normalized) or m/s and rad/s (si)."""
+    the controller range (normalized) or m/s and rad/s (si). With tf, a Kinex node (odom.py)
+    also puts the odometry on TF as <name>/odom -> <name>/base."""
     named = ", ".join(f"{field} ({axis})" for axis, field in (
         ("vx", "linear.x"), ("vy", "linear.y"), ("vz", "linear.z"), ("wx", "angular.x"),
         ("wy", "angular.y"), ("wz", "angular.z")) if axis in axes)
@@ -153,13 +192,16 @@ def locomotion(name, description, axes, base, *, timeout_s, units="normalized"):
             "topic", "input", f"/{name}/velocity", "geometry_msgs/msg/Twist"),
         "odometry": operation(
             f"Measured body twist in {name}/base (m/s and rad/s at the body origin) and the "
-            f"planar pose in {name}/odom, the body frame at episode start; never a global pose.",
+            f"planar pose in {name}/odom, the body frame at episode start; never a global pose."
+            + (f" The pose is also on TF as {name}/odom -> {name}/base, with the message's stamp."
+               if tf else ""),
             "topic", "output", f"/{name}/odometry", "nav_msgs/msg/Odometry",
             qos(durability="transient_local")),
         "stop": operation("Command zero velocity.", "service", "input", f"/{name}/stop",
                           "std_srvs/srv/Trigger"),
     }
-    return device(name, "locomotion", description, ops, observation="odometry",
+    return device(name, "locomotion", description, ops, nodes=("odom.py",) if tf else (),
+                  observation="odometry",
                   velocity={"units": units,
                             "axes": {axis: {"min": clean(low), "max": clean(high)}
                                      for axis, (low, high) in axes.items()}},
@@ -427,7 +469,7 @@ def write_rig(directory, manifest, devices, files=None):
         folder = directory / "devices" / name
         folder.mkdir(exist_ok=True)
         (folder / "profile.yaml").write_text(yaml.safe_dump(profile, sort_keys=False, width=88))
-        if profile["runtime"]["nodes"]:
-            (folder / "links.py").write_text(LINKS)
+        for node in profile["runtime"]["nodes"]:
+            (folder / node["entry"]).write_text(NODES[node["entry"]])
     for path, text in (files or {}).items():
         (directory / path).write_text(text)

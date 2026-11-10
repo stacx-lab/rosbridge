@@ -128,7 +128,10 @@ Commands are the evaluator's action vector:
   `angular.z` in [-1, 1]) that its holonomic controller scales to 0.75 m/s and
   1 rad/s in the base frame. The base stops 0.5 s of world time after the last
   twist; `base/odometry` reports the measured body twist and the planar pose of
-  `base_link` relative to the episode start.
+  `base_link` relative to the episode start. The base device's Kinex node
+  (`devices/base/odom.py`, both R1Pro rigs) puts each odometry message on TF as
+  `base/odom -> base/base` with its stamp, so frames resolve against the
+  episode-start pose.
 - `torso` (`torso_joint1..4`) and `left_arm`, `right_arm` (`<side>_arm_joint1..7`)
   take absolute joint positions in radians within the joint limits.
 - `<side>_gripper/target` is the smooth gripper command from -1 (closed) to 1

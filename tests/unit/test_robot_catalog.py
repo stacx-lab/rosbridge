@@ -39,6 +39,20 @@ def export(identifier, directory, **options):
     return result, root, profiles
 
 
+R1PRO_RIGS = ("behavior/behavior-r1pro", "behavior-dex/behavior-r1pro-sharpa")
+
+
+def rigs_module():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("rigs", PROJECT / "tools/robots/rigs.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+NODES = rigs_module().NODES
+
+
 @pytest.mark.parametrize("identifier", list_robots(PROJECT))
 def test_every_rig_exports_unloaded_profiles_on_rosbridge_endpoints(tmp_path, identifier):
     import json
@@ -57,27 +71,22 @@ def test_every_rig_exports_unloaded_profiles_on_rosbridge_endpoints(tmp_path, id
         assert all(isinstance(op["description"], str) and op["description"]
                    for op in profile["operations"].values())
         assert all("parent" in frame for frame in profile["frames"].values())
-        # Profiles borrow rosbridge's endpoints; only URDF link publishers run in Kinex.
-        nodes = ([{"entry": "links.py", "factory": "create"}]
-                 if profile["type"] in ("joint", "gripper") else [])
+        # Profiles borrow rosbridge's endpoints; only TF publishers run in Kinex: URDF links for joints and
+        # grippers, and the R1Pro bases' odometry (base/odom -> base/base), each as rigs.NODES writes it.
+        nodes = ([{"entry": "links.py", "factory": "create"}] if profile["type"] in ("joint", "gripper")
+                 else [{"entry": "odom.py", "factory": "create"}] if name == "base" and identifier in R1PRO_RIGS
+                 else [])
         assert profile["runtime"]["nodes"] == nodes
         for node in nodes:
             exported = root / "devices" / name / node["entry"]
-            assert not exported.is_symlink() and "LinkPublisher(profile, context" in exported.read_text()
+            assert not exported.is_symlink() and exported.read_text() == NODES[node["entry"]]
+        if profile["type"] in ("joint", "gripper"):
             assert (root / "devices" / name / profile["model"]["path"]).is_file()
     assert not any(root.rglob("*.pyc")) and not any(path.is_symlink() for path in root.rglob("*"))
     with pytest.raises(ValueError, match="already contains"):
         setup(identifier, tmp_path, project=PROJECT)
     with pytest.raises(ValueError, match="domain ID"):
         setup(identifier, tmp_path / "other", project=PROJECT, domain_id=-1)
-
-
-def rigs_module():
-    import importlib.util
-    spec = importlib.util.spec_from_file_location("rigs", PROJECT / "tools/robots/rigs.py")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
 
 
 def test_every_world_profile_carries_the_generators_wait_operation():
@@ -93,6 +102,24 @@ def test_every_world_profile_carries_the_generators_wait_operation():
         assert profile["operations"]["wait"] == wait, path
         own = profile["description"].removesuffix(f" {rigs.WORLD_EXPOSES}")
         assert own.endswith(".") and rigs.world(own)["description"] == profile["description"], path
+
+
+def test_the_r1pro_bases_carry_the_generators_odometry_on_tf(tmp_path):
+    """Both R1Pro rigs' base device comes from build_behavior.body through rigs.locomotion(tf=True): rebuilding a rig
+    keeps the odometry node and its texts."""
+    rigs = rigs_module()
+    generated = rigs.locomotion("base", "", {"vx": (-1., 1.)}, None, timeout_s=.5, tf=True)
+    rigs.write_rig(tmp_path, {}, {"base": generated})
+    assert sorted(path.name for path in (tmp_path / "devices/base").iterdir()) == ["odom.py", "profile.yaml"]
+    assert (tmp_path / "devices/base/odom.py").read_text() == rigs.ODOM
+    for identifier in R1PRO_RIGS:
+        folder = PROJECT / "catalog/robots" / identifier / "devices/base"
+        profile = yaml.safe_load((folder / "profile.yaml").read_text())
+        assert profile["runtime"]["nodes"] == generated["runtime"]["nodes"] == [{"entry": "odom.py",
+                                                                               "factory": "create"}]
+        assert profile["operations"]["odometry"] == generated["operations"]["odometry"]
+        assert "on TF (base/odom -> base/base)" in profile["description"]
+        assert (folder / "odom.py").read_text() == rigs.ODOM
 
 
 def test_native_gripper_commands_drive_their_fingers_through_mimics(tmp_path):

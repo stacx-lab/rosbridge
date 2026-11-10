@@ -38,10 +38,11 @@ def body(sim, source, wrist="wrist, looking along the fingers"):
             "R1Pro holonomic wheeled base carrying the torso. Commands are the official BEHAVIOR "
             "evaluator's normalized base action (vx, vy, wz in [-1, 1]), which its controller scales "
             "to 0.75 m/s and 1 rad/s in the base frame. The base frame is base_link at the floor; "
-            "odometry starts at the episode-start pose.",
+            "odometry starts at the episode-start pose and is on TF (base/odom -> base/base), so "
+            "frames resolve against the episode-start pose.",
             {axis: (-1., 1.) for axis in ("vx", "vy", "wz")},
             {"parent": None, "translation_m": None, "rotation_xyzw": None},
-            timeout_s=VELOCITY_TIMEOUT_S),
+            timeout_s=VELOCITY_TIMEOUT_S, tf=True),
         "torso": rigs.joint(
             "torso",
             "R1Pro four-joint torso on the base. Geometry is the sibling torso.urdf with top "
