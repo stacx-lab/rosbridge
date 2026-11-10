@@ -103,6 +103,14 @@ volume stayed where the last camera read had left it: a broom pushed 1.0 m acros
 0.4 ms, and an unread step in a house, about 95 ms on a loaded host, took 1 to 4 ms
 longer with it.
 
+`make_cabinet_doors`, `hanging_pictures`, `attach_a_camera_to_a_tripod` and
+`installing_smoke_detectors` attach objects with joints that break at 5000 N or
+10000 N m. OmniGibson detached the object, which deletes the joint's prim, inside the
+physics step's callback, and on a step that does not render Kit aborts the process
+there. `patches/behavior/0006-joint-breaks-after-the-step.patch` runs the detachment
+when the physics step has returned: the object comes off, the episode goes on, and the
+object can be attached again.
+
 ## Assets and license
 
 The BEHAVIOR Data Bundle is encrypted and licensed separately from OmniGibson;

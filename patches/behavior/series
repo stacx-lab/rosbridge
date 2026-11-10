@@ -10,8 +10,12 @@
 #      drops the articulation views' handles.
 # 0005 A simulator step that does not render updates Fabric from PhysX, as a rendering step does:
 #      object states read link and mesh poses from Fabric (a particle remover's volume).
+# 0006 The callbacks of joints that broke run when the physics step has returned, not inside its
+#      callback, where deleting the joint's prim (AttachedTo detaches) aborts Kit on a step that
+#      does not render.
 0001-optional-workflows.patch
 0002-gpu-selection.patch
 0003-goal-option-literals.patch
 0004-particle-handle-updates.patch
 0005-fabric-sync-without-render.patch
+0006-joint-breaks-after-the-step.patch

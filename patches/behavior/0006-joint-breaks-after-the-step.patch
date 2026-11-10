@@ -1,0 +1,82 @@
+diff --git a/OmniGibson/omnigibson/simulator.py b/OmniGibson/omnigibson/simulator.py
+index 88c7118..8f20003 100644
+--- a/OmniGibson/omnigibson/simulator.py
++++ b/OmniGibson/omnigibson/simulator.py
+@@ -1538,10 +1538,12 @@ def _launch_simulator(*args, **kwargs):
+                     if render:
+                         self._sim_context.step(render=True)
+                         self._report_step_exceptions()
++                        self._handle_joint_breaks()
+                     else:
+                         for i in range(self.n_physics_timesteps_per_render):
+                             self._sim_context.step(render=False)
+                             self._report_step_exceptions()
++                            self._handle_joint_breaks()
+                         # A step that renders updates Fabric from PhysX; one that does not has to do it here. The
+                         # object states updated below read link and mesh poses from Fabric (a particle modifier's
+                         # volume, visual_aabb, check_points_in_volume), which otherwise stay where the last render
+@@ -1570,6 +1572,7 @@ def _launch_simulator(*args, **kwargs):
+                 self._in_sim_lifecycle -= 1
+ 
+             self._report_step_exceptions()
++            self._handle_joint_breaks()
+ 
+             # Accumulate contact data from this physics step and then flush to cache.
+             # We normally do this in _non_physics_step, but step_physics bypasses that so we do it here.
+@@ -1626,15 +1629,15 @@ def _launch_simulator(*args, **kwargs):
+                     RigidContactAPI.read_from_physx()
+                     wp.synchronize_stream(wp.get_stream())
+ 
+-                # Record that we are done with the step context. Joint-break callbacks below
+-                # are post-step user code: they may call update_handles() / read Fabric, which
+-                # is forbidden while currently_stepping=True.
++                # Record that we are done with the step context. Joint-break callbacks
++                # (_handle_joint_breaks) are post-step user code: they may call update_handles() /
++                # read Fabric, which is forbidden while currently_stepping=True.
+                 self.currently_stepping = False
+ 
+                 # Run any tensorized-state view rebuild that was deferred from a mid-step
+                 # update_handles() (e.g. a joint created during grasping). Now that
+                 # currently_stepping is False, the Fabric world-pose reads in initialize_view()
+-                # are allowed. Do this before joint-break callbacks so they observe fresh views.
++                # are allowed. Joint-break callbacks run after it, so they observe fresh views.
+                 if self._deferred_tensorized_view_init:
+                     self._deferred_tensorized_view_init = False
+                     if gm.ENABLE_OBJECT_STATES:
+@@ -1642,21 +1645,27 @@ def _launch_simulator(*args, **kwargs):
+                             if issubclass(state_type, TensorizedState):
+                                 state_type.initialize_view()
+                     TensorizedState.caches_dirty = True
+-
+-                if self._deferred_joint_breaks:
+-                    # Copy the current deferred joint breaks and clear the shared list
+-                    # before invoking callbacks, so we don't retain stale entries if a
+-                    # callback raises an exception.
+-                    deferred_breaks = list(self._deferred_joint_breaks)
+-                    self._deferred_joint_breaks.clear()
+-                    for obj, state_type, joint_path in deferred_breaks:
+-                        obj.states[state_type].on_joint_break(joint_path)
+             except Exception as e:
+                 self.currently_in_isaac_step = False
+                 self.currently_stepping = False
+                 self.post_step_exception = e
+                 raise
+ 
++        def _handle_joint_breaks(self):
++            """
++            Runs the callbacks of the joints that broke in the physics step that has just returned. A callback may
++            delete the broken joint's prim (AttachedTo detaches), and inside the physics step's own callbacks that
++            aborts Kit on a step that does not render (carb.tasking Mutex: "Recursion not allowed").
++            """
++            if self._deferred_joint_breaks:
++                # Copy the current deferred joint breaks and clear the shared list
++                # before invoking callbacks, so we don't retain stale entries if a
++                # callback raises an exception.
++                deferred_breaks = list(self._deferred_joint_breaks)
++                self._deferred_joint_breaks.clear()
++                for obj, state_type, joint_path in deferred_breaks:
++                    obj.states[state_type].on_joint_break(joint_path)
++
+         def _report_step_exceptions(self):
+             if self.pre_step_exception is not None:
+                 pre_step_exception = self.pre_step_exception
