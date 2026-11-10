@@ -175,3 +175,39 @@ def test_reads_render_once_after_a_step(sim):
     sim.step(hold)
     sim.render("left_camera"), sim.render_depth("right_camera"), sim.render("head_camera")
     assert sim.native("render_count") == first + 1 and first > start
+
+
+# Full-command drives from turning_on_radio's start pose (seed 0) into the living room's furniture: with the evaluator's
+# unlimited drive the strafe left propped the base at 34 degrees (35.7 at most) and the drive forward tipped it over
+# (101.8), with behavior-dex's limited drive they stayed within 1.6 and 0.6 degrees.
+FURNITURE_DRIVES = {"left": (0., 1., 0.), "forward": (1., 0., 0.)}
+
+
+@pytest.mark.parametrize("drive", list(FURNITURE_DRIVES))
+def test_the_base_stops_upright_against_furniture(sim, drive):
+    """behavior-dex limits the base drive on frictionless wheels (R1ProSharpa.drive_effort): driven into furniture at
+    full command for 4 s, the base stops at it instead of climbing it."""
+    sim.reset("turning_on_radio", 0)
+    target = sim.state()[0]
+    target[channels(sim, "base")] = FURNITURE_DRIVES[drive]
+    tilt = 0.
+    for _ in range(120):
+        sim.step(target)
+        tilt = max(tilt, sim.base_attitude["tilt"])
+    assert np.degrees(tilt) < 5.
+
+
+def test_the_base_drive_limits_hold_after_a_stop_and_play(sim):
+    """PhysX holds the limits and the wheels' zero friction after configure and after another stop and play (as
+    attaching an object does): both are authored in USD, which PhysX reads at every play."""
+    from rosbridge_behavior.r1pro_sharpa import R1ProSharpa
+
+    force, torque = R1ProSharpa.drive_effort
+    limits = {"base_footprint_x_joint": force, "base_footprint_y_joint": force, "base_footprint_rz_joint": torque}
+    sim.reset("turning_on_radio", 0)
+    for restarted in (False, True):
+        if restarted:
+            sim.native("restart_physics")
+        drive = sim.native("base_drive")
+        assert drive["limits"] == pytest.approx(limits), restarted
+        assert len(drive["wheels"]) == 3 and set(drive["wheels"].values()) == {(0., 0.)}, restarted

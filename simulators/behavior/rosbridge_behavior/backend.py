@@ -461,6 +461,33 @@ class BehaviorSim:
     def render_settings(self):
         return render_settings()
 
+    def base_drive(self):
+        """The R1Pro base drive's effort limits as PhysX holds them (N along x and y, N m about z; FLT_MAX for none),
+        and the friction of each wheel's physics material (None for PhysX's default, 0.5)."""
+        from .r1pro import BASE_DRIVES, WHEELS
+
+        robot = self.episode.robot
+        view = robot._articulation_view
+        limits = {name: float(values(view.get_max_efforts(joint_indices=robot.joints[name].dof_indices)).ravel()[0])
+                  for name in BASE_DRIVES}
+        wheels = {}
+        for link in WHEELS:
+            for name, mesh in robot.links[link].collision_meshes.items():
+                material = mesh.get_applied_physics_material()
+                wheels[f"{link}/{name}"] = None if material is None else (
+                    float(material.get_static_friction()), float(material.get_dynamic_friction()))
+        return {"limits": limits, "wheels": wheels}
+
+    def restart_physics(self):
+        """Stop and play the simulator, keeping the world's state, as OmniGibson does when it attaches an object
+        (AttachedTo); for checks that physics settings survive it."""
+        import omnigibson as og
+
+        state = og.sim.dump_state()
+        og.sim.stop()
+        og.sim.play()
+        og.sim.load_state(state)
+
     def spectator_intrinsics(self, name):
         view, camera = self._spectators[name][:2]
         fx = camera.GetFocalLengthAttr().Get() * view.width / camera.GetHorizontalApertureAttr().Get()

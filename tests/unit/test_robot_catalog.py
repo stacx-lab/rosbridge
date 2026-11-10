@@ -128,6 +128,27 @@ def test_the_r1pro_bases_carry_the_generators_odometry_on_tf(tmp_path):
         assert (folder / "odom.py").read_text() == rigs.ODOM
 
 
+def test_each_r1pro_base_describes_its_embodiments_drive():
+    """build_behavior.body writes each R1Pro rig's base with rigs.r1pro_base for its embodiment's drive_effort: the
+    evaluator's drive without a limit, and the dexterous R1Pro's limited drive with its values."""
+    from rosbridge.core.commands import VELOCITY_TIMEOUT_S
+    from rosbridge_behavior.r1pro import R1Pro
+    from rosbridge_behavior.r1pro_sharpa import R1ProSharpa
+    rigs = rigs_module()
+    descriptions = {}
+    for identifier, embodiment in zip(R1PRO_RIGS, (R1Pro, R1ProSharpa)):
+        profile = yaml.safe_load((PROJECT / "catalog/robots" / identifier / "devices/base/profile.yaml").read_text())
+        assert profile == rigs.r1pro_base(VELOCITY_TIMEOUT_S, embodiment.drive_effort), identifier
+        descriptions[identifier] = profile["description"]
+    gripper, dexterous = descriptions.values()
+    force, torque = R1ProSharpa.drive_effort
+    assert "no effort limit" in gripper and "climbs it" in gripper
+    assert "no effort limit" not in dexterous and "climbs" not in dexterous.replace("instead of climbing", "")
+    assert f"at most about {force:g} N ({torque:g} N m turning) on frictionless wheels" in dexterous
+    other = rigs.r1pro_base(VELOCITY_TIMEOUT_S, (320., 90.))["description"]  # the values come from the embodiment
+    assert "at most about 320 N (90 N m turning)" in other
+
+
 def test_native_gripper_commands_drive_their_fingers_through_mimics(tmp_path):
     """Native gripper commands (normalized 0..1 openings, RoboCasa's integrated -1..1) live
     on a virtual joint spanning open to closed; the URDF fingers mimic it."""

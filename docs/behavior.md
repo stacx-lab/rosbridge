@@ -161,13 +161,13 @@ Commands are the evaluator's action vector:
   OmniGibson writes 1000 N to the x, y and yaw joints, but the stop and play that
   sets the base's mass (the evaluator's, and `R1Pro.configure`) leaves PhysX at
   FLT_MAX, and in contact the drive pushed with 100 to 540 kN. Pushed against
-  furniture the base climbs it, tilts and can tip over, the evaluator's robot as
-  much as `behavior-dex`'s. So `base/odometry` carries the full pose and twist
-  (the height change, roll and pitch relative to the episode start, as an IMU
-  reads them, and their rates), and every world wait reply states a tilt of more
-  than 15 degrees from upright with its roll and pitch, after the end notice. On
-  open floor the base rights itself from up to about 45 degrees; propped against
-  furniture it stays tilted until it is driven out the way it came.
+  furniture the base climbs it, tilts and can tip over (`behavior-dex` limits its
+  drive: see its departures from the evaluator below). So `base/odometry` carries
+  the full pose and twist (the height change, roll and pitch relative to the
+  episode start, as an IMU reads them, and their rates), and every world wait reply
+  states a tilt of more than 15 degrees from upright with its roll and pitch, after
+  the end notice. On open floor the base rights itself from up to about 45 degrees;
+  propped against furniture it stays tilted until it is driven out the way it came.
 - `torso` (`torso_joint1..4`) and `left_arm`, `right_arm` (`<side>_arm_joint1..7`)
   take absolute joint positions in radians within the joint limits.
 - `<side>_gripper/target` is the smooth gripper command from -1 (closed) to 1
@@ -241,7 +241,8 @@ are `joint` devices without a tip link.
 SharpaWave hand from the G1's pinned `sharpa-urdf-usd-xml` source (one clone serves
 both). Everything else is the R1Pro's: its base, torso and arm controllers and
 commands, the 250 kg base, the head camera, and the wrist cameras' optics,
-resolution and sensor names (the wrist cameras move to the backs of the hands).
+resolution and sensor names (the wrist cameras move to the backs of the hands),
+but for the departures from the evaluator listed at the end of this section.
 
 - Each hand's flange sits on `<side>_arm_link7` at the gripper's mount face, the top
   of the gripper body: 29.5 mm behind link7's axis and 84 mm below its origin. The
@@ -279,6 +280,50 @@ so the heavier hands (1.3 kg each, the gripper and camera 0.5 kg) do not load th
 arms. The rig `behavior-dex/behavior-r1pro-sharpa` is the R1Pro rig with each hand a
 `joint` device without a tip link on its arm's flange (`<side>_arm_link7`), and each
 wrist camera mounted from that flange at its place on the back of the hand.
+
+### Departures from the evaluator
+
+`behavior` keeps the evaluator's physics and rules. `behavior-dex` departs from them
+where its robot needs it, each departure as a named embodiment attribute or a patch in
+`patches/behavior-dex/`, listed here; a run's simulator names it.
+
+- **Base drive** (`R1ProSharpa.drive_effort = (500., 150.)`, `r1pro.limit_base_drive`).
+  The evaluator's base drive has no effort limit (see R1Pro above), and its three
+  wheels, spheres fixed to the base, slide on the floor with PhysX's default friction
+  0.5: 1248 N at speed. So OmniGibson's own 1000 N limit, restored, would leave the base
+  at 0.45 of 0.75 m/s, and a limit that drives it (1600 N) still tilted it 23 degrees
+  sliding along a counter. `behavior-dex` binds a frictionless material to the wheel
+  spheres and limits the drive to 500 N along x and y and 150 N m about z. Both are
+  written to USD while `configure` has the simulator stopped (a material bound while it
+  plays does not reach PhysX), so PhysX reads them at every later play too. The x and y
+  limits act along the axes of the robot's spawn pose, so between them the base pushes
+  with up to 707 N. Measured on `behavior-dex` with the evaluator's drive and with this
+  one, in the same scenarios (peak tilt from upright; a command of 1.0 is full speed):
+
+  | Scenario | Evaluator's drive | `behavior-dex` |
+  |---|---|---|
+  | `putting_dishes_away_after_cleaning`: backing into the fridge at 0.7 | tips over (89°) | 0.0° |
+  | strafing into the counter at 0.7 | 29.6° | 0.2° |
+  | driving diagonally into the counter at 0.7 | tips over (91°) | 1.6° |
+  | pressing on and sliding along the counter at 1.0 | 45.9° | 1.3° |
+  | turning both ways with a corner pressed on the counter | 33.2° | 0.0° |
+  | a closed room door, from the side it does not open to | 43.0° | 0.0° |
+  | a 50 kg sofa, 3 s at 1.0 | tips over (85°) | pushed 1.26 m, 0.1° |
+  | `turning_on_radio`, `installing_a_modem` and `putting_dishes_away_after_cleaning` at seed 1: 111 drives in contact, from the start pose and into fixed furniture, doors and movable furniture, mostly at 1.0 | 83 over 10°, 42 left lying over 45° | at most 3.9° |
+  | doors pushed from the side they open to, 3 s (8 drives) | opened 0.17 to 1.75 rad, 4 over 45° | opened 0.16 to 1.48 rad, at most 2.3° |
+  | Full speed reached in | 0.07 s | 0.3 to 0.6 s |
+  | Coasting after a stop from full speed | 1 mm | 0.1 to 0.3 m |
+  | Pitch while accelerating on open floor | up to 10° | 0.0° |
+
+  Chairs, tables and the sofa move as far as before where nothing blocks them, but the
+  base no longer bulldozes furniture wedged against something, and a door that resists
+  can turn the base or push it aside before it swings far. At 700 N the same drives tilt
+  the base 9 to 21 degrees (pushing on the closed door, sliding along the counter); at
+  300 N the door opens to 0.39 rad and the base takes 0.7 s to reach full speed. A wheel
+  friction of 0.1 takes 300 N of the limit. Holding position at zero command, the base
+  drifts less than 3 mm in 10 s, and the arms pressing on a counter or a wall do not
+  move it. The evaluator's R1Pro (`behavior`) is unchanged: a drive into the same fridge
+  is identical bit for bit.
 
 ## Timing, cameras and recording
 

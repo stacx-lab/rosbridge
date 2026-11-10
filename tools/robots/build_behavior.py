@@ -33,22 +33,7 @@ def body(sim, source, wrist="wrist, looking along the fingers"):
         "world": rigs.world(
             "Simulation clock of the BEHAVIOR house. Furniture, objects and the activity's BDDL goal "
             "are not devices; the mobile robot is not localized in this frame."),
-        "base": rigs.locomotion(
-            "base",
-            "R1Pro holonomic wheeled base carrying the torso. Commands are the official BEHAVIOR "
-            "evaluator's normalized base action (vx, vy, wz in [-1, 1]), which its controller scales "
-            "to 0.75 m/s and 1 rad/s in the base frame. The base frame is base_link at the floor; "
-            "odometry starts at the episode-start pose and is on TF (base/odom -> base/base), so "
-            "frames resolve against the episode-start pose. The base starts upright, and odometry "
-            "carries its roll and pitch. Its drive has no effort limit and its roll and pitch are "
-            "free, so pushed against furniture the base climbs it, tilts and can tip over; every "
-            "world wait reply states a tilt of more than 15 degrees from upright. Approach furniture "
-            "slowly, and at the first tilt notice drive back out the way you came: on open floor "
-            "the base rights itself from up to about 45 degrees, but propped against furniture it "
-            "stays tilted until driven out.",
-            {axis: (-1., 1.) for axis in ("vx", "vy", "wz")},
-            {"parent": None, "translation_m": None, "rotation_xyzw": None},
-            timeout_s=VELOCITY_TIMEOUT_S, tf=True, attitude=True),
+        "base": rigs.r1pro_base(VELOCITY_TIMEOUT_S, sim.embodiment.drive_effort),
         "torso": rigs.joint(
             "torso",
             "R1Pro four-joint torso on the base. Geometry is the sibling torso.urdf with top "

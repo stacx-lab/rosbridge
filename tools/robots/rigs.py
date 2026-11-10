@@ -222,6 +222,38 @@ def locomotion(name, description, axes, base, *, timeout_s, units="normalized", 
                   frames={"base": base})
 
 
+R1PRO_BASE = (
+    "R1Pro holonomic wheeled base carrying the torso. Commands are the official BEHAVIOR evaluator's normalized base "
+    "action (vx, vy, wz in [-1, 1]), which its controller scales to 0.75 m/s and 1 rad/s in the base frame. The base "
+    "frame is base_link at the floor; odometry starts at the episode-start pose and is on TF (base/odom -> "
+    "base/base), so frames resolve against the episode-start pose. The base starts upright, and odometry carries its "
+    "roll and pitch. ")
+# How the base drives, by the embodiment's drive_effort (rosbridge_behavior.r1pro): the evaluator's, without a limit;
+# or limited on frictionless wheels, with the times and distances measured at (500 N, 150 N m).
+R1PRO_DRIVE = (
+    "Its drive has no effort limit and its roll and pitch are free, so pushed against furniture the base climbs it, "
+    "tilts and can tip over; every world wait reply states a tilt of more than 15 degrees from upright. Approach "
+    "furniture slowly, and at the first tilt notice drive back out the way you came: on open floor the base rights "
+    "itself from up to about 45 degrees, but propped against furniture it stays tilted until driven out.")
+R1PRO_LIMITED_DRIVE = (
+    "Its drive pushes with at most about {force:g} N ({torque:g} N m turning) on frictionless wheels. From rest it "
+    "reaches full speed in 0.3 to 0.6 s, and from full speed it coasts 0.1 to 0.3 m when it stops (about 1 cm from 0.3 "
+    "of it). Against furniture, walls and closed doors it stops instead of climbing them, and it still pushes chairs, "
+    "tables and sofas along; a door that resists can turn the base or push it aside before it swings far, so line up "
+    "square to it and push again. Odometry that makes no progress while a twist is commanded means the base is in "
+    "contact: back off the way it came. Its roll and pitch are free; every world wait reply states a tilt of more than "
+    "15 degrees from upright.")
+
+
+def r1pro_base(timeout_s, drive_effort=None):
+    """The R1Pro's base device (both R1Pro rigs): drive_effort is its embodiment's, None for the evaluator's drive."""
+    drive = R1PRO_DRIVE if drive_effort is None else R1PRO_LIMITED_DRIVE.format(force=drive_effort[0],
+                                                                                torque=drive_effort[1])
+    return locomotion("base", R1PRO_BASE + drive, {axis: (-1., 1.) for axis in ("vx", "vy", "wz")},
+                      {"parent": None, "translation_m": None, "rotation_xyzw": None}, timeout_s=timeout_s, tf=True,
+                      attitude=True)
+
+
 def camera(name, description, intrinsics, base, depth_range=None):
     width, height, *pinhole = intrinsics
     fx, fy, cx, cy = map(float, pinhole)
