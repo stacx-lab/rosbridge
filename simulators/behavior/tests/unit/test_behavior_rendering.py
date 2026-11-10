@@ -16,7 +16,11 @@ class FakeEpisode:
     def __init__(self, task, embodiment, max_steps):
         sensor = SimpleNamespace(image_height=2, image_width=2, get_obs=lambda: (
             {"rgb": np.zeros((2, 2, 4), np.uint8), "depth_linear": np.ones((2, 2))}, {}))
-        self.robot = SimpleNamespace(sensors={"head": sensor})
+        # A robot whose joint state the backend checks after each step (BehaviorSim._check_state): valid here.
+        self.robot = SimpleNamespace(sensors={"head": sensor}, dof_names_ordered=["joint"],
+                                     joints={"joint": SimpleNamespace(joint_type="RevoluteJoint")},
+                                     joint_lower_limits=[-1.], joint_upper_limits=[1.], is_holonomic_base=False,
+                                     get_joint_positions=lambda: np.zeros(1), get_joint_velocities=lambda: np.zeros(1))
         self.env = SimpleNamespace(task=SimpleNamespace(success=[False], get_goal_option_satisfaction=lambda env: []))
         self.max_steps = 100
 

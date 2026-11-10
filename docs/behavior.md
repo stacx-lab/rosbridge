@@ -55,6 +55,31 @@ average human demonstrations (`task.jsonl`), for example 3224 steps (107 s) for
 `turning_on_radio`. `behavior-dex` keeps the R1Pro's 30 Hz and horizon. The G1 steps at
 50 Hz instead of the evaluator's 30 Hz and gets the same time, 5374 steps. The world node's `max_steps` parameter overrides the horizon.
 
+The backend checks the robot's state after every step, every embodiment's, at two
+levels (`backend.py`: `JOINT_NOTICE`, `REVOLUTE_END`):
+
+- A joint more than 0.5 (rad, or m for a prismatic joint) beyond its range is
+  stated in every wait reply while it lasts, and the episode goes on. Pressed
+  against furniture the R1Pro's arm and torso joints stay within 3e-4 rad of their
+  limits and the Sharpa fingers within 0.18; of 1,234 measured falls, pushes and
+  drives from a reachable state, 9 went beyond 0.5.
+- The episode ends, with reason `invalid_state` and the `fault` in its record and
+  every later wait reply, on a joint or base value that is not finite (PhysX's
+  `Illegal BroadPhaseUpdateData`, then OmniGibson's assertion on the base's
+  orientation inside its step, is caught for this), a revolute joint more than 2 pi
+  beyond its range, or a prismatic joint more than its range width beyond its
+  range. Physics blow-ups read 21 to 1334 rad beyond, or not finite. If the robot
+  cannot be read, observations freeze at the last valid step. The base's virtual
+  joints, limited to ±1000 m or rad, are checked for finite values only.
+
+A fall does not end the episode. The largest excess measured without a diverged
+solver was 4.97 rad: a squatting R1Pro with Sharpa hands fell on its side with a wrist
+wedged under the base, which wound the forearm roll joint past its stop for 3 s before
+it unwound by itself. Every runaway measured read 10 rad or more beyond a range, or
+not finite. The blow-up that drove `torso_joint2` to 24 rad in a recorded episode did
+not reproduce from any reachable state: not in five burst sequences on a tipped robot,
+nor in 15 more.
+
 Episode records add the evaluator's partial credit, `q_score`, as its `TaskMetric`
 computes it: 1 on success, else the best grounded goal option's fraction of literals
 that hold at the end and did not when the instance loaded. Quantified goals ground to

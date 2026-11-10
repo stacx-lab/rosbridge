@@ -316,7 +316,8 @@ def test_the_end_cause_is_read_on_the_owner_thread_only():
     with ThreadPoolExecutor(max_workers=1) as pool:
         with pytest.raises(RuntimeError, match="owner thread"):
             pool.submit(runtime.end_cause).result()
-    assert END_CAUSES == {"success": GOAL, "max_steps": LIMIT, "episode_done": "the simulator ended it"}
+    assert END_CAUSES == {"success": GOAL, "max_steps": LIMIT, "episode_done": "the simulator ended it",
+                          "invalid_state": "the robot's state became invalid"}
 
 
 def test_realtime_runs_without_waits_and_wait_does_not_add_extra_ticks():
@@ -517,3 +518,105 @@ def test_a_backend_without_a_finite_attitude_states_no_tilt():
     assert reply.result().message == "ok" and runtime.tilt_deg() is None
     plain, _ = world()  # no base_attitude at all
     assert plain.tilt_deg() is None and plain.tilt_notice() is None
+
+
+FAULT = "torso_joint3 is at 24.036, 22.465 beyond its range [-1.833, 1.571]"
+
+
+class FaultToy(MeasuredToy):
+    """A backend that finds its robot's state invalid after step `at` (as BehaviorSim._check_state does), and whose
+    goal holds from step `goal`; a doubtful state before it is its state_notice."""
+    fault = state_notice = None
+    at, goal = 2, 10 ** 9
+
+    def __init__(self, max_steps=None, terminate_on_success=False):
+        self.terminate_on_success = terminate_on_success
+        super().__init__(max_steps)
+
+    def step(self, action):
+        super().step(action)
+        self.success = self.steps >= self.goal
+        self.done = self.done or (self.terminate_on_success and self.success)
+        if self.steps == self.at:
+            self.fault, self.state_notice, self.done = FAULT, None, True
+
+
+def faulting(at=2, goal=10 ** 9):
+    return type("FaultAt", (FaultToy,), {"at": at, "goal": goal})
+
+
+def test_an_invalid_robot_state_ends_the_episode_with_a_valid_record_and_says_why(tmp_path, monkeypatch):
+    monkeypatch.setenv('ROSBRIDGE_RUN_DIR', str(tmp_path))
+    runtime, _ = world(max_steps=10, backend=FaultToy)
+    pending = replied(runtime, 1.)
+    finish(runtime)
+    end = f"the episode ended because the robot's state became invalid ({FAULT})"
+    assert pending.result().message == f"episode ended during wait; {end}" and not pending.result().success
+    assert pending.result().time_s == pytest.approx(.2)
+    later, zero = replied(runtime, .5), replied(runtime, 0.)
+    runtime.drain()
+    assert later.result().message == f"episode is done; {end}" and zero.result().message == f"ok; {end}"
+    runtime.close()  # stopping the run afterwards adds no second record
+    outcome, = records(tmp_path)
+    assert (outcome['reason'], outcome['step'], outcome['done'], outcome['success']) == ('invalid_state', 2, True, False)
+    assert outcome['fault'] == FAULT
+    assert outcome['progress'] == .5 and 'error' not in outcome  # measured: a valid failure, not a crashed world
+
+
+@pytest.mark.parametrize("at, goal, stop, limit, reason, cause", [
+    (3, 3, False, 10, "success", "invalid"),  # the goal holds as the robot fails: the record is the evaluator's
+    (3, 3, True, 10, "success", GOAL),  # and a run stopping on success ended on it
+    (3, 99, False, 3, "invalid_state", "invalid"),  # the robot fails on the time limit's step
+    (2, 99, True, 10, "invalid_state", "invalid"),
+])
+def test_what_ended_the_episode_when_a_fault_comes_with_the_goal_or_the_limit(tmp_path, monkeypatch, at, goal, stop,
+                                                                              limit, reason, cause):
+    monkeypatch.setenv('ROSBRIDGE_RUN_DIR', str(tmp_path))
+    runtime, _ = world(max_steps=limit, backend=faulting(at, goal), stop_on_success=stop)
+    pending = replied(runtime, 5.)
+    finish(runtime)
+    outcome, = records(tmp_path)
+    assert (outcome['reason'], outcome['fault']) == (reason, FAULT)
+    expected = f"the robot's state became invalid ({FAULT})" if cause == "invalid" else cause
+    assert pending.result().message == f"episode ended during wait; the episode ended because {expected}"
+
+
+def test_the_end_is_recorded_before_the_last_observation_is_published(tmp_path, monkeypatch):
+    monkeypatch.setenv('ROSBRIDGE_RUN_DIR', str(tmp_path))
+    sim = FaultToy(10)
+
+    def publish():
+        if sim.done:
+            raise RuntimeError("the faulted robot does not render")
+    runtime = WorldRuntime(sim, "stepped", publish)
+    wait(runtime, 1.)
+    runtime.drain()
+    runtime.tick()
+    with pytest.raises(RuntimeError, match="does not render"):
+        runtime.tick()
+    runtime.close(error="RuntimeError: the faulted robot does not render")
+    outcome, = records(tmp_path)
+    assert outcome['reason'] == 'invalid_state' and 'error' not in outcome
+
+
+def test_a_backends_notice_of_its_robots_state_is_in_every_reply_while_it_lasts():
+    """After the first words, the end notice and the tilt, before the refusals; the episode goes on."""
+    class Doubtful(TiltingToy):
+        state_notice = None
+    runtime, _ = world(max_steps=3, backend=Doubtful)
+    runtime.sim.state_notice = "left_arm_joint5 is at 3.144, 0.788 beyond its range [-2.356, 2.356]"
+    first = replied(runtime, .1)
+    finish(runtime)
+    assert first.result().message == f"ok; {runtime.sim.state_notice}" and not runtime.sim.done
+    runtime.sim.tilt(0., 80.)
+    pending = replied(runtime, 1.)
+    refuse(runtime, "/arm/joint_target", "trajectory start is in the past")
+    finish(runtime)
+    assert pending.result().message == (
+        f"episode ended during wait; {notice(LIMIT)}; the base is tilted 80.0 degrees from upright (roll 0.0, pitch "
+        f"80.0); {runtime.sim.state_notice}; refused since the previous wait reply: /arm/joint_target: trajectory "
+        "start is in the past")
+    runtime.sim.state_notice, runtime.sim.base_attitude = None, None
+    plain = replied(runtime, 0.)
+    runtime.drain()
+    assert plain.result().message == f"ok; {notice(LIMIT)}"

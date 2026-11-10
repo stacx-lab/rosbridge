@@ -18,9 +18,10 @@ REFUSALS_LISTED = 5
 # What a wait reply at or after the end says ended the episode, by the termination the world applied
 # (WorldRuntime._termination). Only "success" is an evaluator result: the first success of a run launched to stop on
 # success, which discloses it by ending before its time limit, as its operator chose. The others are the world's own
-# conditions: at the step limit the cause is the limit whether or not the goal holds.
+# conditions: at the step limit the cause is the limit whether or not the goal holds. "invalid_state" is a backend's
+# fault (its robot's state became invalid), stated with the backend's own words.
 END_CAUSES = {"success": "the goal was reached", "max_steps": "the time limit was reached",
-              "episode_done": "the simulator ended it"}
+              "episode_done": "the simulator ended it", "invalid_state": "the robot's state became invalid"}
 # Every wait reply states a tilting base's tilt beyond this many degrees from upright (the backend's base_attitude),
 # after the end notice. Measured natively on the R1Pro (putting_dishes_away_after_cleaning, seed 0): on open
 # floor its base stays within 4.1 degrees in full-speed drives; drives square into furniture tilt it 0.6 to 9.6, the
@@ -71,12 +72,12 @@ class WorldRuntime:
         self.refused[key] = self.refused.get(key, 0) + 1
 
     def reply(self, result):
-        """A wait's result with the base's tilt, when it is large (tilt_notice), and the commands refused since the
-        previous reply added to its message, after its first words and the end notice: a client publishing commands
-        on topics learns of a refusal no other way, and a planar view of the base never showed it tipped. Owner
-        thread."""
+        """A wait's result with the base's tilt, when it is large (tilt_notice), a backend's notice of its robot's
+        state (state_notice: BEHAVIOR's joints far beyond their ranges) and the commands refused since the previous
+        reply added to its message, after its first words and the end notice: a client publishing commands on topics
+        learns of a refusal no other way, and a planar view of the base never showed it tipped. Owner thread."""
         self._assert_owner()
-        notices = [notice for notice in (self.tilt_notice(),) if notice]
+        notices = [notice for notice in (self.tilt_notice(), getattr(self.sim, "state_notice", None)) if notice]
         if self.refused:
             refused, self.refused = list(self.refused.items()), {}
             named = [f"{endpoint}: {reason}" + (f" ({count} commands)" if count > 1 else "")
@@ -135,38 +136,54 @@ class WorldRuntime:
         self.sim.step(self.commands.action(self.time_s + self.sim.period))
         self.pacer.advanced()
         self.time_s, self.steps = self.sim.time_s, self.sim.steps
-        self.publish()
         if self.sim.done:
+            # Recorded before the last observation is published, so that a failure to publish it cannot lose the
+            # record (an invalid robot state ends an episode with a robot that may not render).
             self.commands.close()
             self._record_terminal()
+        self.publish()
         # Publications precede completion, including a successful terminal tick.
         self.waits.settle(self.time_s, self.steps, self.end_cause())
         return True
 
+    def _fault(self):
+        """Why the backend found its robot's state invalid, which ended the episode (a backend's fault); else None."""
+        return getattr(self.sim, "fault", None) or None
+
     def _termination(self):
-        """What ended the episode: the first success of a run launched to stop on success, else the step limit, else
-        the backend itself. Not the record's reason, which says "success" whenever the goal holds at the end, also at
-        the step limit of a run that goes on after success: that is the evaluator's result."""
+        """What ended the episode: the first success of a run launched to stop on success, else the backend's fault,
+        else the step limit, else the backend itself. Not the record's reason, which says "success" whenever the goal
+        holds at the end, also at the step limit of a run that goes on after success: that is the evaluator's
+        result."""
         limit = self.sim.max_steps
         if self.stop_on_success and self.sim.success:
             return "success"
+        if self._fault():
+            return "invalid_state"
         return "max_steps" if limit and self.steps >= limit else "episode_done"
 
     def end_cause(self):
-        """None while the episode runs. Once it has ended, what ended it as a wait reply states it (END_CAUSES), or
-        True for an end stated without a cause. Fixed at the end, as the record is. Owner thread."""
+        """None while the episode runs. Once it has ended, what ended it as a wait reply states it (END_CAUSES, with
+        the backend's fault), or True for an end stated without a cause. Fixed at the end, as the record is. Owner
+        thread."""
         self._assert_owner()
         if self._ended is None and self.sim.done:
-            self._ended = END_CAUSES.get(self._termination(), True)
+            termination = self._termination()
+            cause = END_CAUSES.get(termination, True)
+            self._ended = f"{cause} ({self._fault()})" if termination == "invalid_state" else cause
         return self._ended
 
     def _outcome(self, reason=None):
         limit = self.sim.max_steps
-        return {"task": self.sim.task, "seed": self.sim.seed,
-                "step": self.steps, "time_s": self.time_s, "reward": self.sim.reward,
-                "success": bool(self.sim.success), "done": bool(self.sim.done),
-                "reason": reason or ("success" if self.sim.success else "max_steps"
-                           if limit and self.steps >= limit else "episode_done")}
+        result = {"task": self.sim.task, "seed": self.sim.seed,
+                  "step": self.steps, "time_s": self.time_s, "reward": self.sim.reward,
+                  "success": bool(self.sim.success), "done": bool(self.sim.done),
+                  "reason": reason or ("success" if self.sim.success else "invalid_state" if self._fault()
+                             else "max_steps" if limit and self.steps >= limit else "episode_done")}
+        if self._fault():
+            # A valid end of the episode (its record keeps the backend's measures), not an error that stopped the world.
+            result["fault"] = str(self._fault())
+        return result
 
     def _record_terminal(self, reason=None, *, error=None):
         if self._judged:

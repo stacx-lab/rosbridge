@@ -24,10 +24,13 @@ operations:
       episode ended" (a wait whose last step was the end, or a zero wait), "episode
       ended during wait; the episode ended" (a wait the end cut short) or "episode
       is done; the episode ended" (a later wait), then "because the time limit was
-      reached" or "because the simulator ended it" when that ended it, or "because
-      the goal was reached" when a run launched to stop on success ended at its first
-      success, the one benchmark result a reply exposes; time_s is the world time
-      of the end. The reply''s message also names the device commands refused since
+      reached", "because the simulator ended it" or "because the robot''s state became
+      invalid" with what was invalid, when that ended it, or "because the goal was
+      reached" when a run launched to stop on success ended at its first success,
+      the one benchmark result a reply exposes; time_s is the world time of the end.
+      A reply also states the robot''s condition where the simulator reports it: a
+      base tilted more than 15 degrees from upright, a joint more than 0.5 beyond
+      its range. The reply''s message also names the device commands refused since
       the previous reply, with their reasons.'
     transport: service
     direction: input

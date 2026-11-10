@@ -4,7 +4,9 @@ OmniGibson needs Isaac Sim 5.1 on Python 3.11, so the world node proxies this cl
 rosbridge.core.worker. The episode follows the official evaluator (environment.py); an
 embodiment maps rosbridge channels to native actions (r1pro.py, r1pro_sharpa.py, g1_sharpa.py).
 """
+import math
 import secrets
+import sys
 from typing import NamedTuple
 
 import numpy as np
@@ -34,6 +36,24 @@ OVERVIEWS = {"front_left": np.pi / 4, "rear_left": 3 * np.pi / 4}
 FOLLOW_S = 1.  # the overviews turn after the robot this slowly, so gait sway does not shake them
 FOLLOW_GAP_S = .25  # after a longer pause in the overviews, as after a cut, they face the heading
 WALL_MARGIN = .2  # an overview stays this far (m) in front of what it would otherwise stand behind
+# The robot's state, checked after every step (BehaviorSim._check_state). The numbers rest on 1,460 native scenarios
+# with both R1Pro embodiments in two scenes: releases from rest tilted 30 to 150 degrees in 8 directions and 7
+# postures, drives into furniture until it tips, bursts and joint targets on a lying robot, and pushes.
+# - Notice: a joint more than JOINT_NOTICE beyond its range (rad, or m for a prismatic joint) is stated in every wait
+#   reply while it lasts; the episode goes on. Pressed against a counter the R1Pro's arm and torso joints stay within
+#   3e-4 rad of their limits and the Sharpa fingers within 0.18; of the 1,234 scenarios that started from a
+#   reachable state, 9 went beyond 0.5.
+# - End (reason invalid_state): a joint or base value that is not finite, at once; a revolute joint more than
+#   REVOLUTE_END beyond its range; a prismatic joint more than its own range width beyond its range. A fall is not a
+#   failed state and must not end the episode: the largest excess without divergence was 4.97 rad (a squatting robot
+#   fell on its side with a wrist wedged under the 250 kg base, which wound the 18 N m forearm roll joint past its
+#   stop for 3 s; it unwound by itself). Every measured runaway read 10 rad or more beyond, or not finite (15 of 15;
+#   21 to 1334 rad in recorded agent episodes), so 2 pi ends none of the reachable scenarios and all the runaways.
+# - The base's six virtual joints (x, y and z in m, rx, ry and rz in rad, each limited to [-1000, 1000]) are checked
+#   for finite values only: those limits bound no motion of the robot (x and y stayed within 7.3 m, rx and ry within
+#   6.3 rad, in falls and long drives), and only a state that is already not finite passes them.
+JOINT_NOTICE = .5
+REVOLUTE_END = 2 * math.pi
 
 
 def inside(offset, contains, step):
@@ -53,6 +73,18 @@ class Overview(NamedTuple):
     distance: float
     eye: float
     target: float
+
+
+def checked_ranges(robot):
+    """What BehaviorSim._check_state checks the robot's joints against: their names (DOF order), lower and upper
+    limits, how far beyond its range each may go before the episode ends (REVOLUTE_END, or a prismatic joint's range
+    width), and whether its range is checked at all (not for a holonomic base's virtual joints)."""
+    names = list(robot.dof_names_ordered)
+    lower, upper = values(robot.joint_lower_limits), values(robot.joint_upper_limits)
+    prismatic = np.array([robot.joints[name].joint_type == "PrismaticJoint" for name in names])
+    virtual = set(values(robot.base_idx).astype(int).tolist()) if robot.is_holonomic_base else set()
+    ranged = np.array([index not in virtual for index in range(len(names))])
+    return names, lower, upper, np.where(prismatic, upper - lower, REVOLUTE_END), ranged
 
 
 def pose_matrix(position, quaternion_xyzw):
@@ -78,6 +110,11 @@ class BehaviorSim:
         # The base's attitude after the latest reset or step (Episode.attitude) for an embodiment whose base tilts,
         # else None; the world node publishes it with the odometry and states a large tilt in its wait replies.
         self.base_attitude = None
+        # The robot's state after the latest step (_check_state): fault, why it became invalid, which ended the
+        # episode; state_notice, a joint beyond its range by more than JOINT_NOTICE while it is valid. When the state
+        # cannot even be read (frozen), observations are the last valid step's: its state and frames.
+        self.fault = self.state_notice = None
+        self._frozen, self._observed, self._held = False, None, {}
 
     @property
     def cameras(self):
@@ -110,6 +147,7 @@ class BehaviorSim:
             self.episode = Episode(native, self.embodiment, self.requested_max_steps)
             self.layout = self.embodiment.layout(self.episode.robot)
             self.max_steps = self.episode.max_steps
+            self._ranges = checked_ranges(self.episode.robot)
         self.done = True
         self.episode.load(seed)
         # The evaluator's TaskMetric takes the goal options' satisfaction here, once the instance has loaded and
@@ -118,6 +156,8 @@ class BehaviorSim:
         self.embodiment.reset(self.episode)
         self.episode.origin = self.episode.base_pose()
         self.seed, self.steps, self.done = seed, 0, False
+        self.fault = self.state_notice = None
+        self._frozen, self._observed, self._held = False, None, {}
         self._observe()
         self.success = bool(self.episode.env.task.success[0])
         self.reward, self._frames, self._spectator_frames = float(self.success), {}, {}
@@ -141,20 +181,81 @@ class BehaviorSim:
         return self.steps * self.period
 
     def state(self):
-        return self.embodiment.state(self.episode)
+        if self._frozen and self._observed is not None:
+            return self._observed  # the robot's state is unreadable since the fault: the last valid one
+        self._observed = self.embodiment.state(self.episode)
+        return self._observed
 
     def step(self, action):
         if self.done:
             raise RuntimeError("episode is done")
-        self.success = self.episode.step(self.embodiment.action(self.episode, np.asarray(action, float)))
-        self._observe()
+        try:
+            self.success = self.episode.step(self.embodiment.action(self.episode, np.asarray(action, float)))
+        except Exception as error:
+            # A physics failure can raise inside OmniGibson's step (its assertion on the base's NaN orientation, after
+            # PhysX's "Illegal BroadPhaseUpdateData"): with the robot's state invalid, that ends the episode, not the
+            # world. Any other error is raised as before.
+            try:
+                fault = self._check_state()
+            except Exception:
+                fault = None
+            if fault is None:
+                raise
+            self._fail(f"{fault}; the physics step failed ({type(error).__name__})")
+        else:
+            fault = self._check_state()
+            if fault is not None:
+                self._fail(fault)
+        if not self._frozen:
+            self._observe()
         self.steps, self._frames, self._spectator_frames, self._fresh = self.steps + 1, {}, {}, False
         self.reward = float(self.success)
-        self.done = self.steps >= self.max_steps or (self.terminate_on_success and self.success)
-        if self.evaluator_rendering and self._spectators:
+        self.done = (self.steps >= self.max_steps or (self.terminate_on_success and self.success)
+                     or self.fault is not None)
+        if self.evaluator_rendering and self._spectators and not self._frozen:
             # While recording, render every step as the evaluator does, so spectator captures
             # keep the renderer's history.
             self._render()
+
+    def _check_state(self):
+        """The robot's state after a step: why it is invalid, which ends the episode, or None. Invalid is a joint
+        position or velocity or the base's pose that is not finite (observations then freeze), a revolute joint more
+        than REVOLUTE_END or a prismatic one more than its range width beyond its range. A valid state keeps
+        state_notice, the joints more than JOINT_NOTICE beyond their ranges, else None."""
+        names, lower, upper, end, ranged = self._ranges
+        robot = self.episode.robot
+        q, dq = values(robot.get_joint_positions()), values(robot.get_joint_velocities())
+        self.state_notice = None
+        broken = [names[i] for i in np.flatnonzero(~(np.isfinite(q) & np.isfinite(dq)))]
+        if broken:
+            self._frozen = True
+            return f"the state of {', '.join(broken[:3])}{' and others' if len(broken) > 3 else ''} is not finite"
+        try:
+            position, frame = self.episode.base_pose()
+            finite = bool(np.isfinite(position).all() and np.isfinite(frame).all())
+        except AssertionError:  # OmniGibson asserts that the base's orientation is a unit quaternion
+            finite = False
+        if not finite:
+            self._frozen = True
+            return "the base's pose is not finite"
+        excess = np.where(ranged, np.maximum(lower - q, q - upper), -np.inf)
+
+        def beyond(i):
+            return f"{names[i]} is at {q[i]:.3f}, {excess[i]:.3f} beyond its range [{lower[i]:.3f}, {upper[i]:.3f}]"
+        ended = np.flatnonzero(excess > end)
+        if ended.size:
+            return beyond(ended[np.argmax(excess[ended] - end[ended])])
+        noticed = np.flatnonzero(excess > JOINT_NOTICE)
+        if noticed.size:
+            self.state_notice = beyond(noticed[np.argmax(excess[noticed])]) + (
+                f" ({noticed.size} joints are more than {JOINT_NOTICE:g} beyond their ranges)" if noticed.size > 1
+                else "")
+        return None
+
+    def _fail(self, fault):
+        self.fault = fault
+        print(f"episode ended at step {self.steps + 1}: the robot's state became invalid: {fault}", file=sys.stderr,
+              flush=True)
 
     def _observe(self):
         if getattr(self.embodiment, "attitude", False):
@@ -205,6 +306,11 @@ class BehaviorSim:
 
     def _frame(self, camera):
         """RGB and z-depth of the current state; one render serves every camera until the next step."""
+        if self._frozen:
+            # Nothing renders a robot whose state is unreadable: the camera's last frame, else a blank one.
+            sensor = self._sensor(camera)
+            shape = (sensor.image_height, sensor.image_width)
+            return self._held.get(camera) or (np.zeros((*shape, 3), np.uint8), np.zeros(shape, np.float32))
         if camera not in self._frames:
             sensor = self._sensor(camera)
             if not self._frames and not self._fresh:
@@ -215,7 +321,8 @@ class BehaviorSim:
             shape = (sensor.image_height, sensor.image_width)
             if rgb.dtype != np.uint8 or rgb.shape[:2] != shape or values(depth).shape != shape:
                 raise RuntimeError(f"{camera} produced no valid RGB-D frame")
-            self._frames[camera] = (np.ascontiguousarray(rgb[..., :3]), values(depth).astype(np.float32))
+            self._frames[camera] = self._held[camera] = (np.ascontiguousarray(rgb[..., :3]),
+                                                         values(depth).astype(np.float32))
         return self._frames[camera]
 
     def _render(self):
@@ -322,16 +429,23 @@ class BehaviorSim:
                 transform.Set(Gf.Matrix4d(matrix.T.tolist()))
 
     def render_spectator(self, name):
+        if self._frozen:
+            view = self._spectators[name][0]
+            held = self._held.get(("spectator", name))
+            return held if held is not None else np.zeros((view.height, view.width, 3), np.uint8)
         if not self.evaluator_rendering:
             self._place([name])
             self._render()
-            return np.ascontiguousarray(np.asarray(self._spectators[name][3].get_data())[..., :3])
+            frame = np.ascontiguousarray(np.asarray(self._spectators[name][3].get_data())[..., :3])
+            self._held[("spectator", name)] = frame
+            return frame
         if name not in self._spectator_frames:
             # The first view of a sample places every view, and one render serves them all.
             self._place(self._spectators)
             self._render()
             self._spectator_frames = {view: np.ascontiguousarray(np.asarray(rgb.get_data())[..., :3])
                                       for view, (_, _, _, rgb) in self._spectators.items()}
+            self._held.update({("spectator", view): frame for view, frame in self._spectator_frames.items()})
         return self._spectator_frames[name]
 
     # Diagnostics for tests --------------------------------------------------------------

@@ -93,8 +93,12 @@ def test_every_world_profile_carries_the_generators_wait_operation():
     """tools/robots/rigs.py writes every rig's world device; the catalog carries its wait text and the closing sentence
     of its description (LIBERO's world, which no builder writes, included), so rebuilding a rig cannot bring back an
     older one."""
+    from rosbridge.runtime.world import TILTED_DEG
+    from rosbridge_behavior.backend import JOINT_NOTICE
     rigs = rigs_module()
     wait = rigs.world("")["operations"]["wait"]
+    assert f"a base tilted more than {TILTED_DEG:g} degrees from upright" in wait["description"]
+    assert f"a joint more than {JOINT_NOTICE:g} beyond its range" in wait["description"]
     paths = sorted(PROJECT.glob("catalog/robots/*/*/devices/world/profile.yaml"))
     assert len({path.resolve() for path in paths}) == 8
     for path in paths:

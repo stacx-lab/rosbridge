@@ -106,16 +106,21 @@ that tick and fails an unfinished one. At or after the end, a valid wait's reply
 says that the episode ended, after its first words: `ok; the episode ended` (the
 wait whose last step was the terminal one, and a zero wait later), `episode ended
 during wait; the episode ended`, and for a later positive wait `episode is done; the
-episode ended`. It adds `because the time limit was reached` or `because the
-simulator ended it` when that is what ended the episode: the world's own
-termination, not the evaluator's result, so at the time limit it says so whether or
-not the goal holds. A run launched with `--stop-on-success` ends at its first
-success, as the evaluator's termination does, and says `because the goal was
-reached`: it discloses that by ending before its time limit, as its operator chose.
-The reply's `time_s` is the world time of the end. A stopped run's pending wait
-answers `runtime stopped`, with no notice. A wait admitted before a client times out
-stays pending until it completes or `world/stop` cancels it; abrupt process loss may
-prevent a response, so use wall timeouts.
+episode ended`. It adds `because the time limit was reached`, `because the simulator
+ended it` or `because the robot's state became invalid (<what>)` when that is what
+ended the episode: the world's own termination, not the evaluator's result, so at
+the time limit it says so whether or not the goal holds. A run launched with
+`--stop-on-success` ends at its first success, as the evaluator's termination does,
+and says `because the goal was reached`: it discloses that by ending before its time
+limit, as its operator chose. The reply's `time_s` is the world time of the end. A
+backend that checks its robot's state after every step (BEHAVIOR) ends the episode
+on an invalid one: its record has reason `invalid_state`, the `fault` and the
+backend's measures, a valid failure, not a crashed world. Every reply also states
+the robot's condition where the backend reports it, after the end notice: a tilting
+base's tilt beyond 15 degrees, a joint far beyond its range. A stopped run's pending
+wait answers `runtime stopped`, with no notice. A wait admitted before a client
+times out stays pending until it completes or `world/stop` cancels it; abrupt
+process loss may prevent a response, so use wall timeouts.
 
 ```python
 from rosbridge.clients import WorldClockClient

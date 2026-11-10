@@ -77,6 +77,14 @@ class SimulatorBackend(Protocol):
     (m/s), wx and wy (rad/s) in the base's frame, and tilt (rad, its z axis from
     vertical). The world publishes it with the odometry and states a large tilt
     in its wait replies.
+
+    Optionally, a backend that checks its robot's state after each step sets
+    fault, a short text of why that state became invalid (a physics failure),
+    and done: the episode ends there with reason "invalid_state", and its record
+    carries the fault and the backend's measures. Its observations must then
+    still answer (the last valid ones, if the robot cannot be read). While the
+    state is valid but doubtful (BEHAVIOR: a joint far beyond its range), it may
+    keep state_notice, a short text every wait reply states.
     """
 
     default_task: str

@@ -16,9 +16,11 @@ from multiprocessing.connection import Connection
 import numpy as np
 
 # Attributes the world reads from a backend. Static ones change only on reset. Optional ones a backend may lack:
-# base_attitude (a tilting base's attitude, published with its odometry).
+# base_attitude (a tilting base's attitude, published with its odometry), fault (why the robot's state became
+# invalid, which ended the episode) and state_notice (a doubtful robot state, stated in every wait reply).
 STATIC = ("default_task", "layout", "devices", "cameras", "period", "spectators")
-DYNAMIC = ("time_s", "task", "seed", "steps", "max_steps", "done", "reward", "success", "base_attitude")
+DYNAMIC = ("time_s", "task", "seed", "steps", "max_steps", "done", "reward", "success", "base_attitude", "fault",
+           "state_notice")
 # Exceptions whose type the world interprets; others become RuntimeError.
 ERRORS = {error.__name__: error for error in (ValueError, KeyError, RuntimeError, NotImplementedError)}
 
