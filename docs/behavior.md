@@ -10,8 +10,9 @@ Isaac Sim 5.1, as three simulators that share one adapter
 | `behavior-g1` | Unitree G1 (29 DoF) with two SharpaWave hands, walking on GR00T WholeBodyControl | `base`, `torso`, `left_arm`, `right_arm`, `left_hand`, `right_hand`, RGB-D `head_camera` |
 | `behavior-dex` | BEHAVIOR's R1Pro with two SharpaWave hands in place of its grippers | `base`, `torso`, `left_arm`, `right_arm`, `left_hand`, `right_hand`, RGB-D `head_camera`, `left_camera`, `right_camera` |
 
-The activity, scene, task instance and judging are the same in all three; only the
-embodiment differs. Upstream is pinned to
+The activity, scene and task instance are the same in all three; only the embodiment
+differs, and with it, for `behavior-dex`, one of the rules OmniGibson judges by
+([below](#rules-behavior-dex-changes)). Upstream is pinned to
 `a8247a8cc1633fe1ca0cc66aa07243d46c64f155`, as RoboEnv pins it. See the
 [design and CLI guide](README.md) for shared lifecycle and timing contracts.
 
@@ -64,6 +65,42 @@ distinct literal once (`patches/behavior/0003-goal-option-literals.patch`).
 
 Isaac hosts one environment per process: a worker serves the one activity and
 instance it was launched with.
+
+### Rules `behavior-dex` changes
+
+`behavior` and `behavior-g1` judge by OmniGibson's rules as upstream has them.
+`behavior-dex` applies one more source patch, listed only in
+`patches/behavior-dex/series`, to a rule that a robot meets differently when it holds
+a tool by its fingers alone. A prepared runtime names the patches it was generated
+with in `.runtime/<simulator>/.prepared.json`.
+
+| Patch | OmniGibson (`behavior`, `behavior-g1`) | `behavior-dex` |
+|---|---|---|
+| `0001-slicer-blade.patch` | A sliceable object is halved, and a half diced, when it touches any part of any slicer while any slicer of the scene is active. A slicer turns inactive the step after it touched whole food, and active again 2 s after it last touched whole food. | An object is cut by a slicer that is active, touches it and reaches it with its blade: the box of the slicer's meta link, which BEHAVIOR's asset guide defines as the cutting volume, where that link is at the step, 5 mm larger on every side. The slicer that cut turns inactive, and active again 2 s after it last touched whole or cut food. A slicer without such a meta link cuts with its whole body. |
+
+The slicer rule decides the nine activities that have a slicer and food it cuts:
+`chopping_wood`, `halve_an_egg`, `cook_brussels_sprouts`, `chop_an_onion`,
+`slicing_vegetables`, `canning_food`, `cook_cabbage`, `make_pizza` and
+`setting_the_table`. Measured with the axe, a carving knife and a table knife on a log,
+an egg and a cupcake, OmniGibson's rule against the patch:
+
+- The handle lowered onto the food cuts it at the first contact; with the patch it
+  does not, and the slicer stays active. `make_pizza`'s recipe takes the dough and a
+  pepperoni whole, and `setting_the_table` puts a knife beside each cupcake: there
+  any contact of a knife spoils the goal.
+- A knife that has just cut and is inactive cuts the next cupcake it touches while the
+  other knife of the scene is active; with the patch it does not, and the other
+  knife's blade does.
+- A knife left lying on the egg halves it cut dices them, at once if another slicer of
+  the scene is active and after its 2 s if not; with the patch it stays inactive for
+  as long as it lies there, and is active 2 s after it is lifted off.
+- A blade cuts at the first contact at any speed, 0.02 to 1 m/s, under both rules, and
+  with the patch also in a knife that a Sharpa hand holds. There is no speed
+  condition: a blade laid on food cuts it, and so does food pushed against an active
+  blade at rest.
+
+So dicing takes a cut, 2 s with the slicer clear of every whole and cut piece, and
+the blade on each half.
 
 ## Native worker
 
@@ -305,7 +342,7 @@ spectator sample renders once for every recorded view.
 ```bash
 pixi run -e behavior-native smoke        # R1Pro: controls, cameras, reset, rig geometry
 pixi run -e behavior-g1-native smoke     # G1: standing, walking, turning, arms, hands, rig geometry
-pixi run -e behavior-dex-native smoke    # R1Pro with hands: cameras, mount, hands, rig geometry
+pixi run -e behavior-dex-native smoke    # R1Pro with hands: cameras, mount, hands, rig geometry, slicer rule
 pixi run -e behavior test-ros
 pixi run -e behavior-g1 test-ros
 pixi run -e behavior-dex test-ros

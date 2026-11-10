@@ -32,8 +32,13 @@ def test_manifest_shares_the_adapter_and_the_g1s_sharpa_source():
     patches = [line for line in series.read_text().splitlines() if line and not line.startswith("#")]
     shared = [line for line in (PROJECT / "patches/behavior/series").read_text().splitlines()
               if line and not line.startswith("#")]
-    assert patches == [f"../behavior/{patch}" for patch in shared]  # all of BEHAVIOR's first
+    rules = ["0001-slicer-blade.patch"]
+    assert patches == [f"../behavior/{patch}" for patch in shared] + rules  # all of BEHAVIOR's first
     assert all((series.parent / patch).is_file() for patch in patches)
+    # It changes rules OmniGibson judges by, for this embodiment alone: the evaluator's R1Pro keeps OmniGibson's
+    for other in ("behavior", "behavior-g1"):
+        assert not any(rule in (PROJECT / "patches" / other / "series").read_text() for rule in rules)
+    assert sorted(path.name for path in series.parent.glob("*.patch")) == rules
 
 
 def write(path, text):
