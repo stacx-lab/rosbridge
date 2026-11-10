@@ -1,5 +1,5 @@
 diff --git a/OmniGibson/omnigibson/systems/macro_particle_system.py b/OmniGibson/omnigibson/systems/macro_particle_system.py
-index b2ed750..f0baf42 100644
+index b2ed750..9e4f937 100644
 --- a/OmniGibson/omnigibson/systems/macro_particle_system.py
 +++ b/OmniGibson/omnigibson/systems/macro_particle_system.py
 @@ -1,3 +1,5 @@
@@ -30,18 +30,20 @@ index b2ed750..f0baf42 100644
  
      def reset(self):
          # Call super first
-@@ -255,7 +261,9 @@ class MacroParticleSystem(BaseSystem):
+@@ -255,7 +261,11 @@ class MacroParticleSystem(BaseSystem):
      def remove_particle_by_name(self, name):
          assert name in self.particles, f"Got invalid name for particle to remove {name}"
          particle = self.particles.pop(name)
 -        og.sim.remove_prim(particle)
-+        # Not og.sim.remove_prim, which updates every physics handle: a visual particle is in no physics view, and
-+        # MacroPhysicalParticleSystem updates the handles itself
-+        particle.remove()
++        # og.sim.remove_prim in two halves, so that the handle update can be batched (_updating_handles_once).
++        # Removing any prim, a visual particle's too, drops the handle of every articulation view
++        with suppress_omni_log(channels=["omni.physx.tensors.plugin"]):
++            particle.remove()
++        self._handles_changed()
  
      def remove_particles(
          self,
-@@ -263,8 +271,38 @@ class MacroParticleSystem(BaseSystem):
+@@ -263,8 +273,38 @@ class MacroParticleSystem(BaseSystem):
          **kwargs,
      ):
          particle_names = tuple(self.particles.keys()) if self.particles else []
@@ -82,7 +84,7 @@ index b2ed750..f0baf42 100644
  
      def generate_particles(
          self,
-@@ -285,8 +323,9 @@ class MacroParticleSystem(BaseSystem):
+@@ -285,8 +325,9 @@ class MacroParticleSystem(BaseSystem):
          orientations = th.cat([current_orientations, orientations], dim=0)
  
          # Add particles
@@ -94,20 +96,40 @@ index b2ed750..f0baf42 100644
  
          # Set the tfs
          self.set_particles_position_orientation(positions=positions, orientations=orientations)
-@@ -1284,18 +1323,19 @@ class MacroPhysicalParticleSystem(MacroParticleSystem, PhysicalParticleSystem):
+@@ -478,6 +519,10 @@ class MacroVisualParticleSystem(MacroParticleSystem, VisualParticleSystem):
+         self._particles_local_mat = dict()
+         self._cloth_face_ids = dict()
+ 
++    def remove_all_group_particles(self, group):
++        with self._updating_handles_once():
++            super().remove_all_group_particles(group=group)
++
+     def remove_attachment_group(self, group):
+         # Call super first
+         super().remove_attachment_group(group=group)
+@@ -959,8 +1004,9 @@ class MacroVisualParticleSystem(MacroParticleSystem, VisualParticleSystem):
+                 groups_to_create.append(name)
+ 
+         # Delete any groups we no longer want
+-        for name in groups_to_delete:
+-            self.remove_attachment_group(group=name)
++        with self._updating_handles_once():
++            for name in groups_to_delete:
++                self.remove_attachment_group(group=name)
+ 
+         # Create any groups we don't already have
+         for name in groups_to_create:
+@@ -1283,19 +1329,12 @@ class MacroPhysicalParticleSystem(MacroParticleSystem, PhysicalParticleSystem):
+         # Remove callback
          og.sim.remove_callback_on_play(name=f"{self.name}_particles_view")
  
-     def remove_particle_by_name(self, name):
+-    def remove_particle_by_name(self, name):
 -        # Run super first
 -        super().remove_particle_by_name(name=name)
-+        # Run super first. Removing a rigid body invalidates the physics views
-+        with suppress_omni_log(channels=["omni.physx.tensors.plugin"]):
-+            super().remove_particle_by_name(name=name)
- 
-         # Update the handles
+-
+-        # Update the handles
 -        og.sim.update_handles()
-+        self._handles_changed()
- 
+-
      def add_particle(self, relative_prim_path, scale, idn=None):
          # Run super first
          particle = super().add_particle(relative_prim_path=relative_prim_path, scale=scale, idn=idn)
@@ -118,7 +140,7 @@ index b2ed750..f0baf42 100644
  
          return particle
  
-@@ -1488,9 +1528,10 @@ class MacroPhysicalParticleSystem(MacroParticleSystem, PhysicalParticleSystem):
+@@ -1488,9 +1527,10 @@ class MacroPhysicalParticleSystem(MacroParticleSystem, PhysicalParticleSystem):
  
          # If positive, add particles
          if n_particles_to_generate > 0:

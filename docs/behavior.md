@@ -87,10 +87,12 @@ from the CUDA physics device.
 OmniGibson's macro particle systems updated the physics handles, which rebuilds every
 physics view, after each particle they added or removed, twice per physical particle
 removed. `patches/behavior/0004-particle-handle-updates.patch` updates them once per
-call that adds or removes physical particles, and not for visual particles, which are
-in no physics view. In `make_microwave_popcorn` the cooking rule's 268 particles took
-165 s of one step and take 33 s, most of it creating their prims; removing 200 dust
-particles took 31 s and takes 0.5 s.
+call that adds or removes physical particles, and once per call for visual particles
+removed too: removing any prim drops the articulation views' handles, and through a
+dropped handle a joint read fails and a joint or pose write does nothing. In
+`make_microwave_popcorn` the cooking rule's 268 particles took 165 s of one step and
+take 33 s, most of it creating their prims; removing 200 dust particles took 31 s and
+takes 1 s.
 
 ## Assets and license
 

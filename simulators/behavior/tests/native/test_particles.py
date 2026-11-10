@@ -1,14 +1,17 @@
 """OmniGibson's macro particle systems as patches/behavior/0004 makes them: a call that adds or removes physical
-particles updates the physics handles (og.sim.update_handles, which rebuilds every physics view) once, and removing
-visual particles, which are in no physics view, updates none. Isaac hosts one app per process and OmniGibson's
-shutdown ends it, so particle_batches.py runs the calls in a process of its own."""
+particles, or removes visual ones, updates the physics handles (og.sim.update_handles, which rebuilds every physics
+view) once, and afterwards a jointed object's joints can be set and read. Removing any prim, a visual particle's too,
+drops the handle of every articulation view until the handles are updated. Isaac hosts one app per process and
+OmniGibson's shutdown ends it, so particle_batches.py runs the calls in a process of its own."""
 import json
 import subprocess
 import sys
 from pathlib import Path
 
+import pytest
 
-def test_a_particle_batch_updates_the_physics_handles_once_and_a_visual_removal_never(tmp_path):
+
+def test_a_particle_batch_updates_the_physics_handles_once_and_leaves_joints_readable(tmp_path):
     path = tmp_path / "report.json"
     run = subprocess.run([sys.executable, str(Path(__file__).with_name("particle_batches.py")), str(path)],
                          capture_output=True, text=True, timeout=1200)
@@ -19,8 +22,13 @@ def test_a_particle_batch_updates_the_physics_handles_once_and_a_visual_removal_
     assert {label: call["updates"] for label, call in physical.items()} == dict.fromkeys(physical, 1)
     assert report["generate"]["left"] == 20 and report["generate"]["error"] <= report["generate"]["offset"] + 1e-4
     assert [physical[label]["left"] for label in ("remove", "sync up", "sync down", "remove all")] == [10, 15, 5, 0]
-    visual = {label: report[label] for label in ("visual generate", "visual remove", "visual remove group")}
-    assert {label: call["updates"] for label, call in visual.items()} == dict.fromkeys(visual, 0)
-    assert [visual[label]["left"] for label in ("visual remove", "visual remove group")] == [10, 0]
-    # The physics views stayed valid through the visual removals, and the box still rests on the ground
-    assert report["view valid"] and abs(report["box z"] - .2) < 1e-2
+    # Adding visual particles deletes no prim; each call that removes some updates the handles once, a restore too
+    visual = {label: report[label] for label in ("visual generate", "visual remove", "visual restore",
+                                                 "visual remove group")}
+    assert {label: call["updates"] for label, call in visual.items()} == {
+        "visual generate": 0, "visual remove": 1, "visual restore": 1, "visual remove group": 1}
+    assert [call["left"] for call in visual.values()] == [20, 10, 20, 0]
+    # After every call the cabinet's joints take and return a new position, and the box still rests on the ground
+    assert {label: call["joints"] for label, call in {**physical, **visual}.items()} == {
+        label: pytest.approx(0., abs=1e-4) for label in (*physical, *visual)}
+    assert abs(report["box z"] - .2) < 1e-2

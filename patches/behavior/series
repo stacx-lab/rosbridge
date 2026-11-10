@@ -5,8 +5,9 @@
 # And rosbridge's own:
 # 0003 BehaviorTask.get_goal_option_satisfaction (the evaluator's q_score) evaluates each distinct
 #      grounded goal literal once; a quantified goal repeats them across many options.
-# 0004 Macro particle systems update the physics handles once per batch of physical particles
-#      added or removed, not per particle, and not for visual particles, which are in no physics view.
+# 0004 Macro particle systems update the physics handles once per batch of particles added or
+#      removed, not per particle; once per batch of visual particles removed too: removing any prim
+#      drops the articulation views' handles.
 0001-optional-workflows.patch
 0002-gpu-selection.patch
 0003-goal-option-literals.patch
