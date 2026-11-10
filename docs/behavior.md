@@ -132,6 +132,17 @@ Commands are the evaluator's action vector:
   (`devices/base/odom.py`, both R1Pro rigs) puts each odometry message on TF as
   `base/odom -> base/base` with its stamp, so frames resolve against the
   episode-start pose.
+- The base's z, roll and pitch joints are free, and its drive has no effort limit:
+  OmniGibson writes 1000 N to the x, y and yaw joints, but the stop and play that
+  sets the base's mass (the evaluator's, and `R1Pro.configure`) leaves PhysX at
+  FLT_MAX, and in contact the drive pushed with 100 to 540 kN. Pushed against
+  furniture the base climbs it, tilts and can tip over, the evaluator's robot as
+  much as `behavior-dex`'s. So `base/odometry` carries the full pose and twist
+  (the height change, roll and pitch relative to the episode start, as an IMU
+  reads them, and their rates), and every world wait reply states a tilt of more
+  than 15 degrees from upright with its roll and pitch, after the end notice. On
+  open floor the base rights itself from up to about 45 degrees; propped against
+  furniture it stays tilted until it is driven out the way it came.
 - `torso` (`torso_joint1..4`) and `left_arm`, `right_arm` (`<side>_arm_joint1..7`)
   take absolute joint positions in radians within the joint limits.
 - `<side>_gripper/target` is the smooth gripper command from -1 (closed) to 1

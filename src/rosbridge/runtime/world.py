@@ -2,6 +2,7 @@
 from concurrent.futures import Future
 from dataclasses import replace
 import json
+import math
 import os
 from pathlib import Path
 import queue
@@ -20,6 +21,11 @@ REFUSALS_LISTED = 5
 # conditions: at the step limit the cause is the limit whether or not the goal holds.
 END_CAUSES = {"success": "the goal was reached", "max_steps": "the time limit was reached",
               "episode_done": "the simulator ended it"}
+# Every wait reply states a tilting base's tilt beyond this many degrees from upright (the backend's base_attitude),
+# after the end notice. Measured natively on the R1Pro (putting_dishes_away_after_cleaning, seed 0): on open
+# floor its base stays within 4.1 degrees in full-speed drives; drives square into furniture tilt it 0.6 to 9.6, the
+# same drives 5.6 degrees off square prop it at 30 to 50 or tip it over, to rest at 82 to 90.
+TILTED_DEG = 15.
 
 
 class WorldRuntime:
@@ -65,18 +71,36 @@ class WorldRuntime:
         self.refused[key] = self.refused.get(key, 0) + 1
 
     def reply(self, result):
-        """A wait's result with the commands refused since the previous reply added to its message: a client
-        publishing commands on topics learns of a refusal no other way. Owner thread."""
+        """A wait's result with the base's tilt, when it is large (tilt_notice), and the commands refused since the
+        previous reply added to its message, after its first words and the end notice: a client publishing commands
+        on topics learns of a refusal no other way, and a planar view of the base never showed it tipped. Owner
+        thread."""
         self._assert_owner()
-        if not self.refused:
-            return result
-        refused, self.refused = list(self.refused.items()), {}
-        named = [f"{endpoint}: {reason}" + (f" ({count} commands)" if count > 1 else "")
-                 for (endpoint, reason), count in refused[:REFUSALS_LISTED]]
-        rest = sum(count for _, count in refused[REFUSALS_LISTED:])
-        if rest:
-            named.append(f"and {rest} more")
-        return replace(result, message=f"{result.message}; refused since the previous wait reply: " + "; ".join(named))
+        notices = [notice for notice in (self.tilt_notice(),) if notice]
+        if self.refused:
+            refused, self.refused = list(self.refused.items()), {}
+            named = [f"{endpoint}: {reason}" + (f" ({count} commands)" if count > 1 else "")
+                     for (endpoint, reason), count in refused[:REFUSALS_LISTED]]
+            rest = sum(count for _, count in refused[REFUSALS_LISTED:])
+            if rest:
+                named.append(f"and {rest} more")
+            notices.append("refused since the previous wait reply: " + "; ".join(named))
+        return replace(result, message="; ".join([result.message, *notices])) if notices else result
+
+    def tilt_deg(self):
+        """The base's tilt from upright in degrees, for a backend whose base tilts (base_attitude); else None."""
+        attitude = getattr(self.sim, "base_attitude", None)
+        tilt = math.degrees(float(attitude["tilt"])) if attitude else math.nan
+        return tilt if math.isfinite(tilt) else None
+
+    def tilt_notice(self):
+        """How a wait reply states a base tilted beyond TILTED_DEG from upright, with its roll and pitch; else None."""
+        tilt = self.tilt_deg()
+        if tilt is None or tilt <= TILTED_DEG:
+            return None
+        attitude = self.sim.base_attitude
+        return (f"the base is tilted {tilt:.1f} degrees from upright (roll {math.degrees(attitude['roll']):.1f}, "
+                f"pitch {math.degrees(attitude['pitch']):.1f})")
 
     def admit_wait(self, duration_s, complete):
         """Admit a world wait of duration_s; complete receives its result, which at or after the end of the episode

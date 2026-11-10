@@ -75,6 +75,9 @@ class BehaviorSim:
         self.episode = self.task = None
         self.spectators, self._spectators, self._mounts = (), {}, {}
         self._frames, self._spectator_frames, self._fresh, self._renders = {}, {}, False, 0
+        # The base's attitude after the latest reset or step (Episode.attitude) for an embodiment whose base tilts,
+        # else None; the world node publishes it with the odometry and states a large tilt in its wait replies.
+        self.base_attitude = None
 
     @property
     def cameras(self):
@@ -115,6 +118,7 @@ class BehaviorSim:
         self.embodiment.reset(self.episode)
         self.episode.origin = self.episode.base_pose()
         self.seed, self.steps, self.done = seed, 0, False
+        self._observe()
         self.success = bool(self.episode.env.task.success[0])
         self.reward, self._frames, self._spectator_frames = float(self.success), {}, {}
         self._rendered_s, self._fresh, self._followed = None, False, None
@@ -143,6 +147,7 @@ class BehaviorSim:
         if self.done:
             raise RuntimeError("episode is done")
         self.success = self.episode.step(self.embodiment.action(self.episode, np.asarray(action, float)))
+        self._observe()
         self.steps, self._frames, self._spectator_frames, self._fresh = self.steps + 1, {}, {}, False
         self.reward = float(self.success)
         self.done = self.steps >= self.max_steps or (self.terminate_on_success and self.success)
@@ -150,6 +155,10 @@ class BehaviorSim:
             # While recording, render every step as the evaluator does, so spectator captures
             # keep the renderer's history.
             self._render()
+
+    def _observe(self):
+        if getattr(self.embodiment, "attitude", False):
+            self.base_attitude = self.episode.attitude()
 
     def measures(self):
         """The evaluator's partial credit, TaskMetric's q_score: 1 on success, else the best grounded goal

@@ -23,18 +23,37 @@ def joint_state(t, names, positions, velocities):
     return msg
 
 
-def odometry(t, name, pose, twist):
-    """Planar pose (x, y, yaw) in <name>/odom and body twist (vx, vy, wz) in <name>/base."""
+def odometry(t, name, pose, twist, attitude=None):
+    """Planar pose (x, y, yaw) in <name>/odom and body twist (vx, vy, wz) in <name>/base. With a tilting base's attitude
+    (the backend's base_attitude: z, roll, pitch, vz, wx, wy), the pose and twist in full: the orientation is
+    yaw * pitch * roll (ZYX), as an IMU reports it."""
     import math
     from nav_msgs.msg import Odometry
     msg = Odometry(child_frame_id=f"{name}/base")
     msg.header.stamp, msg.header.frame_id = t, f"{name}/odom"
     x, y, yaw = map(float, pose)
     msg.pose.pose.position.x, msg.pose.pose.position.y = x, y
-    msg.pose.pose.orientation.z, msg.pose.pose.orientation.w = math.sin(yaw / 2), math.cos(yaw / 2)
     twist_msg = msg.twist.twist
     twist_msg.linear.x, twist_msg.linear.y, twist_msg.angular.z = map(float, twist)
+    orientation = msg.pose.pose.orientation
+    if attitude is None:
+        orientation.z, orientation.w = math.sin(yaw / 2), math.cos(yaw / 2)
+        return msg
+    msg.pose.pose.position.z = float(attitude["z"])
+    orientation.x, orientation.y, orientation.z, orientation.w = quaternion(attitude["roll"], attitude["pitch"], yaw)
+    twist_msg.linear.z = float(attitude["vz"])
+    twist_msg.angular.x, twist_msg.angular.y = float(attitude["wx"]), float(attitude["wy"])
     return msg
+
+
+def quaternion(roll, pitch, yaw):
+    """(x, y, z, w) of the rotation yaw about z, then pitch about the new y, then roll about the newest x (ZYX)."""
+    import math
+    cr, sr = math.cos(roll / 2), math.sin(roll / 2)
+    cp, sp = math.cos(pitch / 2), math.sin(pitch / 2)
+    cy, sy = math.cos(yaw / 2), math.sin(yaw / 2)
+    return (sr * cp * cy - cr * sp * sy, cr * sp * cy + sr * cp * sy, cr * cp * sy - sr * sp * cy,
+            cr * cp * cy + sr * sp * sy)
 
 
 def image(t, frame, rgb):

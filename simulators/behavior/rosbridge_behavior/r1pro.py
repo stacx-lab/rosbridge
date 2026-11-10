@@ -30,6 +30,9 @@ class R1Pro:
     frequencies = {"action_frequency": 30, "rendering_frequency": 30, "physics_frequency": 120}
     # RoboEnv's BEHAVIOR overview: 2.6 m out, the eye 2.4 m and the target 0.9 m above the floor.
     overview = Overview(2.6, 2.4, .9)
+    # The base's odometry carries its full attitude (Episode.attitude): its z, roll and pitch joints are free, so it
+    # tilts and can tip over when it pushes against something, and a planar pose showed a tipped robot upright.
+    attitude = True
 
     def __init__(self):
         # Read without importing OmniGibson, which fixes its data path on import (environment.boot).

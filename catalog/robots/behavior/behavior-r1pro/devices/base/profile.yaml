@@ -22,9 +22,12 @@ operations:
       durability: volatile
     timeout_s: 10
   odometry:
-    description: Measured body twist in base/base (m/s and rad/s at the body origin) and the
-      planar pose in base/odom, the body frame at episode start; never a global pose. The
-      pose is also on TF as base/odom -> base/base, with the message's stamp.
+    description: 'Measured body twist in base/base (m/s and rad/s at the body origin, linear
+      and angular x, y and z) and the pose in base/odom, the body frame at episode start;
+      never a global pose. The pose is in full: x, y and yaw on the floor, and the height
+      change z, roll and pitch relative to the episode-start pose, as an IMU reads them (positive
+      roll lifts the left side, positive pitch lowers the front). The pose is also on TF as
+      base/odom -> base/base, with the message''s stamp.'
     transport: topic
     direction: output
     endpoint: /base/odometry
@@ -50,11 +53,16 @@ meta:
   created_at: '2026-10-24T00:00:00Z'
   updated_at: '2026-10-24T00:00:00Z'
 type: locomotion
-description: R1Pro holonomic wheeled base carrying the torso. Commands are the official BEHAVIOR
-  evaluator's normalized base action (vx, vy, wz in [-1, 1]), which its controller scales
+description: 'R1Pro holonomic wheeled base carrying the torso. Commands are the official BEHAVIOR
+  evaluator''s normalized base action (vx, vy, wz in [-1, 1]), which its controller scales
   to 0.75 m/s and 1 rad/s in the base frame. The base frame is base_link at the floor; odometry
   starts at the episode-start pose and is on TF (base/odom -> base/base), so frames resolve
-  against the episode-start pose.
+  against the episode-start pose. The base starts upright, and odometry carries its roll and
+  pitch. Its drive has no effort limit and its roll and pitch are free, so pushed against
+  furniture the base climbs it, tilts and can tip over; every world wait reply states a tilt
+  of more than 15 degrees from upright. Approach furniture slowly, and at the first tilt notice
+  drive back out the way you came: on open floor the base rights itself from up to about 45
+  degrees, but propped against furniture it stays tilted until driven out.'
 source: introspected
 calibrated_at: null
 method: introspection

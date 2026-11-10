@@ -70,6 +70,13 @@ class SimulatorBackend(Protocol):
 
     Optionally, measures() returns the backend's own measures of the episode as
     JSON fields, such as BEHAVIOR's q_score; the episode record adds them.
+
+    Optionally, a backend whose mobile base can tilt keeps base_attitude, after
+    each reset and step, the rest of the base's odometry: z (m), roll and pitch
+    (rad, ZYX with the odometry's yaw, relative to the episode-start pose), vz
+    (m/s), wx and wy (rad/s) in the base's frame, and tilt (rad, its z axis from
+    vertical). The world publishes it with the odometry and states a large tilt
+    in its wait replies.
     """
 
     default_task: str

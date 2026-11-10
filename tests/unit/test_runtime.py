@@ -457,3 +457,63 @@ def test_a_measure_that_fails_is_the_records_error(tmp_path, monkeypatch, capsys
     assert outcome['reason'] == 'stopped' and 'progress' not in outcome
     assert outcome['error'] == "measures: RuntimeError: cannot measure a negative position"
     assert "Traceback" in capsys.readouterr().err and runtime.sim.closed
+
+
+class TiltingToy(ToyBackend):
+    """A backend whose base tilts: base_attitude as BEHAVIOR's R1Pro keeps it (radians)."""
+    base_attitude = None
+
+    def tilt(self, roll_deg, pitch_deg):
+        import math
+        roll, pitch = math.radians(roll_deg), math.radians(pitch_deg)
+        self.base_attitude = {"z": 0., "roll": roll, "pitch": pitch, "vz": 0., "wx": 0., "wy": 0.,
+                              "tilt": math.acos(math.cos(roll) * math.cos(pitch))}
+
+
+def test_every_wait_reply_states_a_tilt_beyond_fifteen_degrees_with_roll_and_pitch():
+    from rosbridge.runtime.world import TILTED_DEG
+    runtime, _ = world(backend=TiltingToy)
+    upright = replied(runtime, 0.)
+    runtime.drain()
+    assert upright.result().message == "ok" and runtime.tilt_deg() is None
+    runtime.sim.tilt(10., -10.)  # 14.1 degrees: not stated
+    leaning = replied(runtime, .1)
+    finish(runtime)
+    assert leaning.result().message == "ok" and runtime.tilt_deg() == pytest.approx(14.1, abs=.05)
+    runtime.sim.tilt(0., TILTED_DEG)  # at the threshold: not stated
+    assert runtime.tilt_notice() is None
+    runtime.sim.tilt(20., -7.)
+    tilted = replied(runtime, 0.)
+    runtime.drain()
+    assert tilted.result().success
+    assert tilted.result().message == "ok; the base is tilted 21.1 degrees from upright (roll 20.0, pitch -7.0)"
+    again = replied(runtime, 0.)
+    runtime.drain()
+    assert again.result().message == tilted.result().message  # stated in every reply while it lasts
+    runtime.sim.tilt(1., 0.)
+    righted = replied(runtime, 0.)
+    runtime.drain()
+    assert righted.result().message == "ok"
+
+
+def test_the_tilt_follows_the_first_words_and_the_end_and_precedes_the_refusals():
+    runtime, _ = world(max_steps=1, backend=TiltingToy)
+    runtime.sim.tilt(0., 80.)
+    pending = replied(runtime, 1.)
+    refuse(runtime, "/arm/joint_target", "trajectory start is in the past")
+    finish(runtime)
+    assert pending.result().message == (
+        "episode ended during wait; the episode ended because the time limit was reached; "
+        "the base is tilted 80.0 degrees from upright (roll 0.0, pitch 80.0); refused since the previous wait reply: "
+        "/arm/joint_target: trajectory start is in the past")
+
+
+def test_a_backend_without_a_finite_attitude_states_no_tilt():
+    runtime, _ = world(backend=TiltingToy)
+    runtime.sim.base_attitude = {"z": 0., "roll": float("nan"), "pitch": float("nan"), "vz": 0., "wx": 0., "wy": 0.,
+                                 "tilt": float("nan")}
+    reply = replied(runtime, 0.)
+    runtime.drain()
+    assert reply.result().message == "ok" and runtime.tilt_deg() is None
+    plain, _ = world()  # no base_attitude at all
+    assert plain.tilt_deg() is None and plain.tilt_notice() is None

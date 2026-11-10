@@ -98,8 +98,10 @@ class Base(Actuator):
                                                 callback_group=callbacks)
 
     def publish(self, stamp, positions, velocities):
+        # A base that tilts publishes its pose and twist in full (the backend's base_attitude), so a tipped robot
+        # no longer looks upright; others stay planar.
         self.odometry.publish(conv.odometry(stamp, self.spec.name, positions[self.indices],
-                                            velocities[self.indices]))
+                                            velocities[self.indices], getattr(self.node.sim, "base_attitude", None)))
 
     def velocity(self, msg):
         def apply():

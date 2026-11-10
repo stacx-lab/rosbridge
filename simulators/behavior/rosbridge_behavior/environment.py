@@ -37,6 +37,14 @@ def rotation(quaternion_xyzw):
                      [2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)]])
 
 
+def turn(axis, angle):
+    """The rotation matrix of angle (rad) about the x, y or z axis."""
+    c, s = np.cos(angle), np.sin(angle)
+    return {"x": np.array([[1., 0., 0.], [0., c, -s], [0., s, c]]),
+            "y": np.array([[c, 0., s], [0., 1., 0.], [-s, 0., c]]),
+            "z": np.array([[c, -s, 0.], [s, c, 0.], [0., 0., 1.]])}[axis]
+
+
 def doors_out(scene, rooms):
     """The doors with one side in a loaded room and the other not, on the scene's room map. A partial scene loads every
     door but only the loaded rooms' floors, so such a door opens onto no floor."""
@@ -184,17 +192,41 @@ class Episode:
         position, quaternion = self.robot.base_footprint_link.get_position_orientation()
         return values(position), rotation(quaternion)
 
-    def odometry(self):
-        """The base's planar pose (x, y, yaw) relative to its episode-start pose, and its twist
-        (vx, vy, wz) in its own frame."""
+    def _base_motion(self):
+        """The base's offset and rotation relative to its episode-start pose, its rotation in the world, and its
+        linear and angular velocity in its own frame."""
         (start, start_rotation), (position, rotation) = self.origin, self.base_pose()
         offset = start_rotation.T @ (position - start)
         relative = start_rotation.T @ rotation
         base = self.robot.base_footprint_link
         linear = rotation.T @ values(base.get_linear_velocity())
         angular = rotation.T @ values(base.get_angular_velocity())
+        return offset, relative, rotation, linear, angular
+
+    def odometry(self):
+        """The base's planar pose (x, y, yaw) relative to its episode-start pose, and its twist
+        (vx, vy, wz) in its own frame."""
+        offset, relative, _, linear, angular = self._base_motion()
         return ((offset[0], offset[1], np.arctan2(relative[1, 0], relative[0, 0])),
                 (linear[0], linear[1], angular[2]))
+
+    def attitude(self):
+        """The rest of the odometry of a base that can tilt (the R1Pro's z, roll and pitch joints are free), as an
+        IMU and odometry read it: the height change z, roll and pitch relative to the episode-start pose (ZYX angles
+        with the odometry's yaw, so yaw * pitch * roll is the base's rotation from its start), the vertical and roll
+        and pitch rates (vz, wx, wy) in the base's own frame, and tilt, the angle of the base's z axis from vertical,
+        in radians. The base starts upright, so roll and pitch are its tilt about its own axes.
+
+        Roll is what the odometry's yaw and the pitch leave of the rotation, so the three rebuild it also at a pitch of
+        exactly +-90 degrees, where yaw and roll are not separately defined and the odometry's yaw is whatever the
+        rounding of the rotation gives."""
+        offset, relative, rotation, linear, angular = self._base_motion()
+        yaw = np.arctan2(relative[1, 0], relative[0, 0])  # the odometry's
+        pitch = np.arctan2(-relative[2, 0], np.hypot(relative[2, 1], relative[2, 2]))
+        roll_only = turn("y", -pitch) @ turn("z", -yaw) @ relative
+        return {"z": float(offset[2]), "roll": float(np.arctan2(roll_only[2, 1], roll_only[1, 1])),
+                "pitch": float(pitch), "vz": float(linear[2]), "wx": float(angular[0]), "wy": float(angular[1]),
+                "tilt": float(np.arctan2(np.hypot(rotation[0, 2], rotation[1, 2]), rotation[2, 2]))}
 
     def step(self, action):
         """Advance one action period on the native action vector; returns native success.

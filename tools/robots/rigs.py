@@ -174,10 +174,12 @@ def gripper(name, description, joint, target, base, tcp, *, state=None, hold=Non
                   grip={"joint": joint, "open": opened, "closed": closed})
 
 
-def locomotion(name, description, axes, base, *, timeout_s, units="normalized", tf=False):
+def locomotion(name, description, axes, base, *, timeout_s, units="normalized", tf=False,
+               attitude=False):
     """A velocity-driven base: axes maps vx, vy, ... to native (min, max) bounds, in [-1, 1] of
     the controller range (normalized) or m/s and rad/s (si). With tf, a Kinex node (odom.py)
-    also puts the odometry on TF as <name>/odom -> <name>/base."""
+    also puts the odometry on TF as <name>/odom -> <name>/base. With attitude, the odometry is
+    the full pose and twist of a base that can tilt."""
     named = ", ".join(f"{field} ({axis})" for axis, field in (
         ("vx", "linear.x"), ("vy", "linear.y"), ("vz", "linear.z"), ("wx", "angular.x"),
         ("wy", "angular.y"), ("wz", "angular.z")) if axis in axes)
@@ -191,8 +193,13 @@ def locomotion(name, description, axes, base, *, timeout_s, units="normalized", 
             "keep moving; out-of-range twists are ignored, so verify with odometry.",
             "topic", "input", f"/{name}/velocity", "geometry_msgs/msg/Twist"),
         "odometry": operation(
-            f"Measured body twist in {name}/base (m/s and rad/s at the body origin) and the "
-            f"planar pose in {name}/odom, the body frame at episode start; never a global pose."
+            (f"Measured body twist in {name}/base (m/s and rad/s at the body origin, linear and "
+             f"angular x, y and z) and the pose in {name}/odom, the body frame at episode start; "
+             "never a global pose. The pose is in full: x, y and yaw on the floor, and the height "
+             "change z, roll and pitch relative to the episode-start pose, as an IMU reads them "
+             "(positive roll lifts the left side, positive pitch lowers the front)." if attitude
+             else f"Measured body twist in {name}/base (m/s and rad/s at the body origin) and the "
+             f"planar pose in {name}/odom, the body frame at episode start; never a global pose.")
             + (f" The pose is also on TF as {name}/odom -> {name}/base, with the message's stamp."
                if tf else ""),
             "topic", "output", f"/{name}/odometry", "nav_msgs/msg/Odometry",

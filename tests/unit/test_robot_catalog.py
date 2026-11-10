@@ -105,10 +105,11 @@ def test_every_world_profile_carries_the_generators_wait_operation():
 
 
 def test_the_r1pro_bases_carry_the_generators_odometry_on_tf(tmp_path):
-    """Both R1Pro rigs' base device comes from build_behavior.body through rigs.locomotion(tf=True): rebuilding a rig
-    keeps the odometry node and its texts."""
+    """Both R1Pro rigs' base device comes from build_behavior.body through rigs.locomotion(tf=True, attitude=True):
+    rebuilding a rig keeps the odometry node and its texts, and the base states the world's tilt threshold."""
+    from rosbridge.runtime.world import TILTED_DEG
     rigs = rigs_module()
-    generated = rigs.locomotion("base", "", {"vx": (-1., 1.)}, None, timeout_s=.5, tf=True)
+    generated = rigs.locomotion("base", "", {"vx": (-1., 1.)}, None, timeout_s=.5, tf=True, attitude=True)
     rigs.write_rig(tmp_path, {}, {"base": generated})
     assert sorted(path.name for path in (tmp_path / "devices/base").iterdir()) == ["odom.py", "profile.yaml"]
     assert (tmp_path / "devices/base/odom.py").read_text() == rigs.ODOM
@@ -119,6 +120,7 @@ def test_the_r1pro_bases_carry_the_generators_odometry_on_tf(tmp_path):
                                                                                "factory": "create"}]
         assert profile["operations"]["odometry"] == generated["operations"]["odometry"]
         assert "on TF (base/odom -> base/base)" in profile["description"]
+        assert f"a tilt of more than {TILTED_DEG:g} degrees from upright" in profile["description"]
         assert (folder / "odom.py").read_text() == rigs.ODOM
 
 

@@ -1,5 +1,6 @@
 """The R1Pro base's odometry on TF (each R1Pro rig's devices/base/odom.py, which Kinex runs when the base device
-loads): base/odom -> base/base equals the /base/odometry message, its stamp included."""
+loads): base/odom -> base/base equals the /base/odometry message, its stamp included, also when the message carries a
+tilted base's full pose (conversions.odometry with the backend's base_attitude): a tipped robot is tipped on TF too."""
 import asyncio
 import copy
 import math
@@ -79,6 +80,22 @@ def test_the_base_odometry_is_on_tf_with_the_messages_stamp(rig):
                 assert (tf.header.stamp.sec, tf.header.stamp.nanosec) == (12, 345_000_000)
                 p, q = sample.pose.pose.position, sample.pose.pose.orientation
                 t, r = tf.transform.translation, tf.transform.rotation
+                assert (t.x, t.y, t.z) == pytest.approx((p.x, p.y, p.z))
+                assert (r.x, r.y, r.z, r.w) == pytest.approx((q.x, q.y, q.z, q.w))
+                # A tilted base, as the world node publishes it from the backend's base_attitude.
+                from rosbridge_runtime import conversions
+                tilted = conversions.odometry(conversions.stamp(13.5), "base", (1.6, -.3, .8), (0., 0., 0.),
+                                              {"z": .12, "roll": .6, "pitch": -.35, "vz": 0., "wx": 0., "wy": 0.,
+                                               "tilt": .69})
+                async with asyncio.timeout(10):
+                    while not any(t.header.stamp.sec == 13 for t in seen):
+                        publisher.publish(tilted)
+                        await asyncio.sleep(.05)
+                (tf,) = {(t.header.stamp.sec, t.header.stamp.nanosec): t for t in seen
+                         if t.header.stamp.sec == 13}.values()
+                p, q = tilted.pose.pose.position, tilted.pose.pose.orientation
+                t, r = tf.transform.translation, tf.transform.rotation
+                assert (q.x, q.y) != (0., 0.) and p.z == .12
                 assert (t.x, t.y, t.z) == pytest.approx((p.x, p.y, p.z))
                 assert (r.x, r.y, r.z, r.w) == pytest.approx((q.x, q.y, q.z, q.w))
             finally:
