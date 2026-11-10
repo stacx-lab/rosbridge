@@ -26,7 +26,6 @@ class R1Pro:
     parts = PARTS
     scalar_grippers = True  # the smooth gripper command; R1ProSharpa's hands are joint devices
     pose_key = None
-    rendering = "evaluator"  # one render after each step that cameras read (backend.RERENDERS)
     frequencies = {"action_frequency": 30, "rendering_frequency": 30, "physics_frequency": 120}
     # RoboEnv's BEHAVIOR overview: 2.6 m out, the eye 2.4 m and the target 0.9 m above the floor.
     overview = Overview(2.6, 2.4, .9)

@@ -94,23 +94,6 @@ dropped handle a joint read fails and a joint or pose write does nothing. In
 take 33 s, most of it creating their prims; removing 200 dust particles took 31 s and
 takes 1 s.
 
-OmniGibson's object states read link and mesh poses from Fabric, which Kit updates from
-PhysX when it renders, and the evaluator renders inside every step. rosbridge's steps do
-not render, so `patches/behavior/0005-fabric-sync-without-render.patch` makes a step
-that does not render update Fabric from PhysX itself. Without it a particle remover's
-volume stayed where the last camera read had left it: a broom pushed 1.0 m across
-`sweeping_garage`'s dust removed none until a camera was read. The update takes about
-0.4 ms, and an unread step in a house, about 95 ms on a loaded host, took 1 to 4 ms
-longer with it.
-
-`make_cabinet_doors`, `hanging_pictures`, `attach_a_camera_to_a_tripod` and
-`installing_smoke_detectors` attach objects with joints that break at 5000 N or
-10000 N m. OmniGibson detached the object, which deletes the joint's prim, inside the
-physics step's callback, and on a step that does not render Kit aborts the process
-there. `patches/behavior/0006-joint-breaks-after-the-step.patch` runs the detachment
-when the physics step has returned: the object comes off, the episode goes on, and the
-object can be attached again.
-
 ## Assets and license
 
 The BEHAVIOR Data Bundle is encrypted and licensed separately from OmniGibson;
@@ -263,27 +246,13 @@ wrist camera mounted from that flange at its place on the back of the hand.
 ## Timing, cameras and recording
 
 The R1Pro and `behavior-dex` step at 30 Hz over 120 Hz physics, the G1 at 50 Hz over
-200 Hz. Physics steps exactly as the evaluator's but never renders, and each step updates
-Fabric from PhysX as a render would (patch 0005, above), so neither physics nor object
-states depend on whether anyone reads a camera; reads render afterwards. Zero-delay update
-ordering makes each render deliver the state it rendered, so frames always show the
-current state (the evaluator's frames lag its physics by one step).
-
-- The R1Pro embodiments render as the evaluator does: once per step, with OmniGibson's
-  own anti-aliasing (DLSS Performance). The first camera read after a step renders
-  once, and that render serves every camera until the next step; steps nobody reads
-  never render. Without a render at the previous step the renderer has no recent
-  history, so a read renders three times, as OmniGibson re-renders after a reset;
-  `turning_out_all_lights_before_sleep` adds the evaluator's three re-renders after
-  its light sync. The first frames come from the load's own renders. In a house, a
-  step takes about 40 ms unread and 85 ms with every camera read.
-- The G1 renders on demand: a capture renders until the renderer delivers two frames
-  of the current state (the first after a change carries the renderer's temporal
-  history of an older state). When cameras were last rendered more than 0.25 s of
-  world time earlier (after loading, or when a stream starts), a capture renders 16
-  frames, about a second, to reach the noise of streamed captures. It anti-aliases with
-  DLAA at native resolution instead of DLSS Performance upscaling, which cuts the
-  frame-to-frame noise of on-demand captures by a third.
+200 Hz. Each step is the evaluator's `env.step`: physics, then one render of every camera
+with OmniGibson's own anti-aliasing (DLSS Performance), whether or not anyone reads a
+camera. A camera read returns the latest frame and neither renders nor steps. OmniGibson
+delivers a render's frame at the next render, so a frame shows the state one step before
+its stamp, as the evaluator's observations do; the load's re-renders make the first
+frames show the loaded instance. `turning_out_all_lights_before_sleep` re-renders three
+times after each light sync, as the evaluator does.
 
 A house's physics dominates the step time; stepping is slower than real time.
 
@@ -298,9 +267,8 @@ alone let it film through windows from outside the house). For the R1Pro they ke
 the distance and heights of RoboEnv's BEHAVIOR overview: 2.6 m out, the eye 2.4 m
 above the floor and aimed at 0.9 m. For the G1 they stand 1.8 m out, the eye 1.4 m
 above the floor and aimed at 0.8 m, so the whole body and the hands stay in view.
-With the R1Pro embodiments, recording renders every step, so the spectators keep the
-renderer's history; loading settles them at their start pose with 16 renders, and each
-spectator sample renders once for every recorded view.
+The spectators render with every step, and loading settles them at their start pose with
+16 renders; a spectator sample reads the latest frame.
 
 ```bash
 pixi run -e behavior-native smoke        # R1Pro: controls, cameras, reset, rig geometry

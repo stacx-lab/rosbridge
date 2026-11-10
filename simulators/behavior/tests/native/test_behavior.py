@@ -59,34 +59,17 @@ def test_evaluator_period_layout_and_full_resolution_rgbd_cameras(sim):
     np.testing.assert_array_equal(before[1], after[1])
 
 
-def test_reads_render_once_after_a_step_with_omnigibsons_antialiasing_and_current_frames(sim):
-    settings = sim.native("render_settings")
-    assert settings["/rtx/post/aa/op"] != 4 and settings["/rtx/post/dlss/execMode"] == 0  # DLSS Performance
+def test_every_step_renders_and_frames_follow_the_robot(sim):
     sim.reset("turning_on_radio", 0)
-    start = sim.native("render_count")
-    sim.render("head_camera")
-    assert sim.native("render_count") == start  # env.reset rendered the reset state
     target = sim.state()[0]
     target[channels(sim, "base")] = 0., 0., 1.
-    for _ in range(3):
-        sim.step(target)  # unread steps do not render
-    assert sim.native("render_count") == start
     depths = []
-    for step in range(4):
+    for _ in range(3):
+        sim.step(target)  # unread, it renders too
         sim.step(target)
-        before = sim.state()
-        for camera in sim.cameras:
-            sim.render(camera), sim.render_depth(camera)
-        np.testing.assert_array_equal(before[0], sim.state()[0])  # renders do not step physics
         depths.append(sim.render_depth("head_camera"))
-        # The first read after unread steps has no recent history; later reads render once.
-        assert sim.native("render_count") == start + 3 + step
-    # Turning, consecutive frames differ; more renders of the same state change nothing, so
-    # each read's frame showed the state it was read in, not the previous step's.
-    assert np.median(np.abs(depths[-1] - depths[-2])) > 1e-3
-    sim.native("_render")
-    sim.native("__setattr__", "_frames", {})
-    assert np.median(np.abs(sim.render_depth("head_camera") - depths[-1])) < 1e-3
+    # Turning, each frame read differs from the last: the steps rendered, and reads do not render
+    assert all(np.median(np.abs(new - old)) > 1e-3 for old, new in zip(depths, depths[1:]))
     sim.reset("turning_on_radio", 0)  # the next checks start still, facing ahead
 
 
@@ -165,17 +148,11 @@ def test_catalog_task_loads_steps_and_records(task):
         sim.configure_spectators()
         sim.reset(task, 0)
         assert not sim.done and sim.max_steps > 0
-        start = sim.native("render_count")
         sim.step(sim.state()[0])
         assert sim.steps == 1 and np.isfinite(sim.state()[0]).all() and sim.reward in (0., 1.)
         assert 0. <= sim.native("measures")["q_score"] <= 1.
-        sim.step(sim.state()[0])
-        # Recording renders every step; the reset settled the spectators at their new pose.
-        assert sim.native("render_count") == start + 2
         for view in sim.spectators:
             assert sim.render_spectator(view.name).shape == (720, 960, 3)
             assert sim.spectator_intrinsics(view.name)[2:] == (479.5, 359.5)
-        sim.render("head_camera")
-        assert sim.native("render_count") == start + 3  # one render serves every view
     finally:
         sim.close()

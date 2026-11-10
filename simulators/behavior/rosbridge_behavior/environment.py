@@ -12,10 +12,10 @@ import numpy as np
 import yaml
 
 from rosbridge.project import project_root
-from .rendering import apply_render_settings, capture_launch_settings
 
 LIGHT_TASKS = {"turning_out_all_lights_before_sleep"}  # evaluator.LIGHT_EVAL_TASKS
 SETTLE_STEPS = 25  # evaluator._settle_and_finalize
+LIGHT_RERENDERS = 3  # the evaluator's renders after its light sync
 DOORS = ("door", "sliding_door", "garage_door")
 # A door's rooms are read on the scene's room map this far beyond its faces. A locked door's joints keep this range
 # above their closed position: OmniGibson reads equal limits as no limits.
@@ -116,10 +116,7 @@ class Episode:
         self.max_steps = max_steps or int(load_human_stats(task)["length"] * EVAL_TIMEOUT_MULTIPLIER * rate)
         cfg["task"]["termination_config"]["max_steps"] = self.max_steps
         self.task, self.embodiment = task, embodiment
-        with capture_launch_settings():
-            self.env = og.Environment(configs=cfg)
-        if embodiment.rendering == "on_demand":
-            apply_render_settings()  # DLAA; the R1Pro embodiments keep OmniGibson's anti-aliasing
+        self.env = og.Environment(configs=cfg)
         if self.env.num_envs != 1 or len(self.env.scene.robots) != 1:
             raise ValueError("BEHAVIOR episodes hold one scene with one robot")
         self.robot = self.env.scene.robots[0]
@@ -178,6 +175,7 @@ class Episode:
         self.lights = LightToggleSynchronizer(scene) if self.task in LIGHT_TASKS else None
         if self.lights:
             self.lights.reset_from_current_state()
+            self._show_lights()
         self.instance = instance
 
     def base_pose(self):
@@ -197,18 +195,20 @@ class Episode:
                 (linear[0], linear[1], angular[2]))
 
     def step(self, action):
-        """Advance one action period on the native action vector; returns native success.
-
-        Physics steps exactly as the evaluator's but without rendering, so it does not depend on
-        whether cameras are read; reads render afterwards (BehaviorSim._render). OmniGibson updates
-        Fabric from PhysX on such a step (patches/behavior/0005), so object states do not either.
-        """
-        import omnigibson as og
+        """Advance one action period on the native action vector, as the evaluator's env.step, which
+        renders once; returns native success."""
         import torch
 
-        with og.sim.render_on_step(False):
-            self.env.step(torch.as_tensor(action))
+        self.env.step(torch.as_tensor(action))
         if self.lights:
             # Toggles drive lights that are not serialized; re-derive their visibility.
             self.lights.sync_from_current_state()
+            self._show_lights()
         return bool(self.env.task.success[0])
+
+    def _show_lights(self):
+        """Render as the evaluator does after a light sync, so that frames show the synced lights."""
+        import omnigibson as og
+
+        for _ in range(LIGHT_RERENDERS):
+            og.sim.render()

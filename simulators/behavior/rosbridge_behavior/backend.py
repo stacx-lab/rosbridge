@@ -14,21 +14,11 @@ from rosbridge.core.devices import device_inventory, spectator_views
 from rosbridge.project import project_root
 from .assets import check_dex_task, check_g1_task, check_task
 from .environment import Episode, boot, rotation, values
-from .rendering import delivered_time, render_for_capture, render_settings
 
 OPTICAL = np.diag([1., -1., -1.])  # USD cameras look along -z with +y up; ROS optical is +z, +y down
 OVERVIEW_FOV_Y = 65.
-# Evaluator rendering (the R1Pro embodiments): physics steps without rendering, and a camera read
-# renders once after a step, as OmniGibson's env.step renders once per step, with OmniGibson's
-# own anti-aliasing. Without a render at the previous step the renderer has no recent history,
-# so a read renders OmniGibson's num_rerenders_on_reset; light tasks add the evaluator's
-# re-renders after its light sync.
-RERENDERS = 3
-# On-demand rendering (the G1): the renderer's temporal history stays usable across captures
-# this close in world time: as cameras move between them, two renders clean a capture. After a
-# longer gap (a reset, or cameras unrendered since moving), sixteen bring the path tracer to
-# the same noise.
-HISTORY_S, CUT_DELIVERIES = .25, 16
+# Spectators cut to a new pose at a reset; these renders settle the renderer's temporal history there.
+CUT_RENDERS = 16
 # Overview spectators keep these bearings from the robot's heading (radians counterclockwise).
 OVERVIEWS = {"front_left": np.pi / 4, "rear_left": 3 * np.pi / 4}
 FOLLOW_S = 1.  # the overviews turn after the robot this slowly, so gait sway does not shake them
@@ -71,10 +61,8 @@ class BehaviorSim:
         self.requested_max_steps = self.max_steps = max_steps
         self.terminate_on_success = terminate_on_success
         self.period = 1. / embodiment.frequencies["action_frequency"]
-        self.evaluator_rendering = embodiment.rendering == "evaluator"
         self.episode = self.task = None
-        self.spectators, self._spectators, self._mounts = (), {}, {}
-        self._frames, self._spectator_frames, self._fresh, self._renders = {}, {}, False, 0
+        self.spectators, self._spectators, self._frames = (), {}, {}
 
     @property
     def cameras(self):
@@ -116,21 +104,15 @@ class BehaviorSim:
         self.episode.origin = self.episode.base_pose()
         self.seed, self.steps, self.done = seed, 0, False
         self.success = bool(self.episode.env.task.success[0])
-        self.reward, self._frames, self._spectator_frames = float(self.success), {}, {}
-        self._rendered_s, self._fresh, self._followed = None, False, None
+        self.reward, self._frames, self._followed = float(self.success), {}, None
         if self.spectators and not self._spectators:
             self._open_spectators()
-        if self.evaluator_rendering:
-            # The episode's env.reset rendered the reset state, so its frames are current.
-            self._fresh, self._rendered_s = True, 0.
-            if self._spectators:
-                # The spectators cut to the new pose: settle the path tracer there, as an
-                # on-demand capture does after a cut.
-                self._place(self._spectators)
-                self._renders += render_for_capture(CUT_DELIVERIES, dlaa=False)
-            if self.episode.lights:
-                # The evaluator re-renders after the light sync so the first frames show it.
-                self._renders += render_for_capture(RERENDERS, dlaa=False)
+        if self._spectators:
+            import omnigibson as og
+
+            self._place(self._spectators)
+            for _ in range(CUT_RENDERS):
+                og.sim.render()
 
     @property
     def time_s(self):
@@ -143,13 +125,11 @@ class BehaviorSim:
         if self.done:
             raise RuntimeError("episode is done")
         self.success = self.episode.step(self.embodiment.action(self.episode, np.asarray(action, float)))
-        self.steps, self._frames, self._spectator_frames, self._fresh = self.steps + 1, {}, {}, False
+        self.steps, self._frames = self.steps + 1, {}
         self.reward = float(self.success)
         self.done = self.steps >= self.max_steps or (self.terminate_on_success and self.success)
-        if self.evaluator_rendering and self._spectators:
-            # While recording, render every step as the evaluator does, so spectator captures
-            # keep the renderer's history.
-            self._render()
+        if self._spectators:
+            self._place(self._spectators)  # where the next step renders them
 
     def measures(self):
         """The evaluator's partial credit, TaskMetric's q_score: 1 on success, else the best grounded goal
@@ -175,18 +155,8 @@ class BehaviorSim:
         return width, height, fx, fx, (width - 1) / 2., (height - 1) / 2.
 
     def _camera_frame(self, camera):
-        """A camera's USD frame (4x4) in the world, from its link's physics pose. A camera prim's
-        own pose updates only when Kit renders, and physics steps without rendering."""
-        if camera not in self._mounts:
-            from pxr import UsdGeom
-
-            sensor = self._sensor(camera)
-            link = next(link for link in self.episode.robot.links.values()
-                        if str(sensor.prim_path).startswith(str(link.prim_path) + "/"))
-            local, _ = UsdGeom.XformCache().ComputeRelativeTransform(sensor.prim, link.prim)
-            self._mounts[camera] = link, np.asarray(local, dtype=float).T
-        link, local = self._mounts[camera]
-        return pose_matrix(*link.get_position_orientation()) @ local
+        """A camera's USD frame (4x4) in the world."""
+        return pose_matrix(*self._sensor(camera).get_position_orientation())
 
     def camera_pose(self, camera):
         """Optical-frame pose (4x4) in the world frame."""
@@ -195,11 +165,10 @@ class BehaviorSim:
         return matrix
 
     def _frame(self, camera):
-        """RGB and z-depth of the current state; one render serves every camera until the next step."""
+        """RGB and z-depth of the camera's last frame, read once per step. OmniGibson delivers a render's frame at the
+        next render, so frames show the previous step, as the evaluator's do."""
         if camera not in self._frames:
             sensor = self._sensor(camera)
-            if not self._frames and not self._fresh:
-                self._render()
             observation, _ = sensor.get_obs()
             rgb, depth = observation["rgb"], observation["depth_linear"]
             rgb = rgb.detach().cpu().numpy() if hasattr(rgb, "detach") else np.asarray(rgb)
@@ -208,18 +177,6 @@ class BehaviorSim:
                 raise RuntimeError(f"{camera} produced no valid RGB-D frame")
             self._frames[camera] = (np.ascontiguousarray(rgb[..., :3]), values(depth).astype(np.float32))
         return self._frames[camera]
-
-    def _render(self):
-        """Render until every camera holds the current state."""
-        since = None if self._rendered_s is None else self.time_s - self._rendered_s
-        if self.evaluator_rendering:
-            deliveries = 1 if since is not None and since <= 1.5 * self.period else RERENDERS
-            if self.episode.lights:
-                deliveries += RERENDERS
-        else:
-            deliveries = 2 if since is not None and since <= HISTORY_S else CUT_DELIVERIES
-        self._renders += render_for_capture(deliveries, dlaa=not self.evaluator_rendering)
-        self._rendered_s, self._fresh = self.time_s, self.evaluator_rendering
 
     def render(self, camera):
         return self._frame(camera)[0]
@@ -313,30 +270,9 @@ class BehaviorSim:
                 transform.Set(Gf.Matrix4d(matrix.T.tolist()))
 
     def render_spectator(self, name):
-        if not self.evaluator_rendering:
-            self._place([name])
-            self._render()
-            return np.ascontiguousarray(np.asarray(self._spectators[name][3].get_data())[..., :3])
-        if name not in self._spectator_frames:
-            # The first view of a sample places every view, and one render serves them all.
-            self._place(self._spectators)
-            self._render()
-            self._spectator_frames = {view: np.ascontiguousarray(np.asarray(rgb.get_data())[..., :3])
-                                      for view, (_, _, _, rgb) in self._spectators.items()}
-        return self._spectator_frames[name]
+        return np.ascontiguousarray(np.asarray(self._spectators[name][3].get_data())[..., :3])
 
     # Diagnostics for tests --------------------------------------------------------------
-
-    def render_count(self):
-        """Renders this backend requested; OmniGibson's own (as in env.reset) are not counted."""
-        return self._renders
-
-    def delivered_time(self):
-        """World time, in Kit's reference clock, of the frame the cameras last delivered."""
-        return delivered_time()
-
-    def render_settings(self):
-        return render_settings()
 
     def spectator_intrinsics(self, name):
         view, camera = self._spectators[name][:2]

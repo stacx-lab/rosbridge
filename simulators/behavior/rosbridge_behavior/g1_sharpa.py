@@ -60,7 +60,6 @@ def torso_rpy(yaw, roll, pitch):
 
 class G1Sharpa:
     pose_key = "r1pro"  # the presampled R1Pro start of each task instance
-    rendering = "on_demand"  # DLAA captures (backend.HISTORY_S, CUT_DELIVERIES)
     frequencies = {"action_frequency": 50, "rendering_frequency": 50, "physics_frequency": 200}
     cameras = {"head_camera": f"{NAME}:{CAMERA}:Camera:0"}
 

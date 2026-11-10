@@ -53,7 +53,6 @@ def test_layout_period_and_head_camera(sim):
     assert (width, height, fx, cx) == (720, 720, pytest.approx(306.), 359.5)
     image, depth = sim.render("head_camera"), sim.render_depth("head_camera")
     assert image.shape == (720, 720, 3) and image.std() > 1 and (depth > 0).mean() > .9
-    assert sim.native("render_settings")["/rtx/post/aa/op"] == 4  # on-demand captures keep DLAA
     for view in sim.spectators:
         assert sim.render_spectator(view.name).shape == (720, 960, 3)
 

@@ -62,8 +62,6 @@ def test_r1pro_body_and_cameras_with_hands_in_the_evaluator_posture(sim):
     for camera in sim.cameras:
         image, depth = sim.render(camera), sim.render_depth(camera)
         assert image.std() > 1 and (depth > 0).mean() > .9
-    settings = sim.native("render_settings")
-    assert settings["/rtx/post/aa/op"] != 4  # the R1Pro's evaluator rendering
     q = sim.state()[0]
     np.testing.assert_allclose(q[channels(sim, "torso")], [1.025, -1.45, -.47, 0.], atol=.02)
     for side in SIDES:
@@ -163,15 +161,3 @@ def test_rig_matches_native_chains_hands_and_cameras(tmp_path, sim):
         fingers = q[channels(sim, f"{side}_hand")]
         for link in (f"{side}_hand_C_MC", f"{side}_index_DP", f"{side}_thumb_DP"):
             close(compose(hand, rig.link(f"{side}_hand", fingers, link)), measured(link), atol=2e-3)
-
-
-def test_reads_render_once_after_a_step(sim):
-    start = sim.native("render_count")
-    hold = sim.state()[0]
-    hold[channels(sim, "base")] = 0.
-    sim.step(hold)
-    sim.render("left_camera")
-    first = sim.native("render_count")
-    sim.step(hold)
-    sim.render("left_camera"), sim.render_depth("right_camera"), sim.render("head_camera")
-    assert sim.native("render_count") == first + 1 and first > start
