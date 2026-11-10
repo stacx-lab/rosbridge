@@ -222,6 +222,27 @@ def locomotion(name, description, axes, base, *, timeout_s, units="normalized", 
                   frames={"base": base})
 
 
+R1PRO_BASE = (
+    "R1Pro holonomic wheeled base carrying the torso. Commands are the official BEHAVIOR evaluator's normalized base "
+    "action (vx, vy, wz in [-1, 1]), which its controller scales to 0.75 m/s and 1 rad/s in the base frame. The base "
+    "frame is base_link at the floor; odometry starts at the episode-start pose and is on TF (base/odom -> "
+    "base/base), so frames resolve against the episode-start pose. The base starts upright, and odometry carries its "
+    "roll and pitch. ")
+# How the evaluator's R1Pro base drives.
+R1PRO_DRIVE = (
+    "Its drive has no effort limit and its roll and pitch are free, so pushed against furniture the base climbs it, "
+    "tilts and can tip over; every world wait reply states a tilt of more than 15 degrees from upright. Approach "
+    "furniture slowly, and at the first tilt notice drive back out the way you came: on open floor the base rights "
+    "itself from up to about 45 degrees, but propped against furniture it stays tilted until driven out.")
+
+
+def r1pro_base(timeout_s):
+    """The R1Pro's base device, both R1Pro rigs' (build_behavior.body)."""
+    return locomotion("base", R1PRO_BASE + R1PRO_DRIVE, {axis: (-1., 1.) for axis in ("vx", "vy", "wz")},
+                      {"parent": None, "translation_m": None, "rotation_xyzw": None}, timeout_s=timeout_s, tf=True,
+                      attitude=True)
+
+
 def camera(name, description, intrinsics, base, depth_range=None):
     width, height, *pinhole = intrinsics
     fx, fy, cx, cy = map(float, pinhole)

@@ -128,6 +128,15 @@ def test_the_r1pro_bases_carry_the_generators_odometry_on_tf(tmp_path):
         assert (folder / "odom.py").read_text() == rigs.ODOM
 
 
+def test_both_r1pro_bases_are_the_generators():
+    """build_behavior.body writes both R1Pro rigs' base with rigs.r1pro_base, so rebuilding a rig keeps its texts."""
+    from rosbridge.core.commands import VELOCITY_TIMEOUT_S
+    rigs = rigs_module()
+    for identifier in R1PRO_RIGS:
+        profile = yaml.safe_load((PROJECT / "catalog/robots" / identifier / "devices/base/profile.yaml").read_text())
+        assert profile == rigs.r1pro_base(VELOCITY_TIMEOUT_S), identifier
+
+
 def test_native_gripper_commands_drive_their_fingers_through_mimics(tmp_path):
     """Native gripper commands (normalized 0..1 openings, RoboCasa's integrated -1..1) live
     on a virtual joint spanning open to closed; the URDF fingers mimic it."""
