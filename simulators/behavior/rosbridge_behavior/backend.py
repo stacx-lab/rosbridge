@@ -348,6 +348,20 @@ class BehaviorSim:
         """A robot link's world pose (4x4), for geometry checks."""
         return pose_matrix(*self.episode.robot.links[link].get_position_orientation())
 
+    def object_joint(self, name, joint):
+        """A scene object's joint position (rad or m), for physics checks."""
+        state = self.episode.env.scene.object_registry("name", name).joints[joint].get_state()
+        return float(values(state[0])[0])
+
+    def drive_object_joint(self, name, joint, position=None, effort=0.):
+        """For physics checks: put a scene object's joint at a position, at rest, if one is given, and hold a constant
+        effort (N m or N) on it until the next call."""
+        target = self.episode.env.scene.object_registry("name", name).joints[joint]
+        if position is not None:
+            target.set_pos(position)
+            target.set_vel(0.)
+        target.set_effort(effort)
+
     # Spectators: separate USD cameras and render products; agent cameras stay untouched.
 
     def _open_spectators(self):

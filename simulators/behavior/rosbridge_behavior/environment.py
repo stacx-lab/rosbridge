@@ -12,6 +12,7 @@ import numpy as np
 import yaml
 
 from rosbridge.project import project_root
+from .door_friction import ease_doors
 from .rendering import apply_render_settings, capture_launch_settings
 
 LIGHT_TASKS = {"turning_out_all_lights_before_sleep"}  # evaluator.LIGHT_EVAL_TASKS
@@ -137,6 +138,15 @@ class Episode:
         # The robot cannot pass a door onto a room without its floor: such doors are closed and locked.
         self.locked_doors = [door.name for door in lock_doors_out(self.env.scene, cfg["scene"]["load_room_instances"])]
         print(f"doors locked out of the loaded rooms: {self.locked_doors}", flush=True)
+        # An embodiment's door_friction: load-independent friction for fixed objects' doors, lids and drawers, and a
+        # counterbalance for the parts gravity turns (door_friction.py). Locked doors keep their locking limits.
+        friction = getattr(embodiment, "door_friction", None)
+        self.eased_doors = ease_doors(self.env.scene, friction) if friction else {}
+        if self.eased_doors:
+            balanced = [f"{name}:{joint}" for name, joints in self.eased_doors.items()
+                        for joint, (_, counterbalanced) in joints.items() if counterbalanced]
+            print(f"door friction {tuple(friction)} on {sum(map(len, self.eased_doors.values()))} joints of "
+                  f"{len(self.eased_doors)} fixed objects; counterbalanced: {balanced}", flush=True)
         self.lights = None
 
     def load(self, seed):
