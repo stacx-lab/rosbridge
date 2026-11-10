@@ -49,3 +49,23 @@ class ToyBackend:
     def close(self):
         assert threading.get_ident() == self.owner
         self.closed = True
+
+
+class GoalToyBackend(ToyBackend):
+    """The toy with a goal that holds from step `first` (until before step `last`, if given). Launched to stop on
+    success (terminate_on_success), it ends at the first success, as every simulator's backend does."""
+    first, last = 3, None
+
+    def __init__(self, max_steps=None, terminate_on_success=False):
+        self.terminate_on_success = terminate_on_success
+        super().__init__(max_steps)
+
+    def reset(self, task, seed, randomize):
+        super().reset(task, seed, randomize)
+        self.success, self.reward = False, 0.
+
+    def step(self, action):
+        super().step(action)
+        self.success = self.steps >= self.first and (self.last is None or self.steps < self.last)
+        self.reward = float(self.success)
+        self.done = self.done or (self.terminate_on_success and self.success)

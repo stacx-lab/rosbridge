@@ -79,11 +79,34 @@ def test_terminal_tick_and_runtime_unavailable(tmp_path):
     try:
         result = graph.wait(.2)
         assert result.success and result.waited_s == pytest.approx(.2)
-        assert not graph.wait(.1).success
+        end = "the episode ended because the time limit was reached"
+        assert result.message == f"ok; {end}"  # its last step was the terminal one
+        later = graph.wait(.1)
+        assert not later.success and later.message == f"episode is done; {end}"
+        assert later.time_s == pytest.approx(.2)
         graph.stop(graph.owner)
         graph.until(lambda: not graph.wait_client.service_is_ready(), 15.)
         with pytest.raises(TimeoutError, match="unavailable"):
             WorldClockClient(graph.node).wait(.1, timeout_s=.2)
+    finally:
+        graph.close()
+
+
+@pytest.mark.parametrize("stop", [True, False])
+def test_the_end_of_a_run_launched_to_stop_on_success_or_not(tmp_path, stop):
+    """The world node passes terminate_on_success to the world too: the toy's goal holds from its third step, so a run
+    launched to stop on success ends there, with no cause stated; one that does not runs on to its limit."""
+    graph = Graph(tmp_path, max_steps=5,
+                  parameters=("backend:=goal", f"terminate_on_success:={str(stop).lower()}"))
+    try:
+        result = graph.wait(1.)
+        if stop:
+            assert result.message == "episode ended during wait; the episode ended"
+            assert result.time_s == pytest.approx(.3)
+        else:
+            assert result.message == "episode ended during wait; the episode ended because the time limit was reached"
+            assert result.time_s == pytest.approx(.5)
+        assert graph.wait(0.).message == "ok; " + result.message.split("; ", 1)[1]
     finally:
         graph.close()
 

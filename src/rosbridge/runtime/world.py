@@ -14,6 +14,11 @@ from .waits import WaitScheduler
 
 # A wait's reply names at most this many kinds of refused command (endpoint and reason), then counts the rest.
 REFUSALS_LISTED = 5
+# What a wait reply at or after the end says ended the episode, by the termination the world applied
+# (WorldRuntime._termination). These are the world's own conditions, not evaluator results: at the step limit the
+# cause is the limit whether or not the goal holds. A termination not listed, the first success of a run launched to
+# stop on success, is stated without a cause.
+END_CAUSES = {"max_steps": "the time limit was reached", "episode_done": "the simulator ended it"}
 
 
 class WorldRuntime:
@@ -21,9 +26,12 @@ class WorldRuntime:
 
     submit() is the only cross-thread entry point: queued functions run on the
     owner thread between steps, so callback threads never touch native state.
+    stop_on_success: the run was launched to end at the first success (the backend's
+    terminate_on_success), which the world needs to tell that end from the backend's own.
     """
-    def __init__(self, sim, mode, publish, **pacer_options):
+    def __init__(self, sim, mode, publish, stop_on_success=False, **pacer_options):
         self.sim, self.publish = sim, publish
+        self.stop_on_success, self._ended = stop_on_success, None
         self._owner = threading.get_ident()
         self._requests = queue.SimpleQueue()
         self._lock = threading.Lock()
@@ -69,6 +77,12 @@ class WorldRuntime:
             named.append(f"and {rest} more")
         return replace(result, message=f"{result.message}; refused since the previous wait reply: " + "; ".join(named))
 
+    def admit_wait(self, duration_s, complete):
+        """Admit a world wait of duration_s; complete receives its result, which at or after the end of the episode
+        says so (end_cause). Owner thread."""
+        self._assert_owner()
+        self.waits.admit(duration_s, self.time_s, self.steps, self.sim.period, self.end_cause(), complete)
+
     def drain(self, timeout=0.):
         self._assert_owner()
         try:
@@ -101,8 +115,25 @@ class WorldRuntime:
             self.commands.close()
             self._record_terminal()
         # Publications precede completion, including a successful terminal tick.
-        self.waits.settle(self.time_s, self.steps, self.sim.done)
+        self.waits.settle(self.time_s, self.steps, self.end_cause())
         return True
+
+    def _termination(self):
+        """What ended the episode: the first success of a run launched to stop on success, else the step limit, else
+        the backend itself. Not the record's reason, which says "success" whenever the goal holds at the end, also at
+        the step limit of a run that goes on after success: that is the evaluator's result."""
+        limit = self.sim.max_steps
+        if self.stop_on_success and self.sim.success:
+            return "success"
+        return "max_steps" if limit and self.steps >= limit else "episode_done"
+
+    def end_cause(self):
+        """None while the episode runs. Once it has ended, what ended it as a wait reply states it (END_CAUSES), or
+        True for an end stated without a cause. Fixed at the end, as the record is. Owner thread."""
+        self._assert_owner()
+        if self._ended is None and self.sim.done:
+            self._ended = END_CAUSES.get(self._termination(), True)
+        return self._ended
 
     def _outcome(self, reason=None):
         limit = self.sim.max_steps

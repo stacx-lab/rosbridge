@@ -3,6 +3,13 @@ from dataclasses import dataclass
 import math
 
 
+def ended(cause=None):
+    """How a wait reply at or after the end of an episode says so, after its first words: that the episode ended
+    and, when the world names it (WorldRuntime.end_cause), what ended it. The reply's time_s is the world time of the
+    end, so the words carry no time."""
+    return "the episode ended" + (f" because {cause}" if isinstance(cause, str) else "")
+
+
 @dataclass(frozen=True)
 class WaitResult:
     success: bool
@@ -27,12 +34,13 @@ class WaitScheduler:
         return bool(self._pending)
 
     def admit(self, duration_s, time_s, step, period, done, complete):
+        """done: falsy while the episode runs; once it has ended, what ended it (a cause) or True."""
         if not math.isfinite(duration_s) or duration_s < 0:
             complete(WaitResult(False, "duration_s must be finite and nonnegative", 0., time_s))
         elif duration_s == 0:
-            complete(WaitResult(True, "ok", 0., time_s))
+            complete(WaitResult(True, f"ok; {ended(done)}" if done else "ok", 0., time_s))
         elif done:
-            complete(WaitResult(False, "episode is done", 0., time_s))
+            complete(WaitResult(False, f"episode is done; {ended(done)}", 0., time_s))
         else:
             # Integer deadlines avoid accumulated floating-point drift. Move one ULP
             # toward zero so e.g. 0.3 / 0.1 does not accidentally request an extra tick.
@@ -44,12 +52,13 @@ class WaitScheduler:
             self._pending.append(PendingWait(time_s, step + count, complete))
 
     def settle(self, time_s, step, done=False):
+        """done: as for admit. A wait that completes at the end says so after its first words."""
         remaining = []
         for wait in self._pending:
             reached = step >= wait.end_step
             if reached or done:
-                wait.complete(WaitResult(reached, "ok" if reached else "episode ended during wait",
-                                         max(0., time_s - wait.start_s), time_s))
+                message = ("ok" if reached else "episode ended during wait") + (f"; {ended(done)}" if done else "")
+                wait.complete(WaitResult(reached, message, max(0., time_s - wait.start_s), time_s))
             else:
                 remaining.append(wait)
         self._pending = remaining

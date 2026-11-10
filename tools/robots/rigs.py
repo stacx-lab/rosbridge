@@ -61,8 +61,14 @@ def world(description):
             "Advance or await duration_s of world time (finite and nonnegative). Zero is an "
             "observation barrier. Waits are sequential; one requested while another is pending "
             "is rejected. A terminal episode rejects further progression without exposing "
-            "benchmark results. The reply's message also names the device commands refused since "
-            "the previous reply, with their reasons.", "service", "input", "/world/wait",
+            "benchmark results. At or after the end, a valid wait's reply says so after its "
+            "first words: \"ok; the episode ended\" (a wait whose last step was the end, or a "
+            "zero wait), \"episode ended during wait; the episode ended\" (a wait the end cut "
+            "short) or \"episode is done; the episode ended\" (a later wait), then \"because the "
+            "time limit was reached\" or \"because the simulator ended it\" when that ended it; "
+            "time_s is the world time of the end. The reply's message also names the device "
+            "commands refused since the previous reply, with their reasons.", "service", "input",
+            "/world/wait",
             "kinex_interfaces/srv/Wait",
             timeout_s=120),
         "stop": operation("Cancel the pending wait.", "service", "input", "/world/stop",

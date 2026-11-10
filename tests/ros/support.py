@@ -23,7 +23,7 @@ def seconds(stamp):
 
 class Graph:
     def __init__(self, tmp_path, mode="stepped", backend="toy", max_steps=0, spectators=False,
-                 startup_s=60.):
+                 startup_s=60., parameters=()):
         self.lease = DomainLease()
         self.env = dict(os.environ, ROS_DOMAIN_ID=str(self.lease.domain))
         self.processes, self.logs = [], []
@@ -38,8 +38,11 @@ class Graph:
         self.tmp_path = tmp_path
         try:
             if backend == "toy":
+                # parameters: further world node parameters ("name:=value"), such as backend:=goal for the toy
+                # whose goal holds from its third step (tests.toy_backend.GoalToyBackend).
                 self.owner = self.start([sys.executable, "-m", "tests.ros.toy_server", "--ros-args",
-                                         "-p", f"mode:={mode}", "-p", f"max_steps:={max_steps}"])
+                                         "-p", f"mode:={mode}", "-p", f"max_steps:={max_steps}",
+                                         *(arg for parameter in parameters for arg in ("-p", parameter))])
             else:
                 self.owner = self.start(["ros2", "launch", "rosbridge_runtime", "sim.launch.py",
                                          f"backend:={backend}", f"mode:={mode}",

@@ -72,6 +72,24 @@ def test_every_rig_exports_unloaded_profiles_on_rosbridge_endpoints(tmp_path, id
         setup(identifier, tmp_path / "other", project=PROJECT, domain_id=-1)
 
 
+def rigs_module():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("rigs", PROJECT / "tools/robots/rigs.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_every_world_profile_carries_the_generators_wait_operation():
+    """tools/robots/rigs.py writes every rig's world device; the catalog carries its wait text (LIBERO's world, which
+    no builder writes, included), so rebuilding a rig cannot bring back an older one."""
+    wait = rigs_module().world("")["operations"]["wait"]
+    paths = sorted(PROJECT.glob("catalog/robots/*/*/devices/world/profile.yaml"))
+    assert len({path.resolve() for path in paths}) == 8
+    for path in paths:
+        assert yaml.safe_load(path.read_text())["operations"]["wait"] == wait, path
+
+
 def test_native_gripper_commands_drive_their_fingers_through_mimics(tmp_path):
     """Native gripper commands (normalized 0..1 openings, RoboCasa's integrated -1..1) live
     on a virtual joint spanning open to closed; the URDF fingers mimic it."""
