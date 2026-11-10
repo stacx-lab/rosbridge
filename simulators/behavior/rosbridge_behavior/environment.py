@@ -200,7 +200,8 @@ class Episode:
         """Advance one action period on the native action vector; returns native success.
 
         Physics steps exactly as the evaluator's but without rendering, so it does not depend on
-        whether cameras are read; reads render afterwards (BehaviorSim._render).
+        whether cameras are read; reads render afterwards (BehaviorSim._render). OmniGibson updates
+        Fabric from PhysX on such a step (patches/behavior/0005), so object states do not either.
         """
         import omnigibson as og
         import torch

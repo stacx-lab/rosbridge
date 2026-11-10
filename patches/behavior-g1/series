@@ -6,4 +6,5 @@
 ../behavior/0002-gpu-selection.patch
 ../behavior/0003-goal-option-literals.patch
 ../behavior/0004-particle-handle-updates.patch
+../behavior/0005-fabric-sync-without-render.patch
 0003-wbc-metric-command.patch

@@ -1,0 +1,16 @@
+diff --git a/OmniGibson/omnigibson/simulator.py b/OmniGibson/omnigibson/simulator.py
+index 74a3952..88c7118 100644
+--- a/OmniGibson/omnigibson/simulator.py
++++ b/OmniGibson/omnigibson/simulator.py
+@@ -1542,6 +1542,11 @@ def _launch_simulator(*args, **kwargs):
+                         for i in range(self.n_physics_timesteps_per_render):
+                             self._sim_context.step(render=False)
+                             self._report_step_exceptions()
++                        # A step that renders updates Fabric from PhysX; one that does not has to do it here. The
++                        # object states updated below read link and mesh poses from Fabric (a particle modifier's
++                        # volume, visual_aabb, check_points_in_volume), which otherwise stay where the last render
++                        # left them
++                        self.sync_physx_to_fabric()
+             finally:
+                 self._in_sim_lifecycle -= 1
+ 

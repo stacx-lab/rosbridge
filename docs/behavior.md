@@ -94,6 +94,15 @@ dropped handle a joint read fails and a joint or pose write does nothing. In
 take 33 s, most of it creating their prims; removing 200 dust particles took 31 s and
 takes 1 s.
 
+OmniGibson's object states read link and mesh poses from Fabric, which Kit updates from
+PhysX when it renders, and the evaluator renders inside every step. rosbridge's steps do
+not render, so `patches/behavior/0005-fabric-sync-without-render.patch` makes a step
+that does not render update Fabric from PhysX itself. Without it a particle remover's
+volume stayed where the last camera read had left it: a broom pushed 1.0 m across
+`sweeping_garage`'s dust removed none until a camera was read. The update takes about
+0.4 ms, and an unread step in a house, about 95 ms on a loaded host, took 1 to 4 ms
+longer with it.
+
 ## Assets and license
 
 The BEHAVIOR Data Bundle is encrypted and licensed separately from OmniGibson;
@@ -246,8 +255,9 @@ wrist camera mounted from that flange at its place on the back of the hand.
 ## Timing, cameras and recording
 
 The R1Pro and `behavior-dex` step at 30 Hz over 120 Hz physics, the G1 at 50 Hz over
-200 Hz. Physics steps exactly as the evaluator's but never renders, so it does not
-depend on whether anyone reads a camera; reads render afterwards. Zero-delay update
+200 Hz. Physics steps exactly as the evaluator's but never renders, and each step updates
+Fabric from PhysX as a render would (patch 0005, above), so neither physics nor object
+states depend on whether anyone reads a camera; reads render afterwards. Zero-delay update
 ordering makes each render deliver the state it rendered, so frames always show the
 current state (the evaluator's frames lag its physics by one step).
 
