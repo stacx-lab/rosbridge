@@ -31,8 +31,7 @@ def main():
     devices = {
         "world": rigs.world(
             "Simulation clock of the BEHAVIOR house. Furniture, objects and the activity's BDDL goal "
-            "are not devices; the robot is not localized in this frame. This device exposes no task "
-            "instructions or evaluator results."),
+            "are not devices; the robot is not localized in this frame."),
         "base": rigs.locomotion(
             "base",
             "Unitree G1 legs walking on GR00T WholeBodyControl's balance and walking policies, which "

@@ -42,8 +42,7 @@ def main():
     source = rigs.urdf_joints(urdf)
     devices = {"world": rigs.world(
         "Scene reference and authoritative world clock of the RoboTwin 2.0 table. Kinex "
-        "supplies frame transforms independently. This device exposes no task instructions or "
-        "evaluator results.")}
+        "supplies frame transforms independently.")}
     files = {}
     sim.env._update_render()
     for side in ("left", "right"):

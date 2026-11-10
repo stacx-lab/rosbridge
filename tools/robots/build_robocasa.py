@@ -54,8 +54,7 @@ def main():
     devices = {
         "world": rigs.world(
             "Simulation clock of the RoboCasa kitchen. Kitchen fixtures and objects are not "
-            "devices; the mobile robot is not localized in this frame. This device exposes no "
-            "task instructions or evaluator results."),
+            "devices; the mobile robot is not localized in this frame."),
         "base": rigs.locomotion(
             "base",
             "Omron holonomic mobile base carrying the torso. Commands are upstream's normalized "

@@ -147,7 +147,7 @@ def test_a_refusal_reaches_a_wait_that_the_end_or_stop_completes():
 
 # The end notice: every wait reply at or after the end says that the episode ended, and what ended it ---------------
 
-LIMIT = "the time limit was reached"
+LIMIT, GOAL = "the time limit was reached", "the goal was reached"
 
 
 def goal(first, last=None):
@@ -189,8 +189,8 @@ def test_every_wait_at_or_after_the_end_says_that_the_episode_ended():
 
 
 @pytest.mark.parametrize("backend, limit, stop, cause, reason, step", [
-    (goal(2), 6, True, None, "success", 2),  # stopped on success: stated without a cause
-    (goal(3), 3, True, None, "success", 3),  # the goal on the limit's own step, stopping on success
+    (goal(2), 6, True, GOAL, "success", 2),  # stopped on success
+    (goal(3), 3, True, GOAL, "success", 3),  # the goal on the limit's own step, stopping on success
     (goal(2), 6, False, LIMIT, "success", 6),  # running on after success: the goal holds at the limit
     (goal(2, 5), 6, False, LIMIT, "max_steps", 6),  # the goal held, then was lost before the limit
     (goal(99), 4, True, LIMIT, "max_steps", 4),  # stopping on success that never came
@@ -216,15 +216,15 @@ def test_the_cause_is_what_ended_the_episode_and_the_record_keeps_its_reason(
     assert [r.success for r in replies] == [False, True, False, False]
     assert all(r.time_s == outcome['time_s'] for r in replies)
     runtime.close()  # stopping the run afterwards changes neither
-    assert records(tmp_path) == [outcome] and runtime.end_cause() == (cause or True)
+    assert records(tmp_path) == [outcome] and runtime.end_cause() == cause
 
 
-def test_a_wait_due_on_the_tick_that_reaches_the_goal_succeeds_and_says_the_episode_ended(tmp_path, monkeypatch):
+def test_a_wait_due_on_the_tick_that_reaches_the_goal_succeeds_and_says_so(tmp_path, monkeypatch):
     monkeypatch.setenv('ROSBRIDGE_RUN_DIR', str(tmp_path))
     runtime, _ = world(max_steps=10, backend=goal(2), stop_on_success=True)
     due = replied(runtime, .2)
     finish(runtime)
-    assert (due.result().success, due.result().message) == (True, "ok; the episode ended")
+    assert (due.result().success, due.result().message) == (True, f"ok; {notice(GOAL)}")
     assert due.result().waited_s == pytest.approx(.2) and records(tmp_path)[0]['reason'] == 'success'
 
 
@@ -316,7 +316,7 @@ def test_the_end_cause_is_read_on_the_owner_thread_only():
     with ThreadPoolExecutor(max_workers=1) as pool:
         with pytest.raises(RuntimeError, match="owner thread"):
             pool.submit(runtime.end_cause).result()
-    assert END_CAUSES == {"max_steps": LIMIT, "episode_done": "the simulator ended it"}
+    assert END_CAUSES == {"success": GOAL, "max_steps": LIMIT, "episode_done": "the simulator ended it"}
 
 
 def test_realtime_runs_without_waits_and_wait_does_not_add_extra_ticks():

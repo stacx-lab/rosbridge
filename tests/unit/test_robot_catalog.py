@@ -81,13 +81,18 @@ def rigs_module():
 
 
 def test_every_world_profile_carries_the_generators_wait_operation():
-    """tools/robots/rigs.py writes every rig's world device; the catalog carries its wait text (LIBERO's world, which
-    no builder writes, included), so rebuilding a rig cannot bring back an older one."""
-    wait = rigs_module().world("")["operations"]["wait"]
+    """tools/robots/rigs.py writes every rig's world device; the catalog carries its wait text and the closing sentence
+    of its description (LIBERO's world, which no builder writes, included), so rebuilding a rig cannot bring back an
+    older one."""
+    rigs = rigs_module()
+    wait = rigs.world("")["operations"]["wait"]
     paths = sorted(PROJECT.glob("catalog/robots/*/*/devices/world/profile.yaml"))
     assert len({path.resolve() for path in paths}) == 8
     for path in paths:
-        assert yaml.safe_load(path.read_text())["operations"]["wait"] == wait, path
+        profile = yaml.safe_load(path.read_text())
+        assert profile["operations"]["wait"] == wait, path
+        own = profile["description"].removesuffix(f" {rigs.WORLD_EXPOSES}")
+        assert own.endswith(".") and rigs.world(own)["description"] == profile["description"], path
 
 
 def test_native_gripper_commands_drive_their_fingers_through_mimics(tmp_path):

@@ -32,8 +32,7 @@ def body(sim, source, wrist="wrist, looking along the fingers"):
     devices = {
         "world": rigs.world(
             "Simulation clock of the BEHAVIOR house. Furniture, objects and the activity's BDDL goal "
-            "are not devices; the mobile robot is not localized in this frame. This device exposes "
-            "no task instructions or evaluator results."),
+            "are not devices; the mobile robot is not localized in this frame."),
         "base": rigs.locomotion(
             "base",
             "R1Pro holonomic wheeled base carrying the torso. Commands are the official BEHAVIOR "

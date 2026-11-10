@@ -56,8 +56,7 @@ def main():
 
     devices = {"world": rigs.world(
         "Scene reference and authoritative world clock of the ABC bimanual YAM station. Kinex "
-        "supplies frame transforms independently. This device exposes no task instructions or "
-        "evaluator results.")}
+        "supplies frame transforms independently.")}
     files = {}
     for side in ("left", "right"):
         flange = rigs.body_world(data, model.body(f"{side}_link_6").id)

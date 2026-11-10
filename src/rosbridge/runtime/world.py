@@ -15,10 +15,11 @@ from .waits import WaitScheduler
 # A wait's reply names at most this many kinds of refused command (endpoint and reason), then counts the rest.
 REFUSALS_LISTED = 5
 # What a wait reply at or after the end says ended the episode, by the termination the world applied
-# (WorldRuntime._termination). These are the world's own conditions, not evaluator results: at the step limit the
-# cause is the limit whether or not the goal holds. A termination not listed, the first success of a run launched to
-# stop on success, is stated without a cause.
-END_CAUSES = {"max_steps": "the time limit was reached", "episode_done": "the simulator ended it"}
+# (WorldRuntime._termination). Only "success" is an evaluator result: the first success of a run launched to stop on
+# success, which discloses it by ending before its time limit, as its operator chose. The others are the world's own
+# conditions: at the step limit the cause is the limit whether or not the goal holds.
+END_CAUSES = {"success": "the goal was reached", "max_steps": "the time limit was reached",
+              "episode_done": "the simulator ended it"}
 
 
 class WorldRuntime:

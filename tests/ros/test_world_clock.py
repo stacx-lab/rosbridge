@@ -95,13 +95,13 @@ def test_terminal_tick_and_runtime_unavailable(tmp_path):
 @pytest.mark.parametrize("stop", [True, False])
 def test_the_end_of_a_run_launched_to_stop_on_success_or_not(tmp_path, stop):
     """The world node passes terminate_on_success to the world too: the toy's goal holds from its third step, so a run
-    launched to stop on success ends there, with no cause stated; one that does not runs on to its limit."""
+    launched to stop on success ends there and says so; one that does not runs on to its limit."""
     graph = Graph(tmp_path, max_steps=5,
                   parameters=("backend:=goal", f"terminate_on_success:={str(stop).lower()}"))
     try:
         result = graph.wait(1.)
         if stop:
-            assert result.message == "episode ended during wait; the episode ended"
+            assert result.message == "episode ended during wait; the episode ended because the goal was reached"
             assert result.time_s == pytest.approx(.3)
         else:
             assert result.message == "episode ended during wait; the episode ended because the time limit was reached"

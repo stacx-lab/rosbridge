@@ -53,28 +53,35 @@ def device(name, kind, description, operations, *, nodes=(), observation=None, *
             "method": "introspection", **facts}
 
 
+# The closing sentence of every world device's description, after the rig's own.
+WORLD_EXPOSES = ("This device exposes no task instructions or evaluator results, except that a run "
+                 "launched to stop on success ends at its first success and its wait replies say so.")
+
+
 def world(description):
+    """The world device: description is the rig's own, WORLD_EXPOSES follows it."""
     ops = {
         "time": operation("Authoritative world clock", "topic", "output", "/clock",
                           "rosgraph_msgs/msg/Clock", qos(durability="transient_local")),
         "wait": operation(
             "Advance or await duration_s of world time (finite and nonnegative). Zero is an "
             "observation barrier. Waits are sequential; one requested while another is pending "
-            "is rejected. A terminal episode rejects further progression without exposing "
-            "benchmark results. At or after the end, a valid wait's reply says so after its "
-            "first words: \"ok; the episode ended\" (a wait whose last step was the end, or a "
-            "zero wait), \"episode ended during wait; the episode ended\" (a wait the end cut "
-            "short) or \"episode is done; the episode ended\" (a later wait), then \"because the "
-            "time limit was reached\" or \"because the simulator ended it\" when that ended it; "
-            "time_s is the world time of the end. The reply's message also names the device "
-            "commands refused since the previous reply, with their reasons.", "service", "input",
-            "/world/wait",
+            "is rejected. A terminal episode rejects further progression. At or after the end, a "
+            "valid wait's reply says so after its first words: \"ok; the episode ended\" (a wait "
+            "whose last step was the end, or a zero wait), \"episode ended during wait; the "
+            "episode ended\" (a wait the end cut short) or \"episode is done; the episode ended\" "
+            "(a later wait), then \"because the time limit was reached\" or \"because the "
+            "simulator ended it\" when that ended it, or \"because the goal was reached\" when a "
+            "run launched to stop on success ended at its first success, the one benchmark "
+            "result a reply exposes; time_s is the world time of the end. The reply's message "
+            "also names the device commands refused since the previous reply, with their "
+            "reasons.", "service", "input", "/world/wait",
             "kinex_interfaces/srv/Wait",
             timeout_s=120),
         "stop": operation("Cancel the pending wait.", "service", "input", "/world/stop",
                           "std_srvs/srv/Trigger"),
     }
-    value = device("world", "world", description, ops, observation="time")
+    value = device("world", "world", f"{description} {WORLD_EXPOSES}", ops, observation="time")
     value.update(source="default", method="unknown", bounds=None, surfaces=[],
                  frames={"base": {"parent": None, "translation_m": None, "rotation_xyzw": None}})
     return value

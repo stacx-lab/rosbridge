@@ -73,7 +73,8 @@ and `native_backend` in its manifest: the world node then holds a proxy
 process in that environment. Calls are sequential over a private socket; arrays
 cross it independently of the NumPy versions on either side, and a dead worker
 terminates the graph like an executor failure. World owns
-the backend, stepping and clock; native judging stays internal. Kinex owns
+the backend, stepping and clock; native judging stays internal, but for the end of
+a run launched with `--stop-on-success`, which its wait replies state. Kinex owns
 frame publication and composition outside the simulator.
 
 The main thread exclusively creates, loads, steps, renders and destroys native
@@ -108,11 +109,13 @@ during wait; the episode ended`, and for a later positive wait `episode is done;
 episode ended`. It adds `because the time limit was reached` or `because the
 simulator ended it` when that is what ended the episode: the world's own
 termination, not the evaluator's result, so at the time limit it says so whether or
-not the goal holds. The first success of a run launched with `--stop-on-success` is
-stated without a cause. The reply's `time_s` is the world time of the end. A stopped
-run's pending wait answers `runtime stopped`, with no notice. A wait admitted before
-a client times out stays pending until it completes or `world/stop` cancels it;
-abrupt process loss may prevent a response, so use wall timeouts.
+not the goal holds. A run launched with `--stop-on-success` ends at its first
+success, as the evaluator's termination does, and says `because the goal was
+reached`: it discloses that by ending before its time limit, as its operator chose.
+The reply's `time_s` is the world time of the end. A stopped run's pending wait
+answers `runtime stopped`, with no notice. A wait admitted before a client times out
+stays pending until it completes or `world/stop` cancels it; abrupt process loss may
+prevent a response, so use wall timeouts.
 
 ```python
 from rosbridge.clients import WorldClockClient
@@ -125,7 +128,8 @@ result = await world.wait_async(1.0)
 
 The ROS graph inventory remains fixed during a run. Native evaluator results are
 available to the operator through `rosbridge judge RUN_ID`; task instructions and
-evaluator state are not published.
+evaluator state are not published. The one exception is the cause a `--stop-on-success`
+run's wait replies give for its end.
 
 Arms accept `trajectory_msgs/msg/JointTrajectory` on `<arm>/joint_target`:
 position-only points over every arm joint, strictly increasing times ending within

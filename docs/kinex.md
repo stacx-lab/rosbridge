@@ -114,7 +114,9 @@ it, and export another workspace for another rig. Each simulator's native
 
 Task instructions and judging are not device operations or ROS topics. Supply
 the agent objective in the user prompt; the operator reads native outcomes with
-`rosbridge judge RUN_ID --json`.
+`rosbridge judge RUN_ID --json`. The one exception: a run launched with
+`--stop-on-success` ends at its first success, and its wait replies say so
+(`because the goal was reached`).
 
 A run is one episode; the world offers no reset, so starting over is the operator's:
 stop the run and launch another. An episode ending on success or a step limit pauses

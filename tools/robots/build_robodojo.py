@@ -33,8 +33,7 @@ def main():
     source = rigs.urdf_joints(x5 / "X5A.urdf")
     devices = {"world": rigs.world(
         "Scene reference and authoritative world clock of the RoboDojo table. Kinex supplies "
-        "frame transforms independently. This device exposes no task instructions or "
-        "evaluator results.")}
+        "frame transforms independently.")}
     files = {}
     for side in ("left", "right"):
         robot = sim._actuators[side][0]

@@ -19,14 +19,15 @@ operations:
   wait:
     description: 'Advance or await duration_s of world time (finite and nonnegative). Zero
       is an observation barrier. Waits are sequential; one requested while another is pending
-      is rejected. A terminal episode rejects further progression without exposing benchmark
-      results. At or after the end, a valid wait''s reply says so after its first words: "ok;
-      the episode ended" (a wait whose last step was the end, or a zero wait), "episode ended
-      during wait; the episode ended" (a wait the end cut short) or "episode is done; the
-      episode ended" (a later wait), then "because the time limit was reached" or "because
-      the simulator ended it" when that ended it; time_s is the world time of the end. The
-      reply''s message also names the device commands refused since the previous reply, with
-      their reasons.'
+      is rejected. A terminal episode rejects further progression. At or after the end, a
+      valid wait''s reply says so after its first words: "ok; the episode ended" (a wait whose
+      last step was the end, or a zero wait), "episode ended during wait; the episode ended"
+      (a wait the end cut short) or "episode is done; the episode ended" (a later wait), then
+      "because the time limit was reached" or "because the simulator ended it" when that ended
+      it, or "because the goal was reached" when a run launched to stop on success ended at
+      its first success, the one benchmark result a reply exposes; time_s is the world time
+      of the end. The reply''s message also names the device commands refused since the previous
+      reply, with their reasons.'
     transport: service
     direction: input
     endpoint: /world/wait
@@ -54,7 +55,8 @@ meta:
 type: world
 description: Scene reference and authoritative world clock of the RoboTwin 2.0 table. Kinex
   supplies frame transforms independently. This device exposes no task instructions or evaluator
-  results.
+  results, except that a run launched to stop on success ends at its first success and its
+  wait replies say so.
 source: default
 calibrated_at: null
 method: unknown
