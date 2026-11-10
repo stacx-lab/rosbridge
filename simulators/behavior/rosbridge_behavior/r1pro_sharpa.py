@@ -26,8 +26,8 @@ class R1ProSharpa(R1Pro):
     scalar_grippers = False
     pose_key = "r1pro"  # the presampled R1Pro start of each task instance
     # Fixed objects' doors, lids and drawers start at no more than 1.5 N m (hinges) or 6 N (slides) whatever their
-    # mass (door_friction.py): a hand's grip slips where the evaluator's assisted grasp holds, and lost the heavier
-    # fridge door's handle under OmniGibson's friction.
+    # mass, and hinged parts that gravity turns are counterbalanced (door_friction.py): a hand's grip slips where the
+    # evaluator's assisted grasp holds, and lost the heavier fridge door's handle under OmniGibson's friction.
     door_friction = DoorFriction(hinge=1.5, slide=6.)
 
     def __init__(self):

@@ -1,12 +1,14 @@
-"""Load-independent friction for the doors, lids and drawers of fixed BEHAVIOR objects: the embodiment option
-door_friction (behavior-dex; the evaluator's R1Pro keeps OmniGibson's).
+"""Load-independent friction for the doors, lids and drawers of fixed BEHAVIOR objects, and a counterbalance for the
+hinged ones gravity turns: the embodiment option door_friction (behavior-dex; the evaluator's R1Pro keeps OmniGibson's).
 
 OmniGibson gives every revolute joint a friction coefficient of 0.2 and every prismatic joint 0.3
 (DatasetObject._initialize), and PhysX resists a joint's motion with that coefficient times the force and torque the
 joint transmits. A part's own weight is most of that load, so the effort that starts a part grows with its mass, and
 below it the part creeps instead of holding. Measured in five scenes as the joint effort, ramped, at which a part has
 moved 0.02 rad or 5 mm: room doors 10 to 17 N m, fridge, washer and dryer doors 2.6 to 6.6, a car
-trunk 18 and a grill lid 11 to 13 to lift, drawers, racks and sliding doors up to 34 N. The evaluator's assisted grasp is a rigid joint; a Sharpa hand's grip is not.
+trunk 18 and a grill lid 11 to 13 to lift, drawers, racks and sliding doors up to 34 N. Assets have no spring or
+detent, so a lid gravity turns falls: a car trunk shuts from half open, an oven or dishwasher door falls fully open.
+The evaluator's assisted grasp is a rigid joint; a Sharpa hand's grip is not.
 
 With the option each single-axis joint of a fixed object gets PhysX's load-independent friction instead, a static
 and a dynamic friction effort, which replace the coefficient; movable objects and robots are untouched:
@@ -15,9 +17,15 @@ and a dynamic friction effort, which replace the coefficient; movable objects an
   plus that weight's moment about the joint (PhysX adds the two), at most the option's cap, 1.5 N m for a hinge and
   6 N for a slide. Parts lighter than the cap keep what they have at rest, without the creep.
 - dynamic: DYNAMIC (0.7) of the static.
+- counterbalance: where gravity anywhere in a hinge's range would turn the part with more than COUNTERBALANCE (half)
+  of its static friction, gravity is turned off on the moving links, as a strut or spring holds a real trunk, oven
+  door or bar flap: the part stays where it is put and moves at the same small effort both ways. Doors on a vertical
+  hinge and drawers carry no such load and keep their gravity; so do parts on a vertical slide (a fryer's baskets),
+  which come down as they do today.
 
-Measured over five scenes: doors start at 1.6 to 2.2 N m and drawers at 6.2 to 7.8 N whatever their mass; nothing
-moves in 10 s idle; locked doors keep their locking limits.
+Measured over five scenes: doors start at 1.6 to 2.2 N m and drawers at 6.2 to 7.8 N whatever their mass; trunk, oven
+and dishwasher doors, grill lid and bar flap stay at 25, 50, 75 and 90 % open; nothing moves in 10 s idle; locked
+doors keep their locking limits.
 """
 from typing import NamedTuple
 
@@ -25,6 +33,8 @@ import numpy as np
 
 GRAVITY = 9.81  # m/s^2, OmniGibson's simulator
 DYNAMIC = .7  # the dynamic friction effort, as a fraction of the static
+COUNTERBALANCE = .5  # gravity off where it would load a joint with more than this fraction of its static friction
+RANGE_SAMPLES = 181  # positions at which a hinge's gravity torque is evaluated across its range
 
 
 class DoorFriction(NamedTuple):
@@ -46,6 +56,12 @@ class Part(NamedTuple):
     centres: np.ndarray
 
 
+def rotate(vector, axis, angle):
+    """vector turned by angle (rad) about the unit axis (Rodrigues)."""
+    c, s = np.cos(angle), np.sin(angle)
+    return vector * c + np.cross(axis, vector) * s + axis * (axis @ vector) * (1 - c)
+
+
 def moment(part):
     """The moving links' first moment of mass about the joint's origin (kg m)."""
     return (part.masses[:, None] * (part.centres - part.origin)).sum(0)
@@ -57,6 +73,27 @@ def static_friction(part, friction):
     weight = part.masses.sum() * GRAVITY
     torque = GRAVITY * float(np.hypot(*moment(part)[:2]))  # |first moment x gravity|
     return min(part.coefficient * (weight + torque), friction.hinge if part.revolute else friction.slide)
+
+
+def gravity_load(part):
+    """The largest effort gravity exerts on the part about (N m) or along (N) its joint anywhere in its range."""
+    weight = np.array([0., 0., -GRAVITY])
+    if not part.revolute:
+        return abs(part.masses.sum() * float(weight @ part.axis))
+    first = moment(part)
+    low, high = part.lower - part.position, part.upper - part.position
+    if not np.isfinite(low) or not np.isfinite(high) or high - low >= 2 * np.pi:
+        low, high = -np.pi, np.pi
+    return max(abs(float(part.axis @ np.cross(rotate(first, part.axis, turn), weight)))
+               for turn in np.linspace(low, high, RANGE_SAMPLES))
+
+
+def rule(part, friction):
+    """The part's static friction effort, and whether gravity is to be turned off on its moving links: on a hinge
+    that gravity would turn with more than COUNTERBALANCE of that friction somewhere in its range. A part on a
+    vertical slide (a fryer's basket) keeps its weight and comes down, as it does today."""
+    static = static_friction(part, friction)
+    return static, part.revolute and gravity_load(part) > COUNTERBALANCE * static
 
 
 def _matrix(quaternion_xyzw):
@@ -114,8 +151,8 @@ def parts(obj):
 
 
 def ease_doors(scene, friction):
-    """Give the joints of the scene's fixed objects load-independent friction (static_friction); returns
-    {object: {joint: static friction effort}}."""
+    """Give the joints of the scene's fixed objects load-independent friction (rule) and counterbalance the parts gravity
+    turns; returns {object: {joint: (static friction effort, counterbalanced)}}."""
     import torch
     from omnigibson.objects.dataset_object import DatasetObject
 
@@ -132,8 +169,11 @@ def ease_doors(scene, friction):
         properties = torch.as_tensor(_array(view.get_dof_friction_properties()), dtype=torch.float32)
         eased[obj.name] = {}
         for name, (dof, links, part) in found.items():
-            static = static_friction(part, friction)
+            static, counterbalanced = rule(part, friction)
             properties[0, dof, 0], properties[0, dof, 1] = static, DYNAMIC * static
-            eased[obj.name][name] = round(static, 4)
+            if counterbalanced:
+                for link_name in links:
+                    obj.links[link_name].disable_gravity()
+            eased[obj.name][name] = (round(static, 4), counterbalanced)
         view.set_dof_friction_properties(properties, torch.arange(view.count, dtype=torch.int32))
     return eased

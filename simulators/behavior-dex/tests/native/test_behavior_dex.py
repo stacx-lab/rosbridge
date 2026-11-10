@@ -165,10 +165,11 @@ def test_rig_matches_native_chains_hands_and_cameras(tmp_path, sim):
             close(compose(hand, rig.link(f"{side}_hand", fingers, link)), measured(link), atol=2e-3)
 
 
-def test_doors_start_at_a_small_effort_and_locked_doors_stay_locked(sim):
-    """door_friction: in turning_on_radio's house, a room door between two loaded rooms (9.9 kg) needs 14 N m under
-    OmniGibson's friction; here it opens at 3 N m but holds against 1 N m. The corridor's door to the unloaded garage
-    keeps its lock."""
+def test_doors_start_at_a_small_effort_lids_stay_where_put_and_locked_doors_stay_locked(sim):
+    """door_friction: in turning_on_radio's house, the car's trunk (3.1 kg on a horizontal hinge) falls shut from
+    half open under OmniGibson's friction and a room door between two loaded rooms (9.9 kg) needs 14 N m; here the
+    trunk stays and the door opens at 3 N m but holds against 1 N m. The corridor's door to the unloaded garage keeps
+    its lock."""
     sim.reset("turning_on_radio", 0)
     hold = sim.state()[0]
     hold[channels(sim, "base")] = 0.
@@ -177,6 +178,10 @@ def test_doors_start_at_a_small_effort_and_locked_doors_stay_locked(sim):
         for _ in range(round(seconds / sim.period)):
             sim.step(hold)
 
+    half_open = 2.5133 / 2
+    sim.native("drive_object_joint", "car_xxsgpq_0", "j_trunk", half_open)
+    run(1.5)
+    assert sim.native("object_joint", "car_xxsgpq_0", "j_trunk") == pytest.approx(half_open, abs=.02)
     sim.native("drive_object_joint", "door_vudhlc_3", "j_leaf", 0., effort=1.)
     run(1.)
     assert sim.native("object_joint", "door_vudhlc_3", "j_leaf") < .01
