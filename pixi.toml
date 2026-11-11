@@ -32,7 +32,7 @@ rosbridge = { path = ".", editable = true }
 MUJOCO_GL = "egl"
 
 [tasks]
-test = "python -m pytest -q tests/unit simulators/abc/tests/unit simulators/libero/tests/unit simulators/robotwin/tests/unit simulators/robodojo/tests/unit simulators/robocasa/tests/unit simulators/behavior/tests/unit simulators/behavior-g1/tests/unit simulators/behavior-dex/tests/unit"
+test = "python -m pytest -q tests/unit simulators/abc/tests/unit simulators/libero/tests/unit simulators/robotwin/tests/unit simulators/robodojo/tests/unit simulators/robocasa/tests/unit simulators/behavior/tests/unit simulators/behavior-g1/tests/unit simulators/behavior-dex/tests/unit simulators/handson/tests/unit"
 
 [feature.abc.pypi-dependencies]
 mujoco = "~=3.8.0"
@@ -126,28 +126,32 @@ build = "python -m rosbridge.provisioning.workspace --simulator robocasa"
 test-ros = "bash -c 'source .workspaces/robocasa/install/local_setup.bash && python -m pytest -q simulators/robocasa/tests/ros'"
 smoke = "python -m pytest -q simulators/robocasa/tests/native"
 
-# RoboDojo's world node: the shared ROS environment plus its tasks. The simulator
-# itself runs in robodojo-native, a separate interpreter (rosbridge.core.worker).
+# RoboDojo's and HandsOn's world nodes: the shared ROS environment plus their tasks. Each
+# simulator runs in its own Python 3.11 interpreter (rosbridge.core.worker).
 [feature.robodojo.tasks]
 build = "python -m rosbridge.provisioning.workspace --simulator robodojo"
 test-ros = "bash -c 'source .workspaces/robodojo/install/local_setup.bash && python -m pytest -q simulators/robodojo/tests/ros'"
 
-# Isaac Sim 5.1 ships Python 3.11 wheels only, while RoboStack Jazzy is Python 3.12.
-# Direct requirements of RoboDojo, its Isaac Lab fork and its cuRobo fork, pinned to
-# RoboEnv's resolved robodojo-devices lock; prepare installs the forks with --no-deps.
-[feature.robodojo-native.dependencies]
+[feature.handson.tasks]
+build = "python -m rosbridge.provisioning.workspace --simulator handson"
+test-ros = "bash -c 'source .workspaces/handson/install/local_setup.bash && python -m pytest -q simulators/handson/tests/ros'"
+
+# Isaac Sim 5.1 ships Python 3.11 wheels only, while RoboStack Jazzy is Python 3.12. Isaac Sim and
+# Isaac Lab's direct requirements (source/isaaclab/setup.py, without its unused livestream server),
+# pinned to RoboEnv's resolved robodojo-devices lock; prepare installs Isaac Lab with --no-deps.
+[feature.isaaclab.dependencies]
 python = "3.11.*"
 uv = "*"
 
 # Isaac Sim 5.1 publishes manylinux_2_35 Linux wheels; other platforms add pywin32.
-[feature.robodojo-native.system-requirements]
+[feature.isaaclab.system-requirements]
 libc = "2.35"
 
-[feature.robodojo-native.pypi-options]
+[feature.isaaclab.pypi-options]
 extra-index-urls = ["https://pypi.nvidia.com", "https://download.pytorch.org/whl/cu128"]
 index-strategy = "unsafe-best-match"
 
-[feature.robodojo-native.pypi-dependencies]
+[feature.isaaclab.pypi-dependencies]
 isaacsim = { version = "==5.1.0.0", extras = ["all", "extscache"] }
 torch = { version = "==2.7.0+cu128", index = "https://download.pytorch.org/whl/cu128" }
 torchvision = { version = "==0.22.0+cu128", index = "https://download.pytorch.org/whl/cu128" }
@@ -155,12 +159,6 @@ numpy = "==1.26.0"
 scipy = "==1.15.3"
 warp-lang = "==1.11.0"
 setuptools = "==80.9.0"
-huggingface-hub = "==0.36.2"
-h5py = "==3.16.0"
-transforms3d = "==0.4.2"
-open3d = "==0.19.0"
-msgpack-numpy = "==0.4.8"
-omegaconf = "==2.3.1"
 opencv-python = "==4.11.0.86"
 onnx = "==1.21.0"
 prettytable = "==3.3.0"
@@ -181,6 +179,18 @@ junitparser = "==5.0.3"
 flatdict = "==4.0.0"
 flaky = "==3.8.1"
 packaging = "==23.0"
+pyyaml = "==6.0.2"
+tqdm = "==4.70.0"
+# Kit loads Isaac Lab's isaaclab_tasks extension at startup, which imports h5py.
+h5py = "==3.16.0"
+
+# Direct requirements of RoboDojo and its cuRobo fork; prepare installs both forks with --no-deps.
+[feature.robodojo-native.pypi-dependencies]
+huggingface-hub = "==0.36.2"
+transforms3d = "==0.4.2"
+open3d = "==0.19.0"
+msgpack-numpy = "==0.4.8"
+omegaconf = "==2.3.1"
 protobuf = "==7.36.1"
 tensorboard = "==2.21.0"
 numba = "==0.59.1"
@@ -188,8 +198,6 @@ importlib-resources = "==7.1.0"
 matplotlib = "==3.10.3"
 networkx = "==3.3"
 numpy-quaternion = "==2024.0.13"
-pyyaml = "==6.0.2"
-tqdm = "==4.70.0"
 viser = "==0.2.11"
 yourdfpy = "==0.0.60"
 nvidia-cuda-runtime-cu12 = "==12.8.57"
@@ -198,6 +206,25 @@ wheel = "==0.45.1"
 
 [feature.robodojo-native.tasks]
 smoke = "env PYTHONPATH=src:simulators/robodojo:.runtime/robodojo python -m pytest -q -p no:cacheprovider simulators/robodojo/tests/native"
+
+# Direct requirements of HandsOn (handson/pyproject.toml) within upstream's simulator constraints
+# (requirements/simulator-constraints.txt); prepare installs it with --no-deps. MuJoCo reads the
+# robot's MJCF for the catalog rig.
+[feature.handson-native.pypi-dependencies]
+absl-py = "==2.5.1"
+av = "==18.1.0"
+dm-robotics-transformations = "==0.9.0"
+glfw = "==2.10.2"
+imageio = { version = "==2.37.0", extras = ["ffmpeg"] }
+mujoco = "==3.3.0"
+numcodecs = "==0.15.1"
+psutil = "==5.9.8"
+typing-extensions = "==4.12.2"
+tyro = "==0.9.17"
+zarr = "==2.18.7"
+
+[feature.handson-native.tasks]
+smoke = "env PYTHONPATH=src:simulators/handson:.runtime/handson python -m pytest -q -p no:cacheprovider simulators/handson/tests/native"
 
 # BEHAVIOR's world nodes: the shared ROS environment plus their tasks. OmniGibson runs in a
 # separate Python 3.11 interpreter (rosbridge.core.worker): behavior-native for the R1Pro,
@@ -292,7 +319,9 @@ libero = { features = ["libero"] }
 robotwin = { features = ["robotwin"] }
 robocasa = { features = ["robocasa"] }
 robodojo = { features = ["robodojo"], solve-group = "jazzy" }
-robodojo-native = { features = ["robodojo-native"], no-default-feature = true }
+robodojo-native = { features = ["isaaclab", "robodojo-native"], no-default-feature = true }
+handson = { features = ["handson"], solve-group = "jazzy" }
+handson-native = { features = ["isaaclab", "handson-native"], no-default-feature = true }
 behavior = { features = ["behavior"], solve-group = "jazzy" }
 behavior-native = { features = ["omnigibson", "behavior-native"], no-default-feature = true }
 behavior-g1 = { features = ["behavior-g1"], solve-group = "jazzy" }

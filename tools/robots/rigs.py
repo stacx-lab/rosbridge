@@ -272,26 +272,40 @@ def body_joint(model, body):
     return jid
 
 
+def _mujoco_joint(model, body, parent, child):
+    """The URDF joint into a body: its one hinge or slide joint at the body origin as a revolute
+    or prismatic joint, or a fixed joint for a body without joints."""
+    entry = {"parent": parent, "child": child, "origin": body_local(model, body)}
+    if not model.body_jntnum[body]:
+        return {**entry, "name": f"{child}_joint", "type": "fixed"}
+    jid = body_joint(model, body)
+    kind = {2: "prismatic", 3: "revolute"}[int(model.jnt_type[jid])]
+    return {**entry, "name": model.joint(jid).name, "type": kind, "axis": model.jnt_axis[jid],
+            "limits": model.jnt_range[jid]}
+
+
 def mujoco_chain(model, bodies, name, comment, tip="flange"):
     """A kinematic-only serial chain through MuJoCo bodies: base_link is the first body's
-    parent and the last body is the tip link. Bodies with one hinge or slide joint at their
-    origin become revolute or prismatic joints; bodies without joints become fixed joints."""
-    links, joints, previous = ["base_link"], [], "base_link"
+    parent and the last body is the tip link."""
+    links, joints = ["base_link"], []
     for index, body in enumerate(bodies, 1):
-        body = model.body(body).id
         child = tip if index == len(bodies) else f"link{index}"
-        entry = {"parent": previous, "child": child, "origin": body_local(model, body)}
-        if model.body_jntnum[body]:
-            jid = body_joint(model, body)
-            kind = {2: "prismatic", 3: "revolute"}[int(model.jnt_type[jid])]
-            entry.update(name=model.joint(jid).name, type=kind, axis=model.jnt_axis[jid],
-                         limits=model.jnt_range[jid])
-        else:
-            entry.update(name=f"{child}_joint", type="fixed")
+        joints.append(_mujoco_joint(model, model.body(body).id, links[-1], child))
         links.append(child)
-        joints.append(entry)
-        previous = child
     return urdf(name, comment, links, joints)
+
+
+def mujoco_tree(model, root, name, comment):
+    """A kinematic-only copy of the MuJoCo subtree below body root, renamed base_link; the other
+    links keep their body names."""
+    root = model.body(root).id
+    names, joints = {root: "base_link"}, []
+    for body in range(root + 1, model.nbody):  # MuJoCo numbers a body after its parent
+        parent = int(model.body_parentid[body])
+        if parent in names:
+            names[body] = model.body(body).name
+            joints.append(_mujoco_joint(model, body, names[parent], names[body]))
+    return urdf(name, comment, list(names.values()), joints)
 
 
 # URDF -------------------------------------------------------------------------------------

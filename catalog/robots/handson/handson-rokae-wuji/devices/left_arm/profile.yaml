@@ -1,0 +1,91 @@
+name: left_arm
+runtime:
+  domain_id: 0
+  nodes:
+  - entry: links.py
+    factory: create
+  ready_timeout_s: 30
+operations:
+  joint_state:
+    description: Measured positions of joint1_left, joint2_left, joint3_left, joint4_left,
+      joint5_left, joint6_left, joint7_left in radians with velocities and the world-clock
+      acquisition stamp; do not infer motion completion from a sent command.
+    transport: topic
+    direction: output
+    endpoint: /left_arm/joint_state
+    type: sensor_msgs/msg/JointState
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: transient_local
+    timeout_s: 10
+  joint_target:
+    description: Joint trajectory over all 7 arm joints in radians, timed from receipt by
+      strictly increasing time_from_start and finishing within 120 seconds; velocities, accelerations
+      and effort must be empty. A zero header stamp selects now; a nonzero stamp must not
+      start in the past. Points are absolute native joint positions, linearly interpolated
+      at the native control period. Replacement clears pending references; invalid trajectories
+      are ignored, so verify measured joint_state.
+    transport: topic
+    direction: input
+    endpoint: /left_arm/joint_target
+    type: trajectory_msgs/msg/JointTrajectory
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: volatile
+    timeout_s: 10
+  stop:
+    description: Stop arm motion and hold the measured posture.
+    transport: service
+    direction: input
+    endpoint: /left_arm/stop
+    type: std_srvs/srv/Trigger
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: volatile
+    timeout_s: 10
+loaded: false
+meta:
+  created_at: '2026-10-24T00:00:00Z'
+  updated_at: '2026-10-24T00:00:00Z'
+type: joint
+description: ROKAE AR5 seven-joint left arm of the HandsOn station. Geometry is the sibling
+  arm.urdf with palm (left_palm_link, the pose HandsOn's EEF52 actions command) as the tip
+  link; measured links are on TF as left_arm/<link>, and helpers.joint_model('left_arm') computes
+  FK/IK from it. Commands are absolute joint positions in place of HandsOn's palm-pose IK;
+  the task's native controller settings and drives apply.
+source: introspected
+calibrated_at: null
+method: introspection
+model:
+  format: urdf
+  path: arm.urdf
+  base_link: base_link
+  tip_link: palm
+limits: native
+home:
+  joint1_left: 1.5707963
+  joint2_left: 1.5707963
+  joint3_left: -1.5707963
+  joint4_left: 1.5707963
+  joint5_left: 1.5707963
+  joint6_left: 0.0
+  joint7_left: 0.0
+stop:
+  behavior: hold
+  affected_devices:
+  - left_arm
+frames:
+  base:
+    translation_m:
+    - -0.75
+    - 0.065
+    - 1.34
+    rotation_xyzw:
+    - -0.707106781187
+    - 0.0
+    - 0.0
+    - 0.707106781187
+    parent: world:base

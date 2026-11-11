@@ -1,0 +1,14 @@
+identity:
+  id: handson-rokae-wuji
+  name: HandsOn ROKAE AR5 with Wuji hands
+  kind: arm
+  model: ROKAE AR5 (dual) with Wuji hands
+  source: user
+devices:
+  source: user
+safety:
+  source: user
+  keep_out_zones: []
+meta:
+  created_at: '2026-10-24T00:00:00Z'
+  updated_at: '2026-10-24T00:00:00Z'
