@@ -67,6 +67,23 @@ def lock_doors_out(scene, rooms):
     return doors
 
 
+def remove_particles_out(scene, rooms):
+    """Remove the visual particles that the scene's room map places in a room other than the loaded ones; returns their
+    names. BEHAVIOR's sampler places a floor's particles wherever the floor is traversable, and a floor can reach past
+    its room's locked doors (lock_doors_out). Where the map names no room, a particle stays."""
+    removed = []
+    for system in scene.active_systems.values():
+        if not scene.is_visual_particle_system(system.name) or not system.n_particles:
+            continue
+        names = list(system.particles)
+        out = [index for index, position in enumerate(values(system.get_particles_position_orientation()[0]))
+               if scene.seg_map.get_room_instance_by_point(position[:2]) not in (None, *rooms)]
+        if out:
+            system.remove_particles(idxs=out)
+            removed += [names[index] for index in out]
+    return removed
+
+
 def data_root(simulator):
     return project_root() / ".runtime" / simulator / "datasets"
 
@@ -124,7 +141,8 @@ class Episode:
         # Physics views must exist before the first load reads or restores robot joint state.
         og.sim.update_handles()
         # The robot cannot pass a door onto a room without its floor: such doors are closed and locked.
-        self.locked_doors = [door.name for door in lock_doors_out(self.env.scene, cfg["scene"]["load_room_instances"])]
+        self.rooms = cfg["scene"]["load_room_instances"]
+        self.locked_doors = [door.name for door in lock_doors_out(self.env.scene, self.rooms)]
         print(f"doors locked out of the loaded rooms: {self.locked_doors}", flush=True)
         self.lights = None
 
@@ -170,6 +188,9 @@ class Episode:
             for entity_name, entity in scope.items():
                 if entity is not None and not is_system_bddl_inst(entity_name):
                     entity.keep_still()
+        # Particles out of the loaded rooms go before the initial state is saved, so env.reset restores the instance
+        # without them.
+        self.particles_removed = remove_particles_out(scene, self.rooms)
         scene.update_initial_file()
         env.reset()
         self.lights = LightToggleSynchronizer(scene) if self.task in LIGHT_TASKS else None

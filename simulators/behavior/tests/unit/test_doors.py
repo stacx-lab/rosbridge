@@ -1,11 +1,12 @@
-"""Doors out of a partial BEHAVIOR scene's loaded rooms are closed and locked. OmniGibson is faked: a room map that
-splits the world at x = 0 and y = 0, and doors with a closed-frame box, a pose and joints."""
+"""Doors out of a partial BEHAVIOR scene's loaded rooms are closed and locked, and particles beyond them removed.
+OmniGibson is faked: a room map that splits the world at x = 0 and y = 0, doors with a closed-frame box, a pose and
+joints, and particle systems."""
 import math
 from types import SimpleNamespace
 
 import pytest
 
-from rosbridge_behavior.environment import DOOR_LOCKED, doors_out, lock_doors_out
+from rosbridge_behavior.environment import DOOR_LOCKED, doors_out, lock_doors_out, remove_particles_out
 
 
 class Rooms:
@@ -77,3 +78,29 @@ def test_a_door_out_is_closed_and_locked_whatever_way_it_opens(lower, upper):
     assert lock_doors_out(scene(out, inside), ["kitchen_0"]) == [out]
     assert joint.position == 0. and (joint.lower_limit, joint.upper_limit) == (0., DOOR_LOCKED)
     assert inside.joints["j"].position == .3 and inside.joints["j"].upper_limit == 1.57
+
+
+class Particles:
+    """A particle system's particles by name, at their positions."""
+    def __init__(self, name, positions):
+        self.name, self.positions = name, dict(positions)
+        self.particles, self.n_particles = self.positions, len(self.positions)
+
+    def get_particles_position_orientation(self):
+        return list(self.positions.values()), None
+
+    def remove_particles(self, idxs):
+        for name in [list(self.positions)[index] for index in idxs]:
+            del self.positions[name]
+
+
+def test_visual_particles_in_a_room_that_is_not_loaded_are_removed():
+    dust = Particles("dust", {"in": (1., 1., 0.), "out": (-1., 1., 0.), "no_room": (-1., -1., 0.),
+                              "in_2": (2., 0., 0.)})
+    water = Particles("water", {"out": (-1., 1., 0.)})  # a physical system
+    empty = Particles("stain", {})
+    world = SimpleNamespace(active_systems={"dust": dust, "water": water, "stain": empty}, seg_map=Rooms(),
+                            is_visual_particle_system=lambda name: name != "water")
+    assert remove_particles_out(world, ["kitchen_0"]) == ["out"]
+    assert list(dust.positions) == ["in", "no_room", "in_2"] and list(water.positions) == ["out"]
+    assert remove_particles_out(world, ["kitchen_0", "hall_0"]) == []

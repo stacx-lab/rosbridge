@@ -46,7 +46,12 @@ instance's objects and the robot's start pose and settles 25 physics steps holdi
 task entities still, as the evaluator's `load_batch` does. OmniGibson loads every door of
 the scene but the floors of the loaded rooms only, so a door can open onto no floor: a door
 with a loaded room on one side of the scene's room segmentation and none on the other is
-closed and locked. No such door is part of an activity.
+closed and locked. No such door is part of an activity. BEHAVIOR's sampler places a floor's
+particles wherever the floor is traversable, and a floor can reach past a locked door, so
+loading removes the visual particles that the room segmentation places in a room that is
+not loaded. The episode record names them in `particles_removed_out_of_loaded_rooms`. Among
+the public instances, these are `sweeping_garage`'s two at seed 0 and one at seed 12, outside
+its garage door.
 
 Success is the activity's BDDL goal predicate, evaluated every step; the reward is
 1 while it holds. `--stop-on-success` ends the episode at the first success, as the
