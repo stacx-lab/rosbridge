@@ -10,6 +10,8 @@ from rosbridge.clients import WorldClockClient
 from rosbridge_runtime.devices import STREAM_QOS
 from tests.ros.support import Graph, seconds
 
+TIME_LIMIT = "the episode ended because the time limit was reached"
+
 
 @pytest.fixture
 def stepped(tmp_path):
@@ -79,11 +81,23 @@ def test_terminal_tick_and_runtime_unavailable(tmp_path):
     try:
         result = graph.wait(.2)
         assert result.success and result.waited_s == pytest.approx(.2)
-        assert not graph.wait(.1).success
+        assert result.message == f"ok; {TIME_LIMIT}"
+        later = graph.wait(.1)
+        assert not later.success and later.message == f"episode is done; {TIME_LIMIT}"
         graph.stop(graph.owner)
         graph.until(lambda: not graph.wait_client.service_is_ready(), 15.)
         with pytest.raises(TimeoutError, match="unavailable"):
             WorldClockClient(graph.node).wait(.1, timeout_s=.2)
+    finally:
+        graph.close()
+
+
+def test_a_run_launched_to_stop_on_success_ends_saying_so(tmp_path):
+    graph = Graph(tmp_path, max_steps=5, task="succeeds", stop_on_success=True)
+    try:
+        result = graph.wait(1.)
+        assert not result.success and result.waited_s == pytest.approx(.2)
+        assert result.message == "episode ended during wait; the episode ended because the task succeeded"
     finally:
         graph.close()
 

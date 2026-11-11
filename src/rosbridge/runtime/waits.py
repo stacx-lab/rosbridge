@@ -26,13 +26,14 @@ class WaitScheduler:
     def pending(self):
         return bool(self._pending)
 
-    def admit(self, duration_s, time_s, step, period, done, complete):
+    def admit(self, duration_s, time_s, step, period, ended, complete):
+        """ended: None while the episode runs, then why it ended, which every valid reply adds."""
         if not math.isfinite(duration_s) or duration_s < 0:
             complete(WaitResult(False, "duration_s must be finite and nonnegative", 0., time_s))
         elif duration_s == 0:
-            complete(WaitResult(True, "ok", 0., time_s))
-        elif done:
-            complete(WaitResult(False, "episode is done", 0., time_s))
+            complete(WaitResult(True, f"ok; {ended}" if ended else "ok", 0., time_s))
+        elif ended:
+            complete(WaitResult(False, f"episode is done; {ended}", 0., time_s))
         else:
             # Integer deadlines avoid accumulated floating-point drift. Move one ULP
             # toward zero so e.g. 0.3 / 0.1 does not accidentally request an extra tick.
@@ -43,12 +44,14 @@ class WaitScheduler:
             count = max(1, math.ceil(math.nextafter(ticks, 0.)))
             self._pending.append(PendingWait(time_s, step + count, complete))
 
-    def settle(self, time_s, step, done=False):
+    def settle(self, time_s, step, ended=None):
+        """ended: as for admit; the end completes every pending wait."""
         remaining = []
         for wait in self._pending:
             reached = step >= wait.end_step
-            if reached or done:
-                wait.complete(WaitResult(reached, "ok" if reached else "episode ended during wait",
+            if reached or ended:
+                message = "ok" if reached else "episode ended during wait"
+                wait.complete(WaitResult(reached, f"{message}; {ended}" if ended else message,
                                          max(0., time_s - wait.start_s), time_s))
             else:
                 remaining.append(wait)

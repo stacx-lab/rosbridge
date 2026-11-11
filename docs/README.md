@@ -100,8 +100,11 @@ native control steps; zero is immediate; negative, nonfinite or unrepresentable
 waits fail. Waits are sequential: a wait requested while another is pending is
 rejected, and `world/stop` (`std_srvs/srv/Trigger`) cancels the pending one. A run
 is one episode, of the task and seed it was launched with. There is no reset: to
-start over, stop the run and launch another. Termination completes a wait due on
-that tick and fails an unfinished one. A wait admitted before a client times out
+start over, stop the run and launch another. An episode ends only at its first
+success, when launched with `--stop-on-success`, or at its step limit, if it has one.
+Termination completes a wait due on that tick and fails an unfinished one; from then
+on, every valid wait's reply adds `; the episode ended because the task succeeded`
+or `because the time limit was reached`. A wait admitted before a client times out
 stays pending until it completes or `world/stop` cancels it; abrupt process loss may
 prevent a response, so use wall timeouts.
 

@@ -42,7 +42,8 @@ class SimNode(Node):
                 raise ValueError(f"this simulator offers no spectator views {unknown}")
         # A run is one episode: the launch's task and seed, loaded once.
         self.sim.reset(p["task"] or self.sim.default_task, p["seed"], p["randomize"])
-        self.world = WorldRuntime(self.sim, p["mode"], lambda: self.observations.publish())
+        self.world = WorldRuntime(self.sim, p["mode"], lambda: self.observations.publish(),
+                                  stop_on_success=p["terminate_on_success"])
         self.devices = [device(spec, self) for spec in self.sim.devices]
         self.declare_parameter("spectator_views", [v.name for v in self.sim.spectators],
                                ParameterDescriptor(read_only=True), ignore_override=True)
@@ -99,7 +100,7 @@ class SimNode(Node):
                 ready.set_result(self.world.reply(result))  # with the commands refused since the previous reply
             self.pending_wait = complete
             self.world.waits.admit(request.duration_s, self.world.time_s, self.world.steps,
-                                   self.sim.period, self.sim.done, complete)
+                                   self.sim.period, self.world.ended, complete)
         try:
             await self.request(admit)
             result = await ready

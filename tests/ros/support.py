@@ -23,7 +23,7 @@ def seconds(stamp):
 
 class Graph:
     def __init__(self, tmp_path, mode="stepped", backend="toy", max_steps=0, spectators=False,
-                 startup_s=60.):
+                 startup_s=60., task="toy", stop_on_success=False):
         self.lease = DomainLease()
         self.env = dict(os.environ, ROS_DOMAIN_ID=str(self.lease.domain))
         self.processes, self.logs = [], []
@@ -39,7 +39,9 @@ class Graph:
         try:
             if backend == "toy":
                 self.owner = self.start([sys.executable, "-m", "tests.ros.toy_server", "--ros-args",
-                                         "-p", f"mode:={mode}", "-p", f"max_steps:={max_steps}"])
+                                         "-p", f"mode:={mode}", "-p", f"max_steps:={max_steps}",
+                                         "-p", f"task:={task}",
+                                         "-p", f"terminate_on_success:={str(stop_on_success).lower()}"])
             else:
                 self.owner = self.start(["ros2", "launch", "rosbridge_runtime", "sim.launch.py",
                                          f"backend:={backend}", f"mode:={mode}",

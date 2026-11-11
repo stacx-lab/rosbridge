@@ -21,9 +21,11 @@ class WorldRuntime:
 
     submit() is the only cross-thread entry point: queued functions run on the
     owner thread between steps, so callback threads never touch native state.
+    stop_on_success: the backend was created to end the episode at its first success.
     """
-    def __init__(self, sim, mode, publish, **pacer_options):
-        self.sim, self.publish = sim, publish
+    def __init__(self, sim, mode, publish, stop_on_success=False, **pacer_options):
+        self.sim, self.publish, self.stop_on_success = sim, publish, stop_on_success
+        self.ended = None  # once the episode has ended, why, as wait replies state it
         self._owner = threading.get_ident()
         self._requests = queue.SimpleQueue()
         self._lock = threading.Lock()
@@ -99,18 +101,19 @@ class WorldRuntime:
         self.publish()
         if self.sim.done:
             self.commands.close()
+            # A backend ends an episode only at its first success, if created to stop there, or at its step limit.
+            self.ended = "the episode ended because " + (
+                "the task succeeded" if self.stop_on_success and self.sim.success else "the time limit was reached")
             self._record_terminal()
         # Publications precede completion, including a successful terminal tick.
-        self.waits.settle(self.time_s, self.steps, self.sim.done)
+        self.waits.settle(self.time_s, self.steps, self.ended)
         return True
 
     def _outcome(self, reason=None):
-        limit = self.sim.max_steps
         return {"task": self.sim.task, "seed": self.sim.seed,
                 "step": self.steps, "time_s": self.time_s, "reward": self.sim.reward,
                 "success": bool(self.sim.success), "done": bool(self.sim.done),
-                "reason": reason or ("success" if self.sim.success else "max_steps"
-                           if limit and self.steps >= limit else "episode_done")}
+                "reason": reason or ("success" if self.sim.success else "max_steps")}
 
     def _record_terminal(self, reason=None, *, error=None):
         if self._judged:

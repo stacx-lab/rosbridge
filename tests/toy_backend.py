@@ -15,12 +15,11 @@ class ToyBackend:
     default_task = "toy"
     cameras = spectators = ()
     reward = 0.
-    success = False
     period = 0.1
 
     def __init__(self, max_steps=None, terminate_on_success=False):
         self.owner = threading.get_ident()
-        self.max_steps = max_steps
+        self.max_steps, self.terminate_on_success = max_steps, terminate_on_success
         self.closed = False
         self.reset("toy", 0, False)
 
@@ -29,10 +28,10 @@ class ToyBackend:
 
     def reset(self, task, seed, randomize):
         assert threading.get_ident() == self.owner
-        if task == "missing":
+        if task not in ("toy", "succeeds"):
             raise ValueError("unknown task")
         self.task, self.seed = task, seed
-        self.steps, self.time_s, self.done = 0, 0., False
+        self.steps, self.time_s, self.done, self.success = 0, 0., False, False
         self.position = np.zeros(3)
 
     def state(self):
@@ -44,7 +43,9 @@ class ToyBackend:
         self.position = action.copy()
         self.steps += 1
         self.time_s = self.steps * self.period
-        self.done = self.max_steps is not None and self.steps >= self.max_steps
+        self.success = self.task == "succeeds" and self.steps >= 2  # its goal holds from the second step
+        self.done = (self.max_steps is not None and self.steps >= self.max_steps
+                     or self.terminate_on_success and self.success)
 
     def close(self):
         assert threading.get_ident() == self.owner

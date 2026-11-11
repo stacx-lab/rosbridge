@@ -9,10 +9,14 @@ from rosbridge.runtime.world import WorldRuntime
 
 
 
-def world(mode="stepped", max_steps=None, backend=ToyBackend, **kwargs):
+TIME_LIMIT = "the episode ended because the time limit was reached"
+
+
+def world(mode="stepped", max_steps=None, backend=ToyBackend, task="toy", stop_on_success=False, **kwargs):
     published = []
-    sim = backend(max_steps)
-    runtime = WorldRuntime(sim, mode, lambda: published.append(sim.steps), **kwargs)
+    sim = backend(max_steps, stop_on_success)
+    sim.reset(task, 0, False)
+    runtime = WorldRuntime(sim, mode, lambda: published.append(sim.steps), stop_on_success, **kwargs)
     return runtime, published
 
 
@@ -20,7 +24,7 @@ def wait(runtime, duration):
     """Admit a world wait on the owner thread; the future completes with its result."""
     result = Future()
     runtime.submit(lambda: runtime.waits.admit(duration, runtime.time_s, runtime.steps,
-                                               runtime.sim.period, runtime.sim.done, result.set_result))
+                                               runtime.sim.period, runtime.ended, result.set_result))
     return result
 
 
@@ -75,25 +79,42 @@ def test_wait_completion_after_publication():
 
 def test_terminal_tick_completes_due_waits_then_fails_others():
     runtime, _ = world(max_steps=2)
+    early = wait(runtime, .1)
     due = wait(runtime, .2)
     late = wait(runtime, .3)
     finish(runtime)
-    assert due.result().success
+    assert early.result().message == "ok"
+    assert due.result().success and due.result().message == f"ok; {TIME_LIMIT}"
     assert not late.result().success and late.result().waited_s == pytest.approx(.2)
+    assert late.result().message == f"episode ended during wait; {TIME_LIMIT}"
     assert not runtime.tick()
     with pytest.raises(CommandError):
         runtime.commands.set_group("finger", [0.])
     zero = wait(runtime, 0.)
     future = wait(runtime, .1)
     runtime.drain()
-    assert zero.result().success and not future.result().success
+    assert zero.result().success and zero.result().message == f"ok; {TIME_LIMIT}"
+    assert not future.result().success and future.result().message == f"episode is done; {TIME_LIMIT}"
+
+
+@pytest.mark.parametrize("stop_on_success, max_steps, end_step, cause", [
+    (True, 5, 2, "the task succeeded"),
+    (True, 2, 2, "the task succeeded"),  # its first success on the limit's own step
+    (False, 3, 3, "the time limit was reached"),  # the goal holds at the limit of a run that goes on after success
+])
+def test_a_wait_reply_says_why_the_episode_ended(stop_on_success, max_steps, end_step, cause):
+    runtime, _ = world(max_steps=max_steps, task="succeeds", stop_on_success=stop_on_success)
+    pending = wait(runtime, 1.)
+    finish(runtime)
+    assert runtime.steps == end_step and runtime.sim.success
+    assert pending.result().message == f"episode ended during wait; the episode ended because {cause}"
 
 
 def replied(runtime, duration):
     """A world wait as the world node admits it: its reply names the commands refused since the previous one."""
     result = Future()
     runtime.submit(lambda: runtime.waits.admit(duration, runtime.time_s, runtime.steps, runtime.sim.period,
-                                               runtime.sim.done, lambda done: result.set_result(runtime.reply(done))))
+                                               runtime.ended, lambda done: result.set_result(runtime.reply(done))))
     return result
 
 
@@ -133,8 +154,8 @@ def test_a_refusal_reaches_a_wait_that_the_end_or_stop_completes():
     refuse(runtime, "/arm/joint_target", "trajectory start is in the past")
     finish(runtime)
     assert not pending.result().success
-    assert pending.result().message == ("episode ended during wait; refused since the previous wait reply: "
-                                        "/arm/joint_target: trajectory start is in the past")
+    assert pending.result().message == (f"episode ended during wait; {TIME_LIMIT}; refused since the previous "
+                                        "wait reply: /arm/joint_target: trajectory start is in the past")
     runtime, _ = world()
     stopped = replied(runtime, 1.)
     runtime.drain()
