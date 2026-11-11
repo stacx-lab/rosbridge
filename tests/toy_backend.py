@@ -28,7 +28,7 @@ class ToyBackend:
 
     def reset(self, task, seed, randomize):
         assert threading.get_ident() == self.owner
-        if task not in ("toy", "succeeds"):
+        if task not in ("toy", "succeeds", "fails"):
             raise ValueError("unknown task")
         self.task, self.seed = task, seed
         self.steps, self.time_s, self.done, self.success = 0, 0., False, False
@@ -40,6 +40,8 @@ class ToyBackend:
 
     def step(self, action):
         assert threading.get_ident() == self.owner
+        if self.task == "fails" and self.steps == 1:
+            raise FloatingPointError("the toy's physics failed")  # its second step
         self.position = action.copy()
         self.steps += 1
         self.time_s = self.steps * self.period

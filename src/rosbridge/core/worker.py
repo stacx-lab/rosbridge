@@ -23,7 +23,7 @@ ERRORS = {error.__name__: error for error in (ValueError, KeyError, RuntimeError
 
 
 class WorkerError(RuntimeError):
-    pass
+    kind = None  # the type name of the native exception it carries, if one
 
 
 class Array:
@@ -166,7 +166,9 @@ class WorkerBackend:
         kind, message, trace = payload
         if kind in ERRORS:
             raise ERRORS[kind](message)
-        raise WorkerError(f"native {kind}: {message}\n{trace}")
+        error = WorkerError(f"native {kind}: {message}\n{trace}")
+        error.kind = kind
+        raise error
 
     def configure_spectators(self, width=960, height=720, views=None):
         return self._call("configure_spectators", width, height, views)

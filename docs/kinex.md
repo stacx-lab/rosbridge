@@ -118,10 +118,11 @@ the agent objective in the user prompt; the operator reads native outcomes with
 
 A run is one episode; the world offers no reset, so starting over is the operator's:
 stop the run and launch another. An episode ending on success (with
-`--stop-on-success`) or a step limit pauses physics, and wait replies from then on
-say which. The graph remains available for images and clock; new commands are
-rejected. The episode's native outcome is appended once, when it ends or the run
-stops, to `episode-results.jsonl` in rosbridge's run directory; a simulator may add
-its own measures, such as BEHAVIOR's partial credit `q_score`. An interrupted run
-is marked stopped, not a successful terminal episode. Judge records are separate
-from the agent workspace; this separation is not an OS security sandbox.
+`--stop-on-success`), a step limit or a failed simulator step pauses physics, and
+wait replies from then on say which. The graph remains available for images and
+clock; new commands are rejected. The episode's native outcome is appended once, when
+it ends or the run stops, to `episode-results.jsonl` in rosbridge's run directory; a
+simulator may add its own measures, such as BEHAVIOR's partial credit `q_score`, except
+after a failed step. An interrupted run is marked stopped, not a successful terminal
+episode. Judge records are separate from the agent workspace; this separation is not
+an OS security sandbox.

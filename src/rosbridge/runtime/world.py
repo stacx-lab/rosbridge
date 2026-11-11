@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import queue
+import sys
 import threading
 import traceback
 
@@ -93,26 +94,39 @@ class WorldRuntime:
 
     def tick(self):
         self._assert_owner()
-        if self.sim.done or not self.pacer.ready(self.waits.pending):
+        if self.ended or not self.pacer.ready(self.waits.pending):
             return False
-        self.sim.step(self.commands.action(self.time_s + self.sim.period))
-        self.pacer.advanced()
-        self.time_s, self.steps = self.sim.time_s, self.sim.steps
-        self.publish()
-        if self.sim.done:
-            self.commands.close()
-            # A backend ends an episode only at its first success, if created to stop there, or at its step limit.
-            self.ended = "the episode ended because " + (
-                "the task succeeded" if self.stop_on_success and self.sim.success else "the time limit was reached")
-            self._record_terminal()
+        action = self.commands.action(self.time_s + self.sim.period)
+        try:
+            self.sim.step(action)
+        except Exception as failure:
+            # A step that fails, as BEHAVIOR's physics can when the robot is driven into furniture, ends the episode;
+            # the world goes on answering.
+            kind = getattr(failure, "kind", None) or type(failure).__name__  # a worker's: the native exception's
+            print("episode ended by an error:", file=sys.stderr, flush=True)
+            traceback.print_exc()
+            self._end(f"the simulation failed ({kind})", "error", f"{type(failure).__name__}: {failure}"[:500])
+        else:
+            self.pacer.advanced()
+            self.time_s, self.steps = self.sim.time_s, self.sim.steps
+            self.publish()
+            if self.sim.done:
+                # A backend ends an episode only at its first success, if created to stop there, or at its step limit.
+                self._end("the task succeeded" if self.stop_on_success and self.sim.success
+                          else "the time limit was reached")
         # Publications precede completion, including a successful terminal tick.
         self.waits.settle(self.time_s, self.steps, self.ended)
         return True
 
+    def _end(self, cause, reason=None, error=None):
+        self.commands.close()
+        self.ended = f"the episode ended because {cause}"
+        self._record_terminal(reason, error=error)
+
     def _outcome(self, reason=None):
         return {"task": self.sim.task, "seed": self.sim.seed,
                 "step": self.steps, "time_s": self.time_s, "reward": self.sim.reward,
-                "success": bool(self.sim.success), "done": bool(self.sim.done),
+                "success": bool(self.sim.success), "done": self.ended is not None,
                 "reason": reason or ("success" if self.sim.success else "max_steps")}
 
     def _record_terminal(self, reason=None, *, error=None):
@@ -139,7 +153,7 @@ class WorldRuntime:
         print("episode terminal: " + json.dumps(result), flush=True)
 
     def idle_s(self):
-        return 0.05 if self.sim.done else self.pacer.wait_s(self.waits.pending)
+        return 0.05 if self.ended else self.pacer.wait_s(self.waits.pending)
 
     def close(self, error=None):
         """Stop: interrupt the pending wait, fail queued requests and record the open episode as stopped (with the

@@ -102,6 +102,18 @@ def test_a_run_launched_to_stop_on_success_ends_saying_so(tmp_path):
         graph.close()
 
 
+def test_a_step_that_fails_ends_the_episode_and_the_world_goes_on_answering(tmp_path):
+    graph = Graph(tmp_path, task="fails")
+    failed = "the episode ended because the simulation failed (FloatingPointError)"
+    try:
+        result = graph.wait(1.)
+        assert not result.success and result.waited_s == pytest.approx(.1)
+        assert result.message == f"episode ended during wait; {failed}"
+        assert graph.wait(.1).message == f"episode is done; {failed}"
+    finally:
+        graph.close()
+
+
 def test_wall_timeout_leaves_the_admitted_wait_to_stop(stepped):
     graph = stepped
     with pytest.raises(TimeoutError, match="remains pending"):

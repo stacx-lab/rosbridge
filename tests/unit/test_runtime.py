@@ -4,6 +4,7 @@ from concurrent.futures import Future, ThreadPoolExecutor
 import pytest
 
 from rosbridge.core import CommandError
+from rosbridge.core.worker import WorkerError
 from tests.toy_backend import ToyBackend
 from rosbridge.runtime.world import WorldRuntime
 
@@ -292,6 +293,43 @@ def test_a_world_stopped_by_an_error_records_no_measures(tmp_path, monkeypatch):
     outcome, = records(tmp_path)
     assert 'progress' not in outcome and runtime.sim.measured == 0  # the error may have broken the backend
     assert outcome['error'] == "WorkerError: native worker exited (exit -9)"
+
+
+FAILED = "the episode ended because the simulation failed"
+
+
+def test_a_step_that_fails_ends_the_episode_and_the_world_goes_on_answering(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv('ROSBRIDGE_RUN_DIR', str(tmp_path))
+    runtime, published = world(backend=MeasuredToy, task="fails")
+    pending = wait(runtime, 1.)
+    finish(runtime)
+    assert runtime.steps == 1 and published == [1]  # the failed step publishes nothing
+    assert not pending.result().success and pending.result().waited_s == pytest.approx(.1)
+    assert pending.result().message == f"episode ended during wait; {FAILED} (FloatingPointError)"
+    zero, later = wait(runtime, 0.), wait(runtime, .1)
+    runtime.drain()
+    assert zero.result().message == f"ok; {FAILED} (FloatingPointError)"
+    assert later.result().message == f"episode is done; {FAILED} (FloatingPointError)"
+    with pytest.raises(CommandError):
+        runtime.commands.set_group("finger", [0.])
+    runtime.close()  # stopping adds no second record
+    outcome, = records(tmp_path)
+    assert (outcome['reason'], outcome['done'], outcome['step']) == ('error', True, 1)
+    assert outcome['error'] == "FloatingPointError: the toy's physics failed"
+    assert 'progress' not in outcome and runtime.sim.measured == 0  # the failure may have broken the backend
+    assert "Traceback" in capsys.readouterr().err
+
+
+def test_a_failed_step_in_a_worker_names_the_native_exception():
+    class Native(ToyBackend):
+        def step(self, action):
+            error = WorkerError("native AssertionError: the base's orientation is not a unit quaternion")
+            error.kind = "AssertionError"
+            raise error
+    runtime, _ = world(backend=Native)
+    pending = wait(runtime, .1)
+    finish(runtime)
+    assert pending.result().message == f"episode ended during wait; {FAILED} (AssertionError)"
 
 
 def test_a_measure_that_fails_is_the_records_error(tmp_path, monkeypatch, capsys):

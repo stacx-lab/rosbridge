@@ -41,8 +41,9 @@ def test_round_trip_keeps_layout_state_and_errors():
         sim.max_steps = None
         sim.reset("toy", 3, False)
         assert sim.max_steps is None and sim.seed == 3 and not sim.done
-        with pytest.raises(WorkerError, match="AttributeError"):
+        with pytest.raises(WorkerError, match="AttributeError") as error:
             sim.native("missing_method")
+        assert error.value.kind == "AttributeError"
     finally:
         sim.close()
     assert sim._process.returncode == 0
