@@ -1,0 +1,69 @@
+name: left_camera
+runtime:
+  domain_id: 0
+  nodes: []
+  ready_timeout_s: 30
+operations:
+  image:
+    description: RGB image measurements with encoding, dimensions, row stride and acquisition
+      timestamp in the Image header. The frame_id identifies the calibrated optical frame;
+      use its stamp for tf2 lookup. A new subscriber receives the current frame at once, also
+      while the world is paused, then one per camera sample; reading never advances world
+      time.
+    transport: topic
+    direction: output
+    endpoint: /left_camera/image
+    type: sensor_msgs/msg/Image
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: volatile
+    timeout_s: 10
+  camera_info:
+    description: CameraInfo mirroring the profile, with K and P from color.projection, zero
+      plumb_bob distortion, image size and optical frame. Kinex reads camera geometry from
+      the profile, not from this topic; intrinsics are not TF transforms.
+    transport: topic
+    direction: output
+    endpoint: /left_camera/camera_info
+    type: sensor_msgs/msg/CameraInfo
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: transient_local
+    timeout_s: 10
+loaded: false
+meta:
+  created_at: '2026-10-24T00:00:00Z'
+  updated_at: '2026-10-24T00:00:00Z'
+type: rgb
+description: RGB camera on the left wrist, looking along the hand, rendered by HandsOn's RTX
+  capture. Calibration and the optical-frame mount on the left_arm palm are in the profile.
+source: introspected
+calibrated_at: null
+method: introspection
+color:
+  width: 848
+  height: 480
+  fps: null
+  projection:
+    model: pinhole
+    fx: 272.135223388672
+    fy: 272.135223388672
+    cx: 424.0
+    cy: 240.0
+    skew: 0
+  distortion:
+    model: none
+frames:
+  base:
+    translation_m:
+    - 0.06877913525
+    - 0.029143365994
+    - -0.034815742831
+    rotation_xyzw:
+    - -0.116037274056
+    - -0.072293360662
+    - 0.896422436377
+    - 0.421587282296
+    parent: left_arm:palm

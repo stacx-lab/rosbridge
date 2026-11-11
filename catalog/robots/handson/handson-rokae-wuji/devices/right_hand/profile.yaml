@@ -1,0 +1,107 @@
+name: right_hand
+runtime:
+  domain_id: 0
+  nodes:
+  - entry: links.py
+    factory: create
+  ready_timeout_s: 30
+operations:
+  joint_state:
+    description: Measured positions of right_finger1_joint1, right_finger1_joint2, right_finger1_joint3,
+      right_finger1_joint4, right_finger2_joint1, right_finger2_joint2, right_finger2_joint3,
+      right_finger2_joint4, right_finger3_joint1, right_finger3_joint2, right_finger3_joint3,
+      right_finger3_joint4, right_finger4_joint1, right_finger4_joint2, right_finger4_joint3,
+      right_finger4_joint4, right_finger5_joint1, right_finger5_joint2, right_finger5_joint3,
+      right_finger5_joint4 in radians with velocities and the world-clock acquisition stamp;
+      do not infer motion completion from a sent command.
+    transport: topic
+    direction: output
+    endpoint: /right_hand/joint_state
+    type: sensor_msgs/msg/JointState
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: transient_local
+    timeout_s: 10
+  joint_target:
+    description: Joint trajectory over all 20 hand joints in radians, timed from receipt by
+      strictly increasing time_from_start and finishing within 120 seconds; velocities, accelerations
+      and effort must be empty. A zero header stamp selects now; a nonzero stamp must not
+      start in the past. Points are absolute native joint positions, linearly interpolated
+      at the native control period. Replacement clears pending references; invalid trajectories
+      are ignored, so verify measured joint_state.
+    transport: topic
+    direction: input
+    endpoint: /right_hand/joint_target
+    type: trajectory_msgs/msg/JointTrajectory
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: volatile
+    timeout_s: 10
+  stop:
+    description: Stop hand motion and hold the measured posture.
+    transport: service
+    direction: input
+    endpoint: /right_hand/stop
+    type: std_srvs/srv/Trigger
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: volatile
+    timeout_s: 10
+loaded: false
+meta:
+  created_at: '2026-10-24T00:00:00Z'
+  updated_at: '2026-10-24T00:00:00Z'
+type: joint
+description: Wuji 20-joint right hand on the right_arm palm, finger-major from the thumb (finger1)
+  to the little finger (finger5), as HandsOn's hand20 actions. Geometry is the sibling hand.urdf
+  from the palm to the fingertips, with no single tip link; commands are absolute joint positions
+  that the native controller slews toward, and contact is physical.
+source: introspected
+calibrated_at: null
+method: introspection
+model:
+  format: urdf
+  path: hand.urdf
+  base_link: base_link
+  tip_link: null
+limits: native
+home:
+  right_finger1_joint1: 0.0475
+  right_finger1_joint2: 0.0
+  right_finger1_joint3: 0.0
+  right_finger1_joint4: 0.0
+  right_finger2_joint1: 0.0
+  right_finger2_joint2: 0.0
+  right_finger2_joint3: 0.0
+  right_finger2_joint4: 0.0
+  right_finger3_joint1: 0.0
+  right_finger3_joint2: 0.0
+  right_finger3_joint3: 0.0
+  right_finger3_joint4: 0.0
+  right_finger4_joint1: 0.0
+  right_finger4_joint2: 0.0
+  right_finger4_joint3: 0.0
+  right_finger4_joint4: 0.0
+  right_finger5_joint1: 0.0
+  right_finger5_joint2: 0.0
+  right_finger5_joint3: 0.0
+  right_finger5_joint4: 0.0
+stop:
+  behavior: hold
+  affected_devices:
+  - right_hand
+frames:
+  base:
+    translation_m:
+    - 0.0
+    - 0.0
+    - 0.0
+    rotation_xyzw:
+    - 0.0
+    - 0.0
+    - 0.0
+    - 1.0
+    parent: right_arm:palm

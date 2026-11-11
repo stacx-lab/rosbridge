@@ -31,7 +31,9 @@ integrated command, limits [-1, 1] with `open: -1` and `closed: 1`, which its fi
 joints mimic from their actuator ranges. BEHAVIOR's R1Pro grip joint `<side>_gripper`
 is the evaluator's smooth command, limits [-1, 1] with `open: 1` and `closed: -1`. The
 Sharpa hands, on the G1 and on the R1Pro of `behavior-dex`, are `joint` devices: 22
-commanded joints each and no tip link.
+commanded joints each and no tip link. HandsOn's Wuji hands are `joint` devices of 20 joints
+on their arm's `palm`, the tip link of each ROKAE arm and the frame HandsOn's palm-pose
+actions command.
 
 A base is a Kinex `locomotion` device in the single mode `drive`: `velocity`
 declares the commandable axes in native units (RoboCasa and BEHAVIOR's R1Pro:
@@ -66,7 +68,8 @@ from the arm URDF, publishes calibrated mounts and fixed frames such as
 
 `rosbridge robots list` lists every rig. Builders in `tools/robots` measure each
 rig from its simulator (`build_abc.py`, `build_robotwin.py`, `build_robodojo.py`,
-`build_robocasa.py`, `build_behavior.py`, `build_behavior_g1.py`, `build_behavior_dex.py`);
+`build_robocasa.py`, `build_behavior.py`, `build_behavior_g1.py`, `build_behavior_dex.py`,
+`build_handson.py`);
 native geometry tests check the exported profiles with Kinex's own FK against the
 simulator.
 
@@ -79,6 +82,7 @@ simulator.
 | `behavior/behavior-r1pro` | `base` (holonomic, locomotion), `torso` (`torso_joint1..4`), `left_arm`, `right_arm` (`<side>_arm_joint1..7`), smooth grippers, RGB-D `head_camera` (720²), `left_camera`, `right_camera` (480²) | 100 |
 | `behavior-g1/behavior-g1-sharpa` | `base` (legged, locomotion), `torso` (waist), `left_arm`, `right_arm` (G1, 7 joints), `left_hand`, `right_hand` (Sharpa Wave, 22 joints), RGB-D `head_camera` | 100 |
 | `behavior-dex/behavior-r1pro-sharpa` | `base` (holonomic, locomotion), `torso` (`torso_joint1..4`), `left_arm`, `right_arm` (`<side>_arm_joint1..7`), `left_hand`, `right_hand` (Sharpa Wave, 22 joints, in place of the grippers), RGB-D `head_camera` (720²), `left_camera`, `right_camera` (480², on the backs of the hands) | 100 |
+| `handson/handson-rokae-wuji` | `right_arm`, `left_arm` (ROKAE AR5, `joint1..7_<side>`, tip `palm`), `right_hand`, `left_hand` (Wuji, `<side>_finger1..5_joint1..4`), RGB `head_camera` (854×480), `left_camera`, `right_camera` (848×480, on the palms) | 66 |
 
 The LIBERO rigs are the same Panda arm and gripper
 with distinct fixed mounts and camera calibration. Each rig directory is a complete

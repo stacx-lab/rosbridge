@@ -110,8 +110,8 @@ class Graph:
             for subscription in subscriptions:
                 self.node.destroy_subscription(subscription)
 
-    def wait(self, duration):
-        return self.call(self.wait_client, Wait.Request(duration_s=float(duration)))
+    def wait(self, duration, timeout=15.):
+        return self.call(self.wait_client, Wait.Request(duration_s=float(duration)), timeout)
 
     def stop(self, process):
         if process.poll() is None:

@@ -1,0 +1,79 @@
+<?xml version="1.0"?>
+<!-- HandsOn ROKAE AR5 left arm from rokae_wuji1_left.xml link0_left..left_palm_link; palm is the left_palm_link body frame. -->
+<robot name="rokae_ar5_left_arm">
+  <link name="base_link"/>
+  <link name="link1"/>
+  <link name="link2"/>
+  <link name="link3"/>
+  <link name="link4"/>
+  <link name="link5"/>
+  <link name="link6"/>
+  <link name="link7"/>
+  <link name="link8"/>
+  <link name="link9"/>
+  <link name="palm"/>
+  <joint name="joint1_left" type="revolute">
+    <parent link="base_link"/>
+    <child link="link1"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-3.1067" upper="3.1067" effort="100" velocity="10"/>
+  </joint>
+  <joint name="joint2_left" type="revolute">
+    <parent link="link1"/>
+    <child link="link2"/>
+    <origin xyz="0 0 0.1745" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-2.0944" upper="2.0944" effort="100" velocity="10"/>
+  </joint>
+  <joint name="joint3_left" type="revolute">
+    <parent link="link2"/>
+    <child link="link3"/>
+    <origin xyz="0 0 0.332" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-3.1067" upper="3.1067" effort="100" velocity="10"/>
+  </joint>
+  <joint name="joint4_left" type="revolute">
+    <parent link="link3"/>
+    <child link="link4"/>
+    <origin xyz="0.0105 0 0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-1.0472" upper="2.5307" effort="100" velocity="10"/>
+  </joint>
+  <joint name="joint5_left" type="revolute">
+    <parent link="link4"/>
+    <child link="link5"/>
+    <origin xyz="-0.0105 0 0.278" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-3.1067" upper="3.1067" effort="100" velocity="10"/>
+  </joint>
+  <joint name="joint6_left" type="revolute">
+    <parent link="link5"/>
+    <child link="link6"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-1.0472" upper="1.0472" effort="100" velocity="10"/>
+  </joint>
+  <joint name="joint7_left" type="revolute">
+    <parent link="link6"/>
+    <child link="link7"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-1.0472" upper="1.0472" effort="100" velocity="10"/>
+  </joint>
+  <joint name="link8_joint" type="fixed">
+    <parent link="link7"/>
+    <child link="link8"/>
+    <origin xyz="0 0 0.09" rpy="0 0 0"/>
+  </joint>
+  <joint name="link9_joint" type="fixed">
+    <parent link="link8"/>
+    <child link="link9"/>
+    <origin xyz="0 0 0" rpy="0 0 1.5707963268"/>
+  </joint>
+  <joint name="palm_joint" type="fixed">
+    <parent link="link9"/>
+    <child link="palm"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+</robot>

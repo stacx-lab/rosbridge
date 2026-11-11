@@ -1,0 +1,70 @@
+name: head_camera
+runtime:
+  domain_id: 0
+  nodes: []
+  ready_timeout_s: 30
+operations:
+  image:
+    description: RGB image measurements with encoding, dimensions, row stride and acquisition
+      timestamp in the Image header. The frame_id identifies the calibrated optical frame;
+      use its stamp for tf2 lookup. A new subscriber receives the current frame at once, also
+      while the world is paused, then one per camera sample; reading never advances world
+      time.
+    transport: topic
+    direction: output
+    endpoint: /head_camera/image
+    type: sensor_msgs/msg/Image
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: volatile
+    timeout_s: 10
+  camera_info:
+    description: CameraInfo mirroring the profile, with K and P from color.projection, zero
+      plumb_bob distortion, image size and optical frame. Kinex reads camera geometry from
+      the profile, not from this topic; intrinsics are not TF transforms.
+    transport: topic
+    direction: output
+    endpoint: /head_camera/camera_info
+    type: sensor_msgs/msg/CameraInfo
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: transient_local
+    timeout_s: 10
+loaded: false
+meta:
+  created_at: '2026-10-24T00:00:00Z'
+  updated_at: '2026-10-24T00:00:00Z'
+type: rgb
+description: Fixed RGB head camera (Gemini 336 calibration) above the station, rendered by
+  HandsOn's RTX capture as an undistorted pinhole with its calibrated, off-center principal
+  point. Calibration and the optical-frame mount are in the profile.
+source: introspected
+calibrated_at: null
+method: introspection
+color:
+  width: 854
+  height: 480
+  fps: null
+  projection:
+    model: pinhole
+    fx: 463.393371582031
+    fy: 463.001892089844
+    cx: 431.767272949219
+    cy: 239.918975830078
+    skew: 0
+  distortion:
+    model: none
+frames:
+  base:
+    translation_m:
+    - -0.654824183928
+    - 0.012561357234
+    - 1.547126372754
+    rotation_xyzw:
+    - -0.661586346091
+    - 0.670912423793
+    - -0.238718655051
+    - 0.234932820178
+    parent: world:base
