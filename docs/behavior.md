@@ -67,6 +67,22 @@ many options that repeat the same literals (`assembling_gift_baskets`: 331,776
 options of 16 literals, 64 distinct), so OmniGibson is patched to evaluate each
 distinct literal once (`patches/behavior/0003-goal-option-literals.patch`).
 
+Two of the rules OmniGibson judges by are patched, for all three simulators:
+
+| Patch | OmniGibson | Patched |
+|---|---|---|
+| `0005-slicer-blade.patch` | A sliceable object is halved, and a half diced, when it touches any part of any slicer while any slicer of the scene is active. A slicer turns inactive after it touches whole food, and active again 2 s after it last touched whole food. | An object is cut by a slicer that is active, touches it and reaches it with its blade: the box of its slicer meta link, BEHAVIOR's cutting volume, where that link is at the step, 5 mm larger on every side. The slicer that cut turns inactive, and active again 2 s after it last touched whole or cut food. A slicer without such a meta link cuts with its whole body. |
+| `0006-projection-remover-margin.patch` | A particle remover by projection takes a visual particle whose centre lies inside its volume. | It takes one whose centre lies within 1 cm of its volume. |
+
+Unpatched, a knife's handle cuts what it touches (`make_pizza` takes its dough and a
+pepperoni whole), an inactive knife cuts while another is active, and a knife lying on
+the halves it cut dices them. A blade cuts at the first contact at any speed; there is
+no speed condition. The slicer rule decides the nine activities with a slicer and food
+it cuts, such as `chopping_wood`, `halve_an_egg` and `make_pizza`. `vacuuming_floors`'
+vacuum is BEHAVIOR's only particle remover by projection. OmniGibson sets its volume
+below the vacuum's meta link, ending 1.1 mm under the floor it stands on, so unpatched it
+removes floor dust only while lifted 1.2 to 21.5 mm or leaning by a degree or more.
+
 Isaac hosts one environment per process: a worker serves the one activity and
 instance it was launched with.
 
@@ -276,9 +292,9 @@ The spectators render with every step, and loading settles them at their start p
 16 renders; a spectator sample reads the latest frame.
 
 ```bash
-pixi run -e behavior-native smoke        # R1Pro: controls, cameras, reset, rig geometry
+pixi run -e behavior-native smoke        # R1Pro: controls, cameras, reset, rig geometry, slicer and vacuum rules
 pixi run -e behavior-g1-native smoke     # G1: standing, walking, turning, arms, hands, rig geometry
-pixi run -e behavior-dex-native smoke    # R1Pro with hands: cameras, mount, hands, rig geometry
+pixi run -e behavior-dex-native smoke    # R1Pro with hands: cameras, mount, hands, rig geometry, a held knife
 pixi run -e behavior test-ros
 pixi run -e behavior-g1 test-ros
 pixi run -e behavior-dex test-ros

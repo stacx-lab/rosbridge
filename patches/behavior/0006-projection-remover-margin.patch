@@ -1,0 +1,59 @@
+diff --git a/OmniGibson/omnigibson/object_states/particle_modifier.py b/OmniGibson/omnigibson/object_states/particle_modifier.py
+index dc35f88..f12175b 100644
+--- a/OmniGibson/omnigibson/object_states/particle_modifier.py
++++ b/OmniGibson/omnigibson/object_states/particle_modifier.py
+@@ -65,6 +65,11 @@ m.VISUAL_PARTICLE_PROJECTION_PARTICLE_RADIUS = 0.01
+ # The margin (> 0) to add to the remover area's AABB when detecting overlaps with other objects
+ m.PARTICLE_MODIFIER_ADJACENCY_AREA_MARGIN = 0.02
+ 
++# The margin (> 0) to add on every side of a remover's projection volume when it removes visual particles. The volume
++# is set below its meta link (see _initialize): under a remover that stands on a surface, it ends just beneath the
++# particles that lie on that surface
++m.PROJECTION_REMOVER_VISUAL_MARGIN = 0.01
++
+ # Settings for determining how the projection particles are visualized as they're projected
+ m.PROJECTION_VISUALIZATION_CONE_TIP_RADIUS = 0.001
+ m.PROJECTION_VISUALIZATION_RATE = 200
+@@ -521,7 +526,7 @@ class ParticleModifier(IntrinsicObjectState, LinkBasedStateMixin, UpdateStateMix
+         self.obj.states[Saturated].set_visual_particle_limit(self.visual_particle_modification_limit)
+         self.obj.states[Saturated].set_physical_particle_limit(self.physical_particle_modification_limit)
+ 
+-    def _check_in_mesh(self, particle_positions):
++    def _check_in_mesh(self, particle_positions, projection_margin=0.0):
+         if self.method == ParticleModifyMethod.ADJACENCY:
+             # Define the AABB bounds
+             lower, upper = self.link.visual_aabb
+@@ -529,8 +534,21 @@ class ParticleModifier(IntrinsicObjectState, LinkBasedStateMixin, UpdateStateMix
+             lower -= m.PARTICLE_MODIFIER_ADJACENCY_AREA_MARGIN
+             upper += m.PARTICLE_MODIFIER_ADJACENCY_AREA_MARGIN
+             return ((lower < particle_positions) & (particle_positions < upper)).all(dim=-1)
+-        else:
++        elif projection_margin == 0.0:
+             return self.link.check_points_in_volume(particle_positions)
++        else:
++            # Check the projection volume grown by the margin on every side. In its mesh's own frame the volume has
++            # unit extents around the origin (see _initialize), so growing it is drawing the points towards the origin
++            in_volume = th.zeros(particle_positions.shape[0], dtype=th.bool)
++            positions = th.cat((particle_positions, th.ones((particle_positions.shape[0], 1))), dim=1)
++            for mesh in self.link.visual_meshes.values():
++                transform = mesh.scaled_transform
++                extents = th.linalg.norm(transform[:3, :3], dim=0)
++                positions_local = (positions @ th.linalg.inv(transform).T)[:, :3]
++                in_volume |= mesh.check_local_points_in_volume(
++                    positions_local * extents / (extents + 2.0 * projection_margin)
++                )
++            return in_volume
+ 
+     def _generate_condition(self, condition_type, value):
+         """
+@@ -933,7 +951,9 @@ class ParticleRemover(ParticleModifier):
+         if self.obj.scene.is_visual_particle_system(system_name=system.name):
+             # Iterate over all particles and remove any that are within the relaxed AABB of the remover volume
+             particle_positions = system.get_particles_position_orientation()[0]
+-            inbound_idxs = self._check_in_mesh(particle_positions).nonzero()
++            inbound_idxs = self._check_in_mesh(
++                particle_positions, projection_margin=m.PROJECTION_REMOVER_VISUAL_MARGIN
++            ).nonzero()
+             modification_limit = self.visual_particle_modification_limit
+ 
+         # Physical system

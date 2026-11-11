@@ -1,0 +1,303 @@
+diff --git a/OmniGibson/omnigibson/object_states/slicer_active.py b/OmniGibson/omnigibson/object_states/slicer_active.py
+index 4461d9c..2611915 100644
+--- a/OmniGibson/omnigibson/object_states/slicer_active.py
++++ b/OmniGibson/omnigibson/object_states/slicer_active.py
+@@ -30,23 +30,6 @@ def _slicer_zero_currently_touching_kernel(
+     currently_touching[s, o] = wp.int32(0)
+ 
+ 
+-@wp.kernel
+-def _slicer_pre_clear_kernel(
+-    values: wp.array2d(dtype=wp.uint8),  # (S, O) — public state, stays uint8
+-    delay_counter: wp.array2d(dtype=wp.float32),  # (S, O)
+-    prev_touching: wp.array2d(dtype=wp.int32),  # (S, O) — int32, see SlicerActive class doc
+-):
+-    """
+-    Per (scene, obj) thread. Runs at the start of each step. For each cell where prev_touching
+-    is nonzero, set values=0 (deactivated) and delay_counter=0 (cooldown restarted). Cells
+-    where prev_touching is zero are left alone.
+-    """
+-    s, o = wp.tid()
+-    if prev_touching[s, o] != wp.int32(0):
+-        delay_counter[s, o] = 0.0
+-        values[s, o] = wp.uint8(0)
+-
+-
+ @wp.kernel
+ def _slicer_post_update_kernel(
+     values: wp.array2d(dtype=wp.uint8),  # (S, O) — public state, stays uint8
+@@ -63,7 +46,7 @@ def _slicer_post_update_kernel(
+       - If the slicer is inactive AND still touching something: reset delay_counter to 0
+         (touching restarts the wait — the slicer doesn't reactivate while in contact).
+       - If delay_counter has hit `seconds_to_wait`, reactivate the slicer.
+-      - Finally, mirror currently_touching into prev_touching for the next step's pre-clear pass.
++      - Finally, mirror currently_touching into prev_touching.
+     """
+     s, o = wp.tid()
+     is_active = values[s, o] != wp.uint8(0)
+@@ -80,7 +63,9 @@ def _slicer_post_update_kernel(
+ 
+ class SlicerActive(TensorizedAbsoluteState, BooleanStateMixin):
+     """
+-    Slicer-active state.
++    Slicer-active state. A slicer starts active. The transition rule that cuts with it deactivates it (disarm());
++    touching alone does not. It becomes active again once it has touched no sliceable and no diceable object for
++    m.REACTIVATION_DELAY seconds: a slicer resting on the halves it cut stays inactive.
+ 
+     Note on dtype: PREVIOUSLY_TOUCHING and _currently_touching are int32, NOT bool/uint8, because
+     they depend on`RigidContactAPI.is_in_contact_batch_warp` whose output is int32.
+@@ -89,7 +74,7 @@ class SlicerActive(TensorizedAbsoluteState, BooleanStateMixin):
+     # wp.array2d (S, O) float32 — seconds elapsed since the last touch, per slicer.
+     DELAY_COUNTER = None
+ 
+-    # wp.array2d (S, O) int32 — whether each slicer touched a sliceable in the previous step.
++    # wp.array2d (S, O) int32 — whether each slicer touched a sliceable or diceable in the previous step.
+     # int32 (not bool) — see class docstring; mirrors _currently_touching's dtype.
+     PREVIOUSLY_TOUCHING = None
+ 
+@@ -101,7 +86,7 @@ class SlicerActive(TensorizedAbsoluteState, BooleanStateMixin):
+     # list[wp.array(O, R_s) uint8 | None] — row mask per slicer object per scene.
+     _slicer_contact_query_masks = None
+ 
+-    # list[wp.array(1, C_s) uint8 | None] — col mask for all sliceable links per scene.
++    # list[wp.array(1, C_s) uint8 | None] — col mask for all sliceable and diceable links per scene.
+     _sliceable_contact_col_mask = None
+ 
+     # wp.array2d (S, O) int32 — filled each step by _currently_touching_sliceables().
+@@ -191,13 +176,16 @@ class SlicerActive(TensorizedAbsoluteState, BooleanStateMixin):
+                 _append_none_for_scene()
+                 continue
+ 
+-            sliceable_objs = scene.object_registry("abilities", "sliceable", [])
++            # What a slicer cuts, whole (sliceable) or already cut (diceable, the halves): it reactivates clear of both.
++            sliceable_objs = [
++                obj for ability in ("sliceable", "diceable") for obj in scene.object_registry("abilities", ability, [])
++            ]
+             # No sliceable objects in this scene, or no slicers tracked anywhere.
+             if not sliceable_objs or O == 0:
+                 _append_none_for_scene()
+                 continue
+ 
+-            # Col mask (1, C_s) for all sliceable links — shared across all O slicer queries.
++            # Col mask (1, C_s) for all sliceable and diceable links — shared across all O slicer queries.
+             sliceable_paths = [link.prim_path for obj in sliceable_objs for link in obj.links.values()]
+             sliceable_col = RigidContactAPI.get_contact_col_mask(scene_idx, sliceable_paths)  # (C_s,) CPU bool
+ 
+@@ -235,13 +223,6 @@ class SlicerActive(TensorizedAbsoluteState, BooleanStateMixin):
+             return
+         S, O = values.shape[:2]
+ 
+-        wp.launch(
+-            kernel=_slicer_pre_clear_kernel,
+-            dim=(S, O),
+-            inputs=[cls.VALUES_WP, cls.DELAY_COUNTER, cls.PREVIOUSLY_TOUCHING],
+-            device="cuda",
+-        )
+-
+         # Zero _currently_touching inside the graph so it's stream-ordered with the per-scene
+         # is_in_contact_batch_warp calls below (which atomic_max set-on-hit and require a
+         # pre-zeroed output). Absent scenes have no kernel launched, so their rows stay 0.
+@@ -290,6 +271,13 @@ class SlicerActive(TensorizedAbsoluteState, BooleanStateMixin):
+                 out_wp=out,
+             )
+ 
++    def disarm(self):
++        """
++        Deactivates this slicer and restarts its reactivation delay. Called by the transition rule that cut with it.
++        """
++        self.set_value(False)
++        wp.to_torch(type(self).DELAY_COUNTER)[self.obj.scene.idx, self.OBJ_IDXS[self.obj.relative_prim_path]] = 0.0
++
+     @classproperty
+     def value_name(cls):
+         return "value"
+diff --git a/OmniGibson/omnigibson/transition_rules.py b/OmniGibson/omnigibson/transition_rules.py
+index b4f218b..78fda84 100644
+--- a/OmniGibson/omnigibson/transition_rules.py
++++ b/OmniGibson/omnigibson/transition_rules.py
+@@ -39,7 +39,7 @@ from omnigibson.utils.bddl_utils import (
+ from omnigibson.utils.python_utils import Registerable, classproperty, torch_delete
+ from omnigibson.utils.registry_utils import Registry
+ from omnigibson.utils.ui_utils import create_module_logger
+-from omnigibson.utils.usd_utils import RigidContactAPI
++from omnigibson.utils.usd_utils import RigidContactAPI, get_world_pose
+ from omnigibson.systems.system_base import VisualParticleSystem
+ from omnigibson.systems.macro_particle_system import MacroPhysicalParticleSystem
+ 
+@@ -55,6 +55,11 @@ m.MELTING_TEMPERATURE = 100.0
+ # Default "trash" system if an invalid mixing rule transition occurs
+ m.DEFAULT_GARBAGE_SYSTEM = "sludge"
+ 
++# Type of the meta link whose volume marks a slicer's blade, and how far (m) beyond that volume the blade still cuts:
++# a slicer's collision meshes are coarser than its blade
++m.SLICER_META_LINK_TYPE = "slicer"
++m.SLICER_BLADE_MARGIN = 0.005
++
+ # Tuple of attributes of objects created in transitions.
+ # `states` field is dict mapping object state class to arguments to pass to setter for that class
+ _attrs_fields = ["category", "model", "name", "scale", "obj", "pos", "orn", "bb_pos", "bb_orn", "states", "callback"]
+@@ -408,6 +413,114 @@ class TouchingAnyCondition(RuleCondition):
+         return {self._filter_1_name}
+ 
+ 
++class BladeCutCondition(RuleCondition):
++    """
++    Rule condition that prunes object candidates from @filter_name, only keeping any that a slicer cuts, and prunes
++    the "slicer" candidates, only keeping the slicers that cut them. A slicer cuts an object if the slicer is active,
++    it is touching the object, and its blade reaches the object: the object's collision shapes overlap the volume of
++    the slicer's blade meta link (m.SLICER_META_LINK_TYPE), grown by m.SLICER_BLADE_MARGIN on every side. A slicer
++    without a blade meta link cuts with its whole body.
++    """
++
++    def __init__(self, filter_name):
++        """
++        Args:
++            filter_name (str): Name of the filter whose object candidates will be pruned based on whether or not
++                a slicer cuts them
++        """
++        self._filter_name = filter_name
++        # Maps slicer to its blade volumes, each a box: (meta link, the box's pose in the link's frame, half extent)
++        self._blades = dict()
++
++    def refresh(self, object_candidates):
++        # The slicers may have changed
++        self._blades = dict()
++
++    def _blade_hits(self, slicer):
++        """
++        Args:
++            slicer (StatefulObject): Slicer whose blade should be checked
++
++        Returns:
++            None or set of str: Prim paths of the rigid bodies whose collision shapes the blade of @slicer reaches,
++                or None if @slicer has no blade meta link
++        """
++        if slicer not in self._blades:
++            self._blades[slicer] = []
++            for link in slicer.links.values():
++                if not link.is_meta_link or link.meta_link_type != m.SLICER_META_LINK_TYPE:
++                    continue
++                # A meta link's meshes do not move within it: their boxes are computed once, in its frame
++                link_pose = T.pose2mat(get_world_pose(link.prim_path))
++                for mesh in link.visual_meshes.values():
++                    lower, upper = mesh.points.min(dim=0).values, mesh.points.max(dim=0).values
++                    box_pose = th.linalg.inv(link_pose) @ mesh.scaled_transform
++                    box_pose[:3, 3] += box_pose[:3, :3] @ ((upper + lower) / 2.0)
++                    scale = th.linalg.norm(box_pose[:3, :3], dim=0)
++                    box_pose[:3, :3] /= scale
++                    if th.linalg.det(box_pose[:3, :3]) < 0:
++                        # A mirrored box is the same box
++                        box_pose[:3, 2] = -box_pose[:3, 2]
++                    self._blades[slicer].append((link, box_pose, (upper - lower) / 2.0 * scale))
++        if len(self._blades[slicer]) == 0:
++            return None
++
++        hits = set()
++
++        def overlap_callback(hit):
++            hits.add(hit.rigid_body)
++            # Continue traversal: every body the blade reaches counts
++            return True
++
++        for link, box_pose, half_extent in self._blades[slicer]:
++            # The box where its meta link is now: the meta link moves with the link it is fixed to
++            pose = T.pose2mat(link.get_position_orientation()) @ box_pose
++            og.sim.psqi.overlap_box(
++                halfExtent=(half_extent + m.SLICER_BLADE_MARGIN).tolist(),
++                pos=pose[:3, 3].tolist(),
++                rot=T.mat2quat(pose[:3, :3]).tolist(),
++                reportFn=overlap_callback,
++            )
++        return hits
++
++    def __call__(self, object_candidates):
++        active_slicers = [obj for obj in object_candidates["slicer"] if obj.states[SlicerActive].get_value()]
++        objs, slicers, blade_hits = [], [], dict()
++
++        def touching(obj, with_set):
++            return RigidContactAPI.is_in_contact(
++                scene_idx=obj.scene.idx, query_set=[obj], with_set=with_set, ignore_set=None, current_only=False
++            )
++
++        for obj in object_candidates[self._filter_name]:
++            if len(active_slicers) == 0 or not touching(obj, active_slicers):
++                continue
++            # The first active slicer that touches the object and reaches it with its blade cuts it
++            for slicer in active_slicers:
++                if len(active_slicers) > 1 and not touching(obj, [slicer]):
++                    continue
++                if slicer not in blade_hits:
++                    blade_hits[slicer] = self._blade_hits(slicer)
++                if blade_hits[slicer] is None or any(
++                    link.prim_path in blade_hits[slicer] for link in obj.links.values()
++                ):
++                    objs.append(obj)
++                    if slicer not in slicers:
++                        slicers.append(slicer)
++                    break
++
++        # Update candidates
++        object_candidates[self._filter_name] = objs
++        object_candidates["slicer"] = slicers
++
++        # If objs is empty, return False, otherwise, True
++        return len(objs) > 0
++
++    @property
++    def modifies_filter_names(self):
++        return {self._filter_name, "slicer"}
++
++
+ class StateCondition(RuleCondition):
+     """
+     Rule condition that checks all objects from @filter_name whether a state condition is equal to @val for
+@@ -933,11 +1046,8 @@ class SlicingRule(BaseTransitionRule):
+         }
+ 
+     def _generate_conditions(self):
+-        # sliceables should be touching any slicer
+-        return [
+-            TouchingAnyCondition(filter_1_name="sliceable", filter_2_name="slicer"),
+-            StateCondition(filter_name="slicer", state=SlicerActive, val=True, op=operator.eq),
+-        ]
++        # sliceables should be cut by an active slicer's blade
++        return [BladeCutCondition(filter_name="sliceable")]
+ 
+     def transition(self, object_candidates):
+         objs_to_add, objs_to_remove = [], []
+@@ -993,6 +1103,10 @@ class SlicingRule(BaseTransitionRule):
+             # Delete original object from stage.
+             objs_to_remove.append(sliceable_obj)
+ 
++        # A slicer that cut has to clear what it cut before it cuts again
++        for slicer_obj in object_candidates["slicer"]:
++            slicer_obj.states[SlicerActive].disarm()
++
+         return TransitionResults(add=objs_to_add, remove=objs_to_remove)
+ 
+ 
+@@ -1009,11 +1123,8 @@ class DicingRule(BaseTransitionRule):
+         }
+ 
+     def _generate_conditions(self):
+-        # sliceables should be touching any slicer
+-        return [
+-            TouchingAnyCondition(filter_1_name="diceable", filter_2_name="slicer"),
+-            StateCondition(filter_name="slicer", state=SlicerActive, val=True, op=operator.eq),
+-        ]
++        # diceables should be cut by an active slicer's blade
++        return [BladeCutCondition(filter_name="diceable")]
+ 
+     def transition(self, object_candidates):
+         objs_to_remove = []
+@@ -1031,6 +1142,10 @@ class DicingRule(BaseTransitionRule):
+             # Delete original object from stage.
+             objs_to_remove.append(diceable_obj)
+ 
++        # A slicer that cut has to clear what it cut before it cuts again
++        for slicer_obj in object_candidates["slicer"]:
++            slicer_obj.states[SlicerActive].disarm()
++
+         return TransitionResults(add=[], remove=objs_to_remove)
+ 
+ 
