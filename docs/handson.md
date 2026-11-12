@@ -109,13 +109,25 @@ table height and, where a task has one, its goal. `t24` always asks for the tenn
 `t26` for the apple, since only the paper's archived trials override their targets. For the
 16 tasks in upstream's `settings.json`, the seed selects a setting and derives the reset seed.
 The instruction is fixed by task, seed and goal: canonical for about one seed in five, else one
-of 32 paraphrases. Give the agent only `PROMPT.json`'s `prompt`; its `canonical_prompt` and
-`goal` restate it unparaphrased. The other receipts are the judge's: `TASK_BOUNDARY*.json`
-(`t01`, `t15`, `t38`) holds every object pose.
+of 32 paraphrases. Give the agent only `PROMPT.json`'s `prompt`. Its `canonical_prompt` (the
+unparaphrased instruction), `goal` and `native_goal_readback` must not reach the agent;
+`eval_gen05`'s readback also gives the knobs' initial angles. Every receipt in `<run>/handson/`
+is the judge's, not the agent's:
+
+| Receipt | Holds |
+|---|---|
+| `PROMPT.json` | The instruction, its draw and the goal |
+| `ORIGIN_PARAMETERS.json`, `ORIGIN_IMPLEMENTATION.json`, `TRACE_IMPLEMENTATION.json`, `CHECKER_LAYOUT_PATCH.json` | The settle gate's parameters and pinned implementations |
+| `SETTING_SELECTION.json` (16 tasks) | The setting, such as `t38`'s initial and target knob angles, and every derived seed |
+| `TASK_BOUNDARY.json`, `TASK_BOUNDARY_SETTLE.json` (`t01`, `t15`, `t38`) | Every object pose and joint position, and the native task info |
+| `CARTON_RAW_FORCE_000/` (`t10`) | Raw grip force |
+| `AS019_SCENE_BRIDGE.json` (`t22`) | The scene bridge |
+| `PAPER_TRIAL.json` (paper trials) | The archived trial: seeds, goal, prompt |
 
 The settle gate is upstream's, per task contract: a frozen stable-origin gate for 34 Core
-tasks, a checker-boundary gate for `t01`, `t15` and `t38`, none for the other 13 tasks with
-settings, and the current gate with its defaults for Transfer-16. It rejects a seed whose reset
+tasks, a checker-boundary gate for `t01`, `t15` and `t38`, and the current gate with its
+defaults for Transfer-16. Thirteen tasks have no settle gate: `t05`, `t12`, `t13`, `t20`, `t21`,
+`t30`, `t31`, `t32`, `t37`, `t42`, `t43`, `t45` and `t46`. It rejects a seed whose reset
 drifts more than 5 mm or 3° while settling, penetrates, or does not come to rest in time. The
 rejection is deterministic. Reset raises `SeedRejected`, and the launch fails with exit status
 3 and, with `--json`, `"cause": "seed_rejected"`. Rosbridge does not retry with another seed,
