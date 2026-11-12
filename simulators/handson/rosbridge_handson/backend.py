@@ -234,7 +234,7 @@ class HandsOnSim:
         action, command = np.asarray(action, dtype=float), {}
         for side in SIDES:
             robot, (arm, hand) = self.env._robots[side], (action[part] for part in self._slices[side])
-            self._arm[side] = torch.tensor([arm], device=robot.device, dtype=robot.data.joint_pos.dtype)
+            self._arm[side] = torch.tensor(arm[None], device=robot.device, dtype=robot.data.joint_pos.dtype)
             command[side] = np.r_[np.zeros(7), hand]  # a zero palm pose is "not commanded"
         _, _, terminated, truncated, info = self.env.step(command)
         self.steps += 1
