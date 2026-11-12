@@ -4,11 +4,9 @@ import threading
 from rosgraph_msgs.msg import Clock
 from sensor_msgs.msg import CameraInfo, Image
 
-from rosbridge.core.devices import SampleSchedule
+from rosbridge.core.devices import SampleSchedule, camera_rate
 from . import conversions as conv
 from .devices import STREAM_QOS, Camera
-
-CAMERA_RATE_HZ = 30.
 
 
 class Spectator:
@@ -41,7 +39,7 @@ class ObservationPublisher:
     def __init__(self, node, spectator_rate_hz):
         self.node, self.sim = node, node.sim
         self.clock = node.create_publisher(Clock, '/clock', STREAM_QOS)
-        self.cameras = SampleSchedule(CAMERA_RATE_HZ)
+        self.cameras = SampleSchedule(camera_rate(self.sim))
         self.spectator_schedule = SampleSchedule(spectator_rate_hz)
         self.spectators = [Spectator(node, view) for view in self.sim.spectators]
 

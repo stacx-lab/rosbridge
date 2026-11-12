@@ -68,6 +68,10 @@ class SimulatorBackend(Protocol):
     A backend whose native command is not a position, such as a gripper
     direction, converts the position target inside step().
 
+    Optionally, camera_rate_hz sets how many times per simulated second a
+    subscribed camera renders (default 30), for a simulator whose renders are
+    expensive. A new subscriber still gets a frame at once.
+
     Optionally, measures() returns the backend's own measures of the episode as
     JSON fields, such as BEHAVIOR's q_score; the episode record adds them.
     """

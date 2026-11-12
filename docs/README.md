@@ -144,7 +144,8 @@ subscription is created before its device's stop service. Cameras publish RGB8
 `Image` on `<camera>/image` and `CameraInfo`; frames are `<camera>/base`. RGB-D
 cameras (Kinex `rgbd`) add registered `<camera>/depth` (16UC1 millimetres along the
 optical axis, 0 invalid) with the same stamp as its image. Frames are reliable and
-render only for subscribers: once per camera sample, and at once for each new
+render only for subscribers: once per camera sample (30 per simulated second, unless the
+simulator sets fewer, as HandsOn's 2 for its seconds-long renders), and at once for each new
 subscriber, so subscribing reads the current frame even while a stepped world is
 paused, without advancing time. There is no capture service. All observations
 use simulation timestamps and ROS optical frame conventions, with the principal

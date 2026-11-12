@@ -44,3 +44,16 @@ def test_sampling_uses_sim_time_and_skips_gaps():
 def test_bare_native_task_resolves():
     assert resolve('put_plastic_bottles_in_bin')[2]['id'] == 'abc/put-plastic-bottles-in-bin'
     assert resolve('put-plastic-bottles-in-bin')[2]['id'] == 'abc/put-plastic-bottles-in-bin'
+
+
+def test_cameras_sample_at_30_hz_unless_the_backend_sets_its_rate():
+    from rosbridge.core.devices import SampleSchedule, camera_rate
+    from tests.toy_backend import SlowCameraToy, ToyBackend
+    assert camera_rate(ToyBackend()) == 30. and camera_rate(SlowCameraToy()) == 2.
+
+    def samples(rate, steps=30, period=1 / 30):
+        """Camera samples at the world's first publication (t = 0) and after each of `steps` steps."""
+        schedule = SampleSchedule(rate)
+        return [step for step in range(steps + 1) if schedule.due(step * period)]
+    assert len(samples(30.)) == 31
+    assert samples(2.) == [0, 15, 30]  # a 30 Hz world renders a 2 Hz camera every 15 steps

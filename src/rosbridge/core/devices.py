@@ -56,6 +56,15 @@ def spectator_views(pairs, width, height, views=None):
                  if views is None or name in views)
 
 
+# Camera samples per simulated second while a camera is subscribed, unless the backend sets camera_rate_hz.
+CAMERA_RATE_HZ = 30.
+
+
+def camera_rate(backend):
+    """How often subscribed cameras render: the backend's camera_rate_hz, if it has one, else CAMERA_RATE_HZ."""
+    return getattr(backend, 'camera_rate_hz', CAMERA_RATE_HZ)
+
+
 class SampleSchedule:
     """At most one sample per control boundary; skip missed sampling deadlines."""
     def __init__(self, rate):

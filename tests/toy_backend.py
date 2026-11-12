@@ -52,3 +52,8 @@ class ToyBackend:
     def close(self):
         assert threading.get_ident() == self.owner
         self.closed = True
+
+
+class SlowCameraToy(ToyBackend):
+    """A backend whose cameras sample twice per simulated second, as an expensive renderer's would."""
+    camera_rate_hz = 2.

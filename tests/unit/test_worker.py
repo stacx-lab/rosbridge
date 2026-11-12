@@ -51,6 +51,20 @@ def test_round_trip_keeps_layout_state_and_errors():
         sim.state()
 
 
+def test_a_backends_camera_rate_reaches_the_proxy():
+    from rosbridge.core.devices import camera_rate
+
+    class SlowCameraWorker(WorkerBackend):
+        target = "tests.toy_backend:SlowCameraToy"
+    slow = SlowCameraWorker(python=sys.executable, env=dict(os.environ, PYTHONPATH=str(ROOT)))
+    plain = worker()
+    try:
+        assert camera_rate(slow) == 2. and camera_rate(plain) == 30.
+    finally:
+        slow.close()
+        plain.close()
+
+
 def test_a_call_interrupted_awaiting_its_reply_keeps_calls_and_replies_paired():
     """A stop's KeyboardInterrupt lands while the world awaits a step, and the worker completes the step anyway."""
     sim = worker()

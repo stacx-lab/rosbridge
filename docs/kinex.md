@@ -51,9 +51,10 @@ target. A device's `stop` holds the measured position (a base commands zero
 velocity) and is created after its command subscription, so a Kinex client that
 discovered `stop` reaches the device.
 Joint states and CameraInfo use transient-local reliable QoS. Images are reliable
-and volatile and render only for subscribers: once per camera sample, and at once
-for each new subscriber, so a Kinex read (`helpers.camera_frame`, snapshots) gets
-the current frame even in a paused stepped world.
+and volatile and render only for subscribers: once per camera sample (30 Hz of
+simulation time, or the simulator's own rate, 2 Hz for HandsOn), and at once for each
+new subscriber, so a Kinex read (`helpers.camera_frame`, snapshots) gets the current
+frame even in a paused stepped world.
 
 Camera profiles declare undistorted pinhole intrinsics (`distortion: {model: none}`),
 so Kinex derives FOV and computes rays locally; cameras serve no geometry
