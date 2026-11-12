@@ -42,3 +42,22 @@ def test_vendored_wait_matches_kinex():
         pytest.skip("needs a Kinex checkout next to this one")
     assert vendored.read_bytes() == kinex.read_bytes()
     assert sorted(p.name for p in vendored.parent.iterdir()) == ["Wait.srv"]
+
+
+def test_the_launch_files_forward_every_world_node_parameter():
+    import ast
+
+    def literal(path, name):
+        """The dict or tuple literal assigned to `name` anywhere in the file; a dict's keys."""
+        for node in ast.walk(ast.parse((root / path).read_text())):
+            if isinstance(node, ast.Assign) and any(getattr(t, "id", None) == name for t in node.targets):
+                value = node.value
+                return {key.value for key in value.keys} if isinstance(value, ast.Dict) else {
+                    item.value for item in value.elts}
+        raise AssertionError(f"{name} not in {path}")
+    root = Path(__file__).resolve().parents[2]
+    package = "ros2/rosbridge_runtime"
+    # Launch never sets randomize; every other parameter of the world node must reach it, max_steps included.
+    parameters = literal(f"{package}/rosbridge_runtime/sim_node.py", "defaults") - {"randomize"}
+    assert literal(f"{package}/launch/sim.launch.py", "TYPES") == parameters
+    assert literal(f"{package}/launch/demo.launch.py", "WORLD") == parameters

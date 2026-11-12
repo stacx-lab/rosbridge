@@ -96,10 +96,10 @@ instruction; building the kitchen takes about 10 s. Tasks marked
 `create_env(split="target")` does: held-out object instances in kitchens 1–10 with
 matching layout and style. The other tasks sample all kitchens and objects. The
 default horizon is upstream's dataset horizon for the task (for example 750 steps
-for `PickPlaceCounterToCabinet`), or none when upstream has no dataset; `--max-steps`
-overrides it. Success is Kitchen's native predicate, evaluated once per step. The
-native language instruction is printed to the run log when the episode starts;
-rosbridge does not publish it.
+for `PickPlaceCounterToCabinet`), or none when upstream has no dataset; the world
+node's `max_steps` parameter overrides it. Success is Kitchen's native predicate,
+evaluated once per step. The native language instruction is printed to the run log
+when the episode starts; rosbridge does not publish it.
 
 ## Cameras, recording and demo
 
