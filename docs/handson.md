@@ -36,6 +36,18 @@ SHA-256 pins of the bundled robot and rendering assets, and those links.
 
 Preparation corrects these upstream defects in the exported tree. Paths are under
 `.runtime/handson/handson/handson/`.
+- **Kit's present thread** (`patches/handson/0001`): Isaac Lab's headless rendering app
+  (`third_party/IsaacLab/apps/isaaclab.python.headless.rendering.kit` under `.runtime/handson/`,
+  which HandsOn launches) means to turn the present thread off, but names the extension
+  `omni.renderer.core`; in Kit 107 (Isaac Sim 5.1) it is `omni.kit.renderer.core`, so the line had
+  no effect. A headless world then blitted about 300 frames a second to a swapchain nobody reads,
+  each raising an NVIDIA interrupt, idle or not. Every GPU's interrupts are served by one CPU,
+  whose handler time grows with the worlds sharing the GPU (1% at one world, 75% at four), until
+  IPIs go unanswered: with about five worlds per GPU a host panicked on a soft lockup. The patch
+  corrects the name. An idle world then raises no GPU interrupt and uses half the CPU, and eight
+  worlds per GPU ran without a delay over 34 ms. Physics, success and simulation time are
+  bit-identical with and without it; camera images differ only within the path tracer's own
+  run-to-run spread, which is there with unchanged settings too.
 - **Materials:** upstream archives its Core task surfaces under content hashes
   (`assets/task_surfaces/objects/`). Three archived MDL files, Isaac Sim 5.1's `OmniGlass.mdl` (byte
   for byte), an older `OmniPBR.mdl` and a `LabelFilm` material, import Isaac Sim's

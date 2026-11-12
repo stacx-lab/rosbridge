@@ -1,1 +1,6 @@
-# No patches: rosbridge drives the pinned upstream through its own native hooks.
+# One git patch filename per line, applied in order to .runtime/handson after the nested
+# Isaac Lab is exported into third_party/IsaacLab:
+# 0001 Isaac Lab's headless rendering app turns Kit's present thread off under the extension's
+#      pre-107 name (omni.renderer.core), which Kit 107 (Isaac Sim 5.1) ignores; the present
+#      thread then blits about 300 frames/s per idle world, each raising a GPU interrupt.
+0001-isaaclab-present-thread-off.patch
