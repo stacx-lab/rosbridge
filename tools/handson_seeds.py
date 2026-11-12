@@ -75,13 +75,17 @@ def main():
                 return
             env = dict(os.environ, CUDA_VISIBLE_DEVICES=gpu)
             try:
+                # Kit's log may hold bytes that are not UTF-8.
                 run = subprocess.run([sys.executable, __file__, "--one", task, str(seed)], env=env, text=True,
-                                     stdin=subprocess.DEVNULL, capture_output=True, timeout=args.timeout)
+                                     errors="replace", stdin=subprocess.DEVNULL, capture_output=True,
+                                     timeout=args.timeout)
                 lines = [line for line in run.stdout.splitlines() if line.startswith(MARK)]
                 result = (json.loads(lines[-1][len(MARK):]) if lines else
                           dict(accepted=None, error=f"no result (exit {run.returncode}): {run.stderr[-300:]}"))
             except subprocess.TimeoutExpired:
                 result = dict(accepted=None, error=f"timed out after {args.timeout:g} s")
+            except Exception as error:  # noqa: BLE001  a slot keeps serving the queue whatever one job raised
+                result = dict(accepted=None, error=f"{type(error).__name__}: {error}"[:300])
             with lock:
                 results[task][seed] = dict(result, gpu=gpu)
                 print(f"{task} seed {seed}: " + {True: "accepted", False: "rejected", None: "error"}[result["accepted"]],
