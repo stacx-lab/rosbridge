@@ -7,7 +7,9 @@ seeded setting, native construction, reset, the stable-origin settle gate and th
 seeded instruction, written to PROMPT.json in the run directory. Every 1/30 s step
 passes the hands' absolute joint targets through the native action path and replaces
 only its palm-pose IK with the arms' absolute joint targets, so native hand slewing,
-arm step limits and success and failure predicates apply.
+arm step limits and success and failure predicates apply. The palm pose of the native
+action is the one each arm target commands, so native logic that reads the commanded
+palm sees what an upstream policy's command would show it.
 
 Cameras render through upstream's three-view capture, with two contract choices: the
 default camera profile for every task, the head camera undistorted (its calibrated K
@@ -106,6 +108,42 @@ def contract_cameras():
     return contract
 
 
+class Palm:
+    """An arm's palm pose in the world at given arm joints: the pose of upstream's <side>_palm_link that its EEF52
+    action commands, as xyz in metres and a wxyz quaternion.
+
+    The kinematics are upstream's robot MJCF, the model Isaac imports for the environment's hand. The reset places its
+    frame where the live palm and arm joints put it; the arms are fixed-base.
+    """
+
+    def __init__(self, env, side):
+        import mujoco
+        from handson.eef52 import measured_palm_pose
+        from handson.evaluation.cameras import pose_matrix
+        from handson.sim.isaaclab.bimanual_assembly_scene import ROBOT_MJCF_BY_HAND
+        self.model = mujoco.MjModel.from_xml_path(str(ROBOT_MJCF_BY_HAND[env.hand_type][side]))
+        self.data = mujoco.MjData(self.model)
+        self.joints = [self.model.joint(f"joint{i}_{side}").qposadr[0] for i in range(1, 8)]
+        self.body = self.model.body(f"{side}_palm_link").id
+        pose, _ = measured_palm_pose(env, side)
+        joints = values(env._robots[side].data.joint_pos[0])[env._arm_joint_ids[side]]
+        self.world = pose_matrix(pose[:3], pose[3:]) @ np.linalg.inv(self.model_pose(joints))
+
+    def model_pose(self, joints):
+        """The palm's 4x4 pose in the MJCF's frame."""
+        import mujoco
+        self.data.qpos[self.joints] = joints
+        mujoco.mj_kinematics(self.model, self.data)
+        matrix = np.eye(4)
+        matrix[:3, :3], matrix[:3, 3] = self.data.xmat[self.body].reshape(3, 3), self.data.xpos[self.body]
+        return matrix
+
+    def __call__(self, joints):
+        from handson.sim.isaaclab.bimanual_assembly_env import _matrix_to_quat_wxyz
+        matrix = self.world @ self.model_pose(joints)
+        return np.r_[matrix[:3, 3], _matrix_to_quat_wxyz(matrix[:3, :3])]
+
+
 class HandsOnSim:
     default_task = "t24_place_ball_in_bowl"
     period = 1 / 30
@@ -193,8 +231,10 @@ class HandsOnSim:
         self.max_steps = self.requested_max_steps or int(budgets[self.task]["steps"])
         env._time_limit = self.max_steps * self.period
         env.hz = 0  # the world paces wall time; upstream would sleep to 30 Hz
-        # Arms take absolute joint targets in place of the palm-pose IK; the rest of the native path stays.
+        # Arms take absolute joint targets in place of the palm-pose IK; the rest of the native path stays, and the
+        # native action's palm pose is the one the target commands.
         self._arm = {side: env._joint_targets[side][:, env._arm_joint_ids[side]].clone() for side in SIDES}
+        self._palm = {side: Palm(env, side) for side in SIDES}
         driven = set()  # the arms whose targets upstream's control path applies
 
         def target(side, robot, pose, commanded):
@@ -246,7 +286,8 @@ class HandsOnSim:
         for side in SIDES:
             robot, (arm, hand) = self.env._robots[side], (action[part] for part in self._slices[side])
             self._arm[side] = torch.tensor(arm[None], device=robot.device, dtype=robot.data.joint_pos.dtype)
-            command[side] = np.r_[np.zeros(7), hand]  # a zero palm pose is "not commanded"
+            # Native logic reads the commanded palm (t16's hinge opens only while it rises); IK does not see it.
+            command[side] = np.r_[self._palm[side](arm), hand]
         _, _, terminated, truncated, info = self.env.step(command)
         self.steps += 1
         reason = self._adapter.terminal_reason(dict(terminated=terminated, truncated=truncated, info=info),
@@ -305,6 +346,13 @@ class HandsOnSim:
         robot = self.env._robots[side]
         state = robot.data.body_state_w[0, list(robot.body_names).index(link)]
         matrix = world_pose(state[:3], state[3:7])
+        return matrix[:3, :3], matrix[:3, 3]
+
+    def commanded_palm(self, side):
+        """The palm pose upstream last took as commanded for an arm (rotation, translation), for geometry checks."""
+        from handson.evaluation.cameras import pose_matrix
+        pose = values(getattr(self.env, f"_{side}_tcp_pose"))
+        matrix = pose_matrix(pose[:3], pose[3:7])
         return matrix[:3, :3], matrix[:3, 3]
 
     # Cameras ----------------------------------------------------------------------------

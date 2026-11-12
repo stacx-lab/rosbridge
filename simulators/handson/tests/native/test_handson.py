@@ -33,6 +33,11 @@ def native(**options):
     return Native(python=sys.executable, env=dict(os.environ), **options)
 
 
+def assert_same_pose(pose, expected, atol=1e-4):
+    for value, wanted in zip(pose, expected):
+        np.testing.assert_allclose(value, wanted, atol=atol)
+
+
 @pytest.fixture(scope="module")
 def sim():
     sim = native(max_steps=STEPS)
@@ -63,10 +68,13 @@ def test_arms_and_hands_track_absolute_targets(sim):
         sim.step(target)
     assert sim.steps == 45 and sim.time_s == pytest.approx(1.5)
     measured = sim.state()[0]
-    for _, offset in SIDES:
+    for side, offset in SIDES:
         assert measured[offset] == pytest.approx(target[offset], abs=.02)
         hand = [offset + 7 + i for i in CURL]
         np.testing.assert_allclose(measured[hand], target[hand], atol=.1)
+        # Upstream reads the palm pose the target commands: the palm's, within the arm's residual tracking error.
+        assert_same_pose(sim.native("commanded_palm", side), sim.native("link_pose", side, f"{side}_palm_link"),
+                         atol=1e-3)
 
 
 def test_cameras_render_the_contract_and_leave_physics_unchanged(sim):
@@ -138,5 +146,7 @@ def test_catalog_task_loads_and_steps(task):
         assert not sim.done and sim.max_steps > 0
         sim.step(sim.state()[0])
         assert sim.steps == 1 and np.isfinite(sim.state()[0]).all() and sim.reward in (0., 1.)
+        for side, _ in SIDES:  # the arms hold where they are: upstream takes that palm as commanded
+            assert_same_pose(sim.native("commanded_palm", side), sim.native("link_pose", side, f"{side}_palm_link"))
     finally:
         sim.close()

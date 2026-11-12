@@ -1,4 +1,9 @@
-"""HandsOn's trial scoring and optional partial credit, without Isaac: a native step's info and adapter reason in."""
+"""HandsOn's trial scoring, optional partial credit and native commands, without Isaac: a native step's info and adapter
+reason in, its EEF52 command out."""
+import sys
+from types import SimpleNamespace
+
+import numpy as np
 import pytest
 
 from rosbridge_handson.backend import HandsOnSim, judge
@@ -113,3 +118,42 @@ def test_partial_credit_freezes_at_the_failure_and_is_one_on_success():
 def test_conditions_true_from_the_start_score_nothing():
     sim = episode([({"succeed": False}, None, {"ball_in_bowl": True, "ball_still": True})], partial_credit=True)
     assert sim.measures()["q_score"] == 0.
+
+
+class Robot:
+    """A native arm's joint buffers, as the backend reads their device and dtype."""
+    device, data = "cpu", SimpleNamespace(joint_pos=np.zeros((1, 27)))
+
+
+class Native:
+    """A native environment that keeps the EEF52 commands it is stepped with."""
+
+    def __init__(self):
+        self._robots, self.commands = {"right": Robot(), "left": Robot()}, []
+
+    def step(self, command):
+        self.commands.append(command)
+        return None, 0., False, False, {"succeed": False}
+
+
+def test_each_step_commands_the_palm_pose_its_arm_target_puts_the_palm_at(monkeypatch):
+    # The arm follows its joint target in place of the palm-pose IK; native logic that reads the commanded palm (t16's
+    # hinge opens only while it rises) gets the palm pose of that target, not a zero pose that leaves it at its reset.
+    monkeypatch.setitem(sys.modules, "torch", SimpleNamespace(tensor=lambda data, device, dtype: np.array(data)))
+    sim = HandsOnSim(max_steps=10, partial_credit=False)
+    sim.env, sim.steps, sim.done, sim._arm = Native(), 0, False, {}
+    sim._adapter = SimpleNamespace(terminal_reason=lambda result, env: None)
+    sim._slices = {"right": (slice(0, 7), slice(7, 27)), "left": (slice(27, 34), slice(34, 54))}
+    # Stand-ins for the forward kinematics of each arm: xyz from the first joints, a fixed wxyz per side.
+    sim._palm = {"right": lambda joints: np.r_[joints[:3], 0., 1., 0., 0.],
+                 "left": lambda joints: np.r_[-joints[:3], 1., 0., 0., 0.]}
+    for lift in (0., .1):
+        action = np.linspace(-1., 1., 54)
+        action[[0, 27]] += lift
+        sim.step(action)
+        command = sim.env.commands[-1]
+        for side, (arm, hand) in sim._slices.items():
+            np.testing.assert_array_equal(command[side], np.r_[sim._palm[side](action[arm]), action[hand]])
+            np.testing.assert_array_equal(sim._arm[side], action[arm][None])  # what replaces the IK's target
+    assert sim.env.commands[1]["right"][0] == pytest.approx(sim.env.commands[0]["right"][0] + .1)
+

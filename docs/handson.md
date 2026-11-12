@@ -137,8 +137,27 @@ Tasks that start with a hand touching an object (`t12`, `t22`, `t32`, `eval_comb
 (closing the loop on `joint_state`) removes a steady load's sag, best every few steps; against
 contact it only raises the force, and in free space it adds overshoot. Most tasks apply a target
 in one step; eight limit its rate and still converge (90% in about 0.5 s): 0.03 rad per step in
-`eval_comb03`, `eval_flex02`, `eval_flex03`, `eval_gen02`, `eval_gen04` and `t22`, 0.08 in `t41`,
-and 0.12 in `eval_flex01`, which also caps the arm at 2.5 rad/s.
+`eval_comb03`, `eval_flex02`, `eval_flex03`, `eval_gen02`, `eval_gen04` and `t22`, 0.08 in `t41`
+(up to 0.12 while the hand touches nothing, is more than 8 cm from the cups and the target's palm
+is more than 3 cm away), and 0.12 in `eval_flex01`, which also caps the arm at 2.5 rad/s.
+
+Each step also gives upstream the palm pose the arm target commands, in EEF52's own form: the
+world position (metres) and wxyz quaternion of `<side>_palm_link` at the target, from the
+target's forward kinematics on upstream's robot MJCF, placed at the reset where Isaac's palm is
+(it stays within 1 µm of Isaac's palm as the arm moves). No IK reads it; native logic that reads
+the commanded palm sees what an upstream policy's command would show it, such as `t41`'s rate
+bound and the laptop hinge of `t16_open_laptop` and `eval_comb02_open_laptop_and_click_mouse`
+(paths here are under `.runtime/handson/handson/handson/`). Their display moves only through a
+contact-gated hinge (`sim/isaaclab/fu015_collection_env.py:389-425, 1799-1834, 1990-2022`): a
+brake holds it at its angle unless the right hand touches it, and within 0.25° of closed the
+brake also needs the commanded right palm to rise at least 0.2 mm in that step. A drive of at
+most 4 N·m then opens the display 0.4° per step while the contact and the rise last. Arm targets
+that raise the right palm a little each step along the hinge's arc, with a fingertip resting on
+the display, open it (in `t16` at seed 0, to 57° in 6 s); a single large target raises the
+commanded palm in one step only. Guards that clamp the commanded palm, not the joints, do not
+hold the arm: `t10_lift_carton` pins the commanded palms' height until both hands grip the
+carton with 10 N, then moves them only together (`sim/isaaclab/b320_bimanual_env.py:3815-3850,
+4134-4616`); only these guards' hand targets apply.
 
 Hands are `joint` devices of 20 joints, `<side>_finger1_joint1`..`<side>_finger5_joint4`.
 The order is finger-major from the thumb, the order of EEF52's hand20 values. Targets are
