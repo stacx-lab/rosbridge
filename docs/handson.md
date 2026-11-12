@@ -112,23 +112,41 @@ row.
 
 Arms keep upstream's joint names `joint1_<side>`..`joint7_<side>` (radians, native
 limits). An arm target is absolute joint positions and replaces only the native palm-pose
-IK of HandsOn's EEF52 action. The native controller still applies the task contract's arm
-settings and its stiff PD drives. They hold a free arm on its target, but they neither
-compensate a load nor pass through objects, so an arm that carries or presses on something
-settles short of its joint target. Examples:
-- `joint1_<side>` swings a hand vertically, positive raising the right hand and negative the
-  left, since the arms mirror each other. Lowering it alone presses the hand into the table:
-  in `t24`, −0.2 rad on `joint1_right` reaches 61%.
-- In `t12`, the right arm's `joint1_right` and `joint4_right` reach 60–85% of a 0.1 rad step
-  either way.
+IK of HandsOn's EEF52 action; the native controller applies it as given, through PhysX's
+implicit PD drives:
 
-HandsOn's palm-pose IK hides this, because it starts each step from the measured joints. A
-joint-target controller should close that loop on `joint_state` or on the palm pose itself.
+| Joint | 1 | 2 | 3 | 4 | 5 | 6 | 7 |
+|---|---|---|---|---|---|---|---|
+| Stiffness (Nm/rad) | 380 | 380 | 300 | 300 | 105 | 105 | 105 |
+| Damping | 52 | 52 | 44 | 44 | 18 | 18 | 18 |
+| Effort limit (Nm) | 140 | 140 | 90 | 90 | 35 | 35 | 35 |
+
+The robot's links ignore gravity, so a free arm reaches its target exactly: 90% of a step in
+0.30–0.43 s (joint 1 fastest, joints 5–7 slowest), with no overshoot, at every amplitude. An arm
+falls short only where something resists it, by that torque divided by the joint's stiffness:
+- `joint1_<side>` swings a hand vertically (positive raises the right hand and lowers the left,
+  since the arms mirror each other). In `t24` the hand rests just above the table, so −0.2 rad on
+  `joint1_right` stops at 61%, the drive pressing about 30 Nm into the table; a larger command
+  only presses harder.
+- In `t12` the right hand starts against the food box (16–17.5 Nm): `joint1_right` reaches 58% of
+  +0.1 rad and 76–77% of −0.2 rad, `joint4_right` 81–84% of +0.1 rad.
+- A carried mass sags the arm by about 6 mrad per 0.5 kg, about 12 mm at the palm per kg.
+
+Tasks that start with a hand touching an object (`t12`, `t22`, `t32`, `eval_comb05`,
+`eval_flex01`) can fall short on the first motion. Re-targeting by the measured error
+(closing the loop on `joint_state`) removes a steady load's sag, best every few steps; against
+contact it only raises the force, and in free space it adds overshoot. Most tasks apply a target
+in one step; eight limit its rate and still converge (90% in about 0.5 s): 0.03 rad per step in
+`eval_comb03`, `eval_flex02`, `eval_flex03`, `eval_gen02`, `eval_gen04` and `t22`, 0.08 in `t41`,
+and 0.12 in `eval_flex01`, which also caps the arm at 2.5 rad/s.
 
 Hands are `joint` devices of 20 joints, `<side>_finger1_joint1`..`<side>_finger5_joint4`.
 The order is finger-major from the thumb, the order of EEF52's hand20 values. Targets are
-absolute joint positions in radians that pass through the native hand path, including its
-target slewing. The rig `handson/handson-rokae-wuji`:
+absolute joint positions in radians that pass through the native hand path to PD drives of 8
+Nm/rad (damping 0.12, effort 6 Nm); a grasp falls short by its torque over that stiffness. Hands
+track a target in one or two steps; PhysX applies no slewing. Five tasks slow them: `eval_flex01`
+(90% in 0.67 s), `eval_comb03` and `t21` (0.27 s), `eval_flex03` (0.23 s) and `t13` (0.13 s).
+The rig `handson/handson-rokae-wuji`:
 - holds the arm chains and hand trees from upstream's robot MJCF;
 - ends each arm at `palm` (`<side>_palm_link`), the pose EEF52 commands, so Kinex IK maps
   palm poses to arm joints;
@@ -145,6 +163,11 @@ contract, where a profile is an undistorted pinhole at a fixed mount:
   this default camera profile; `t05` and `t15` would use 269.56 in the paper.
 - **Mounts:** every camera renders at its nominal mount, without the evaluator's per-seed
   jitter (±2 mm, ±0.3°).
+
+Each choice is small: zeroing the head camera's distortion moves pixels by at most about 3 px,
+at the image corners, the jitter left out is ±2 mm and ±0.3°, and the paper's wrist fx for `t05`
+and `t15` differs by about 1%. They matter only to replicate trained policies' numbers
+pixel-exactly.
 
 ## Recording and checks
 
