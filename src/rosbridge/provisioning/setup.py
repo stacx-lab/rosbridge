@@ -22,6 +22,20 @@ def workspace_lock(root, name, *, shared=False):
                          "or wait for preparation to finish before launching") from None
 
 
+def lock_identity(path):
+    """pixi.lock as what it locks: each platform's name replaced by the platform it names, since some pixi versions
+    rename platforms (p1 becomes linux-64-glibc-2-31) without changing a package."""
+    import yaml
+    lock = yaml.load(path.read_text(), Loader=getattr(yaml, "CSafeLoader", yaml.SafeLoader))
+    names = {platform["name"]: json.dumps({k: v for k, v in platform.items() if k != "name"}, sort_keys=True)
+             for platform in lock.get("platforms") or []}
+    for environment in (lock.get("environments") or {}).values():
+        environment["packages"] = {names.get(name, name): packages
+                                   for name, packages in (environment.get("packages") or {}).items()}
+    lock["platforms"] = sorted(names.values())
+    return json.dumps(lock, sort_keys=True, default=str).encode()
+
+
 def build_identity(root, config):
     """Inputs of a simulator's ROS build."""
     files = [(root, root / name) for name in
@@ -34,8 +48,8 @@ def build_identity(root, config):
     digest = hashlib.sha256()
     for base, path in sorted(files):
         digest.update(str(path.relative_to(base)).encode())
-        digest.update(path.read_bytes())
-    return {"schema": 3, "package": config["ros_package"], "build_hash": digest.hexdigest()}
+        digest.update(lock_identity(path) if path.name == "pixi.lock" else path.read_bytes())
+    return {"schema": 4, "package": config["ros_package"], "build_hash": digest.hexdigest()}
 
 
 def native(config):

@@ -188,3 +188,32 @@ def test_nested_sources_are_pinned_exported_and_patched_together(tmp_path):
     shutil.rmtree(destination)
     with pytest.raises(ValueError, match="tracked changes"):
         prepare.materialize(tmp_path, "fake")
+
+
+LOCK = """version: 7
+platforms:
+- name: linux-64
+  virtual-packages: [__glibc=2.28]
+- name: p1
+  subdir: linux-64
+  virtual-packages: [__glibc=2.31]
+environments:
+  handson:
+    packages:
+      p1:
+      - conda: https://prefix.dev/conda-forge/linux-64/bzip2-1.0.8-hda65f42_10.conda
+packages: []
+"""
+
+
+def test_a_lock_whose_platforms_are_only_renamed_keeps_the_build_identity(tmp_path):
+    from rosbridge.provisioning.setup import lock_identity
+    path = tmp_path / "pixi.lock"
+    path.write_text(LOCK)
+    identity = lock_identity(path)
+    path.write_text(LOCK.replace("p1", "linux-64-glibc-2-31"))  # what host pixi 0.83 writes
+    assert lock_identity(path) == identity
+    path.write_text(LOCK.replace("1.0.8-hda65f42_10", "1.0.9-h0"))  # a package that changed
+    assert lock_identity(path) != identity
+    path.write_text(LOCK.replace("__glibc=2.31", "__glibc=2.35"))  # a platform that changed
+    assert lock_identity(path) != identity
