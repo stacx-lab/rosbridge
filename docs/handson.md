@@ -118,11 +118,11 @@ two path-traced passes per sample (about 3 s), so `--record-views` and `--record
 much of a recorded run's cost.
 
 ```bash
-pixi run -e handson-native smoke                       # native checks via worker processes
-ROSBRIDGE_ALL_TASKS=1 pixi run -e handson-native smoke  # every task boots Isaac (hours)
-pixi run -e handson test-ros
+pixi run --frozen -e handson-native smoke                       # native checks via worker processes
+ROSBRIDGE_ALL_TASKS=1 pixi run --frozen -e handson-native smoke  # every task boots Isaac (hours)
+pixi run --frozen -e handson test-ros
 rosbridge demo handson --timeout 1800
-pixi run -e handson-native env PYTHONPATH=src:simulators/handson:.runtime/handson \
+pixi run --frozen -e handson-native env PYTHONPATH=src:simulators/handson:.runtime/handson \
     python tools/robots/build_handson.py                # rewrites the catalog rig
 ```
 

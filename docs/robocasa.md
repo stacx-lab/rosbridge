@@ -122,13 +122,13 @@ measurements as JSON and shuts down the graph.
 
 Installed sources live in `.runtime/robocasa`, assets in `.runtime/assets/robocasa`,
 and the ROS workspace in `.workspaces/robocasa`. The rig is rebuilt with
-`pixi run -e robocasa python tools/robots/build_robocasa.py`.
+`pixi run --frozen -e robocasa python tools/robots/build_robocasa.py`.
 
 ## Checks
 
 ```bash
-pixi run -e robocasa smoke      # representative tasks, controls, rendering and rig geometry
-pixi run -e robocasa test-ros
+pixi run --frozen -e robocasa smoke      # representative tasks, controls, rendering and rig geometry
+pixi run --frozen -e robocasa test-ros
 ```
 
 Native checks cover an atomic and a composite evaluation task and a task without a

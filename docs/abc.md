@@ -113,9 +113,9 @@ Ctrl-C or `rosbridge stop RUN_ID`; see the shared guide for output details.
 ## Checks and example controller
 
 ```bash
-pixi run -e abc test
-pixi run -e abc smoke
-pixi run -e abc test-ros
+pixi run --frozen -e abc test
+pixi run --frozen -e abc smoke
+pixi run --frozen -e abc test-ros
 rosbridge demo abc
 rosbridge demo abc --execution-mode realtime
 ```

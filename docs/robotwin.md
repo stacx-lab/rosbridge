@@ -85,9 +85,9 @@ With `--record`, spectators `third_person`, `left_wrist` and `right_wrist` follo
 the head and wrist cameras at 960×720.
 
 ```bash
-pixi run -e robotwin smoke                      # native: timing, gripper, reset, rendering
-ROSBRIDGE_ALL_TASKS=1 pixi run -e robotwin smoke # every task loads and steps (~35 min)
-pixi run -e robotwin test-ros
+pixi run --frozen -e robotwin smoke                      # native: timing, gripper, reset, rendering
+ROSBRIDGE_ALL_TASKS=1 pixi run --frozen -e robotwin smoke # every task loads and steps (~35 min)
+pixi run --frozen -e robotwin test-ros
 rosbridge demo robotwin
 ```
 

@@ -292,12 +292,12 @@ The spectators render with every step, and loading settles them at their start p
 16 renders; a spectator sample reads the latest frame.
 
 ```bash
-pixi run -e behavior-native smoke        # R1Pro: controls, cameras, reset, rig geometry, slicer and vacuum rules
-pixi run -e behavior-g1-native smoke     # G1: standing, walking, turning, arms, hands, rig geometry
-pixi run -e behavior-dex-native smoke    # R1Pro with hands: cameras, mount, hands, rig geometry, a held knife
-pixi run -e behavior test-ros
-pixi run -e behavior-g1 test-ros
-pixi run -e behavior-dex test-ros
+pixi run --frozen -e behavior-native smoke        # R1Pro: controls, cameras, reset, rig geometry, slicer and vacuum rules
+pixi run --frozen -e behavior-g1-native smoke     # G1: standing, walking, turning, arms, hands, rig geometry
+pixi run --frozen -e behavior-dex-native smoke    # R1Pro with hands: cameras, mount, hands, rig geometry, a held knife
+pixi run --frozen -e behavior test-ros
+pixi run --frozen -e behavior-g1 test-ros
+pixi run --frozen -e behavior-dex test-ros
 rosbridge demo behavior --timeout 1800
 rosbridge demo behavior-g1 --timeout 1800
 rosbridge demo behavior-dex --timeout 1800

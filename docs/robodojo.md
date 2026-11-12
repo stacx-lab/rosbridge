@@ -96,9 +96,9 @@ With `--record`, spectators `third_person`, `left_wrist` and `right_wrist` copy 
 optics of the head and wrist cameras at 960×720 and follow them.
 
 ```bash
-pixi run -e robodojo-native smoke                       # native checks via worker processes
-ROSBRIDGE_ALL_TASKS=1 pixi run -e robodojo-native smoke  # every task boots Isaac (hours)
-pixi run -e robodojo test-ros
+pixi run --frozen -e robodojo-native smoke                       # native checks via worker processes
+ROSBRIDGE_ALL_TASKS=1 pixi run --frozen -e robodojo-native smoke  # every task boots Isaac (hours)
+pixi run --frozen -e robodojo test-ros
 rosbridge demo robodojo --timeout 1800
 ```
 
