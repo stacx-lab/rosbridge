@@ -137,6 +137,24 @@ pixi run --frozen -e handson-native env PYTHONPATH=src:simulators/handson:.runti
 It boots each task and seed once, as a launch does but without ROS, on the given GPUs, and
 writes which seeds the gate accepts.
 
+Upstream also archives the inputs of the 45,000 accepted paper trials, 100 per Core-50 task
+for each of nine models (`dm05`, `dp`, `fastwam`, `hy`, `lingbot`, `motus`, `openwam`, `pi05`,
+`spatial`). With `ROSBRIDGE_HANDSON_PAPER_TRIALS=<model>` in the launch's environment, the seed
+names one of them, as upstream's `--paper-trial N --model <model>` does:
+
+```bash
+ROSBRIDGE_HANDSON_PAPER_TRIALS=pi05 rosbridge launch handson/t24-place-ball-in-bowl --seed 7 \
+    --execution-mode stepped --stop-on-success
+```
+
+Seed `N` (0–99) restores trial `N`: its accepted reset seed, its goal, the constructor and reset
+overrides that set it, its archived instruction and its setting. This restores the paper's goal
+diversity: `t24` asks for each of its three balls and `t26` for each of its four fruits. The
+archive holds accepted resets, so the settle gate normally passes them, although upstream does
+not certify that today's simulator matches the paper's. The record's `seed` stays `N`; the
+receipt `PAPER_TRIAL.json` holds the trial. Transfer-16 tasks have no archive, and their launch
+fails with a message saying so.
+
 ## Devices
 
 | Device | Interfaces |

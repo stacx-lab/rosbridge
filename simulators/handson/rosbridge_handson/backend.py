@@ -85,6 +85,24 @@ def failure_detail(info):
             if any(word in key for word in FAILURE_INFO) and isinstance(value, (str, bool, int, float)) and value}
 
 
+def paper_trial(task, index):
+    """Upstream's archived accepted paper trial `index` (0-99) of a Core-50 task, from the model named by
+    ROSBRIDGE_HANDSON_PAPER_TRIALS (evaluation/paper_trials.py), or None without that option."""
+    model = os.environ.get("ROSBRIDGE_HANDSON_PAPER_TRIALS")
+    if not model:
+        return None
+    from handson.evaluation import paper_trials
+    catalog = paper_trials.manifest()
+    if task not in catalog["tasks"]:
+        raise ValueError(f"ROSBRIDGE_HANDSON_PAPER_TRIALS: the paper archived trials of Core-50 tasks only, not {task}")
+    if model not in catalog["models"]:
+        raise ValueError(f"ROSBRIDGE_HANDSON_PAPER_TRIALS: no archived model {model!r}; "
+                         f"choose one of {', '.join(sorted(catalog['models']))}")
+    if not 0 <= index < 100:
+        raise ValueError(f"with ROSBRIDGE_HANDSON_PAPER_TRIALS the seed names a paper trial, 0-99, not {index}")
+    return paper_trials.load(model, task, index)
+
+
 def contract_cameras():
     """The default camera profile for every task, with the head camera's distortion zeroed."""
     from handson.evaluation import camera_contracts, camera_randomization
@@ -126,7 +144,7 @@ class HandsOnSim:
         self.partial_credit, self._initial, self._frozen = bool(partial_credit), None, None
         self.failure_detail = None
         self.cameras = tuple(CAMERAS)
-        self.env = self.task = self.failure = self._tracker = self._frames = self._temporary = None
+        self.env = self.task = self.failure = self._tracker = self._frames = self._temporary = self._goal = None
         self.spectators, self._spectators = (), {}
 
     @property
@@ -142,11 +160,13 @@ class HandsOnSim:
         """The seeded native episode, as the official evaluator builds it; randomize has no effect.
 
         Isaac hosts one episode per process. The settle gate may reject a seed: reset raises SeedRejected.
+        With ROSBRIDGE_HANDSON_PAPER_TRIALS=<model>, the seed names that model's archived paper trial instead
+        (upstream's --paper-trial): its accepted reset seed, goal, constructor overrides, prompt and setting.
         """
         if self.env is not None:
             raise ValueError("a HandsOn worker serves one episode; start another run for another")
         import torch  # noqa: F401  torch's libgomp needs static TLS that Kit's plugins would exhaust
-        from handson.evaluation import backends, native, setting_runtime, task_contracts
+        from handson.evaluation import backends, native, paper_trials, setting_runtime, task_contracts
         from handson.evaluation.cameras import install_launcher, install_native_camera_creation
         from handson.evaluation.goals import bind
         from handson.sim.isaaclab.abc_collection_env import HandsOnABCIsaacLabEnv
@@ -161,8 +181,15 @@ class HandsOnSim:
             run = self._temporary.name
         self._out = out = Path(run) / "handson"
         out.mkdir(parents=True)
-        self._adapter = TASKS[self.task].evaluation_adapter()
-        contract = task_contracts.configure(self.task)  # replaces every HANDSON_* variable
+        trial = paper_trial(self.task, seed)
+        variant = trial["paper_variant"] if trial else None  # t06's stabilize_body, in seven trials
+        if trial:
+            paper_trials.validate(trial, self.task, trial["seed"], "physx", variant)
+        self._adapter = TASKS[self.task].evaluation_adapter(variant)
+        contract = task_contracts.configure(self.task, variant)  # replaces every HANDSON_* variable
+        if trial:
+            paper_trials.configure_environment(trial, contract)  # the trial's recorded control keys
+            (out / "PAPER_TRIAL.json").write_text(json.dumps(trial, indent=2) + "\n")
         backends.configure("physx")
         os.environ.setdefault("OMNI_KIT_ACCEPT_EULA", "YES")
         os.environ.update(HANDSON_BACKGROUND_MODE="off", HANDSON_ISAACLAB_CACHE=str(out / "scene-cache"),
@@ -173,16 +200,25 @@ class HandsOnSim:
         install_launcher("physx")
         install_native_camera_creation(HandsOnABCIsaacLabEnv)
         self._adapter.prepare_cameras()
-        task_contracts.install_native_trace(self.task, out)
+        task_contracts.install_native_trace(self.task, out, variant)
         self._adapter.prepare(out)
-        selection = setting_runtime.prepare(self.task, seed, out)
+        selection = setting_runtime.prepare(self.task, trial["seed"] if trial else seed, out, paper_trial=trial)
         setting_runtime.configure_solver(selection)
-        reset_seed = selection["seeds"]["reset"] if selection else seed
-        self.env, self._wrapped, _ = native.construct(self.task, reset_seed, selection=selection)
+        reset_seed = selection["seeds"]["reset"] if selection else trial["reset_seed"] if trial else seed
+        if trial:
+            from handson.evaluation.frozen_goals import FrozenGoal
+            if reset_seed != trial["reset_seed"]:
+                raise ValueError("the reset seed differs from the paper trial's")
+            # Upstream conditions the native goal sampler on the trial's goal until the episode ends.
+            self._goal = FrozenGoal(self.task, trial["goal"],
+                                    condition_native=trial["goal_route"] != "legacy_native_generated").__enter__()
+        self.env, self._wrapped, _ = native.construct(
+            self.task, reset_seed, selection=selection, paper_variant=variant,
+            trial_constructor=trial["constructor_overrides"] if trial else None)
         env = self.env
         if not env._cameras:
             env._init_recording_cameras()
-        observation, info = env.reset(seed=reset_seed)
+        observation, info = env.reset(seed=reset_seed, **(trial["reset_parameters"] if trial else {}))
         try:
             task_contracts.initialize(env, self._wrapped, observation, info, contract, out)
         except Exception as error:
@@ -193,11 +229,15 @@ class HandsOnSim:
                 # substitutes no other seed. It is deterministic: another seed may pass.
                 raise SeedRejected(f"{self.task} seed {seed}: {str(error)[:300]}") from error
             raise
-        (out / "PROMPT.json").write_text(json.dumps(bind(env, self.task, seed), indent=2) + "\n")
+        instruction = (paper_trials.bind_instruction(trial, self._goal.verify(env)) if trial
+                       else bind(env, self.task, seed))
+        (out / "PROMPT.json").write_text(json.dumps(instruction, indent=2) + "\n")
         if self._adapter.spec.force_scoring:  # t10 scores support, lift and hold; force is diagnostic
             from handson.evaluation.carton import install
             self._tracker = install(env, out / "CARTON_RAW_FORCE_000")
         budgets = json.loads(Path(native.__file__).with_name("budgets.json").read_text())
+        if trial and int(budgets[self.task]["steps"]) != trial["budget_steps"]:
+            raise ValueError("the public evaluation budget differs from the paper trial's")
         self.period = float(env._control_dt)
         self.max_steps = self.requested_max_steps or int(budgets[self.task]["steps"])
         env._time_limit = self.max_steps * self.period
@@ -400,6 +440,9 @@ class HandsOnSim:
         if self._tracker is not None:
             self._tracker.close()
             self._tracker = None
+        if self._goal is not None:
+            self._goal.__exit__(None, None, None)
+            self._goal = None
         # Closing the SimulationApp ends this process, so files go first: the episode's converted
         # scene (about 0.5 GB) is needed only while it runs.
         if self._temporary is not None:
