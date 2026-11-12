@@ -127,7 +127,8 @@ def main():
                     if reported.is_file():
                         # The world says why it could not start, such as a seed its backend rejected.
                         failure = json.loads(reported.read_text())
-                        record["cause"] = failure["cause"]
+                        if failure.get("cause"):
+                            record["cause"] = failure["cause"]
                         raise RuntimeError(failure["error"] + "; see graph.log")
                     raise RuntimeError(f"Required graph exited unexpectedly (exit {code}); see graph.log")
                 if record["state"] == "starting" and time.monotonic() >= deadline:
