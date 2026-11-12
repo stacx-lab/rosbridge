@@ -1,0 +1,22 @@
+name = "bidex"
+source = "third_party/bidex"
+source_url = "https://github.com/robbyant-research/BiDex-100.git"
+source_revision = "5d077559b0c648bd1c4f32261a8032785740cb01"
+patches = "patches/bidex"
+python_path = "simulators/bidex"
+asset_preparer = "rosbridge_bidex.assets:prepare"
+asset_checker = "rosbridge_bidex.assets:check_task"
+default_task = "Generalization/put_apple_in_white_bowl"
+ros_package = "rosbridge_bidex"
+environment = "bidex"
+task_catalog = "tasks.toml"
+
+# The backend's device inventory; catalog rigs must declare exactly these devices.
+[devices]
+right_arm = "joint"
+left_arm = "joint"
+right_hand = "joint"
+left_hand = "joint"
+head_camera = "rgbd"
+left_camera = "rgbd"
+right_camera = "rgbd"

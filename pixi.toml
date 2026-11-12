@@ -32,7 +32,7 @@ rosbridge = { path = ".", editable = true }
 MUJOCO_GL = "egl"
 
 [tasks]
-test = "python -m pytest -q tests/unit simulators/abc/tests/unit simulators/libero/tests/unit simulators/robotwin/tests/unit simulators/robodojo/tests/unit simulators/robocasa/tests/unit simulators/behavior/tests/unit simulators/behavior-g1/tests/unit simulators/behavior-dex/tests/unit simulators/handson/tests/unit"
+test = "python -m pytest -q tests/unit simulators/abc/tests/unit simulators/libero/tests/unit simulators/robotwin/tests/unit simulators/robodojo/tests/unit simulators/robocasa/tests/unit simulators/behavior/tests/unit simulators/behavior-g1/tests/unit simulators/behavior-dex/tests/unit simulators/handson/tests/unit simulators/bidex/tests/unit"
 
 [feature.abc.pypi-dependencies]
 mujoco = "~=3.8.0"
@@ -125,6 +125,22 @@ pyyaml = "*"
 build = "python -m rosbridge.provisioning.workspace --simulator robocasa"
 test-ros = "bash -c 'source .workspaces/robocasa/install/local_setup.bash && python -m pytest -q simulators/robocasa/tests/ros'"
 smoke = "python -m pytest -q simulators/robocasa/tests/native"
+
+# BiDex-100's simulation requirements (requirements.txt plus its evaluator's h5py and msgpack)
+# without the replay extras; quaternionic serves the Astribot arm retargeting BiDexEnv builds.
+[feature.bidex.pypi-dependencies]
+mujoco = "~=3.8.0"
+scipy = "*"
+pyyaml = "*"
+h5py = "*"
+mink = "*"
+quaternionic = "*"
+msgpack = "*"
+
+[feature.bidex.tasks]
+build = "python -m rosbridge.provisioning.workspace --simulator bidex"
+test-ros = "bash -c 'source .workspaces/bidex/install/local_setup.bash && python -m pytest -q simulators/bidex/tests/ros'"
+smoke = "python -m pytest -q simulators/bidex/tests/native"
 
 # RoboDojo's and HandsOn's world nodes: the shared ROS environment plus their tasks. Each
 # simulator runs in its own Python 3.11 interpreter (rosbridge.core.worker).
@@ -318,6 +334,7 @@ abc = { features = ["abc"] }
 libero = { features = ["libero"] }
 robotwin = { features = ["robotwin"] }
 robocasa = { features = ["robocasa"] }
+bidex = { features = ["bidex"] }
 robodojo = { features = ["robodojo"], solve-group = "jazzy" }
 robodojo-native = { features = ["isaaclab", "robodojo-native"], no-default-feature = true }
 handson = { features = ["handson"], solve-group = "jazzy" }

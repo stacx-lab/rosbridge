@@ -90,6 +90,16 @@ def test_unpinned_zip_records_observed_hash(tmp_path):
     assert (data / "objects/mesh.obj").read_bytes() == b"mesh"
 
 
+def test_a_file_that_is_no_archive_is_kept_whole(tmp_path):
+    source = tmp_path / "eval_dataset.h5"
+    source.write_bytes(b"\x89HDF\r\n\x1a\n" + bytes(600))
+    digest = hashlib.sha256(source.read_bytes()).hexdigest()
+    data = AssetStore(tmp_path / "cache").ensure("bidex", "eval_dataset", source.as_uri(),
+                                                 checksum=digest, contains=["eval_dataset.h5"])
+    assert [path.name for path in data.iterdir()] == ["eval_dataset.h5"]
+    assert (data / "eval_dataset.h5").read_bytes() == source.read_bytes()
+
+
 @pytest.mark.parametrize("archive_type", ["tar", "zip"])
 def test_archive_cannot_escape_cache(tmp_path, archive_type):
     archive = tmp_path / "bad.archive"

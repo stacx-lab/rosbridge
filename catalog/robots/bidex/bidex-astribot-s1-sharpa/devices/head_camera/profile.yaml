@@ -1,0 +1,97 @@
+name: head_camera
+runtime:
+  domain_id: 0
+  nodes: []
+  ready_timeout_s: 30
+operations:
+  image:
+    description: RGB image measurements with encoding, dimensions, row stride and acquisition
+      timestamp in the Image header. The frame_id identifies the calibrated optical frame;
+      use its stamp for tf2 lookup. A new subscriber receives the current frame at once, also
+      while the world is paused, then one per camera sample; reading never advances world
+      time.
+    transport: topic
+    direction: output
+    endpoint: /head_camera/image
+    type: sensor_msgs/msg/Image
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: volatile
+    timeout_s: 10
+  depth:
+    description: '16UC1 depth registered to image in millimetres along the optical axis; 0
+      marks missing or out-of-range samples. Rendered with its image: same stamp and frame_id,
+      so pair the two by stamp.'
+    transport: topic
+    direction: output
+    endpoint: /head_camera/depth
+    type: sensor_msgs/msg/Image
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: volatile
+    timeout_s: 10
+  camera_info:
+    description: CameraInfo mirroring the profile, with K and P from color.projection, zero
+      plumb_bob distortion, image size and optical frame. Kinex reads camera geometry from
+      the profile, not from this topic; intrinsics are not TF transforms.
+    transport: topic
+    direction: output
+    endpoint: /head_camera/camera_info
+    type: sensor_msgs/msg/CameraInfo
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: transient_local
+    timeout_s: 10
+loaded: false
+meta:
+  created_at: '2026-10-24T00:00:00Z'
+  updated_at: '2026-10-24T00:00:00Z'
+type: rgbd
+description: RGB-D camera in the Astribot head, looking down at the table (BiDex-100's head
+  camera). Image and registered depth calibration and the optical-frame mount are in the profile;
+  the depth near plane scales with each scene's extent.
+source: introspected
+calibrated_at: null
+method: introspection
+color:
+  width: 480
+  height: 360
+  fps: null
+  projection:
+    model: pinhole
+    fx: 214.515646666958
+    fy: 214.515646666958
+    cx: 239.5
+    cy: 179.5
+    skew: 0
+  distortion:
+    model: none
+depth:
+  width: 480
+  height: 360
+  fps: null
+  quantity: z
+  scale_m_per_unit: 0.001
+  invalid_value: 0
+  valid_range_m:
+    min: 0.01061
+    max: 65.535
+  reliable_range_m:
+    min: 0.01061
+    max: 65.535
+  registration: color
+frames:
+  base:
+    translation_m:
+    - 0.5874259933
+    - 0.013501004586
+    - 1.422479966107
+    rotation_xyzw:
+    - -0.663351245332
+    - -0.680817701011
+    - 0.220946803145
+    - 0.218254194659
+    parent: world:base

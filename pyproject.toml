@@ -25,7 +25,7 @@ testpaths = ["tests/unit", "simulators/abc/tests/unit", "simulators/libero/tests
              "simulators/robotwin/tests/unit", "simulators/robodojo/tests/unit",
              "simulators/robocasa/tests/unit", "simulators/behavior/tests/unit",
              "simulators/behavior-g1/tests/unit", "simulators/behavior-dex/tests/unit",
-             "simulators/handson/tests/unit"]
+             "simulators/handson/tests/unit", "simulators/bidex/tests/unit"]
 
 [tool.ruff]
 line-length = 100

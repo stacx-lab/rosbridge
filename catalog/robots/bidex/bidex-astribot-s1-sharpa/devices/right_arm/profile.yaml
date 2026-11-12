@@ -1,0 +1,92 @@
+name: right_arm
+runtime:
+  domain_id: 0
+  nodes:
+  - entry: links.py
+    factory: create
+  ready_timeout_s: 30
+operations:
+  joint_state:
+    description: Measured positions of astribot_arm_right_joint_1, astribot_arm_right_joint_2,
+      astribot_arm_right_joint_3, astribot_arm_right_joint_4, astribot_arm_right_joint_5,
+      astribot_arm_right_joint_6, astribot_arm_right_joint_7 in radians with velocities and
+      the world-clock acquisition stamp; do not infer motion completion from a sent command.
+    transport: topic
+    direction: output
+    endpoint: /right_arm/joint_state
+    type: sensor_msgs/msg/JointState
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: transient_local
+    timeout_s: 10
+  joint_target:
+    description: Joint trajectory over all 7 arm joints in radians, timed from receipt by
+      strictly increasing time_from_start and finishing within 120 seconds; velocities, accelerations
+      and effort must be empty. A zero header stamp selects now; a nonzero stamp must not
+      start in the past. Points are absolute native joint positions, linearly interpolated
+      at the native control period. Replacement clears pending references; invalid trajectories
+      are ignored, so verify measured joint_state.
+    transport: topic
+    direction: input
+    endpoint: /right_arm/joint_target
+    type: trajectory_msgs/msg/JointTrajectory
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: volatile
+    timeout_s: 10
+  stop:
+    description: Stop arm motion and hold the measured posture.
+    transport: service
+    direction: input
+    endpoint: /right_arm/stop
+    type: std_srvs/srv/Trigger
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: volatile
+    timeout_s: 10
+loaded: false
+meta:
+  created_at: '2026-10-24T00:00:00Z'
+  updated_at: '2026-10-24T00:00:00Z'
+type: joint
+description: Astribot S1 seven-joint right arm of the BiDex-100 station. Geometry is the sibling
+  arm.urdf with flange (astribot_arm_right_tool_link, the body that carries the hand and the
+  wrist camera) as the tip link; measured links are on TF as right_arm/<link>, and helpers.joint_model('right_arm')
+  computes FK/IK from it. Commands are absolute joint positions, BiDex-100's arm_joint_position,
+  through the native position servos.
+source: introspected
+calibrated_at: null
+method: introspection
+model:
+  format: urdf
+  path: arm.urdf
+  base_link: base_link
+  tip_link: flange
+limits: native
+home:
+  astribot_arm_right_joint_1: 0.0
+  astribot_arm_right_joint_2: 0.0
+  astribot_arm_right_joint_3: 1.5708
+  astribot_arm_right_joint_4: 1.5708
+  astribot_arm_right_joint_5: 0.0
+  astribot_arm_right_joint_6: 0.0
+  astribot_arm_right_joint_7: 0.0
+stop:
+  behavior: hold
+  affected_devices:
+  - right_arm
+frames:
+  base:
+    translation_m:
+    - 0.79999692
+    - -6.0e-12
+    - 0.889999999994
+    rotation_xyzw:
+    - 4.0e-12
+    - -2.000004e-06
+    - -0.999999999996
+    - 1.999996e-06
+    parent: world:base

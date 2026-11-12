@@ -2,7 +2,9 @@
 
 Simulators with left/right arm and gripper devices run it with their observation
 camera; a rig with hands instead curls the right hand by `hand`, joint index to offset
-in radians. `offsets` are the left and right arms' first-joint swings, clear of the scene.
+in radians, from its measured posture or, where measured joints can read past their limits,
+from the in-limit posture `hand_start`. `offsets` are the left and right arms' first-joint
+swings, clear of the scene.
 Joint names come from measured joint states, so native names are kept.
 """
 import json
@@ -21,9 +23,10 @@ from rosbridge_runtime.devices import FRAME_QOS, STREAM_QOS
 
 
 class ControlDemo(Node):
-    def __init__(self, name, camera, depth, hand=None, offsets=(0.2, 0.15)):
+    def __init__(self, name, camera, depth, hand=None, offsets=(0.2, 0.15), hand_start=None):
         super().__init__(name)
         self.camera, self.depth, self.hand, self.offsets, self.last = camera, depth, hand, offsets, {}
+        self.hand_start = hand_start
         self.effector = "right_hand" if hand else "right_gripper"
         self.info_count = 0
         self.create_subscription(Clock, "/clock", lambda msg: self.last.update(clock=msg), STREAM_QOS)
@@ -116,7 +119,12 @@ class ControlDemo(Node):
         self.wait(lambda: all(key in self.last for key in ("left_arm", "right_arm", self.effector, "clock")))
         # Settle before taking a reference position or measuring throughput.
         self.advance(0.34)
-        self.hand_start = list(self.last[self.effector].position)
+        if self.hand_start is None:
+            self.hand_start = list(self.last[self.effector].position)
+        else:  # open the hand at its given posture first
+            self.grip(1.0)
+            self.spin(0.1)
+            self.advance()
         opened = self.grip_position()
         start = self.positions("left")
         goal = [start[0] + self.offsets[0], *start[1:]]
@@ -167,9 +175,9 @@ class ControlDemo(Node):
                           "camera_info_count": self.info_count}), flush=True)
 
 
-def main(name, camera, depth=True, hand=None, offsets=(0.2, 0.15)):
+def main(name, camera, depth=True, hand=None, offsets=(0.2, 0.15), hand_start=None):
     rclpy.init()
-    node = ControlDemo(name, camera, depth, hand, offsets)
+    node = ControlDemo(name, camera, depth, hand, offsets, hand_start)
     try:
         node.run()
     finally:
