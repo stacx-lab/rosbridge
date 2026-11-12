@@ -61,17 +61,19 @@ can follow it:
 - for `t11_line_up_blocks`, a direct hand contact, the evaluator's own rule.
 
 From then on `success` stays false, and the episode record's `failure` names the cause
-(`native_failed` or `native_c12_direct_hand_contact`). A step that succeeds and fails at once
-is a success, as upstream scores it. Upstream ends a trial at its first success or failure:
-its protocol is `--execution-mode stepped --stop-on-success`. A run launched to stop on
-success ends at its first outcome. At a failure its wait replies add `; the episode ended
-because the task failed`, and the record says reason `failure`, with the native cause in
-`cause` and `failure`. Without the flag the failure latches silently and the episode runs
-to its horizon. Tasks whose success does not latch (all but `t07`, `t20`, `t22`, `t33`, `t34`,
-`t47`, `eval_comb04`, `t18`, `t49`, `eval_gen02`, `eval_flex01` and `eval_flex03`) can also
-lose a success before the horizon, since their holds restart when a condition breaks.
-`t10_lift_carton` scores support, lift and hold, recording grip force as a diagnostic, as
-the evaluator does.
+(`native_failed` or `native_c12_direct_hand_contact`), and `failure_detail` the native info
+of that step that explains it: its set entries whose names contain `fail` or `reason`, such
+as `{"failed": true, "ycb01_failure_reason": "ball_or_hand_touched_gate"}`. Wait replies
+never carry it. A step that succeeds and fails at once is a success, as upstream scores it.
+Upstream ends a trial at its first success or failure: its protocol is `--execution-mode
+stepped --stop-on-success`. A run launched to stop on success ends at its first outcome. At a
+failure its wait replies add `; the episode ended because the task failed`, and the record
+says reason `failure`, with the native cause in `cause` and `failure`. Without the flag the
+failure latches silently and the episode runs to its horizon. Tasks whose success does not
+latch (all but `t07`, `t20`, `t22`, `t33`, `t34`, `t47`, `eval_comb04`, `t18`, `t49`,
+`eval_gen02`, `eval_flex01` and `eval_flex03`) can also lose a success before the horizon,
+since their holds restart when a condition breaks. `t10_lift_carton` scores support, lift and
+hold, recording grip force as a diagnostic, as the evaluator does.
 
 27 tasks have no native failure and can only succeed or time out: `t02`–`t06`, `t08`,
 `t09`, `t12`, `t19`, `t21`, `t23`–`t26`, `t31`, `t32`, `t42`–`t45`, `eval_comb01`,
@@ -83,8 +85,8 @@ brew, and in `t45` the left hand's contact lost.
 With `ROSBRIDGE_HANDSON_STOP_ON_FAILURE=1` in the launch's environment, a run judged on its
 final state (no `--stop-on-success`) still ends at a native failure, as upstream's evaluator
 ends the trial there: waits reply that the episode ended because the task failed, and the
-record has reason `failure` and the native cause. A success does not end it. Every record
-with a failure also has `failure_step`, the step at which it latched.
+record has reason `failure`, the native cause and its detail. A success does not end it.
+Every record with a failure also has `failure_step`, the step at which it latched.
 
 With `ROSBRIDGE_HANDSON_PARTIAL_CREDIT=1` in the launch's environment, the record also adds
 upstream's success checklist, the rows of its teleoperation success panel

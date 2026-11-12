@@ -59,7 +59,7 @@ def test_a_run_created_to_stop_on_failure_ends_at_a_failure_but_not_at_a_success
     monkeypatch.setenv("ROSBRIDGE_HANDSON_STOP_ON_FAILURE", "1")
     stopping = episode([PLAIN, PLAIN, FAILED])
     assert stopping.done and stopping.end_reason() == ("failure", "native_failed") and stopping.failure_step == 3
-    assert stopping.measures() == {"failure": "native_failed", "failure_step": 3}
+    assert stopping.measures() == {"failure": "native_failed", "failure_detail": {"failed": True}, "failure_step": 3}
     succeeding = episode([PLAIN, ({"succeed": True}, "native_terminated", {}), PLAIN])
     assert not succeeding.done and succeeding.end_reason() is None
     monkeypatch.delenv("ROSBRIDGE_HANDSON_STOP_ON_FAILURE")
@@ -71,10 +71,22 @@ def test_a_step_that_succeeds_and_fails_at_once_ends_a_stop_on_success_run_as_a_
     assert sim.done and sim.success and sim.reward == 1. and sim.failure is None and sim.end_reason() is None
 
 
+def test_a_failure_records_the_native_info_that_explains_it():
+    failing = ({"succeed": False, "failed": True, "ycb01_failure_reason": "ball_or_hand_touched_gate",
+                "ycb01_gate_contact_seen": True, "c05_failed_early_click": False, "truncated_reason": "",
+                "failure_steps": 0, "ycb01_hand_gate_contact_force": 1.06}, "native_terminated", {})
+    later = ({"succeed": False, "failed": True, "ycb01_failure_reason": "something later"}, "native_terminated", {})
+    sim = episode([PLAIN, failing, later])
+    # Set scalar entries named for a failure or reason, from the step the failure latched; never in replies.
+    assert sim.measures()["failure_detail"] == {"failed": True, "ycb01_failure_reason": "ball_or_hand_touched_gate"}
+    assert "failure_detail" not in episode([PLAIN, PLAIN]).measures()
+
+
 def test_partial_credit_is_off_by_default_and_then_reads_nothing(monkeypatch):
     monkeypatch.delenv("ROSBRIDGE_HANDSON_PARTIAL_CREDIT", raising=False)
     sim = episode([PLAIN, ({"succeed": False}, None, {"ball_in_bowl": True}), FAILED])
-    assert sim.measures() == {"failure": "native_failed", "failure_step": 3} and sim.env.reads == 0
+    assert sim.measures() == {"failure": "native_failed", "failure_detail": {"failed": True}, "failure_step": 3}
+    assert sim.env.reads == 0
 
 
 def test_partial_credit_is_behaviors_q_score_over_the_checklist(monkeypatch):

@@ -35,6 +35,8 @@ OPENGL_TO_OPTICAL = np.diag([1., -1., -1., 1.])
 RENDER_PASSES, SPECTATOR_PASSES = 6, 2
 # Checklist rows that say a task has none.
 NO_CHECKLIST = {"event_success_unavailable", "condition_panel_error"}
+# Native info entries whose names contain these explain a failure (failure_reason, ycb01_failure_reason, ...).
+FAILURE_INFO = ("fail", "reason")
 
 
 def values(value):
@@ -77,6 +79,12 @@ def judge(failure, info, reason):
     return failure, succeed and failure is None
 
 
+def failure_detail(info):
+    """The native info that explains a failure at its step: set scalar entries whose names contain fail or reason."""
+    return {key: value[:200] if isinstance(value, str) else value for key, value in info.items()
+            if any(word in key for word in FAILURE_INFO) and isinstance(value, (str, bool, int, float)) and value}
+
+
 def contract_cameras():
     """The default camera profile for every task, with the head camera's distortion zeroed."""
     from handson.evaluation import camera_contracts, camera_randomization
@@ -116,6 +124,7 @@ class HandsOnSim:
         if partial_credit is None:
             partial_credit = os.environ.get("ROSBRIDGE_HANDSON_PARTIAL_CREDIT") == "1"
         self.partial_credit, self._initial, self._frozen = bool(partial_credit), None, None
+        self.failure_detail = None
         self.cameras = tuple(CAMERAS)
         self.env = self.task = self.failure = self._tracker = self._frames = self._temporary = None
         self.spectators, self._spectators = (), {}
@@ -243,7 +252,7 @@ class HandsOnSim:
             self.terminate_on_success and (self.success or self.failure is not None)) or (
             self.terminate_on_failure and self.failure is not None)
         if self.failure is not None and not failed_before:
-            self.failure_step = self.steps
+            self.failure_detail, self.failure_step = failure_detail(info), self.steps
         if self.partial_credit:
             if self._initial is None:
                 self._initial = self._checklist()
@@ -262,15 +271,16 @@ class HandsOnSim:
                 if row["key"] not in NO_CHECKLIST}
 
     def measures(self):
-        """The latched failure and the step at which it latched; with partial credit on, the checklist at the trial's
-        end and its q_score, as BEHAVIOR's TaskMetric computes it over one goal option, the checklist.
+        """The latched failure, its native detail and the step at which it latched; with partial credit on, the
+        checklist at the trial's end and its q_score, as BEHAVIOR's TaskMetric computes it over one goal option, the
+        checklist.
 
         The trial ends at the failure step if a failure latched, else at the last step. q_score is 1 on success, else
         the fraction of all conditions that hold at the trial's end and did not after the first step (0 without any).
         """
         result = {"failure": self.failure}
         if self.failure is not None:
-            result["failure_step"] = self.failure_step
+            result["failure_detail"], result["failure_step"] = self.failure_detail, self.failure_step
         if not self.partial_credit:
             return result
         conditions = self._frozen if self._frozen is not None else self._checklist() if self.steps else None
