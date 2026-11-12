@@ -8,7 +8,7 @@ class HandsOnWorker(WorkerBackend):
     close_timeout_s = 120.
 
     def measures(self):
-        """The native failure that ended the trial, if one did (HandsOnSim.measures)."""
+        """The native failure that ended the trial, if one did, and the optional partial credit (HandsOnSim.measures)."""
         return self._call("measures")
 
     def end_reason(self):

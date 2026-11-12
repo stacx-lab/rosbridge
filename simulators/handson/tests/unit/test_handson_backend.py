@@ -1,4 +1,4 @@
-"""HandsOn's trial scoring without Isaac: a native step's info and adapter reason in."""
+"""HandsOn's trial scoring and optional partial credit, without Isaac: a native step's info and adapter reason in."""
 import pytest
 
 from rosbridge_handson.backend import HandsOnSim, judge
@@ -20,11 +20,23 @@ def test_a_failure_latches_unless_its_step_succeeds(failure, info, reason, expec
     assert judge(failure, info, reason) == expected
 
 
+class Checklist:
+    """A native environment's success checklist, upstream's teleoperation panel rows."""
+
+    def __init__(self):
+        self.rows, self.reads = {"bowl_upright": True, "ball_in_bowl": False, "ball_still": False}, 0
+
+    def _success_condition_rows(self):
+        self.reads += 1
+        return [dict(key=key, label=key, ok=ok) for key, ok in self.rows.items()]
+
+
 def episode(steps, **options):
-    """Settle `steps` native steps, each an (info, reason) pair."""
+    """Settle `steps` native steps, each an (info, reason, checklist changes) triple."""
     sim = HandsOnSim(max_steps=10, **options)
-    sim.steps = 0
-    for info, reason, _ in steps:
+    sim.env, sim.steps = Checklist(), 0
+    for info, reason, changes in steps:
+        sim.env.rows.update(changes)
         sim.steps += 1
         sim._settle(info, reason)
     return sim
@@ -57,3 +69,35 @@ def test_a_run_created_to_stop_on_failure_ends_at_a_failure_but_not_at_a_success
 def test_a_step_that_succeeds_and_fails_at_once_ends_a_stop_on_success_run_as_a_success():
     sim = episode([PLAIN, ({"succeed": True, "failed": True}, "native_terminated", {})], terminate_on_success=True)
     assert sim.done and sim.success and sim.reward == 1. and sim.failure is None and sim.end_reason() is None
+
+
+def test_partial_credit_is_off_by_default_and_then_reads_nothing(monkeypatch):
+    monkeypatch.delenv("ROSBRIDGE_HANDSON_PARTIAL_CREDIT", raising=False)
+    sim = episode([PLAIN, ({"succeed": False}, None, {"ball_in_bowl": True}), FAILED])
+    assert sim.measures() == {"failure": "native_failed", "failure_step": 3} and sim.env.reads == 0
+
+
+def test_partial_credit_is_behaviors_q_score_over_the_checklist(monkeypatch):
+    monkeypatch.setenv("ROSBRIDGE_HANDSON_PARTIAL_CREDIT", "1")
+    sim = episode([PLAIN, ({"succeed": False}, None, {"ball_in_bowl": True}), PLAIN])
+    measures = sim.measures()
+    assert measures["conditions_initial"] == {"bowl_upright": True, "ball_in_bowl": False, "ball_still": False}
+    assert measures["conditions"] == {"bowl_upright": True, "ball_in_bowl": True, "ball_still": False}
+    # BEHAVIOR's rule: conditions that hold at the end and did not at the start, over all of them (bowl_upright
+    # held from the start, so it never counts).
+    assert measures["q_score"] == pytest.approx(1 / 3)
+    assert sim.env.reads == 2  # after the first step and at the end, never per step
+
+
+def test_partial_credit_freezes_at_the_failure_and_is_one_on_success():
+    # Upstream's trial ends at the failure: a condition that holds only later earns nothing.
+    failed = episode([PLAIN, FAILED, ({"succeed": False}, None, {"ball_in_bowl": True})], partial_credit=True)
+    measures = failed.measures()
+    assert measures["conditions"]["ball_in_bowl"] is False and measures["q_score"] == 0.
+    succeeded = episode([PLAIN, ({"succeed": True}, "native_terminated", {"ball_in_bowl": True})], partial_credit=True)
+    assert succeeded.measures()["q_score"] == 1.
+
+
+def test_conditions_true_from_the_start_score_nothing():
+    sim = episode([({"succeed": False}, None, {"ball_in_bowl": True, "ball_still": True})], partial_credit=True)
+    assert sim.measures()["q_score"] == 0.

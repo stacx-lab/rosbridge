@@ -86,6 +86,19 @@ ends the trial there: waits reply that the episode ended because the task failed
 record has reason `failure` and the native cause. A success does not end it. Every record
 with a failure also has `failure_step`, the step at which it latched.
 
+With `ROSBRIDGE_HANDSON_PARTIAL_CREDIT=1` in the launch's environment, the record also adds
+upstream's success checklist, the rows of its teleoperation success panel
+(`_success_condition_rows()`): `conditions` at the trial's end (the failure step, if a
+failure latched, else the last step), `conditions_initial` after the first step, and
+`q_score`, as BEHAVIOR's `TaskMetric` computes it with the checklist as its one goal option:
+1 on success, else the fraction of all conditions that hold at the end and did not at the
+start (0 without a checklist). Unlike BEHAVIOR, the start is after the first step, once the
+native checker has evaluated the scene. Reward and success stay binary, and the checklist is
+read at most three times per episode. Off, nothing is read. The score is graded for 50 tasks,
+about three levels for `t02`, `t12`, `t19`, `t22`, `t23`, `t24`, `t26`, `t33`, `t40`, `t43` and
+`t47`, and binary for `t18`, `t29`, `t35`, `t49` and `eval_gen02`, whose checklist is a single
+row.
+
 ## Devices
 
 | Device | Interfaces |

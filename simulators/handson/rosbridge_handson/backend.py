@@ -33,6 +33,8 @@ OPENGL_TO_OPTICAL = np.diag([1., -1., -1., 1.])
 # Each path-traced pass renders every enabled render product completely; frames reach an
 # annotator a pass or more later. Upstream's capture renders six passes per view.
 RENDER_PASSES, SPECTATOR_PASSES = 6, 2
+# Checklist rows that say a task has none.
+NO_CHECKLIST = {"event_success_unavailable", "condition_panel_error"}
 
 
 def values(value):
@@ -100,7 +102,7 @@ class HandsOnSim:
     default_task = "t24_place_ball_in_bowl"
     period = 1 / 30
 
-    def __init__(self, *, max_steps=None, terminate_on_success=False, terminate_on_failure=None):
+    def __init__(self, *, max_steps=None, terminate_on_success=False, terminate_on_failure=None, partial_credit=None):
         self.requested_max_steps = self.max_steps = max_steps
         # A run created to stop on success ends at its first outcome, success or failure, as upstream's trial does;
         # one created to stop on failure ends at a failure only (upstream's evaluator also ends the trial there) and
@@ -110,6 +112,10 @@ class HandsOnSim:
             terminate_on_failure = os.environ.get("ROSBRIDGE_HANDSON_STOP_ON_FAILURE") == "1"
         self.terminate_on_success, self.terminate_on_failure = terminate_on_success, bool(terminate_on_failure)
         self.failure_step = None
+        # Optional partial credit from upstream's success checklist; off unless ROSBRIDGE_HANDSON_PARTIAL_CREDIT=1.
+        if partial_credit is None:
+            partial_credit = os.environ.get("ROSBRIDGE_HANDSON_PARTIAL_CREDIT") == "1"
+        self.partial_credit, self._initial, self._frozen = bool(partial_credit), None, None
         self.cameras = tuple(CAMERAS)
         self.env = self.task = self.failure = self._tracker = self._frames = self._temporary = None
         self.spectators, self._spectators = (), {}
@@ -228,7 +234,7 @@ class HandsOnSim:
         self._settle(info, reason)
 
     def _settle(self, info, reason):
-        """Score the step just taken and end the episode where the run stops."""
+        """Score the step just taken, end the episode where the run stops, and read the checklist if asked."""
         failed_before = self.failure is not None
         # Upstream ends the trial at a failure, so it can no longer succeed.
         self.failure, self.success = judge(self.failure, info, reason)
@@ -238,6 +244,11 @@ class HandsOnSim:
             self.terminate_on_failure and self.failure is not None)
         if self.failure is not None and not failed_before:
             self.failure_step = self.steps
+        if self.partial_credit:
+            if self._initial is None:
+                self._initial = self._checklist()
+            if self.failure is not None and not failed_before:
+                self._frozen = self._checklist()
 
     def end_reason(self):
         """A run created to stop on success or on failure ends at a failure, as upstream's evaluator does."""
@@ -245,12 +256,28 @@ class HandsOnSim:
             return "failure", self.failure
         return None
 
+    def _checklist(self):
+        """Upstream's success checklist (its teleoperation panel's rows) as {key: ok}."""
+        return {row["key"]: bool(row["ok"]) for row in self.env._success_condition_rows()
+                if row["key"] not in NO_CHECKLIST}
+
     def measures(self):
-        """The latched failure and the step at which it latched."""
+        """The latched failure and the step at which it latched; with partial credit on, the checklist at the trial's
+        end and its q_score, as BEHAVIOR's TaskMetric computes it over one goal option, the checklist.
+
+        The trial ends at the failure step if a failure latched, else at the last step. q_score is 1 on success, else
+        the fraction of all conditions that hold at the trial's end and did not after the first step (0 without any).
+        """
         result = {"failure": self.failure}
         if self.failure is not None:
             result["failure_step"] = self.failure_step
-        return result
+        if not self.partial_credit:
+            return result
+        conditions = self._frozen if self._frozen is not None else self._checklist() if self.steps else None
+        initial = self._initial or {}
+        newly = sum(ok and not initial.get(key, True) for key, ok in (conditions or {}).items())
+        score = 1. if self.success else newly / len(conditions) if conditions else 0.
+        return dict(result, conditions=conditions, conditions_initial=self._initial, q_score=score)
 
     def link_pose(self, side, link):
         """A robot body's world pose (rotation, translation), for geometry checks."""
