@@ -1,0 +1,111 @@
+name: right_hand
+runtime:
+  domain_id: 0
+  nodes:
+  - entry: links.py
+    factory: create
+  ready_timeout_s: 30
+operations:
+  joint_state:
+    description: Measured positions of right_thumb_CMC_FE, right_thumb_CMC_AA, right_thumb_MCP_FE,
+      right_thumb_MCP_AA, right_thumb_IP, right_index_MCP_FE, right_index_MCP_AA, right_index_PIP,
+      right_index_DIP, right_middle_MCP_FE, right_middle_MCP_AA, right_middle_PIP, right_middle_DIP,
+      right_ring_MCP_FE, right_ring_MCP_AA, right_ring_PIP, right_ring_DIP, right_pinky_CMC,
+      right_pinky_MCP_FE, right_pinky_MCP_AA, right_pinky_PIP, right_pinky_DIP in radians
+      with velocities and the world-clock acquisition stamp; do not infer motion completion
+      from a sent command.
+    transport: topic
+    direction: output
+    endpoint: /right_hand/joint_state
+    type: sensor_msgs/msg/JointState
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: transient_local
+    timeout_s: 10
+  joint_target:
+    description: Joint trajectory over all 22 hand joints in radians, timed from receipt by
+      strictly increasing time_from_start and finishing within 120 seconds; velocities, accelerations
+      and effort must be empty. A zero header stamp selects now; a nonzero stamp must not
+      start in the past. Points are absolute native joint positions, linearly interpolated
+      at the native control period. Replacement clears pending references; invalid trajectories
+      are ignored, so verify measured joint_state.
+    transport: topic
+    direction: input
+    endpoint: /right_hand/joint_target
+    type: trajectory_msgs/msg/JointTrajectory
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: volatile
+    timeout_s: 10
+  stop:
+    description: Stop hand motion and hold the measured posture.
+    transport: service
+    direction: input
+    endpoint: /right_hand/stop
+    type: std_srvs/srv/Trigger
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: volatile
+    timeout_s: 10
+loaded: false
+meta:
+  created_at: '2026-10-24T00:00:00Z'
+  updated_at: '2026-10-24T00:00:00Z'
+type: joint
+description: Sharpa Wave 22-joint right hand on the right_arm flange, thumb first, then the
+  index, middle, ring and little fingers, as BiDex-100's dex_joint_position. Geometry is the
+  sibling hand.urdf from the palm (right_hand_C_MC) to the fingertips, with no single tip
+  link; commands are absolute joint positions through the native position servos, and contact
+  is physical. Joint limits are soft, so measured joints can read past their ranges; clip
+  targets to the URDF limits, since rosbridge refuses one more than 0.001 outside them.
+source: introspected
+calibrated_at: null
+method: introspection
+model:
+  format: urdf
+  path: hand.urdf
+  base_link: base_link
+  tip_link: null
+limits: native
+home:
+  right_thumb_CMC_FE: 0.0
+  right_thumb_CMC_AA: 0.0
+  right_thumb_MCP_FE: 0.0
+  right_thumb_MCP_AA: 0.0
+  right_thumb_IP: 0.0
+  right_index_MCP_FE: 0.0
+  right_index_MCP_AA: 0.0
+  right_index_PIP: 0.0
+  right_index_DIP: 0.0
+  right_middle_MCP_FE: 0.0
+  right_middle_MCP_AA: 0.0
+  right_middle_PIP: 0.0
+  right_middle_DIP: 0.0
+  right_ring_MCP_FE: 0.0
+  right_ring_MCP_AA: 0.0
+  right_ring_PIP: 0.0
+  right_ring_DIP: 0.0
+  right_pinky_CMC: 0.0
+  right_pinky_MCP_FE: 0.0
+  right_pinky_MCP_AA: 0.0
+  right_pinky_PIP: 0.0
+  right_pinky_DIP: 0.0
+stop:
+  behavior: hold
+  affected_devices:
+  - right_hand
+frames:
+  base:
+    translation_m:
+    - 0.0
+    - 0.0
+    - 0.0
+    rotation_xyzw:
+    - 0.0
+    - 0.0
+    - 0.0
+    - 1.0
+    parent: right_arm:flange

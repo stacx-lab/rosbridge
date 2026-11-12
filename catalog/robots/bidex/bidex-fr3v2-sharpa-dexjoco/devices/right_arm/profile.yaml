@@ -1,0 +1,92 @@
+name: right_arm
+runtime:
+  domain_id: 0
+  nodes:
+  - entry: links.py
+    factory: create
+  ready_timeout_s: 30
+operations:
+  joint_state:
+    description: Measured positions of right_fr3v2_joint1, right_fr3v2_joint2, right_fr3v2_joint3,
+      right_fr3v2_joint4, right_fr3v2_joint5, right_fr3v2_joint6, right_fr3v2_joint7 in radians
+      with velocities and the world-clock acquisition stamp; do not infer motion completion
+      from a sent command.
+    transport: topic
+    direction: output
+    endpoint: /right_arm/joint_state
+    type: sensor_msgs/msg/JointState
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: transient_local
+    timeout_s: 10
+  joint_target:
+    description: Joint trajectory over all 7 arm joints in radians, timed from receipt by
+      strictly increasing time_from_start and finishing within 120 seconds; velocities, accelerations
+      and effort must be empty. A zero header stamp selects now; a nonzero stamp must not
+      start in the past. Points are absolute native joint positions, linearly interpolated
+      at the native control period. Replacement clears pending references; invalid trajectories
+      are ignored, so verify measured joint_state.
+    transport: topic
+    direction: input
+    endpoint: /right_arm/joint_target
+    type: trajectory_msgs/msg/JointTrajectory
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: volatile
+    timeout_s: 10
+  stop:
+    description: Stop arm motion and hold the measured posture.
+    transport: service
+    direction: input
+    endpoint: /right_arm/stop
+    type: std_srvs/srv/Trigger
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: volatile
+    timeout_s: 10
+loaded: false
+meta:
+  created_at: '2026-10-24T00:00:00Z'
+  updated_at: '2026-10-24T00:00:00Z'
+type: joint
+description: Franka FR3v2 seven-joint right arm of the BiDex-100 station. Geometry is the
+  sibling arm.urdf with flange (right_fr3v2_link8, the body that carries the hand and the
+  wrist camera) as the tip link; measured links are on TF as right_arm/<link>, and helpers.joint_model('right_arm')
+  computes FK/IK from it. Commands are absolute joint positions, BiDex-100's arm_joint_position,
+  through the native position servos.
+source: introspected
+calibrated_at: null
+method: introspection
+model:
+  format: urdf
+  path: arm.urdf
+  base_link: base_link
+  tip_link: flange
+limits: native
+home:
+  right_fr3v2_joint1: -0.7854
+  right_fr3v2_joint2: -0.7854
+  right_fr3v2_joint3: 0.0
+  right_fr3v2_joint4: -2.356
+  right_fr3v2_joint5: 0.0
+  right_fr3v2_joint6: 1.57
+  right_fr3v2_joint7: 0.7854
+stop:
+  behavior: hold
+  affected_devices:
+  - right_arm
+frames:
+  base:
+    translation_m:
+    - 0.79999892526
+    - 0.479138310479
+    - 0.7
+    rotation_xyzw:
+    - 0.0
+    - 0.0
+    - -0.924031584938
+    - 0.382316138865
+    parent: world:base

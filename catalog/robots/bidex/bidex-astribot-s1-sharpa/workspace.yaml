@@ -1,0 +1,14 @@
+identity:
+  id: bidex-astribot-s1-sharpa
+  name: BiDex-100 Astribot S1 with Sharpa hands at the dexjoco table
+  kind: arm
+  model: Astribot S1 (dual) with Sharpa Wave hands
+  source: user
+devices:
+  source: user
+safety:
+  source: user
+  keep_out_zones: []
+meta:
+  created_at: '2026-10-24T00:00:00Z'
+  updated_at: '2026-10-24T00:00:00Z'

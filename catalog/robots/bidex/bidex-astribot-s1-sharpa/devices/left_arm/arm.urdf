@@ -1,0 +1,67 @@
+<?xml version="1.0"?>
+<!-- BiDex-100 Astribot S1 seven-joint left arm from MuJoCo astribot_torso_link_4..astribot_arm_left_tool_link; flange is the astribot_arm_left_tool_link body frame. -->
+<robot name="bidex_left_arm">
+  <link name="base_link"/>
+  <link name="link1"/>
+  <link name="link2"/>
+  <link name="link3"/>
+  <link name="link4"/>
+  <link name="link5"/>
+  <link name="link6"/>
+  <link name="link7"/>
+  <link name="flange"/>
+  <joint name="astribot_arm_left_joint_1" type="revolute">
+    <parent link="base_link"/>
+    <child link="link1"/>
+    <origin xyz="-2.291e-09 0.150002 0.399354" rpy="0 -1.22173091211 -1.5707963268"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-3.087" upper="1.517" effort="100" velocity="10"/>
+  </joint>
+  <joint name="astribot_arm_left_joint_2" type="revolute">
+    <parent link="link1"/>
+    <child link="link2"/>
+    <origin xyz="0 0 0" rpy="1.57080056944 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-1.517" upper="0.55" effort="100" velocity="10"/>
+  </joint>
+  <joint name="astribot_arm_left_joint_3" type="revolute">
+    <parent link="link2"/>
+    <child link="link3"/>
+    <origin xyz="0 0.05 0" rpy="1.57080032679 8e-12 -1.57080032679"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-3.08" upper="1.517" effort="100" velocity="10"/>
+  </joint>
+  <joint name="astribot_arm_left_joint_4" type="revolute">
+    <parent link="link3"/>
+    <child link="link4"/>
+    <origin xyz="0.03 0 0.309" rpy="-1.57080056944 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="0" upper="2.55" effort="100" velocity="10"/>
+  </joint>
+  <joint name="astribot_arm_left_joint_5" type="revolute">
+    <parent link="link4"/>
+    <child link="link5"/>
+    <origin xyz="0 0 0" rpy="1.57080056944 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-2.37" upper="2.37" effort="100" velocity="10"/>
+  </joint>
+  <joint name="astribot_arm_left_joint_6" type="revolute">
+    <parent link="link5"/>
+    <child link="link6"/>
+    <origin xyz="0 0 0.277" rpy="-1.57080056944 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-0.78" upper="0.78" effort="100" velocity="10"/>
+  </joint>
+  <joint name="astribot_arm_left_joint_7" type="revolute">
+    <parent link="link6"/>
+    <child link="link7"/>
+    <origin xyz="0 0 0" rpy="3.14159265359 1.57079208415 3.14159265359"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-1.55" upper="1.55" effort="100" velocity="10"/>
+  </joint>
+  <joint name="flange_joint" type="fixed">
+    <parent link="link7"/>
+    <child link="flange"/>
+    <origin xyz="0 -0.048 0" rpy="1.5707963 0 0"/>
+  </joint>
+</robot>

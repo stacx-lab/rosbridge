@@ -1,0 +1,14 @@
+identity:
+  id: bidex-fr3v2-sharpa-tabletop
+  name: BiDex-100 dual Franka FR3v2 with Sharpa hands on the LIBERO tabletop
+  kind: arm
+  model: dual Franka FR3v2 (dual) with Sharpa Wave hands
+  source: user
+devices:
+  source: user
+safety:
+  source: user
+  keep_out_zones: []
+meta:
+  created_at: '2026-10-24T00:00:00Z'
+  updated_at: '2026-10-24T00:00:00Z'

@@ -4,6 +4,16 @@ from contextlib import contextmanager
 import numpy as np
 
 
+def refresh(model, data):
+    """mj_step integrates qpos after computing positions: refresh frames for cameras and
+    judging without touching dynamics or the solver's warm start."""
+    import mujoco
+    mujoco.mj_kinematics(model, data)
+    mujoco.mj_comPos(model, data)
+    mujoco.mj_comVel(model, data)
+    mujoco.mj_camlight(model, data)
+
+
 def render_depth(renderer, model):
     """(H, W) float32 metres along the optical axis from a mujoco.Renderer with an updated
     scene; 0 where nothing is within the clip range."""

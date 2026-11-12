@@ -11,6 +11,7 @@ import numpy as np  # noqa: E402
 
 from rosbridge.core import ActionLayout, CommandGroup
 from rosbridge.core.devices import device_inventory, spectator_views
+from rosbridge.core.mujoco_rendering import refresh
 from .assets import require_assets
 from .scoring import supplemental_evaluator
 
@@ -138,13 +139,7 @@ class AbcSim:
             self._score(result.to_info(squeeze=True) if result is not None else None)
 
     def _refresh(self):
-        # mj_step integrates qpos after computing positions; refresh frames for
-        # cameras and judging without touching dynamics or solver warm-start.
-        m, d = self.env.model, self.env.data
-        mujoco.mj_kinematics(m, d)
-        mujoco.mj_comPos(m, d)
-        mujoco.mj_comVel(m, d)
-        mujoco.mj_camlight(m, d)
+        refresh(self.env.model, self.env.data)
 
     @property
     def time_s(self):

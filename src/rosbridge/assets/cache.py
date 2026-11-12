@@ -8,6 +8,7 @@ from pathlib import Path
 import shutil
 import tarfile
 import tempfile
+import urllib.parse
 import urllib.request
 import uuid
 import zipfile
@@ -120,7 +121,8 @@ class AssetStore:
             return destination / "data"
 
     def ensure(self, simulator, name, url, *, checksum=None, size=None, contains=(".",)):
-        """Return an unpacked package, publishing it only after successful extraction.
+        """Return an unpacked package, publishing it only after successful extraction. A download
+        that is neither a zip nor a tar archive is kept whole, as data/<the URL's file name>.
 
         Without an upstream checksum, key by URL and record the observed digest;
         this provides reuse, not verification against a trusted expected digest.
@@ -166,15 +168,18 @@ class AssetStore:
                         for member in bundle.namelist():
                             _relative(member)
                         bundle.extractall(data)
-                else:
+                elif tarfile.is_tarfile(archive):
                     with tarfile.open(archive) as bundle:
                         bundle.extractall(data, filter="data")
+                else:
+                    name = Path(urllib.parse.urlparse(url).path).name
+                    archive.rename(data / _component(name))
                 if not all((data / entry).exists() for entry in entries):
                     raise ValueError(f"package {name} is missing declared contents")
                 files = _inventory(data)
                 if not files:
                     raise ValueError(f"package {name} contains no files")
-                archive.unlink()
+                archive.unlink(missing_ok=True)
                 (staging / "complete.json").write_text(json.dumps({
                     "key": key, "url": url, "sha256": observed,
                     "verified": checksum is not None, "files": files,
