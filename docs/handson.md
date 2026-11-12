@@ -28,8 +28,26 @@ worker sees one GPU, the first in `CUDA_VISIBLE_DEVICES`, and renders on its Vul
 HandsOn bundles its robot, task and rendering assets in git, so nothing is downloaded:
 preparation clones upstream (6.5 GB with history), exports it into `.runtime/handson`
 (4.2 GB), installs `handson` and Isaac Lab's `isaaclab` package editable without
-dependencies, and checks every task's budget and upstream's SHA-256 pins of the bundled
-robot and rendering assets.
+dependencies, links three of Isaac Sim's MDL modules beside upstream's archived materials (see
+[Upstream corrections](#upstream-corrections)), and checks every task's budget, upstream's
+SHA-256 pins of the bundled robot and rendering assets, and those links.
+
+## Upstream corrections
+
+Preparation corrects these upstream defects in the exported tree. Paths are under
+`.runtime/handson/handson/handson/`.
+- **Materials:** upstream archives its Core task surfaces under content hashes
+  (`assets/task_surfaces/objects/`). Three archived MDL files, Isaac Sim 5.1's `OmniGlass.mdl` (byte
+  for byte), an older `OmniPBR.mdl` and a `LabelFilm` material, import Isaac Sim's
+  `OmniGlass_Opacity`, `OmniPBR_ClearCoat` and `OmniPBRBase` by relative name, which MDL 1.7
+  resolves only beside the importing file. Upstream leaves Isaac Sim's own modules to the runtime
+  (`sim/isaaclab/task_surfaces.py`), but it bundled these three importers without their siblings,
+  so in `t15`, `t27`, `t29`, `t30` and `t37` they failed to compile and rendered opaque red: the
+  wine glass, the glass marble, the salt and pepper shakers, the water bottle and its label, and
+  `t15`'s window. Preparation links the three modules from the pinned Isaac Sim into that
+  directory, and the asset check requires the links, so these objects render as upstream's own
+  figure shows them (`docs/pics/all-task-rendering.jpg` in its repository). A capture with glass
+  in view takes about 0.3 s longer. Nothing NVIDIA ships is copied into the repository.
 
 ## Episodes
 
