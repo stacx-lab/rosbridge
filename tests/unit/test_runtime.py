@@ -377,3 +377,35 @@ def test_a_measure_that_fails_is_the_records_error(tmp_path, monkeypatch, capsys
     assert outcome['reason'] == 'stopped' and 'progress' not in outcome
     assert outcome['error'] == "measures: RuntimeError: cannot measure a negative position"
     assert "Traceback" in capsys.readouterr().err and runtime.sim.closed
+
+
+class FleetingToy(ToyBackend):
+    """The toy whose "succeeds" goal holds at its second step only, as a lifted object that is then dropped."""
+
+    def step(self, action):
+        super().step(action)
+        self.success = self.task == "succeeds" and self.steps == 2
+
+
+@pytest.mark.parametrize("backend, success, first", [
+    (ToyBackend, True, 2),  # the goal holds from the second step to the end
+    (FleetingToy, False, 2),  # it held at the second step only: a stop-on-success run would have ended there, a success
+])
+def test_a_record_names_the_step_of_the_first_success(tmp_path, monkeypatch, backend, success, first):
+    monkeypatch.setenv('ROSBRIDGE_RUN_DIR', str(tmp_path))
+    runtime, _ = world(max_steps=4, backend=backend, task="succeeds")
+    wait(runtime, 1.)
+    finish(runtime)
+    runtime.close()
+    outcome, = records(tmp_path)
+    assert (outcome['step'], outcome['success'], outcome['first_success_step']) == (4, success, first)
+
+
+def test_a_record_without_a_success_names_no_step(tmp_path, monkeypatch):
+    monkeypatch.setenv('ROSBRIDGE_RUN_DIR', str(tmp_path))
+    runtime, _ = world(max_steps=3)
+    wait(runtime, 1.)
+    finish(runtime)
+    runtime.close()
+    outcome, = records(tmp_path)
+    assert outcome['first_success_step'] is None and not outcome['success']

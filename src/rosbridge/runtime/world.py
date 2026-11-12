@@ -36,6 +36,9 @@ class WorldRuntime:
         self._closed = False
         self._judged = False
         self.time_s, self.steps = sim.time_s, sim.steps
+        # The step at which the backend first reported success: where a run created to stop on success ends, so a
+        # run judged on its final state also records whether it would have counted under stop on success.
+        self.first_success_step = None
         self.commands = CommandBuffer(sim.layout, sim.state()[0])
         self.waits = WaitScheduler()
         self.pacer = Pacer(mode, sim.period, **pacer_options)
@@ -112,6 +115,8 @@ class WorldRuntime:
         else:
             self.pacer.advanced()
             self.time_s, self.steps = self.sim.time_s, self.sim.steps
+            if self.sim.success and self.first_success_step is None:
+                self.first_success_step = self.steps
             self.publish()
             if self.sim.done:
                 # A backend ends an episode at its step limit or, if created to stop on success, at its first outcome:
@@ -135,7 +140,8 @@ class WorldRuntime:
     def _outcome(self, reason=None):
         return {"task": self.sim.task, "seed": self.sim.seed,
                 "step": self.steps, "time_s": self.time_s, "reward": self.sim.reward,
-                "success": bool(self.sim.success), "done": self.ended is not None,
+                "success": bool(self.sim.success), "first_success_step": self.first_success_step,
+                "done": self.ended is not None,
                 "reason": reason or ("success" if self.sim.success else "max_steps")}
 
     def _record_terminal(self, reason=None, *, error=None, cause=None):
