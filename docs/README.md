@@ -101,13 +101,15 @@ waits fail. Waits are sequential: a wait requested while another is pending is
 rejected, and `world/stop` (`std_srvs/srv/Trigger`) cancels the pending one. A run
 is one episode, of the task and seed it was launched with. There is no reset: to
 start over, stop the run and launch another. An episode ends only at its first
-success, when launched with `--stop-on-success`, at its step limit, if it has one, or
-when a simulator step fails, which the record states as reason `error` with the error.
-Termination completes a wait due on that tick and fails an unfinished one; from then
-on, every valid wait's reply adds `; the episode ended because the task succeeded`,
-`because the time limit was reached` or `because the simulation failed (<exception
-type>)`. A wait admitted before a client times out stays pending until it completes
-or `world/stop` cancels it; abrupt process loss may prevent a response, so use wall
+outcome, when launched with `--stop-on-success`: its first success, or a task failure
+the simulator reports (HandsOn), which the record states as reason `failure` with its
+native `cause`; at its step limit, if it has one; or when a simulator step fails, which
+the record states as reason `error` with the error. Termination completes a wait due
+on that tick and fails an unfinished one; from then on, every valid wait's reply adds
+`; the episode ended because the task succeeded`, `because the task failed`, `because
+the time limit was reached` or `because the simulation failed (<exception type>)`. A
+wait admitted before a client times out stays pending until it completes or
+`world/stop` cancels it; abrupt process loss may prevent a response, so use wall
 timeouts.
 
 ```python

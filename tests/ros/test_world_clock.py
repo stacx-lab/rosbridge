@@ -102,6 +102,20 @@ def test_a_run_launched_to_stop_on_success_ends_saying_so(tmp_path):
         graph.close()
 
 
+@pytest.mark.parametrize("stop_on_success, message", [
+    (True, "episode ended during wait; the episode ended because the task failed"),
+    (False, "episode ended during wait; the episode ended because the time limit was reached"),
+])
+def test_a_run_launched_to_stop_on_success_also_ends_at_a_failure(tmp_path, stop_on_success, message):
+    graph = Graph(tmp_path, max_steps=5, task="stumbles", stop_on_success=stop_on_success)
+    try:
+        result = graph.wait(1.)
+        assert not result.success and result.message == message
+        assert result.waited_s == pytest.approx(.2 if stop_on_success else .5)
+    finally:
+        graph.close()
+
+
 def test_a_step_that_fails_ends_the_episode_and_the_world_goes_on_answering(tmp_path):
     graph = Graph(tmp_path, task="fails")
     failed = "the episode ended because the simulation failed (FloatingPointError)"

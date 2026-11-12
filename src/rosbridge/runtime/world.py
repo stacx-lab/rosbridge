@@ -15,6 +15,8 @@ from .waits import WaitScheduler
 
 # A wait's reply names at most this many kinds of refused command (endpoint and reason), then counts the rest.
 REFUSALS_LISTED = 5
+# What wait replies say of a backend's own end (end_reason()); its native cause goes only to the record.
+OWN_ENDS = {"failure": "the task failed"}
 
 
 class WorldRuntime:
@@ -22,7 +24,8 @@ class WorldRuntime:
 
     submit() is the only cross-thread entry point: queued functions run on the
     owner thread between steps, so callback threads never touch native state.
-    stop_on_success: the backend was created to end the episode at its first success.
+    stop_on_success: the backend was created to end the episode at its first outcome (success, or a failure it
+    reports through end_reason()).
     """
     def __init__(self, sim, mode, publish, stop_on_success=False, **pacer_options):
         self.sim, self.publish, self.stop_on_success = sim, publish, stop_on_success
@@ -111,17 +114,23 @@ class WorldRuntime:
             self.time_s, self.steps = self.sim.time_s, self.sim.steps
             self.publish()
             if self.sim.done:
-                # A backend ends an episode only at its first success, if created to stop there, or at its step limit.
-                self._end("the task succeeded" if self.stop_on_success and self.sim.success
-                          else "the time limit was reached")
+                # A backend ends an episode at its step limit or, if created to stop on success, at its first outcome:
+                # success, or an outcome of its own that end_reason() names, such as a task failure.
+                own = self.sim.end_reason() if self.stop_on_success and hasattr(type(self.sim), "end_reason") else None
+                if own:
+                    reason, cause = own
+                    self._end(OWN_ENDS.get(reason, f"the simulator ended it ({reason})"), reason, native_cause=cause)
+                else:
+                    self._end("the task succeeded" if self.stop_on_success and self.sim.success
+                              else "the time limit was reached")
         # Publications precede completion, including a successful terminal tick.
         self.waits.settle(self.time_s, self.steps, self.ended)
         return True
 
-    def _end(self, cause, reason=None, error=None):
+    def _end(self, cause, reason=None, error=None, native_cause=None):
         self.commands.close()
         self.ended = f"the episode ended because {cause}"
-        self._record_terminal(reason, error=error)
+        self._record_terminal(reason, error=error, cause=native_cause)
 
     def _outcome(self, reason=None):
         return {"task": self.sim.task, "seed": self.sim.seed,
@@ -129,11 +138,13 @@ class WorldRuntime:
                 "success": bool(self.sim.success), "done": self.ended is not None,
                 "reason": reason or ("success" if self.sim.success else "max_steps")}
 
-    def _record_terminal(self, reason=None, *, error=None):
+    def _record_terminal(self, reason=None, *, error=None, cause=None):
         if self._judged:
             return
         self._judged = True
         result = self._outcome(reason)
+        if cause is not None:
+            result["cause"] = cause
         if error is None and hasattr(type(self.sim), "measures"):
             # The backend's own measures (BEHAVIOR: q_score). A world stopped by an error records none, since the
             # error may have broken the backend; a measure that fails is the record's error.

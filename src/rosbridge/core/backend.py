@@ -70,6 +70,13 @@ class SimulatorBackend(Protocol):
 
     Optionally, measures() returns the backend's own measures of the episode as
     JSON fields, such as BEHAVIOR's q_score; the episode record adds them.
+
+    Optionally, end_reason() names a terminal outcome of the backend's own, such as
+    a task failure, at which a run created to stop on success also ends: a pair of
+    the record's reason and its native cause, such as ("failure",
+    "native_c12_direct_hand_contact"), once the backend has set done for it;
+    otherwise None. The world honours it only in such a run. The record keeps the
+    cause; wait replies name only the reason ("the task failed").
     """
 
     default_task: str

@@ -54,7 +54,9 @@ def parser():
         command.add_argument("--record-quality", type=int, metavar="CRF",
                              help="H.264 constant rate factor, lower is sharper (default: 20); requires --record")
         success = command.add_mutually_exclusive_group()
-        success.add_argument("--stop-on-success", dest="stop_on_success", action="store_true")
+        success.add_argument("--stop-on-success", dest="stop_on_success", action="store_true",
+                             help="End the episode at its first outcome: success, or a task failure the simulator "
+                                  "reports (HandsOn)")
         success.add_argument("--no-stop-on-success", dest="stop_on_success", action="store_false")
         command.set_defaults(stop_on_success=None)
         if name == "launch":

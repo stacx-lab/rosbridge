@@ -55,15 +55,30 @@ of wall time (0.4–0.9 s on a shared L40S), so a realtime run lags the clock; p
 percentile of demonstration length; the `eval_flex` tasks keep their native durations), from
 222 steps (`t19`) to 7200 (`eval_flex01`).
 
-Success is upstream's `succeed`. Upstream ends a trial at its first success or failure.
-Here `--stop-on-success` ends the episode at the first success. A native failure does not
-end the episode, but no success can follow it:
-- a task's failure predicate;
-- for `t11_line_up_blocks`, a direct hand contact.
+Success is upstream's `succeed`. A native failure latches at its first step, and no success
+can follow it:
+- a task's failure predicate (`info["failed"]`);
+- for `t11_line_up_blocks`, a direct hand contact, the evaluator's own rule.
 
-From then on `success` stays false, and the episode record's `failure` names the cause.
+From then on `success` stays false, and the episode record's `failure` names the cause
+(`native_failed` or `native_c12_direct_hand_contact`). A step that succeeds and fails at once
+is a success, as upstream scores it. Upstream ends a trial at its first success or failure:
+its protocol is `--execution-mode stepped --stop-on-success`. A run launched to stop on
+success ends at its first outcome. At a failure its wait replies add `; the episode ended
+because the task failed`, and the record says reason `failure`, with the native cause in
+`cause` and `failure`. Without the flag the failure latches silently and the episode runs
+to its horizon. Tasks whose success does not latch (all but `t07`, `t20`, `t22`, `t33`, `t34`,
+`t47`, `eval_comb04`, `t18`, `t49`, `eval_gen02`, `eval_flex01` and `eval_flex03`) can also
+lose a success before the horizon, since their holds restart when a condition breaks.
 `t10_lift_carton` scores support, lift and hold, recording grip force as a diagnostic, as
 the evaluator does.
+
+27 tasks have no native failure and can only succeed or time out: `t02`–`t06`, `t08`,
+`t09`, `t12`, `t19`, `t21`, `t23`–`t26`, `t31`, `t32`, `t42`–`t45`, `eval_comb01`,
+`eval_comb03`, `eval_comb04`, `eval_gen01`, `eval_gen03`, `eval_gen07` and
+`eval_flex03`. Some states make success impossible without failing: in `t02` a cable seated
+before the plug, in `t20` the left hand touching the pen first, in `t31` an interrupted
+brew, and in `t45` the left hand's contact lost.
 
 ## Devices
 

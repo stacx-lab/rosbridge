@@ -5,7 +5,7 @@ import pytest
 
 from rosbridge.core import CommandError
 from rosbridge.core.worker import WorkerError
-from tests.toy_backend import ToyBackend
+from tests.toy_backend import StumblingToy, ToyBackend
 from rosbridge.runtime.world import WorldRuntime
 
 
@@ -296,6 +296,42 @@ def test_a_world_stopped_by_an_error_records_no_measures(tmp_path, monkeypatch):
 
 
 FAILED = "the episode ended because the simulation failed"
+
+
+@pytest.mark.parametrize("stop_on_success, max_steps, end_step, reason", [
+    (True, 5, 2, "failure"),  # a run launched to stop on success ends at its first outcome, here a failure
+    (True, 2, 2, "failure"),  # a failure on the limit's own step is the failure
+    (False, 4, 4, "max_steps"),  # otherwise the failure latches unannounced and the episode goes on, as before
+])
+def test_a_backend_can_end_the_episode_at_an_outcome_of_its_own(tmp_path, monkeypatch, stop_on_success, max_steps,
+                                                                 end_step, reason):
+    monkeypatch.setenv('ROSBRIDGE_RUN_DIR', str(tmp_path))
+    runtime, published = world(max_steps=max_steps, backend=StumblingToy, task="stumbles",
+                               stop_on_success=stop_on_success)
+    pending = wait(runtime, 1.)
+    finish(runtime)
+    cause = "the task failed" if reason == "failure" else "the time limit was reached"
+    assert runtime.steps == end_step and published[-1] == end_step and runtime.sim.failure == "toy_stumbled"
+    assert pending.result().message == f"episode ended during wait; the episode ended because {cause}"
+    zero = wait(runtime, 0.)
+    runtime.drain()
+    assert zero.result().message == f"ok; the episode ended because {cause}"
+    runtime.close()
+    outcome, = records(tmp_path)
+    assert (outcome['reason'], outcome['done'], outcome['step'], outcome['success']) == (reason, True, end_step, False)
+    # The native cause goes only to the record, and only for the backend's own end.
+    assert outcome.get('cause') == ("toy_stumbled" if reason == "failure" else None)
+
+
+def test_a_backend_without_its_own_ends_ends_as_before(tmp_path, monkeypatch):
+    monkeypatch.setenv('ROSBRIDGE_RUN_DIR', str(tmp_path))
+    assert not hasattr(ToyBackend, "end_reason")
+    runtime, _ = world(max_steps=5, task="succeeds", stop_on_success=True)
+    wait(runtime, 1.)
+    finish(runtime)
+    runtime.close()
+    outcome, = records(tmp_path)
+    assert (outcome['reason'], outcome['step']) == ('success', 2) and 'cause' not in outcome
 
 
 def test_a_step_that_fails_ends_the_episode_and_the_world_goes_on_answering(tmp_path, monkeypatch, capsys):

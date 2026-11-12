@@ -10,3 +10,7 @@ class HandsOnWorker(WorkerBackend):
     def measures(self):
         """The native failure that ended the trial, if one did (HandsOnSim.measures)."""
         return self._call("measures")
+
+    def end_reason(self):
+        """A latched failure, in a run created to stop on success (HandsOnSim.end_reason)."""
+        return self._call("end_reason")

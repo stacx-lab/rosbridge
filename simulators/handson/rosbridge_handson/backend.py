@@ -62,6 +62,19 @@ def lens(spec):
     return width, height, float(fx), float(fy), float(cx), float(cy)
 
 
+def judge(failure, info, reason):
+    """The trial's failure and success after a step, as upstream's evaluator scores the step that ends it.
+
+    A failure latches at the first step whose native info says failed or whose adapter names a contact rule
+    (t11), unless that step also succeeds: upstream ends the trial there and scores its success.
+    """
+    succeed = bool(info.get("succeed"))
+    contact = reason not in (None, "native_terminated", "native_truncated")
+    if failure is None and not succeed and (info.get("failed") or contact):
+        failure = reason if contact else "native_failed"
+    return failure, succeed and failure is None
+
+
 def contract_cameras():
     """The default camera profile for every task, with the head camera's distortion zeroed."""
     from handson.evaluation import camera_contracts, camera_randomization
@@ -89,6 +102,7 @@ class HandsOnSim:
 
     def __init__(self, *, max_steps=None, terminate_on_success=False):
         self.requested_max_steps = self.max_steps = max_steps
+        # A run created to stop on success ends at its first outcome, success or failure, as upstream's trial does.
         self.terminate_on_success = terminate_on_success
         self.cameras = tuple(CAMERAS)
         self.env = self.task = self.failure = self._tracker = self._frames = self._temporary = None
@@ -205,13 +219,21 @@ class HandsOnSim:
         self.steps += 1
         reason = self._adapter.terminal_reason(dict(terminated=terminated, truncated=truncated, info=info),
                                                env=self.env)
-        contact = reason not in (None, "native_terminated", "native_truncated")
-        if self.failure is None and (info.get("failed") or contact):
-            # Upstream ends the trial at a failure, so it can no longer succeed.
-            self.failure = reason if contact else "native_failed"
-        self.success = bool(info.get("succeed")) and self.failure is None
+        self._settle(info, reason)
+
+    def _settle(self, info, reason):
+        """Score the step just taken and end the episode where the run stops."""
+        # Upstream ends the trial at a failure, so it can no longer succeed.
+        self.failure, self.success = judge(self.failure, info, reason)
         self.reward = float(self.success)
-        self.done = self.steps >= self.max_steps or (self.terminate_on_success and self.success)
+        self.done = self.steps >= self.max_steps or (
+            self.terminate_on_success and (self.success or self.failure is not None))
+
+    def end_reason(self):
+        """A run created to stop on success also ends at a failure, as upstream's evaluator ends the trial there."""
+        if self.terminate_on_success and self.failure is not None:
+            return "failure", self.failure
+        return None
 
     def measures(self):
         return {"failure": self.failure}
