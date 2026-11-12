@@ -120,6 +120,23 @@ def test_invalid_flags_fail_before_launch():
         assert error.value.code == 2
 
 
+def test_a_rejected_seed_is_a_launch_failure_of_its_own(monkeypatch, capsys):
+    from rosbridge.runs import api
+
+    def rejected(*args, **kwargs):
+        raise api.LaunchError("SeedRejected: t27_place_largest_fitting_ball seed 1: drift; see graph.log",
+                              "seed_rejected")
+    monkeypatch.setattr(api, "launch", rejected)
+    assert main(["launch", "handson/t27-place-largest-fitting-ball", "--seed", "1", "--json"]) == 3
+    assert json.loads(capsys.readouterr().out)["cause"] == "seed_rejected"
+
+    def failed(*args, **kwargs):
+        raise api.LaunchError("Required graph exited unexpectedly (exit 1); see graph.log")
+    monkeypatch.setattr(api, "launch", failed)
+    assert main(["launch", "handson", "--json"]) == 1
+    assert "cause" not in json.loads(capsys.readouterr().out)
+
+
 def test_preparation_cannot_modify_a_running_environment(tmp_path):
     from rosbridge.provisioning.setup import workspace_lock
     with workspace_lock(tmp_path, "fake", shared=True):

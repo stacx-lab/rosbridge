@@ -39,7 +39,9 @@ or a simulator's default-task alias. It takes `--execution-mode`, `--seed`,
 Launch remains in the foreground unless `--detach` is supplied. Ctrl-C stops the
 complete graph. Detached launch returns once the world node, its clock and wait
 service are discoverable and, when recording, the recorder holds every initial
-frame. Startup failures stop the graph and retain logs.
+frame. Startup failures stop the graph and retain logs, and exit 1, except a seed the
+simulator rejects at reset, as HandsOn's settle gate may: that launch exits 3, with
+`"cause": "seed_rejected"` under `--json`, and another seed may start.
 
 Each run leases a separate ROS domain; `--domain-id` selects one explicitly, and
 leases coordinate this user's local rosbridge runs. `exec` supplies the selected

@@ -39,7 +39,8 @@ A launch builds the episode as upstream's `handson/evaluation/native.py:run_epis
 - **Scene:** construction converts the task's MJCF scene into the run directory (about
   0.5 GB, removed when the run stops).
 - **Settle gate:** after the reset, a stable-origin gate settles the scene. It can reject a
-  seed; the launch then fails with its error, as upstream reports it, and another seed is needed.
+  seed (see [Seeds and the settle gate](#seeds-and-the-settle-gate)); the launch then fails
+  with exit status 3, and another seed is needed.
 - **Instruction:** the seeded instruction (canonical or paraphrased) is written with
   upstream's other receipts to `handson/PROMPT.json` in the run's directory
   (`.cache/rosbridge/runs/<id>/`). Give it to the agent; it is not published on ROS.
@@ -100,6 +101,41 @@ read at most three times per episode. Off, nothing is read. The score is graded 
 about three levels for `t02`, `t12`, `t19`, `t22`, `t23`, `t24`, `t26`, `t33`, `t40`, `t43` and
 `t47`, and binary for `t18`, `t29`, `t35`, `t49` and `eval_gen02`, whose checklist is a single
 row.
+
+## Seeds and the settle gate
+
+For a task without a setting, the seed is the native reset seed: it samples the layout, the
+table height and, where a task has one, its goal. `t24` always asks for the tennis ball and
+`t26` for the apple, since only the paper's archived trials override their targets. For the
+16 tasks in upstream's `settings.json`, the seed selects a setting and derives the reset seed.
+The instruction is fixed by task, seed and goal: canonical for about one seed in five, else one
+of 32 paraphrases. Give the agent only `PROMPT.json`'s `prompt`; its `canonical_prompt` and
+`goal` restate it unparaphrased. The other receipts are the judge's: `TASK_BOUNDARY*.json`
+(`t01`, `t15`, `t38`) holds every object pose.
+
+The settle gate is upstream's, per task contract: a frozen stable-origin gate for 34 Core
+tasks, a checker-boundary gate for `t01`, `t15` and `t38`, none for the other 13 tasks with
+settings, and the current gate with its defaults for Transfer-16. It rejects a seed whose reset
+drifts more than 5 mm or 3° while settling, penetrates, or does not come to rest in time. The
+rejection is deterministic. Reset raises `SeedRejected`, and the launch fails with exit status
+3 and, with `--json`, `"cause": "seed_rejected"`. Rosbridge does not retry with another seed,
+which would change which scene a seed names.
+
+In upstream's archive of 45,000 accepted paper trials, 4.8 % of reset candidates were rejected:
+43 % for `t27`, 25 % for `t23`, 20 % for `t07`, 10–14 % for `t04`, `t09`, `t14`, `t19`, `t24`,
+`t25` and `t26`, a few percent for `t11`, `t36`, `t40` and `t48`, and none for the other
+Core tasks. Many rejections are the robot's, not the task's: the seeded reset of the left arm
+drifts, so the same seeds fail across these tasks. Of seeds 0–9, 4, 6 and 8 fail `t23`, `t24`
+and `t27` alike; `t27` also rejects 1 and 3. Pre-screen seeds before launching many runs:
+
+```bash
+pixi run --frozen -e handson-native env PYTHONPATH=src:simulators/handson:.runtime/handson \
+    python tools/handson_seeds.py --tasks t23_photograph_logo t24_place_ball_in_bowl \
+    --seeds 0-9 --gpus 0 --output seeds.json
+```
+
+It boots each task and seed once, as a launch does but without ROS, on the given GPUs, and
+writes which seeds the gate accepts.
 
 ## Devices
 

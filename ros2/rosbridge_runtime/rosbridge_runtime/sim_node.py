@@ -1,5 +1,6 @@
 """The world node: ROS callbacks queue work; the main thread owns the simulator and publishers."""
 import faulthandler
+import json
 import math
 import os
 from pathlib import Path
@@ -18,7 +19,7 @@ from rclpy.node import Node
 from rclpy.task import Future
 from std_srvs.srv import Trigger
 
-from rosbridge.core import load_backend
+from rosbridge.core import SeedRejected, load_backend
 from rosbridge.runtime.world import WorldRuntime
 from .devices import device
 from .publishing import ObservationPublisher
@@ -167,6 +168,10 @@ def main():
         error = f"{type(failure).__name__}: {failure}"[:500]
         print("world stopped by an error:", file=sys.stderr, flush=True)
         traceback.print_exc()
+        if isinstance(failure, SeedRejected) and os.environ.get("ROSBRIDGE_RUN_DIR"):
+            # The launch reports a rejected seed as such (docs/README.md), so a harness can try another.
+            (Path(os.environ["ROSBRIDGE_RUN_DIR"]) / "launch-failure.json").write_text(
+                json.dumps({"cause": "seed_rejected", "error": error}))
     finally:
         if hasattr(node, 'world'):
             node.world.close(error=error)

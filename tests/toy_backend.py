@@ -1,7 +1,7 @@
 """Synthetic position/scalar backend for shared conformance tests."""
 import threading
 import numpy as np
-from rosbridge.core import ActionLayout, CommandGroup
+from rosbridge.core import ActionLayout, CommandGroup, SeedRejected
 from rosbridge.core.devices import device_inventory
 
 
@@ -28,6 +28,8 @@ class ToyBackend:
 
     def reset(self, task, seed, randomize):
         assert threading.get_ident() == self.owner
+        if task == "unsettled":
+            raise SeedRejected(f"the toy's scene at seed {seed} did not settle")
         if task not in ("toy", "succeeds", "fails"):
             raise ValueError("unknown task")
         self.task, self.seed = task, seed

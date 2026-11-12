@@ -6,7 +6,7 @@ import sys
 import numpy as np
 import pytest
 
-from rosbridge.core import ActionLayout, CommandGroup
+from rosbridge.core import ActionLayout, CommandGroup, SeedRejected
 from rosbridge.core.worker import WorkerBackend, WorkerError, decode, encode
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -35,6 +35,8 @@ def test_round_trip_keeps_layout_state_and_errors():
         assert sim.steps == 1 and sim.time_s == pytest.approx(.1) and not sim.done
         with pytest.raises(ValueError, match="unknown task"):
             sim.reset("missing", 1, False)
+        with pytest.raises(SeedRejected, match="seed 4 did not settle"):  # a rejected seed keeps its type
+            sim.reset("unsettled", 4, False)
         assert sim.task == "toy" and sim.steps == 1
         sim.step(np.zeros(3))
         assert sim.done

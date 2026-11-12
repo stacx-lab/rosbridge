@@ -22,7 +22,7 @@ import tempfile
 import numpy as np
 
 from rosbridge.catalog import resolve
-from rosbridge.core import ActionLayout, CommandGroup
+from rosbridge.core import ActionLayout, CommandGroup, SeedRejected
 from rosbridge.core.devices import device_inventory, spectator_views
 
 SIDES = ("right", "left")
@@ -141,7 +141,7 @@ class HandsOnSim:
     def reset(self, task, seed, randomize=True):
         """The seeded native episode, as the official evaluator builds it; randomize has no effect.
 
-        Isaac hosts one episode per process. The settle gate may reject a seed; the error ends the launch.
+        Isaac hosts one episode per process. The settle gate may reject a seed: reset raises SeedRejected.
         """
         if self.env is not None:
             raise ValueError("a HandsOn worker serves one episode; start another run for another")
@@ -183,7 +183,16 @@ class HandsOnSim:
         if not env._cameras:
             env._init_recording_cameras()
         observation, info = env.reset(seed=reset_seed)
-        task_contracts.initialize(env, self._wrapped, observation, info, contract, out)
+        try:
+            task_contracts.initialize(env, self._wrapped, observation, info, contract, out)
+        except Exception as error:
+            settle = out / "TASK_BOUNDARY_SETTLE.json"
+            if type(error).__name__ == "RecordingOriginStabilityError" or (
+                    settle.is_file() and not json.loads(settle.read_text())["passed"]):
+                # Upstream's stable-origin gate rejected this seed's reset; its evaluator reports the rejection and
+                # substitutes no other seed. It is deterministic: another seed may pass.
+                raise SeedRejected(f"{self.task} seed {seed}: {str(error)[:300]}") from error
+            raise
         (out / "PROMPT.json").write_text(json.dumps(bind(env, self.task, seed), indent=2) + "\n")
         if self._adapter.spec.force_scoring:  # t10 scores support, lift and hold; force is diagnostic
             from handson.evaluation.carton import install
