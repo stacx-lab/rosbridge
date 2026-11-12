@@ -83,6 +83,8 @@ class CommandBuffer:
         if name not in self._groups:
             raise CommandError(f"unknown command group: {name}")
         group = self._groups[name]
+        if group.inactive:
+            raise CommandError(f"{name} is inactive in this task: {group.inactive}")
         q = self._vector(values, len(group.indices), f"{name} target")
         lo, hi = np.asarray(group.lower), np.asarray(group.upper)
         bad = np.flatnonzero((q < lo - LIMIT_TOLERANCE) | (q > hi + LIMIT_TOLERANCE))

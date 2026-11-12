@@ -13,6 +13,8 @@ class CommandGroup:
 
     A velocity group is a mobile base: it commands body velocities in its own
     units and expires to zero; its feedback is odometry, not a hold target.
+    An inactive group, one the simulator holds in this task, still reports its
+    state but refuses commands; `inactive` says why.
     """
 
     name: str
@@ -21,6 +23,7 @@ class CommandGroup:
     upper: tuple[float, ...]
     scalar: bool = False
     velocity: bool = False
+    inactive: str = ""
 
 
 @dataclass(frozen=True)

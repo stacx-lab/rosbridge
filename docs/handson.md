@@ -152,6 +152,12 @@ The rig `handson/handson-rokae-wuji`:
   palm poses to arm joints;
 - mounts each hand on its arm's `palm`.
 
+Single-arm tasks whose control path holds the left side at home, as upstream's does in
+`eval_comb01`, `eval_gen01`, `eval_gen03`, `eval_gen06` and `eval_gen07`, keep every device:
+`left_arm` and `left_hand` report their state, but refuse commands with "`left_arm` is inactive
+in this task", which the next wait's reply names. The backend finds these sides when it loads
+the episode, by asking upstream's control path which arms it drives, not from a task list.
+
 Cameras are RGB and render through upstream's three-view RTX capture: its exposure per
 sensor, and wrist views that hide the wrist's own cables. One capture renders all three
 views at a camera sample, six path-traced passes each (about 14 s on a shared L40S); it never

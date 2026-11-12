@@ -193,15 +193,24 @@ class HandsOnSim:
         self.max_steps = self.requested_max_steps or int(budgets[self.task]["steps"])
         env._time_limit = self.max_steps * self.period
         env.hz = 0  # the world paces wall time; upstream would sleep to 30 Hz
-        self._index()
         # Arms take absolute joint targets in place of the palm-pose IK; the rest of the native path stays.
         self._arm = {side: env._joint_targets[side][:, env._arm_joint_ids[side]].clone() for side in SIDES}
-        env._compute_arm_joint_target = lambda side, robot, pose, commanded: (self._arm[side], "rosbridge")
+        driven = set()  # the arms whose targets upstream's control path applies
+
+        def target(side, robot, pose, commanded):
+            driven.add(side)
+            return self._arm[side], "rosbridge"
+        env._compute_arm_joint_target = target
+        # A single-arm task's control path may hold the left arm and hand at home without asking for a target
+        # (bimanual_assembly_env.py:3641-3662). Applying the current targets once, without a physics step, shows
+        # which arms it drives; the others' devices refuse commands.
+        env._apply_joint_targets()
+        self._index(inactive=set(SIDES) - driven)
         self.steps, self.done, self.success, self.reward = 0, False, False, 0.
         if self.spectators:
             self._open_spectators()
 
-    def _index(self):
+    def _index(self, inactive=()):
         names, groups, self._ids, self._slices = [], [], {}, {}
         for side in SIDES:
             robot = self.env._robots[side]
@@ -213,7 +222,9 @@ class HandsOnSim:
                 self._ids[side] += ids
                 self._slices[side].append(slice(offset, len(names)))
                 groups.append(CommandGroup(f"{side}_{part}", tuple(range(offset, len(names))),
-                                           tuple(limits[ids, 0]), tuple(limits[ids, 1])))
+                                           tuple(limits[ids, 0]), tuple(limits[ids, 1]), inactive=(
+                                               "upstream's single-arm control holds it at home"
+                                               if side in inactive else "")))
         self.layout = ActionLayout(tuple(names), tuple(groups))
 
     @property

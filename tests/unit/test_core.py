@@ -37,6 +37,21 @@ def test_hold_and_validate():
         b.set_group("left", [0.0] * 6)
 
 
+def test_an_inactive_group_refuses_commands_and_holds():
+    held = "the simulator holds it at home"
+    layout = ActionLayout(LAYOUT.joint_names, (LAYOUT.groups[0], LAYOUT.groups[1], *(
+        CommandGroup(g.name, g.indices, g.lower, g.upper, g.scalar, inactive=held) for g in LAYOUT.groups[2:])))
+    b = CommandBuffer(layout, np.full(14, .25))
+    for apply in (lambda: b.set_group("right", [0.] * 6),
+                  lambda: b.set_trajectory("right", 0., [1.], [[0.] * 6]),
+                  lambda: b.set_group("right_gripper", [1.])):
+        with pytest.raises(CommandError, match=f"is inactive in this task: {held}"):
+            apply()
+    b.set_group("left", [0.5] * 6)  # the active groups still take commands
+    a = b.action(1.)
+    assert a[:6].tolist() == [0.5] * 6 and a[7:].tolist() == [.25] * 7
+
+
 def test_trajectory_interpolates_then_holds():
     b = buffer()
     b.set_trajectory("left", 10.0, [1.0, 2.0], [[0.4] * 6, [0.8] * 6])
