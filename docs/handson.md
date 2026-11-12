@@ -147,7 +147,12 @@ pixi run --frozen -e handson-native env PYTHONPATH=src:simulators/handson:.runti
 ```
 
 It boots each task and seed once, as a launch does but without ROS, on the given GPUs, and
-writes which seeds the gate accepts.
+writes which seeds it accepts. The gate checks only that the scene comes to rest, so the screen
+also requires every task body the native environment exposes to end the gate within 2 cm of where
+the reset put it; it rejects other seeds as `"rejected": "scene"`, naming the bodies that moved,
+apart from the gate's own `"rejected": "settle_gate"`. At seed 0, `t09_insert_peg` passes the gate
+but its socket tray is thrown about 6 m to the floor while settling; in all 66 tasks at seed 0,
+bodies that stay in place move at most 3.7 mm. A launch does not run this check.
 
 Upstream also archives the inputs of the 45,000 accepted paper trials, 100 per Core-50 task
 for each of nine models (`dm05`, `dp`, `fastwam`, `hy`, `lingbot`, `motus`, `openwam`, `pi05`,
