@@ -43,6 +43,17 @@ def test_a_run_created_to_stop_on_success_also_ends_at_a_failure():
     assert episode([PLAIN, PLAIN], terminate_on_success=True).end_reason() is None
 
 
+def test_a_run_created_to_stop_on_failure_ends_at_a_failure_but_not_at_a_success(monkeypatch):
+    monkeypatch.setenv("ROSBRIDGE_HANDSON_STOP_ON_FAILURE", "1")
+    stopping = episode([PLAIN, PLAIN, FAILED])
+    assert stopping.done and stopping.end_reason() == ("failure", "native_failed") and stopping.failure_step == 3
+    assert stopping.measures() == {"failure": "native_failed", "failure_step": 3}
+    succeeding = episode([PLAIN, ({"succeed": True}, "native_terminated", {}), PLAIN])
+    assert not succeeding.done and succeeding.end_reason() is None
+    monkeypatch.delenv("ROSBRIDGE_HANDSON_STOP_ON_FAILURE")
+    assert not episode([PLAIN, FAILED]).done  # off by default
+
+
 def test_a_step_that_succeeds_and_fails_at_once_ends_a_stop_on_success_run_as_a_success():
     sim = episode([PLAIN, ({"succeed": True, "failed": True}, "native_terminated", {})], terminate_on_success=True)
     assert sim.done and sim.success and sim.reward == 1. and sim.failure is None and sim.end_reason() is None

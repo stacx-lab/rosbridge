@@ -13,9 +13,12 @@ from rosbridge.runtime.world import WorldRuntime
 TIME_LIMIT = "the episode ended because the time limit was reached"
 
 
-def world(mode="stepped", max_steps=None, backend=ToyBackend, task="toy", stop_on_success=False, **kwargs):
+def world(mode="stepped", max_steps=None, backend=ToyBackend, task="toy", stop_on_success=False, stop_on_failure=False,
+          **kwargs):
     published = []
     sim = backend(max_steps, stop_on_success)
+    if stop_on_failure:
+        sim.terminate_on_failure = True
     sim.reset(task, 0, False)
     runtime = WorldRuntime(sim, mode, lambda: published.append(sim.steps), stop_on_success, **kwargs)
     return runtime, published
@@ -298,16 +301,17 @@ def test_a_world_stopped_by_an_error_records_no_measures(tmp_path, monkeypatch):
 FAILED = "the episode ended because the simulation failed"
 
 
-@pytest.mark.parametrize("stop_on_success, max_steps, end_step, reason", [
-    (True, 5, 2, "failure"),  # a run launched to stop on success ends at its first outcome, here a failure
-    (True, 2, 2, "failure"),  # a failure on the limit's own step is the failure
-    (False, 4, 4, "max_steps"),  # otherwise the failure latches unannounced and the episode goes on, as before
+@pytest.mark.parametrize("stop_on_success, stop_on_failure, max_steps, end_step, reason", [
+    (True, False, 5, 2, "failure"),  # a run launched to stop on success ends at its first outcome, here a failure
+    (True, False, 2, 2, "failure"),  # a failure on the limit's own step is the failure
+    (False, True, 5, 2, "failure"),  # a backend created to stop on failure ends there too, without stop_on_success
+    (False, False, 4, 4, "max_steps"),  # otherwise the failure latches unannounced and the episode goes on, as before
 ])
-def test_a_backend_can_end_the_episode_at_an_outcome_of_its_own(tmp_path, monkeypatch, stop_on_success, max_steps,
-                                                                 end_step, reason):
+def test_a_backend_can_end_the_episode_at_an_outcome_of_its_own(tmp_path, monkeypatch, stop_on_success, stop_on_failure,
+                                                                 max_steps, end_step, reason):
     monkeypatch.setenv('ROSBRIDGE_RUN_DIR', str(tmp_path))
     runtime, published = world(max_steps=max_steps, backend=StumblingToy, task="stumbles",
-                               stop_on_success=stop_on_success)
+                               stop_on_success=stop_on_success, stop_on_failure=stop_on_failure)
     pending = wait(runtime, 1.)
     finish(runtime)
     cause = "the task failed" if reason == "failure" else "the time limit was reached"
@@ -409,3 +413,17 @@ def test_a_record_without_a_success_names_no_step(tmp_path, monkeypatch):
     runtime.close()
     outcome, = records(tmp_path)
     assert outcome['first_success_step'] is None and not outcome['success']
+
+
+def test_a_run_launched_to_stop_on_failure_goes_on_after_a_success(tmp_path, monkeypatch):
+    monkeypatch.setenv('ROSBRIDGE_RUN_DIR', str(tmp_path))
+    runtime, published = world(max_steps=4, backend=StumblingToy, task="succeeds", stop_on_failure=True)
+    pending = wait(runtime, 1.)
+    finish(runtime)
+    assert runtime.steps == 4 and runtime.sim.success
+    assert pending.result().message == "episode ended during wait; the episode ended because the time limit was reached"
+    runtime.close()
+    outcome, = records(tmp_path)
+    # judged on its final state, as a run without either stop is
+    assert (outcome['reason'], outcome['step'], outcome['success']) == ("success", 4, True)
+    assert outcome['first_success_step'] == 2

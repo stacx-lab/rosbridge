@@ -100,10 +100,16 @@ class HandsOnSim:
     default_task = "t24_place_ball_in_bowl"
     period = 1 / 30
 
-    def __init__(self, *, max_steps=None, terminate_on_success=False):
+    def __init__(self, *, max_steps=None, terminate_on_success=False, terminate_on_failure=None):
         self.requested_max_steps = self.max_steps = max_steps
-        # A run created to stop on success ends at its first outcome, success or failure, as upstream's trial does.
-        self.terminate_on_success = terminate_on_success
+        # A run created to stop on success ends at its first outcome, success or failure, as upstream's trial does;
+        # one created to stop on failure ends at a failure only (upstream's evaluator also ends the trial there) and
+        # is judged on its final state otherwise.
+        # Stop on failure is HandsOn's own option (rosbridge passes no other): ROSBRIDGE_HANDSON_STOP_ON_FAILURE=1.
+        if terminate_on_failure is None:
+            terminate_on_failure = os.environ.get("ROSBRIDGE_HANDSON_STOP_ON_FAILURE") == "1"
+        self.terminate_on_success, self.terminate_on_failure = terminate_on_success, bool(terminate_on_failure)
+        self.failure_step = None
         self.cameras = tuple(CAMERAS)
         self.env = self.task = self.failure = self._tracker = self._frames = self._temporary = None
         self.spectators, self._spectators = (), {}
@@ -223,20 +229,28 @@ class HandsOnSim:
 
     def _settle(self, info, reason):
         """Score the step just taken and end the episode where the run stops."""
+        failed_before = self.failure is not None
         # Upstream ends the trial at a failure, so it can no longer succeed.
         self.failure, self.success = judge(self.failure, info, reason)
         self.reward = float(self.success)
         self.done = self.steps >= self.max_steps or (
-            self.terminate_on_success and (self.success or self.failure is not None))
+            self.terminate_on_success and (self.success or self.failure is not None)) or (
+            self.terminate_on_failure and self.failure is not None)
+        if self.failure is not None and not failed_before:
+            self.failure_step = self.steps
 
     def end_reason(self):
-        """A run created to stop on success also ends at a failure, as upstream's evaluator ends the trial there."""
-        if self.terminate_on_success and self.failure is not None:
+        """A run created to stop on success or on failure ends at a failure, as upstream's evaluator does."""
+        if (self.terminate_on_success or self.terminate_on_failure) and self.failure is not None:
             return "failure", self.failure
         return None
 
     def measures(self):
-        return {"failure": self.failure}
+        """The latched failure and the step at which it latched."""
+        result = {"failure": self.failure}
+        if self.failure is not None:
+            result["failure_step"] = self.failure_step
+        return result
 
     def link_pose(self, side, link):
         """A robot body's world pose (rotation, translation), for geometry checks."""

@@ -12,5 +12,5 @@ class HandsOnWorker(WorkerBackend):
         return self._call("measures")
 
     def end_reason(self):
-        """A latched failure, in a run created to stop on success (HandsOnSim.end_reason)."""
+        """A latched failure, in a run created to stop on success or on failure (HandsOnSim.end_reason)."""
         return self._call("end_reason")

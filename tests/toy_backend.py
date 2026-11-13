@@ -56,7 +56,8 @@ class ToyBackend:
 
 class StumblingToy(ToyBackend):
     """The toy with a task failure of its own: in its "stumbles" task, one that latches at its second step. A run
-    created to stop on success ends there too and names the end (end_reason)."""
+    created to stop on success, or on failure, ends there too and names the end (end_reason)."""
+    terminate_on_failure = False
 
     def reset(self, task, seed, randomize):
         super().reset("toy" if task == "stumbles" else task, seed, randomize)
@@ -66,7 +67,8 @@ class StumblingToy(ToyBackend):
         super().step(action)
         if self.task == "stumbles" and self.steps >= 2 and self.failure is None:
             self.failure = "toy_stumbled"
-        self.done = self.done or bool(self.terminate_on_success and self.failure)
+        self.done = self.done or bool((self.terminate_on_success or self.terminate_on_failure) and self.failure)
 
     def end_reason(self):
-        return ("failure", self.failure) if self.terminate_on_success and self.failure else None
+        stopping = self.terminate_on_success or self.terminate_on_failure
+        return ("failure", self.failure) if stopping and self.failure else None

@@ -25,7 +25,8 @@ class WorldRuntime:
     submit() is the only cross-thread entry point: queued functions run on the
     owner thread between steps, so callback threads never touch native state.
     stop_on_success: the backend was created to end the episode at its first outcome (success, or a failure it
-    reports through end_reason()).
+    reports through end_reason()). A backend may also end an episode at an outcome of its own without it (HandsOn's
+    stop on failure): when it reports done, end_reason() names why.
     """
     def __init__(self, sim, mode, publish, stop_on_success=False, **pacer_options):
         self.sim, self.publish, self.stop_on_success = sim, publish, stop_on_success
@@ -121,7 +122,7 @@ class WorldRuntime:
             if self.sim.done:
                 # A backend ends an episode at its step limit or, if created to stop on success, at its first outcome:
                 # success, or an outcome of its own that end_reason() names, such as a task failure.
-                own = self.sim.end_reason() if self.stop_on_success and hasattr(type(self.sim), "end_reason") else None
+                own = self.sim.end_reason() if hasattr(type(self.sim), "end_reason") else None
                 if own:
                     reason, cause = own
                     self._end(OWN_ENDS.get(reason, f"the simulator ended it ({reason})"), reason, native_cause=cause)

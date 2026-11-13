@@ -80,6 +80,12 @@ the evaluator does.
 before the plug, in `t20` the left hand touching the pen first, in `t31` an interrupted
 brew, and in `t45` the left hand's contact lost.
 
+With `ROSBRIDGE_HANDSON_STOP_ON_FAILURE=1` in the launch's environment, a run judged on its
+final state (no `--stop-on-success`) still ends at a native failure, as upstream's evaluator
+ends the trial there: waits reply that the episode ended because the task failed, and the
+record has reason `failure` and the native cause. A success does not end it. Every record
+with a failure also has `failure_step`, the step at which it latched.
+
 ## Devices
 
 | Device | Interfaces |
