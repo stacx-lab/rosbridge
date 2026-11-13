@@ -60,6 +60,13 @@ Preparation corrects these upstream defects in the exported tree. Paths are unde
   directory, and the asset check requires the links, so these objects render as upstream's own
   figure shows them (`docs/pics/all-task-rendering.jpg` in its repository). A capture with glass
   in view takes about 0.3 s longer. Nothing NVIDIA ships is copied into the repository.
+- **`eval_comb03_pass_block_and_close_box`'s lid** (`patches/handson/0002`): the task credits
+  the lid pickup only after a right-hand contact with `Box_lid`
+  (`sim/isaaclab/xy1_composition.py:111-144`), but its runtime enables contact reporting and builds
+  hand-contact views only for the bodies `_D_CONTACT_TARGETS` lists
+  (`sim/isaaclab/d_collection_env.py:699, 1193`), and the task's entry lists the block alone. The
+  lid read then fails closed (`:1780-1781`), so the task could never succeed. The patch adds the
+  lid to that entry.
 
 ## Episodes
 

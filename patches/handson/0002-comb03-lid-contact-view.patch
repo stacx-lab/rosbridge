@@ -1,0 +1,13 @@
+diff --git a/handson/handson/sim/isaaclab/d_collection_env.py b/handson/handson/sim/isaaclab/d_collection_env.py
+index 367f917..9591249 100644
+--- a/handson/handson/sim/isaaclab/d_collection_env.py
++++ b/handson/handson/sim/isaaclab/d_collection_env.py
+@@ -193,7 +193,7 @@ _D_CONTACT_TARGETS = {
+     # Match B04: the collision geom, free joint, pose, and replay state all
+     # belong to one rigid body, so grasp impulses cannot cross a fixed child.
+     _D03: (_D03_CONTACT_BODY,),
+-    xy1.TASK_NAME: (_D03_CONTACT_BODY,),
++    xy1.TASK_NAME: (_D03_CONTACT_BODY, xy1.LID),
+     _D05: ("d05_scissors_fixed", "d05_scissors_moving"),
+ }
+ _D_CONTACT_POSE_ALIASES = {

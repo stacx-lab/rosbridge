@@ -4,3 +4,9 @@
 #      pre-107 name (omni.renderer.core), which Kit 107 (Isaac Sim 5.1) ignores; the present
 #      thread then blits about 300 frames/s per idle world, each raising a GPU interrupt.
 0001-isaaclab-present-thread-off.patch
+# 0002 eval_comb03_pass_block_and_close_box credits the lid pickup only after a right-hand
+#      contact with Box_lid (xy1_composition.py:111-144), but the D runtime enables contact
+#      reporting and builds hand-contact views only for the bodies _D_CONTACT_TARGETS lists
+#      (d_collection_env.py:699, 1193), and its comb03 entry lists the block alone. The lid read
+#      then fails closed (:1780-1781), so the task could never succeed. The patch adds the lid.
+0002-comb03-lid-contact-view.patch
