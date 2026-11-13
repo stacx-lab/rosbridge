@@ -9,7 +9,10 @@ passes the hands' absolute joint targets through the native action path and repl
 only its palm-pose IK with the arms' absolute joint targets, so native hand slewing,
 arm step limits and success and failure predicates apply. The palm pose of the native
 action is the one each arm target commands, so native logic that reads the commanded
-palm sees what an upstream policy's command would show it.
+palm sees what an upstream policy's command would show it. Where upstream's control path
+would send its IK another palm pose, a task's palm limiter (eval_flex02's hand-above-cloth
+floor) or a native guard that rewrites the commanded palm (t10's carton lift guard), the arm
+takes the joints nearest its target that put the palm there.
 
 Cameras render through upstream's three-view capture, with two contract choices: the
 default camera profile for every task, the head camera undistorted (its calibrated K
@@ -108,6 +111,65 @@ def contract_cameras():
     return contract
 
 
+def pose_matrix_wxyz(pose):
+    """A 4x4 pose from xyz and a wxyz quaternion."""
+    w, x, y, z = np.asarray(pose[3:7], dtype=float) / np.linalg.norm(pose[3:7])
+    matrix = np.eye(4)
+    matrix[:3, :3] = [[1 - 2 * (y * y + z * z), 2 * (x * y - w * z), 2 * (x * z + w * y)],
+                      [2 * (x * y + w * z), 1 - 2 * (x * x + z * z), 2 * (y * z - w * x)],
+                      [2 * (x * z - w * y), 2 * (y * z + w * x), 1 - 2 * (x * x + y * y)]]
+    matrix[:3, 3] = pose[:3]
+    return matrix
+
+
+def rotation_vector(matrix):
+    """A rotation matrix's axis times its angle."""
+    vee = np.array([matrix[2, 1] - matrix[1, 2], matrix[0, 2] - matrix[2, 0], matrix[1, 0] - matrix[0, 1]]) / 2
+    sine = np.linalg.norm(vee)
+    angle = np.arctan2(sine, (np.trace(matrix) - 1) / 2)
+    return vee * (angle / sine) if sine > 1e-12 else vee
+
+
+def reach(forward, target, seeds, lower, upper, tolerance=1e-6, iterations=100, step=1e-7):
+    """Joints within the limits at which forward(joints), a 4x4 pose, is the 4x4 target within tolerance (metres,
+    radians), by damped least squares from each seed in turn, so near the first seed that gets there; a seed already
+    there is returned as it is. If none gets there, the joints that came nearest."""
+    def error(joints):
+        pose = forward(joints)
+        return pose, np.r_[target[:3, 3] - pose[:3, 3], rotation_vector(target[:3, :3] @ pose[:3, :3].T)]
+
+    nearest = None
+    for seed in seeds:
+        joints, damping = np.asarray(seed, dtype=float), 1e-2
+        pose, residual = error(joints)
+        for _ in range(iterations):
+            if np.linalg.norm(residual[:3]) <= tolerance and np.linalg.norm(residual[3:]) <= tolerance:
+                return joints
+            jacobian = np.empty((6, joints.size))
+            for j in range(joints.size):
+                moved = forward(joints + step * np.eye(joints.size)[j])
+                jacobian[:, j] = np.r_[moved[:3, 3] - pose[:3, 3],
+                                       rotation_vector(moved[:3, :3] @ pose[:3, :3].T)] / step
+            trial = np.clip(joints + jacobian.T @ np.linalg.solve(
+                jacobian @ jacobian.T + damping ** 2 * np.eye(6), residual), lower, upper)
+            trial_pose, trial_residual = error(trial)
+            if np.linalg.norm(trial_residual) < np.linalg.norm(residual):  # Levenberg-Marquardt damping
+                joints, pose, residual, damping = trial, trial_pose, trial_residual, max(damping / 10, 1e-4)
+            elif (damping := damping * 10) > 1e2:
+                break
+        if nearest is None or np.linalg.norm(residual) < nearest[0]:
+            nearest = np.linalg.norm(residual), joints
+    return nearest[1]
+
+
+def limits_palm(env):
+    """Whether upstream's control path passes a commanded palm through the task's _limit_arm_pose_target before its
+    IK: with the Haorui IK, or where a task asks for PhysX contact limits (bimanual_assembly_env.py:4157-4161). The
+    frozen Core classes ask for Haorui only and have no contact limits (core_box_base.py:1568-1569 and copies)."""
+    contact = getattr(env, "_physx_contact_arm_target_limits_enabled", None)
+    return env._arm_ik_backend == "haorui" or bool(contact and contact())
+
+
 class Palm:
     """An arm's palm pose in the world at given arm joints: the pose of upstream's <side>_palm_link that its EEF52
     action commands, as xyz in metres and a wxyz quaternion.
@@ -124,6 +186,8 @@ class Palm:
         self.model = mujoco.MjModel.from_xml_path(str(ROBOT_MJCF_BY_HAND[env.hand_type][side]))
         self.data = mujoco.MjData(self.model)
         self.joints = [self.model.joint(f"joint{i}_{side}").qposadr[0] for i in range(1, 8)]
+        self.lower, self.upper = self.model.jnt_range[[self.model.joint(f"joint{i}_{side}").id
+                                                       for i in range(1, 8)]].T
         self.body = self.model.body(f"{side}_palm_link").id
         pose, _ = measured_palm_pose(env, side)
         joints = values(env._robots[side].data.joint_pos[0])[env._arm_joint_ids[side]]
@@ -142,6 +206,12 @@ class Palm:
         from handson.sim.isaaclab.bimanual_assembly_env import _matrix_to_quat_wxyz
         matrix = self.world @ self.model_pose(joints)
         return np.r_[matrix[:3, 3], _matrix_to_quat_wxyz(matrix[:3, :3])]
+
+    def reach(self, pose, seeds):
+        """Arm joints within the joint limits that put the palm at pose, near the first seed that gets there, else
+        the joints that come nearest."""
+        target = np.linalg.solve(self.world, pose_matrix_wxyz(pose))
+        return reach(self.model_pose, target, seeds, self.lower, self.upper)
 
 
 class HandsOnSim:
@@ -163,6 +233,8 @@ class HandsOnSim:
             partial_credit = os.environ.get("ROSBRIDGE_HANDSON_PARTIAL_CREDIT") == "1"
         self.partial_credit, self._initial, self._frozen = bool(partial_credit), None, None
         self.failure_detail = None
+        # The palm each arm target commands, and the steps whose arm target upstream's palm limits or guards changed.
+        self._commanded, self.guarded, self._guarded_at = dict.fromkeys(SIDES), dict.fromkeys(SIDES, 0), {}
         self.cameras = tuple(CAMERAS)
         self.env = self.task = self.failure = self._tracker = self._frames = self._temporary = None
         self.spectators, self._spectators = (), {}
@@ -235,11 +307,12 @@ class HandsOnSim:
         # native action's palm pose is the one the target commands.
         self._arm = {side: env._joint_targets[side][:, env._arm_joint_ids[side]].clone() for side in SIDES}
         self._palm = {side: Palm(env, side) for side in SIDES}
+        self._limits_palm = limits_palm(env)
         driven = set()  # the arms whose targets upstream's control path applies
 
         def target(side, robot, pose, commanded):
             driven.add(side)
-            return self._arm[side], "rosbridge"
+            return self._arm_target(side, robot, pose, commanded), "rosbridge"
         env._compute_arm_joint_target = target
         # A single-arm task's control path may hold the left arm and hand at home without asking for a target
         # (bimanual_assembly_env.py:3641-3662). Applying the current targets once, without a physics step, shows
@@ -249,6 +322,35 @@ class HandsOnSim:
         self.steps, self.done, self.success, self.reward = 0, False, False, 0.
         if self.spectators:
             self._open_spectators()
+
+    def _arm_target(self, side, robot, pose, commanded):
+        """The arm's drive target in place of upstream's IK: the commanded joints, unless upstream's path would give
+        its IK another palm than they command. That palm is the task's _limit_arm_pose_target of the commanded one
+        where upstream applies it (eval_flex02 lifts it so the hand stays above the cloth), else the native command
+        when native logic rewrote it after the action arrived (t10 pins its height until both hands grip). The arm
+        then takes the joints nearest its target that put the palm there (else nearest its previous target), or, if
+        none do, the joints that come nearest, as upstream's IK steps toward a palm it cannot reach."""
+        target, palm = self._arm[side], self._commanded[side]
+        if not commanded or palm is None:  # nothing commanded yet: upstream's IK idles too
+            return target
+        env = self.env
+        if self._limits_palm:
+            pose = env._limit_arm_pose_target(side, robot, pose)
+        elif np.array_equal(pose, palm):
+            return target
+        joints = values(target)[0]
+        previous = values(env._joint_targets[side])[0, [int(i) for i in env._arm_joint_ids[side]]]
+        reached = self._palm[side].reach(pose, (joints, previous))
+        if np.array_equal(reached, joints):
+            return target
+        if self._guarded_at.get(side) != self.steps:  # a native guard may re-solve the targets within a step
+            if not self.guarded[side]:
+                print(f"[rosbridge] {side} arm: upstream's palm {'limits' if self._limits_palm else 'guard'} changed "
+                      f"its target at step {self.steps + 1}", flush=True)
+            self._guarded_at[side] = self.steps
+            self.guarded[side] += 1
+        import torch
+        return torch.tensor(reached[None], device=robot.device, dtype=robot.data.joint_pos.dtype)
 
     def _index(self, inactive=()):
         names, groups, self._ids, self._slices = [], [], {}, {}
@@ -288,6 +390,7 @@ class HandsOnSim:
             self._arm[side] = torch.tensor(arm[None], device=robot.device, dtype=robot.data.joint_pos.dtype)
             # Native logic reads the commanded palm (t16's hinge opens only while it rises); IK does not see it.
             command[side] = np.r_[self._palm[side](arm), hand]
+            self._commanded[side] = command[side][:7]
         _, _, terminated, truncated, info = self.env.step(command)
         self.steps += 1
         reason = self._adapter.terminal_reason(dict(terminated=terminated, truncated=truncated, info=info),
@@ -323,9 +426,9 @@ class HandsOnSim:
                 if row["key"] not in NO_CHECKLIST}
 
     def measures(self):
-        """The latched failure, its native detail and the step at which it latched; with partial credit on, the
-        checklist at the trial's end and its q_score, as BEHAVIOR's TaskMetric computes it over one goal option, the
-        checklist.
+        """The latched failure, its native detail and the step at which it latched; the steps whose arm target
+        upstream's palm limits or guards changed, if any; with partial credit on, the checklist at the trial's end and
+        its q_score, as BEHAVIOR's TaskMetric computes it over one goal option, the checklist.
 
         The trial ends at the failure step if a failure latched, else at the last step. q_score is 1 on success, else
         the fraction of all conditions that hold at the trial's end and did not after the first step (0 without any).
@@ -333,6 +436,8 @@ class HandsOnSim:
         result = {"failure": self.failure}
         if self.failure is not None:
             result["failure_detail"], result["failure_step"] = self.failure_detail, self.failure_step
+        if any(self.guarded.values()):
+            result["arm_guard_steps"] = dict(self.guarded)
         if not self.partial_credit:
             return result
         conditions = self._frozen if self._frozen is not None else self._checklist() if self.steps else None

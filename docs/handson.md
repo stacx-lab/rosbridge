@@ -154,10 +154,29 @@ brake also needs the commanded right palm to rise at least 0.2 mm in that step. 
 most 4 N·m then opens the display 0.4° per step while the contact and the rise last. Arm targets
 that raise the right palm a little each step along the hinge's arc, with a fingertip resting on
 the display, open it (in `t16` at seed 0, to 57° in 6 s); a single large target raises the
-commanded palm in one step only. Guards that clamp the commanded palm, not the joints, do not
-hold the arm: `t10_lift_carton` pins the commanded palms' height until both hands grip the
-carton with 10 N, then moves them only together (`sim/isaaclab/b320_bimanual_env.py:3815-3850,
-4134-4616`); only these guards' hand targets apply.
+commanded palm in one step only.
+
+Where upstream's control path would give its IK another palm than the target commands, the arm
+takes the joints nearest its target that put the palm there (damped least squares on the same
+MJCF, to 1 µm and 1 µrad), or as near as it can get. That happens in two ways:
+- **Palm limits.** Tasks that limit the commanded palm before their IK (with the Haorui IK or
+  PhysX contact limits) do so here too, through the task's own `_limit_arm_pose_target`:
+  `eval_flex02` lifts the palm so that no finger collider goes below the towel's top (table plus
+  towel thickness, 0.9012 m); `eval_flex01` keeps each step's palm within 4 cm and 8° of the
+  measured palm and the hand above the table; `t22` holds the wrist that carries the screwdriver
+  at its latched attitude. `t18`, `t21`, `t22`, `eval_comb03`, `eval_flex02`, `eval_flex03`,
+  `eval_gen02` and `eval_gen04` keep the palm within 0.78 m of the arm's base (the arm reaches
+  0.875 m). `eval_comb03`, `eval_flex03`, `eval_gen02` and `eval_gen04`, which have no paper
+  contract, also filter the palm with upstream's defaults: a quarter of the way to the command
+  each step, at most 3.5 cm from the measured palm, 10 cm and 20° per step, in steps of 2 mm and
+  1°. An arm there reaches its target exactly once the filtered palm is within 1 µm of it.
+- **Native guards** that rewrite the commanded palm hold the arm: `t10_lift_carton` pins the
+  commanded palms' height until both hands grip the carton with 10 N, then moves them only
+  together (`sim/isaaclab/b320_bimanual_env.py:3815-3850, 4134-4616`), and `t01` holds the left
+  palm where it was once the left block is level at height. Their hand targets apply as before.
+
+Nothing is refused: the arm falls short of its target, as against contact, and the run's record
+counts the steps each arm was held (`arm_guard_steps`).
 
 Hands are `joint` devices of 20 joints, `<side>_finger1_joint1`..`<side>_finger5_joint4`.
 The order is finger-major from the thumb, the order of EEF52's hand20 values. Targets are

@@ -6,7 +6,7 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from rosbridge_handson.backend import HandsOnSim, judge
+from rosbridge_handson.backend import HandsOnSim, judge, limits_palm, pose_matrix_wxyz, reach, rotation_vector
 
 
 @pytest.mark.parametrize("failure, info, reason, expected", [
@@ -156,4 +156,155 @@ def test_each_step_commands_the_palm_pose_its_arm_target_puts_the_palm_at(monkey
             np.testing.assert_array_equal(command[side], np.r_[sim._palm[side](action[arm]), action[hand]])
             np.testing.assert_array_equal(sim._arm[side], action[arm][None])  # what replaces the IK's target
     assert sim.env.commands[1]["right"][0] == pytest.approx(sim.env.commands[0]["right"][0] + .1)
+
+
+def chain(joints):
+    """A 7-joint stand-in arm: its palm at the end of revolute links about alternating axes."""
+    pose = np.eye(4)
+    for i, angle in enumerate(joints):
+        c, s = np.cos(angle), np.sin(angle)
+        turn = np.eye(4)
+        turn[:3, :3] = [[c, -s, 0], [s, c, 0], [0, 0, 1]] if i % 2 == 0 else [[1, 0, 0], [0, c, -s], [0, s, c]]
+        link = np.eye(4)
+        link[2, 3] = .12
+        pose = pose @ turn @ link
+    return pose
+
+
+LOWER, UPPER = np.full(7, -2.5), np.full(7, 2.5)
+HOME = np.array([.3, .8, -.2, 1.1, .4, -.6, .2])
+
+
+def test_reach_finds_the_joints_near_its_seed_that_put_the_palm_at_a_pose():
+    goal = HOME + [.05, -.04, .03, .06, -.05, .04, -.03]
+    joints = reach(chain, chain(goal), [HOME], LOWER, UPPER)
+    error = np.linalg.inv(chain(joints)) @ chain(goal)
+    assert np.linalg.norm(error[:3, 3]) < 1e-6 and np.linalg.norm(rotation_vector(error[:3, :3])) < 1e-6
+    assert np.abs(joints - HOME).max() < .3  # the redundant arm stays near its seed
+    seed = HOME.copy()
+    assert reach(chain, chain(HOME), [seed], LOWER, UPPER) is seed  # a seed already there is kept as it is
+    far = chain(HOME)
+    far[:3, 3] = [3., 0., 0.]  # beyond the arm's reach: as near as it gets, within the limits
+    joints = reach(chain, far, [HOME], LOWER, UPPER)
+    assert np.linalg.norm(chain(joints)[:3, 3] - far[:3, 3]) < np.linalg.norm(chain(HOME)[:3, 3] - far[:3, 3]) - .3
+    assert np.all((LOWER <= joints) & (joints <= UPPER))
+
+
+def test_a_rotation_vector_is_the_axis_times_the_angle():
+    for vector in ([0., 0., 0.], [.3, -.2, .1], [0., 2.5, 0.]):
+        angle = np.linalg.norm(vector)
+        axis = np.asarray(vector) / angle if angle else np.zeros(3)
+        k = np.array([[0, -axis[2], axis[1]], [axis[2], 0, -axis[0]], [-axis[1], axis[0], 0]])
+        matrix = np.eye(3) + np.sin(angle) * k + (1 - np.cos(angle)) * k @ k
+        np.testing.assert_allclose(rotation_vector(matrix), vector, atol=1e-12)
+    np.testing.assert_allclose(pose_matrix_wxyz([1., 2., 3., np.cos(.4), 0., 0., np.sin(.4)])[:3, :],
+                               [[np.cos(.8), -np.sin(.8), 0, 1], [np.sin(.8), np.cos(.8), 0, 2], [0, 0, 1, 3]],
+                               atol=1e-12)
+
+
+def quaternion(matrix):
+    """A rotation matrix's wxyz quaternion (for rotations of less than 180 degrees)."""
+    w = np.sqrt(1 + np.trace(matrix)) / 2
+    return np.r_[w, (matrix[2, 1] - matrix[1, 2]) / (4 * w), (matrix[0, 2] - matrix[2, 0]) / (4 * w),
+                 (matrix[1, 0] - matrix[0, 1]) / (4 * w)]
+
+
+class ChainPalm:
+    """Backend Palm stand-in: the chain's palm pose in EEF52's form, and its IK."""
+
+    def __call__(self, joints):
+        matrix = chain(joints)
+        return np.r_[matrix[:3, 3], quaternion(matrix[:3, :3])]
+
+    def reach(self, pose, seeds):
+        return reach(chain, pose_matrix_wxyz(pose), seeds, LOWER, UPPER)
+
+
+class Arms:
+    """A native environment's arm state and palm limiter, as the backend's arm target reads them."""
+
+    def __init__(self, backend="dls", contact=None, limit=None):
+        self._arm_ik_backend, self._robots = backend, {"right": Robot(), "left": Robot()}
+        if contact is not None:
+            self._physx_contact_arm_target_limits_enabled = lambda: contact
+        self._arm_joint_ids = {side: list(range(7)) for side in ("right", "left")}
+        self._joint_targets = {side: np.r_[HOME, np.zeros(20)][None] for side in ("right", "left")}
+        self.limit, self.limited = limit, []
+
+    def _limit_arm_pose_target(self, side, robot, pose):
+        self.limited.append(side)
+        return self.limit(np.asarray(pose, dtype=float).copy())
+
+
+def arms(monkeypatch, env, goal=HOME):
+    """A backend after a step that commanded the right arm to goal."""
+    monkeypatch.setitem(sys.modules, "torch", SimpleNamespace(tensor=lambda data, device, dtype: np.array(data)))
+    sim = HandsOnSim(partial_credit=False)
+    sim.env, sim.steps, sim._palm = env, 4, {"right": ChainPalm(), "left": ChainPalm()}
+    sim._limits_palm = limits_palm(env)
+    sim._arm = {"right": np.asarray(goal, dtype=float)[None], "left": HOME[None]}
+    sim._commanded = {"right": sim._palm["right"](goal), "left": sim._palm["left"](HOME)}
+    return sim
+
+
+def floor(z):
+    """A palm limiter that lifts the palm to a height, as eval_flex02's keeps the hand above the cloth."""
+    def limit(pose):
+        pose[2] = max(pose[2], z)
+        return pose
+    return limit
+
+
+@pytest.mark.parametrize("env, expected", [
+    (Arms(), False), (Arms(contact=False), False),  # the frozen Core classes have no contact limits
+    (Arms(contact=True), True), (Arms("haorui"), True), (Arms("haorui", contact=False), True),
+])
+def test_upstream_limits_the_palm_with_haorui_ik_or_contact_limits(env, expected):
+    assert limits_palm(env) is expected
+
+
+def test_an_arm_takes_its_target_as_it_is_where_upstream_would_command_the_same_palm(monkeypatch):
+    sim = arms(monkeypatch, Arms())
+    sim._palm["right"].reach = None  # no IK runs
+    assert sim._arm_target("right", Robot(), sim._commanded["right"].copy(), True) is sim._arm["right"]
+    # A limiter that leaves the palm where the target puts it leaves the target too, bit for bit.
+    sim = arms(monkeypatch, Arms(contact=True, limit=lambda pose: pose))
+    assert sim._arm_target("right", Robot(), sim._commanded["right"].copy(), True) is sim._arm["right"]
+    assert sim.env.limited == ["right"] and sim.guarded == {"right": 0, "left": 0}
+    assert "arm_guard_steps" not in sim.measures()
+    # Before the first step, or for an arm upstream would not command, the target stays.
+    sim._commanded["right"] = None
+    assert sim._arm_target("right", Robot(), np.zeros(7), True) is sim._arm["right"]
+    assert sim._arm_target("left", Robot(), np.zeros(7), False) is sim._arm["left"]
+
+
+def test_an_arm_takes_the_joints_that_put_the_palm_where_upstreams_palm_limits_put_it(monkeypatch):
+    goal = HOME + [0., .25, 0., .3, 0., 0., 0.]  # lowers the palm
+    height = ChainPalm()(HOME)[2]
+    sim = arms(monkeypatch, Arms(contact=True, limit=floor(height)), goal)
+    assert sim._commanded["right"][2] < height - .01
+    for _ in range(2):  # a native guard may solve the step's targets twice; it counts once
+        joints = sim._arm_target("right", Robot(), sim._commanded["right"].copy(), True)[0]
+    palm = ChainPalm()(joints)
+    assert palm[2] == pytest.approx(height, abs=1e-6)
+    np.testing.assert_allclose(palm[:2], sim._commanded["right"][:2], atol=1e-6)
+    np.testing.assert_allclose(np.abs(palm[3:] @ sim._commanded["right"][3:]), 1., atol=1e-9)
+    assert sim.guarded == {"right": 1, "left": 0} and sim.measures()["arm_guard_steps"] == {"right": 1, "left": 0}
+
+
+def test_an_arm_follows_a_native_guard_that_rewrote_its_commanded_palm(monkeypatch):
+    # t10 pins the commanded palms' height until both hands grip the carton; no palm limiter runs.
+    goal = HOME + [.1, -.2, 0., -.2, 0., 0., 0.]  # raises the palm
+    sim = arms(monkeypatch, Arms(limit=None), goal)
+    pinned = sim._commanded["right"].copy()
+    pinned[2] = ChainPalm()(HOME)[2]
+    joints = sim._arm_target("right", Robot(), pinned, True)[0]
+    np.testing.assert_allclose(ChainPalm()(joints)[:3], pinned[:3], atol=1e-6)
+    assert sim.env.limited == [] and sim.guarded["right"] == 1
+
+
+def test_an_arm_comes_as_near_as_it_can_to_a_palm_no_joints_reach(monkeypatch):
+    sim = arms(monkeypatch, Arms(contact=True, limit=floor(5.)), HOME)  # 5 m up: out of reach
+    joints = sim._arm_target("right", Robot(), sim._commanded["right"].copy(), True)[0]
+    assert ChainPalm()(joints)[2] > sim._commanded["right"][2] + .1 and sim.guarded["right"] == 1
 
