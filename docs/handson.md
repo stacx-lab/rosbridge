@@ -67,6 +67,11 @@ Preparation corrects these upstream defects in the exported tree. Paths are unde
   (`sim/isaaclab/d_collection_env.py:699, 1193`), and the task's entry lists the block alone. The
   lid read then fails closed (`:1780-1781`), so the task could never succeed. The patch adds the
   lid to that entry.
+- **`eval_gen06_spray_shoe`'s spray cone** (`patches/handson/0003`): the cone imports as an Xform
+  `gen7_spray_cone` with a child Mesh of the same name. Setup hid every prim with that name
+  (`sim/isaaclab/eval_gen06_spray_shoe_scene.py:239-242`), but the spray's show call un-hides
+  only the first match, the Xform (`sim/isaaclab/abc_collection_env.py:15520-15533`), so the mesh
+  stayed hidden and no spray was ever visible. The patch hides only the prim the spray toggles.
 
 ## Episodes
 

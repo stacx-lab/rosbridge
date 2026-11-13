@@ -1,0 +1,20 @@
+diff --git a/handson/handson/sim/isaaclab/eval_gen06_spray_shoe_scene.py b/handson/handson/sim/isaaclab/eval_gen06_spray_shoe_scene.py
+index badda69..1991671 100644
+--- a/handson/handson/sim/isaaclab/eval_gen06_spray_shoe_scene.py
++++ b/handson/handson/sim/isaaclab/eval_gen06_spray_shoe_scene.py
+@@ -236,10 +236,13 @@ def configure_asset_stage(stage, root_path):
+             solver = PhysxSchema.PhysxArticulationAPI.Apply(articulation)
+             solver.CreateSolverPositionIterationCountAttr(32)
+             solver.CreateSolverVelocityIterationCountAttr(4)
++    # The cone imports as an Xform with a same-named child Mesh. Hide only the
++    # prim the spray toggles, so showing it also shows the mesh.
++    cone = spray_visual_prim(stage, root_path)
++    if cone.IsValid():
++        UsdGeom.Imageable(cone).MakeInvisible()
+     for prim in Usd.PrimRange(root):
+         name = prim.GetName()
+-        if name == "gen7_spray_cone" and UsdGeom.Imageable(prim):
+-            UsdGeom.Imageable(prim).MakeInvisible()
+         if "gen7_" in name and "collision" in name:
+             imageable = UsdGeom.Imageable(prim)
+             if imageable:
