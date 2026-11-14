@@ -5,7 +5,9 @@ in Isaac Sim 5.1 and Isaac Lab, as its official PhysX evaluator builds them: Cor
 (`t01`–`t50`) and Transfer-16 (`eval_comb01..06`, `eval_gen01..07`, `eval_flex01..03`).
 Upstream is pinned to `fee28452fa50d3ee906445f1717ce2449cc83798`, with Isaac Lab v2.3.2
 (`isaac-sim/IsaacLab@37ddf626`) as a nested source. See the [design and CLI
-guide](README.md) for shared lifecycle and timing contracts.
+guide](README.md) for shared lifecycle and timing contracts, and [HandsOn: known
+environment issues](handson-known-issues.md) for what is known to be wrong or surprising
+in the tasks.
 
 ```bash
 rosbridge prepare handson
