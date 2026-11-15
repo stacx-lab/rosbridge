@@ -106,7 +106,8 @@ row.
 
 For a task without a setting, the seed is the native reset seed: it samples the layout, the
 table height and, where a task has one, its goal. `t24` always asks for the tennis ball and
-`t26` for the apple, since only the paper's archived trials override their targets. For the
+`t26` for the apple: only the constructor overrides of upstream's archived paper trials choose
+their targets, and rosbridge does not use those trials. For the
 16 tasks in upstream's `settings.json`, the seed selects a setting and derives the reset seed.
 The instruction is fixed by task, seed and goal: canonical for about one seed in five, else one
 of 32 paraphrases. Give the agent only `PROMPT.json`'s `prompt`. Its `canonical_prompt` (the
@@ -122,7 +123,6 @@ is the judge's, not the agent's:
 | `TASK_BOUNDARY.json`, `TASK_BOUNDARY_SETTLE.json` (`t01`, `t15`, `t38`) | Every object pose and joint position, and the native task info |
 | `CARTON_RAW_FORCE_000/` (`t10`) | Raw grip force |
 | `AS019_SCENE_BRIDGE.json` (`t22`) | The scene bridge |
-| `PAPER_TRIAL.json` (paper trials) | The archived trial: seeds, goal, prompt |
 
 The settle gate is upstream's, per task contract: a frozen stable-origin gate for 34 Core
 tasks, a checker-boundary gate for `t01`, `t15` and `t38`, and the current gate with its
@@ -153,24 +153,6 @@ the reset put it; it rejects other seeds as `"rejected": "scene"`, naming the bo
 apart from the gate's own `"rejected": "settle_gate"`. At seed 0, `t09_insert_peg` passes the gate
 but its socket tray is thrown about 6 m to the floor while settling; in all 66 tasks at seed 0,
 bodies that stay in place move at most 3.7 mm. A launch does not run this check.
-
-Upstream also archives the inputs of the 45,000 accepted paper trials, 100 per Core-50 task
-for each of nine models (`dm05`, `dp`, `fastwam`, `hy`, `lingbot`, `motus`, `openwam`, `pi05`,
-`spatial`). With `ROSBRIDGE_HANDSON_PAPER_TRIALS=<model>` in the launch's environment, the seed
-names one of them, as upstream's `--paper-trial N --model <model>` does:
-
-```bash
-ROSBRIDGE_HANDSON_PAPER_TRIALS=pi05 rosbridge launch handson/t24-place-ball-in-bowl --seed 7 \
-    --execution-mode stepped --stop-on-success
-```
-
-Seed `N` (0–99) restores trial `N`: its accepted reset seed, its goal, the constructor and reset
-overrides that set it, its archived instruction and its setting. This restores the paper's goal
-diversity: `t24` asks for each of its three balls and `t26` for each of its four fruits. The
-archive holds accepted resets, so the settle gate normally passes them, although upstream does
-not certify that today's simulator matches the paper's. The record's `seed` stays `N`; the
-receipt `PAPER_TRIAL.json` holds the trial. Transfer-16 tasks have no archive, and their launch
-fails with a message saying so.
 
 ## Devices
 
