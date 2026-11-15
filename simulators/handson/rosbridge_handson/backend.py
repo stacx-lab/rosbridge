@@ -22,7 +22,7 @@ import tempfile
 import numpy as np
 
 from rosbridge.catalog import resolve
-from rosbridge.core import ActionLayout, CommandGroup, SeedRejected
+from rosbridge.core import ActionLayout, CommandGroup
 from rosbridge.core.devices import device_inventory, spectator_views
 
 SIDES = ("right", "left")
@@ -37,6 +37,10 @@ RENDER_PASSES, SPECTATOR_PASSES = 6, 2
 NO_CHECKLIST = {"event_success_unavailable", "condition_panel_error"}
 # Native info entries whose names contain these explain a failure (failure_reason, ycb01_failure_reason, ...).
 FAILURE_INFO = ("fail", "reason")
+
+
+class SettleGateRejected(RuntimeError):
+    """Upstream's stable-origin settle gate rejected a reset. Deterministic for a task and native seed."""
 
 
 def values(value):
@@ -141,7 +145,7 @@ class HandsOnSim:
     def reset(self, task, seed, randomize=True):
         """The seeded native episode, as the official evaluator builds it; randomize has no effect.
 
-        Isaac hosts one episode per process. The settle gate may reject a seed: reset raises SeedRejected.
+        Isaac hosts one episode per process. The settle gate may reject a seed: reset raises SettleGateRejected.
         """
         if self.env is not None:
             raise ValueError("a HandsOn worker serves one episode; start another run for another")
@@ -191,7 +195,7 @@ class HandsOnSim:
                     settle.is_file() and not json.loads(settle.read_text())["passed"]):
                 # Upstream's stable-origin gate rejected this seed's reset; its evaluator reports the rejection and
                 # substitutes no other seed. It is deterministic: another seed may pass.
-                raise SeedRejected(f"{self.task} seed {seed}: {str(error)[:300]}") from error
+                raise SettleGateRejected(f"{self.task} seed {seed}: {str(error)[:300]}") from error
             raise
         (out / "PROMPT.json").write_text(json.dumps(bind(env, self.task, seed), indent=2) + "\n")
         if self._adapter.spec.force_scoring:  # t10 scores support, lift and hold; force is diagnostic

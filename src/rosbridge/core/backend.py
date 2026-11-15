@@ -60,11 +60,6 @@ class ActionLayout:
             raise ValueError("groups must partition the action indices exactly once")
 
 
-class SeedRejected(RuntimeError):
-    """The backend's reset rejected the launch's seed: its initial scene failed a check such as a
-    stability gate. Infrastructure, not an episode outcome; another seed may start."""
-
-
 class SimulatorBackend(Protocol):
     """Created, reset, stepped, rendered and closed only on the main thread.
 
@@ -82,9 +77,6 @@ class SimulatorBackend(Protocol):
     "native_c12_direct_hand_contact"), once the backend has set done for it;
     otherwise None. The world honours it only in such a run. The record keeps the
     cause; wait replies name only the reason ("the task failed").
-
-    A reset that raises SeedRejected says the seed's scene cannot start, as a
-    stability gate decides; another seed may. The launch reports it as such.
     """
 
     default_task: str

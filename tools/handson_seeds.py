@@ -65,8 +65,7 @@ def one(task, seed):
     """Reset one episode and report on stdout before closing, since closing Isaac may end this process."""
     import torch  # noqa: F401  first, as the backend imports it
     from handson.evaluation import task_contracts
-    from rosbridge.core import SeedRejected
-    from rosbridge_handson.backend import HandsOnSim
+    from rosbridge_handson.backend import HandsOnSim, SettleGateRejected
     os.environ.pop("ROSBRIDGE_RUN_DIR", None)  # receipts go to a temporary directory
     readings, initialize = [], task_contracts.initialize
 
@@ -86,7 +85,7 @@ def one(task, seed):
         if moved:
             result.update(rejected="scene", moved=moved, error=f"{task} seed {seed}: the settle gate moved "
                           + ", ".join(f"{name} {body['moved_m']:.3f} m" for name, body in moved.items()))
-    except SeedRejected as error:
+    except SettleGateRejected as error:
         result = dict(accepted=False, rejected="settle_gate", error=str(error))
     except Exception as error:  # noqa: BLE001  not a seed's verdict
         result = dict(accepted=None, error=f"{type(error).__name__}: {error}"[:500])

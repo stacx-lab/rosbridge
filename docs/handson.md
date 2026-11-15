@@ -40,7 +40,7 @@ A launch builds the episode as upstream's `handson/evaluation/native.py:run_epis
   0.5 GB, removed when the run stops).
 - **Settle gate:** after the reset, a stable-origin gate settles the scene. It can reject a
   seed (see [Seeds and the settle gate](#seeds-and-the-settle-gate)); the launch then fails
-  with exit status 3, and another seed is needed.
+  with its error.
 - **Instruction:** the seeded instruction (canonical or paraphrased) is written with
   upstream's other receipts to `handson/PROMPT.json` in the run's directory
   (`.cache/rosbridge/runs/<id>/`). Give it to the agent; it is not published on ROS.
@@ -129,9 +129,8 @@ tasks, a checker-boundary gate for `t01`, `t15` and `t38`, and the current gate 
 defaults for Transfer-16. Thirteen tasks have no settle gate: `t05`, `t12`, `t13`, `t20`, `t21`,
 `t30`, `t31`, `t32`, `t37`, `t42`, `t43`, `t45` and `t46`. It rejects a seed whose reset
 drifts more than 5 mm or 3° while settling, penetrates, or does not come to rest in time. The
-rejection is deterministic. Reset raises `SeedRejected`, and the launch fails with exit status
-3 and, with `--json`, `"cause": "seed_rejected"`. Rosbridge does not retry with another seed,
-which would change which scene a seed names.
+rejection is deterministic. Reset raises `SettleGateRejected`, and the launch fails with that
+error. Rosbridge does not retry with another seed, which would change which scene a seed names.
 
 In upstream's archive of 45,000 accepted paper trials, 4.8 % of reset candidates were rejected:
 43 % for `t27`, 25 % for `t23`, 20 % for `t07`, 10–14 % for `t04`, `t09`, `t14`, `t19`, `t24`,

@@ -21,11 +21,6 @@ def domain(value):
         raise argparse.ArgumentTypeError(str(error)) from None
 
 
-# Exit statuses for failures a caller can act on; any other error exits 1. A rejected seed's launch can be retried
-# with another seed.
-EXIT_CAUSES = {"seed_rejected": 3}
-
-
 def parser():
     root = argparse.ArgumentParser(prog="rosbridge", description=__doc__)
     commands = root.add_subparsers(dest="command", required=True)
@@ -164,12 +159,11 @@ def main(argv=None):
     except KeyboardInterrupt:
         return 130
     except Exception as error:
-        cause = getattr(error, "cause", None)
         if getattr(args, "json", False):
-            emit({"error": f"{type(error).__name__}: {error}", **({"cause": cause} if cause else {})}, True)
+            emit({"error": f"{type(error).__name__}: {error}"}, True)
         else:
             print(f"rosbridge: {error}", file=sys.stderr)
-        return EXIT_CAUSES.get(cause, 1)
+        return 1
 
 
 if __name__ == "__main__":

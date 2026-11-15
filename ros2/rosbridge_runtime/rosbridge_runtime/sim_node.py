@@ -19,7 +19,7 @@ from rclpy.node import Node
 from rclpy.task import Future
 from std_srvs.srv import Trigger
 
-from rosbridge.core import SeedRejected, load_backend
+from rosbridge.core import load_backend
 from rosbridge.runtime.world import WorldRuntime
 from .devices import device
 from .publishing import ObservationPublisher
@@ -169,10 +169,8 @@ def main():
         print("world stopped by an error:", file=sys.stderr, flush=True)
         traceback.print_exc()
         if not hasattr(node, 'world') and os.environ.get("ROSBRIDGE_RUN_DIR"):
-            # The launch names why the world could not start (docs/README.md), and a rejected seed as such, so a
-            # harness can try another.
-            reported = {"error": error, **({"cause": "seed_rejected"} if isinstance(failure, SeedRejected) else {})}
-            (Path(os.environ["ROSBRIDGE_RUN_DIR"]) / "launch-failure.json").write_text(json.dumps(reported))
+            # The launch names why the world could not start (docs/README.md).
+            (Path(os.environ["ROSBRIDGE_RUN_DIR"]) / "launch-failure.json").write_text(json.dumps({"error": error}))
     finally:
         if hasattr(node, 'world'):
             node.world.close(error=error)

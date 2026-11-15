@@ -39,14 +39,6 @@ def recording_settings(options):
     return rate, width, height, views, crf
 
 
-class LaunchError(RuntimeError):
-    """A launch that failed to start; cause names a failure a caller can act on, such as "seed_rejected"."""
-
-    def __init__(self, message, cause=None):
-        super().__init__(message)
-        self.cause = cause
-
-
 def launch(selection, *, project=None, options=None, demo=False):
     options = options or {}
     root, config, task = resolve(selection, project)
@@ -99,7 +91,7 @@ def launch(selection, *, project=None, options=None, demo=False):
                 return current, process
             if process.poll() is not None or current["state"] == "failed":
                 current = read(path)  # as the supervisor left it
-                raise LaunchError(current.get("error", "Supervisor failed") + f"; logs: {folder}", current.get("cause"))
+                raise RuntimeError(current.get("error", "Supervisor failed") + f"; logs: {folder}")
             time.sleep(.05)
         raise TimeoutError(f"Supervisor startup timed out; logs: {folder}")
     except BaseException:
