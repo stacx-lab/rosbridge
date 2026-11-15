@@ -2,10 +2,17 @@
 
 
 def prepare(runtime, task):
-    check_task(runtime, task)
+    check_assets(runtime, task)
 
 
 def check_task(runtime, task):
+    """The task's assets, and the screened native seeds that a launch's seed names."""
+    check_assets(runtime, task)
+    from rosbridge_handson.seeds import screened_seeds
+    screened_seeds(task)
+
+
+def check_assets(runtime, task):
     """The task has an official evaluation budget and the bundled assets match upstream's SHA-256 pins."""
     import json
     from pathlib import Path

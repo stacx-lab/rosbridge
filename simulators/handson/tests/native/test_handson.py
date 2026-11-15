@@ -127,7 +127,7 @@ def test_episode_ends_at_its_step_limit_and_serves_one_episode(sim):
         sim.step(hold)
     with pytest.raises(ValueError, match="one episode"):
         sim.reset(TASK, 0)
-    assert set(sim.native("measures")) == {"failure"}
+    assert set(sim.native("measures")) == {"failure", "native_seed"}
 
 
 @pytest.mark.parametrize("task", SELECTED)

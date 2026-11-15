@@ -1,13 +1,14 @@
 """HandsOn tasks on the bimanual ROKAE AR5 rig with Wuji hands; runs in the native worker.
 
 Isaac Sim 5.1 needs Python 3.11, so the world node proxies this class through
-rosbridge.core.worker. A reset replays the PhysX branch of upstream's official
-evaluator (handson/evaluation/native.py:run_episode): the frozen task contract, the
-seeded setting, native construction, reset, the stable-origin settle gate and the
-seeded instruction, written to PROMPT.json in the run directory. Every 1/30 s step
-passes the hands' absolute joint targets through the native action path and replaces
-only its palm-pose IK with the arms' absolute joint targets, so native hand slewing,
-arm step limits and success and failure predicates apply.
+rosbridge.core.worker. A launch's seed k names the task's k-th native seed that a
+pre-screen accepted (seeds.json, written by tools/handson_seeds.py). A reset replays the
+PhysX branch of upstream's official evaluator (handson/evaluation/native.py:run_episode)
+at that native seed: the frozen task contract, the seeded setting, native construction,
+reset, the stable-origin settle gate and the seeded instruction, written to PROMPT.json
+in the run directory. Every 1/30 s step passes the hands' absolute joint targets through
+the native action path and replaces only its palm-pose IK with the arms' absolute joint
+targets, so native hand slewing, arm step limits and success and failure predicates apply.
 
 Cameras render through upstream's three-view capture, with two contract choices: the
 default camera profile for every task, the head camera undistorted (its calibrated K
@@ -24,6 +25,7 @@ import numpy as np
 from rosbridge.catalog import resolve
 from rosbridge.core import ActionLayout, CommandGroup
 from rosbridge.core.devices import device_inventory, spectator_views
+from .seeds import screened_seed
 
 SIDES = ("right", "left")
 CAMERAS = {"head_camera": "main", "left_camera": "wrist_left", "right_camera": "wrist_right"}
@@ -128,7 +130,7 @@ class HandsOnSim:
         if partial_credit is None:
             partial_credit = os.environ.get("ROSBRIDGE_HANDSON_PARTIAL_CREDIT") == "1"
         self.partial_credit, self._initial, self._frozen = bool(partial_credit), None, None
-        self.failure_detail = None
+        self.failure_detail = self.native_seed = None
         self.cameras = tuple(CAMERAS)
         self.env = self.task = self.failure = self._tracker = self._frames = self._temporary = None
         self.spectators, self._spectators = (), {}
@@ -143,9 +145,22 @@ class HandsOnSim:
     # Episode lifecycle ------------------------------------------------------------------
 
     def reset(self, task, seed, randomize=True):
-        """The seeded native episode, as the official evaluator builds it; randomize has no effect.
+        """The episode at the task's seed-th screened native seed, as the official evaluator builds it; randomize
+        has no effect. Isaac hosts one episode per process.
+        """
+        task = resolve("handson", task=task)[2]["native_task"]
+        native_seed = screened_seed(task, seed)
+        try:
+            self._reset(task, seed, native_seed)
+        except SettleGateRejected as error:
+            # The screen accepted this native seed, so the gate decides differently on this machine.
+            raise SettleGateRejected(f"seed {seed} names native seed {native_seed}, which the pre-screen accepted, "
+                                     f"but the settle gate rejected it here: {error}") from error
 
-        Isaac hosts one episode per process. The settle gate may reject a seed: reset raises SettleGateRejected.
+    def _reset(self, task, seed, native_seed):
+        """The native episode at native_seed, recorded as seed; tools/handson_seeds.py screens native seeds with it.
+
+        The settle gate may reject the native seed: SettleGateRejected.
         """
         if self.env is not None:
             raise ValueError("a HandsOn worker serves one episode; start another run for another")
@@ -157,7 +172,7 @@ class HandsOnSim:
         from handson.tasks.registry import TASKS
         from rosbridge.core.gpu import single_gpu
 
-        self.task, self.seed = resolve("handson", task=task)[2]["native_task"], seed
+        self.task, self.seed, self.native_seed = resolve("handson", task=task)[2]["native_task"], seed, native_seed
         # Upstream's receipts and PROMPT.json stay with a managed run; tests use a temporary directory.
         run = os.environ.get("ROSBRIDGE_RUN_DIR")
         if not run:
@@ -179,9 +194,9 @@ class HandsOnSim:
         self._adapter.prepare_cameras()
         task_contracts.install_native_trace(self.task, out)
         self._adapter.prepare(out)
-        selection = setting_runtime.prepare(self.task, seed, out)
+        selection = setting_runtime.prepare(self.task, native_seed, out)
         setting_runtime.configure_solver(selection)
-        reset_seed = selection["seeds"]["reset"] if selection else seed
+        reset_seed = selection["seeds"]["reset"] if selection else native_seed
         self.env, self._wrapped, _ = native.construct(self.task, reset_seed, selection=selection)
         env = self.env
         if not env._cameras:
@@ -194,10 +209,10 @@ class HandsOnSim:
             if type(error).__name__ == "RecordingOriginStabilityError" or (
                     settle.is_file() and not json.loads(settle.read_text())["passed"]):
                 # Upstream's stable-origin gate rejected this seed's reset; its evaluator reports the rejection and
-                # substitutes no other seed. It is deterministic: another seed may pass.
-                raise SettleGateRejected(f"{self.task} seed {seed}: {str(error)[:300]}") from error
+                # substitutes no other seed. It is deterministic for a task and native seed.
+                raise SettleGateRejected(f"{self.task} native seed {native_seed}: {str(error)[:300]}") from error
             raise
-        (out / "PROMPT.json").write_text(json.dumps(bind(env, self.task, seed), indent=2) + "\n")
+        (out / "PROMPT.json").write_text(json.dumps(bind(env, self.task, native_seed), indent=2) + "\n")
         if self._adapter.spec.force_scoring:  # t10 scores support, lift and hold; force is diagnostic
             from handson.evaluation.carton import install
             self._tracker = install(env, out / "CARTON_RAW_FORCE_000")
@@ -284,14 +299,16 @@ class HandsOnSim:
                 if row["key"] not in NO_CHECKLIST}
 
     def measures(self):
-        """The latched failure, its native detail and the step at which it latched; with partial credit on, the
-        checklist at the trial's end and its q_score, as BEHAVIOR's TaskMetric computes it over one goal option, the
-        checklist.
+        """The episode's native seed, the latched failure, its native detail and the step at which it latched; with
+        partial credit on, the checklist at the trial's end and its q_score, as BEHAVIOR's TaskMetric computes it over
+        one goal option, the checklist.
 
         The trial ends at the failure step if a failure latched, else at the last step. q_score is 1 on success, else
         the fraction of all conditions that hold at the trial's end and did not after the first step (0 without any).
         """
         result = {"failure": self.failure}
+        if self.native_seed is not None:
+            result["native_seed"] = self.native_seed
         if self.failure is not None:
             result["failure_detail"], result["failure_step"] = self.failure_detail, self.failure_step
         if not self.partial_credit:
