@@ -143,9 +143,13 @@ defaults for Transfer-16. Thirteen tasks have no settle gate: `t05`, `t12`, `t13
 `t30`, `t31`, `t32`, `t37`, `t42`, `t43`, `t45` and `t46`. It rejects a seed whose reset
 drifts more than 5 mm or 3° while settling, penetrates, or does not come to rest in time.
 
-Upstream rejects reset candidates too: in its archive of 45,000 accepted paper trials, 4.8 %
-of candidates were rejected, most for `t27`, `t23` and `t07`, and its campaign replaced each
-with the next candidate. Its public evaluator replaces none.
+The screen reset 698 native seeds and rejected 38, in 14 tasks; the other 52 tasks keep native
+seeds 0–9. The same native seeds fail across tasks: 4 in 12 tasks, 6 in 10 and 8 in 7. `t23`
+and `t27` reject five seeds each (`t27` keeps native seeds up to 14), `eval_gen07` four, and
+`t09`'s native seed 0 is the only rejection of the scene check. Upstream rejects reset
+candidates too: in its archive of 45,000 accepted paper trials, 4.8 % of candidates were
+rejected, most for `t27`, `t23` and `t07`, and its campaign replaced each with the next
+candidate. Its public evaluator replaces none.
 
 The table is the output of `tools/handson_seeds.py`:
 

@@ -1,0 +1,1052 @@
+{
+ "schema": 1,
+ "count": 10,
+ "candidates": "0, 1, 2, ... in order",
+ "drift_m": 0.02,
+ "source_revision": "fee28452fa50d3ee906445f1717ce2449cc83798",
+ "gpu": "NVIDIA L40S",
+ "tasks": {
+  "eval_comb01_cover_pitcher_and_box": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  },
+  "eval_comb02_open_laptop_and_click_mouse": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  },
+  "eval_comb03_pass_block_and_close_box": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  },
+  "eval_comb04_place_fruit_and_photograph_logo": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  },
+  "eval_comb05_scrub_bottle_then_fill_cup": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  },
+  "eval_comb06_season_and_stir": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  },
+  "eval_flex01_compress_sponge_into_mug": {
+   "seeds": [
+    0,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    11
+   ],
+   "rejected": {
+    "1": "settle_gate",
+    "10": "settle_gate"
+   }
+  },
+  "eval_flex02_fold_towel_twice": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  },
+  "eval_flex03_pack_pillow": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  },
+  "eval_gen01_cover_lunchbox": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  },
+  "eval_gen02_open_trash_bin": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  },
+  "eval_gen03_orient_bottle_upright": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  },
+  "eval_gen04_pass_glue_stick": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  },
+  "eval_gen05_set_mixer_knobs": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  },
+  "eval_gen06_spray_shoe": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    5,
+    7,
+    8,
+    9,
+    10,
+    11
+   ],
+   "rejected": {
+    "4": "settle_gate",
+    "6": "settle_gate"
+   }
+  },
+  "eval_gen07_stack_boxes": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    5,
+    7,
+    10,
+    11,
+    12,
+    13
+   ],
+   "rejected": {
+    "4": "settle_gate",
+    "6": "settle_gate",
+    "8": "settle_gate",
+    "9": "settle_gate"
+   }
+  },
+  "t01_align_blocks_in_midair": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  },
+  "t02_connect_charger_and_cable": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  },
+  "t03_cover_box": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  },
+  "t04_cover_pitcher": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    5,
+    7,
+    8,
+    9,
+    10,
+    11
+   ],
+   "rejected": {
+    "4": "settle_gate",
+    "6": "settle_gate"
+   }
+  },
+  "t05_fill_cup": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  },
+  "t06_fit_device_cover": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  },
+  "t07_flip_sponge": {
+   "seeds": [
+    0,
+    1,
+    3,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11
+   ],
+   "rejected": {
+    "2": "settle_gate",
+    "4": "settle_gate"
+   }
+  },
+  "t08_hammer_nail": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  },
+  "t09_insert_peg": {
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    9,
+    10,
+    11
+   ],
+   "rejected": {
+    "0": "scene: industreal_tray_insert_round_peg_8mm moved 0.061 m, socket moved 0.061 m",
+    "8": "settle_gate"
+   }
+  },
+  "t10_lift_carton": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  },
+  "t11_line_up_blocks": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  },
+  "t12_load_and_start_microwave": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  },
+  "t13_load_cans": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  },
+  "t14_move_and_click_mouse": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    5,
+    7,
+    9,
+    10,
+    11,
+    12
+   ],
+   "rejected": {
+    "4": "settle_gate",
+    "6": "settle_gate",
+    "8": "settle_gate"
+   }
+  },
+  "t15_open_drawers": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  },
+  "t16_open_laptop": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  },
+  "t17_open_latched_door": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  },
+  "t18_open_micropipette_box": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  },
+  "t19_orient_cup_upright": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    5,
+    7,
+    9,
+    10,
+    11,
+    12
+   ],
+   "rejected": {
+    "4": "settle_gate",
+    "6": "settle_gate",
+    "8": "settle_gate"
+   }
+  },
+  "t20_pass_and_orient_pen": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  },
+  "t21_pass_block": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  },
+  "t22_pass_screwdriver": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  },
+  "t23_photograph_logo": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    7,
+    9,
+    10,
+    11,
+    12,
+    14
+   ],
+   "rejected": {
+    "4": "settle_gate",
+    "5": "settle_gate",
+    "6": "settle_gate",
+    "8": "settle_gate",
+    "13": "settle_gate"
+   }
+  },
+  "t24_place_ball_in_bowl": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    5,
+    7,
+    9,
+    10,
+    11,
+    12
+   ],
+   "rejected": {
+    "4": "settle_gate",
+    "6": "settle_gate",
+    "8": "settle_gate"
+   }
+  },
+  "t25_place_cup_on_plate": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    5,
+    7,
+    8,
+    9,
+    10,
+    11
+   ],
+   "rejected": {
+    "4": "settle_gate",
+    "6": "settle_gate"
+   }
+  },
+  "t26_place_fruit_in_bucket": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    5,
+    7,
+    8,
+    9,
+    10,
+    11
+   ],
+   "rejected": {
+    "4": "settle_gate",
+    "6": "settle_gate"
+   }
+  },
+  "t27_place_largest_fitting_ball": {
+   "seeds": [
+    0,
+    2,
+    5,
+    7,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14
+   ],
+   "rejected": {
+    "1": "settle_gate",
+    "3": "settle_gate",
+    "4": "settle_gate",
+    "6": "settle_gate",
+    "8": "settle_gate"
+   }
+  },
+  "t28_place_tableware": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  },
+  "t29_place_wine_glass": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  },
+  "t30_pour_seasonings": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  },
+  "t31_prepare_coffee": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  },
+  "t32_press_soap_pump": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  },
+  "t33_reposition_marker_grasp": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  },
+  "t34_roll_ball_through_gate": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  },
+  "t35_rotate_propeller": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  },
+  "t36_scoop_marbles": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  },
+  "t37_scrub_bottle": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  },
+  "t38_set_dual_knobs": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  },
+  "t39_set_timer": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  },
+  "t40_slide_knife_blade": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  },
+  "t41_sort_nested_cups": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  },
+  "t42_sort_objects": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  },
+  "t43_squeeze_scissors": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  },
+  "t44_stack_blocks": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  },
+  "t45_stir_pot": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  },
+  "t46_store_charger": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  },
+  "t47_trigger_drill_on_block": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  },
+  "t48_unfold_fan": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+   ],
+   "rejected": {
+    "4": "settle_gate"
+   }
+  },
+  "t49_unfold_ruler": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  },
+  "t50_water_plant": {
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "rejected": {}
+  }
+ }
+}

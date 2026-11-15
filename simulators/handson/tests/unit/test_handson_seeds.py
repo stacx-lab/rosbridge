@@ -61,3 +61,16 @@ def test_a_rerun_resumes_and_a_larger_count_extends_the_table():
     assert smaller.next() is None
     # Rejections after the last kept seed leave the table.
     assert smaller.table()["tasks"]["t24_place_ball_in_bowl"] == {"seeds": [0, 2], "rejected": {"1": "settle_gate"}}
+
+
+def test_the_table_names_ten_screened_seeds_for_every_task():
+    from rosbridge.catalog import tasks
+    from rosbridge_handson.seeds import load
+    table = load()
+    assert table["count"] == 10 and table["drift_m"] == .02
+    assert set(table["tasks"]) == {task["native_task"] for task in tasks(name="handson").values()}
+    for task, entry in table["tasks"].items():
+        seeds, rejected = entry["seeds"], {int(seed) for seed in entry["rejected"]}
+        # The first ten accepted native seeds, each one before the last kept seed accepted or rejected.
+        assert len(seeds) == 10 and seeds == sorted(set(seeds)), task
+        assert set(seeds) | rejected == set(range(seeds[-1] + 1)) and not set(seeds) & rejected, task
