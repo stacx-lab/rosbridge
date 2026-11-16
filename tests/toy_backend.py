@@ -61,6 +61,22 @@ class SlowCameraToy(ToyBackend):
     camera_rate_hz = 2.
 
 
+class CameraToy(ToyBackend):
+    """The toy with an RGB-D camera that renders a constant scene."""
+    devices = device_inventory(ToyBackend.layout, {"camera": "top"}, depth=("camera",))
+
+    def intrinsics(self, source):
+        return 4, 2, 2., 2., 2., 1.
+
+    def render(self, source):
+        assert threading.get_ident() == self.owner
+        return np.zeros((2, 4, 3), np.uint8)
+
+    def render_depth(self, source):
+        assert threading.get_ident() == self.owner
+        return np.ones((2, 4), np.float32)
+
+
 class PoseToy(ToyBackend):
     """A planar arm commanded by its tip pose: joints x and y place the tip at (x, y, 0), unrotated."""
     layout = ActionLayout(("x", "y"), (CommandGroup("reach", (0, 1), (-2., -2.), (2., 2.), tip="tip"),))

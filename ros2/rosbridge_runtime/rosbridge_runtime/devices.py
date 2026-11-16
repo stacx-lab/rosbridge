@@ -1,4 +1,6 @@
 """Device endpoints on the world node; commands and renders run on the simulator owner thread."""
+import time
+
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 from rclpy.callback_groups import ReentrantCallbackGroup
@@ -17,6 +19,8 @@ STREAM_QOS = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL,
 # Camera frames: the one rendered for a new subscriber must arrive, and none goes stale.
 FRAME_QOS = QoSProfile(depth=1, durability=DurabilityPolicy.VOLATILE,
                        reliability=ReliabilityPolicy.RELIABLE)
+# Wall time after which a subscribed camera of a resting world sends its frame again.
+KEEPALIVE_S = .2
 
 
 class Actuator:
@@ -148,12 +152,16 @@ class Camera:
 
     Frames render only for subscribers: at each camera sample, and at once for a new
     subscriber, so a reader receives the current frame even while the world is paused.
+    DDS can deliver that frame before the reader has discovered the camera, which drops
+    it, so while the world rests a subscribed camera sends its frame again every
+    KEEPALIVE_S, as a live camera keeps streaming a still scene.
     """
 
     def __init__(self, spec, node):
         self.spec, self.node = spec, node
         self.frame = f'{spec.name}/base'
         self.latest = self.latest_depth = None
+        self.sent_s, self.sent_stamp, self.queued = time.monotonic(), None, False
         events = PublisherEventCallbacks(matched=self.matched)
         self.image = node.create_publisher(Image, f'{spec.name}/image', FRAME_QOS,
                                            event_callbacks=events)
@@ -161,6 +169,7 @@ class Camera:
                                             event_callbacks=events)
                       if spec.kind == 'rgbd' else None)
         self.info = node.create_publisher(CameraInfo, f'{spec.name}/camera_info', STREAM_QOS)
+        node.create_timer(KEEPALIVE_S / 2, self.keepalive)
 
     def render(self, stamp):
         if self.latest is None or self.latest.header.stamp != stamp:
@@ -179,6 +188,7 @@ class Camera:
             self.image.publish(self.render(stamp))
         if self.depth is not None and self.depth.get_subscription_count():
             self.depth.publish(self.render_depth(stamp))
+        self.sent_s, self.sent_stamp = time.monotonic(), stamp
 
     def publish(self, stamp):
         sim = self.node.sim
@@ -189,6 +199,20 @@ class Camera:
     def matched(self, status):
         if status.current_count_change > 0:
             self.node.world.submit(self.send_current)
+
+    def keepalive(self):
+        subscribed = self.image.get_subscription_count() or (
+            self.depth is not None and self.depth.get_subscription_count())
+        if subscribed and not self.queued and time.monotonic() - self.sent_s >= KEEPALIVE_S:
+            self.queued = True
+            self.node.world.submit(self.resend)
+
+    def resend(self):
+        """Send the last frame again while the world rests at its stamp; a running world's
+        camera samples keep the backend's camera rate."""
+        self.queued = False
+        if self.sent_stamp == conv.stamp(self.node.world.time_s):
+            self.send_current()
 
     def send_current(self):
         try:
