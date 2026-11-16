@@ -37,7 +37,9 @@ def test_urdf_links_and_kinex_frames_without_simulator(tmp_path):
     from rclpy.time import Time
     from rosgraph_msgs.msg import Clock
     from sensor_msgs.msg import JointState
-    from tf2_ros import TransformException
+    from tf2_ros import StaticTransformBroadcaster, TransformException
+    from kinex.host.frame_graph import SERVICE_HISTORY_S
+    from kinex.lib.frames import transform
 
     arm_entry = tmp_path / "links.py"
     arm_entry.write_text("from pathlib import Path\nfrom kinex.node import LinkPublisher\n"
@@ -81,8 +83,19 @@ def test_urdf_links_and_kinex_frames_without_simulator(tmp_path):
                 p = relation.transform.transform.translation
                 assert [p.x, p.y, p.z] == pytest.approx([2, 1, .2], abs=1e-9)
                 assert relation.transform.header.stamp.sec == 10
-                with pytest.raises(RuntimeError, match="timed out"):
+                assert graph.buffer.history_s == SERVICE_HISTORY_S
+                # A failed lookup waits its whole timeout, then names the cause.
+                with pytest.raises(RuntimeError, match=f"timed out after 0.03 s: missing_{name} is not on TF, nor is any frame of missing_{name}"):
                     await graph_host.io._request(graph_host.io.frame_service, { "target_frame": "world/base", "source_frame": "missing_" + name, "wait_s": .03}, timeout_s=1)
+                with pytest.raises(RuntimeError, match=f"{name}/nope is not on TF; {name} has {name}/base, "):
+                    await graph_host.io._request(graph_host.io.frame_service, { "target_frame": "world/base", "source_frame": name + "/nope"})
+                # A frame that appears late within the wait still resolves.
+                late = asyncio.create_task(graph_host.io._request(graph_host.io.frame_service, {
+                    "target_frame": "world/base", "source_frame": name + "/late", "wait_s": 3.}, timeout_s=4))
+                await asyncio.sleep(1.5)
+                StaticTransformBroadcaster(backend.node).sendTransform(transform(name + "/base", name + "/late", [0, 0, 1, 0, 0, 0, 1]))
+                p = (await late).transform.transform.translation
+                assert [p.x, p.y, p.z] == pytest.approx([2, 0, 1], abs=1e-9)
                 # Live frames retain measurements outside command limits.
                 sample.position = [3.5]
                 sample.header.stamp = Stamp(sec=11)
@@ -139,6 +152,57 @@ def test_delayed_frames_cannot_restore_pre_reset_history():
     assert not buffer.can_transform("world/base", "arm/flange", Time(seconds=11))
     buffer.observe_clock(11_000_000_000)
     assert buffer.lookup_transform("world/base", "arm/flange", Time(seconds=11)).transform.translation.y == pytest.approx(2.)
+
+
+def test_failed_lookups_name_their_cause():
+    from builtin_interfaces.msg import Time as Stamp
+    from rclpy.time import Time
+    from tf2_ros import TransformException
+    from kinex.host.frame_graph import FrameBuffer
+    from kinex.lib.frames import transform
+
+    buffer = FrameBuffer()
+    buffer.set_transform_static(transform("world/base", "arm/base", [1, 0, 0, 0, 0, 0, 1]), "kinex")
+    # The camera's mount is uncalibrated, so no edge joins it to the world.
+    buffer.set_transform_static(transform("camera/base", "camera/optical", [0, 0, 0, 0, 0, 0, 1]), "kinex")
+    buffer.observe_clock(130_000_000_000)
+    for sec in range(100, 131):
+        buffer.set_transform(transform("arm/base", "arm/flange", [0, 0, 1, 0, 0, 0, 1], Stamp(sec=sec)), "kinex")
+
+    def explain(source, sec=0):
+        return buffer.explain("world/base", source, Time(seconds=sec))
+    assert explain("arm/tool0") == "arm/tool0 is not on TF; arm has arm/base, arm/flange"
+    assert explain("gripper/tcp") == "gripper/tcp is not on TF, nor is any frame of gripper"
+    assert explain("camera/optical") == (
+        "world/base and camera/optical are not connected: world/base is under world/base and "
+        "camera/optical under camera/base; a mount of unknown calibration publishes no edge")
+    stale = explain("arm/flange", 90)
+    assert "extrapolation into the past" in stale and stale.endswith("Kinex keeps 10 s of world-time TF history.")
+    assert buffer.timed_out("world/base", "arm/tool0", Time(), 5) == (
+        "transform lookup timed out after 5 s: arm/tool0 is not on TF; arm has arm/base, arm/flange")
+    # A direct lookup raises tf2's own exception type with the same cause.
+    with pytest.raises(TransformException, match="extrapolation into the past.*Kinex keeps 10 s"):
+        buffer.lookup_transform("world/base", "arm/flange", Time(seconds=90))
+    with pytest.raises(TransformException, match="^arm/tool0 is not on TF; arm has "):
+        buffer.lookup_transform("world/base", "arm/tool0", Time())
+    buffer.device("arm", False)
+    assert explain("arm/flange") == "arm is not loaded"
+
+
+def test_the_frame_service_keeps_longer_history_than_a_scope():
+    from builtin_interfaces.msg import Time as Stamp
+    from rclpy.time import Time
+    from kinex.host.frame_graph import SCOPE_HISTORY_S, SERVICE_HISTORY_S, FrameBuffer
+    from kinex.lib.frames import transform
+
+    buffers = FrameBuffer(), FrameBuffer(SERVICE_HISTORY_S)
+    for buffer in buffers:
+        buffer.set_transform_static(transform("world/base", "arm/base", [0, 0, 0, 0, 0, 0, 1]), "kinex")
+        buffer.observe_clock(130_000_000_000)
+        for sec in range(131):
+            buffer.set_transform(transform("arm/base", "arm/flange", [sec, 0, 0, 0, 0, 0, 1], Stamp(sec=sec)), "kinex")
+    old = Time(seconds=130 - (SCOPE_HISTORY_S + SERVICE_HISTORY_S) / 2)
+    assert [buffer.can_transform("world/base", "arm/flange", old) for buffer in buffers] == [False, True]
 
 
 def test_unloaded_static_frames_cannot_leak_from_tf2_cache():
