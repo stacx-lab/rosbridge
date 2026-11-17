@@ -13,7 +13,7 @@ const host = {sessionID:'native-simple',ask:async()=>{}}
 const call = (name, args) => runtime.tools.call(name, args, host)
 async function exec(body, {error=false, timeout_s=120}={}) {
   const result = await call('exec', {python:`import asyncio
-from kinex.communication import seconds
+from kinex import finish, io, lib, runtime, seconds
 from kinex.errors import OperationError
 async def measured(operation, time_s):
     with io.subscribe(operation) as stream:
@@ -24,7 +24,9 @@ async def measured(operation, time_s):
                     return state
 async def clock():
     return seconds((await io.read('world.time', timeout_s=5)).clock)
-${body}`,timeout_s})
+async def main():
+${body.split('\n').map(line=>'    '+line).join('\n')}
+asyncio.run(main())`,timeout_s})
   assert.equal(Boolean(result.isError),error,result.output)
   if (error) return result.output
   console.log(result.output)
@@ -48,15 +50,15 @@ state = await io.subscribe('arm.joint_state').next(timeout_s=5)
 await lib.frames.lookup_transform('world:base','gripper:tcp',state.header.stamp)
 image, depth = await lib.images.camera_frame('camera_agentview')
 assert depth is None and image.header.frame_id == 'camera_agentview/base'
-return {'time':await clock(),'stamp':{'sec':state.header.stamp.sec,'nanosec':state.header.stamp.nanosec},'camera':[image.width,image.height]}`)
+finish({'time':await clock(),'stamp':{'sec':state.header.stamp.sec,'nanosec':state.header.stamp.nanosec},'camera':[image.width,image.height]})`)
   await exec(`await io.publish('gripper.target',{'data':0.})
-return {'sent':True}`)
+finish({'sent':True})`)
   const closed = await exec(`from builtin_interfaces.msg import Time
 waited=await io.request('world.wait',duration_s=1.5)
 state=await measured('gripper.joint_state',waited.time_s)
 # Historical lookup survives the command's separate exec turn.
 await lib.frames.lookup_transform('world:base','gripper:tcp',Time(**${JSON.stringify(first.stamp)}))
-return {'finger':state.position[0]}`)
+finish({'finger':state.position[0]})`)
   assert.ok(closed.finger < .01)
   await exec(`await io.request('gripper.stop')
 waited=await io.request('world.wait',duration_s=.3)
@@ -66,14 +68,14 @@ await io.publish('gripper.target',{'data':.04})
 waited=await io.request('world.wait',duration_s=1.5)
 state=await measured('gripper.joint_state',waited.time_s)
 assert state.position[0] > .03
-return {'open':state.position[0]}`)
+finish({'open':state.position[0]})`)
   // A failed script stops what it commanded: the gripper holds open instead of closing.
   await exec(`await io.publish('gripper.target',{'data':0.})
 raise RuntimeError('intentional failure cleanup')`,{error:true})
   await exec(`waited=await io.request('world.wait',duration_s=.3)
 state=await measured('gripper.joint_state',waited.time_s)
 assert state.position[0] > .03
-return {'failure_cleanup_held':True}`)
+finish({'failure_cleanup_held':True})`)
   // Waits are sequential; an abandoned wait stops the world.
   await exec(`pending=asyncio.create_task(io.request('world.wait',duration_s=60))
 await asyncio.sleep(.5)
@@ -88,14 +90,14 @@ await asyncio.gather(pending,return_exceptions=True)
 before=await clock()
 await asyncio.sleep(1)
 assert await clock()==before
-return {'concurrent_wait_rejected':True}`)
+finish({'concurrent_wait_rejected':True})`)
   // A script killed mid-wait leaves no wait advancing the world.
   await exec(`await io.request('world.wait',duration_s=60)`,{error:true,timeout_s:3})
   const settled = await exec(`before=await clock()
 await asyncio.sleep(1)
 after=await clock()
 await io.request('world.wait',duration_s=0)
-return {'advanced_s':after-before}`)
+finish({'advanced_s':after-before})`)
   assert.equal(settled.advanced_s,0)
   // A device stop cancels the running script that commanded it.
   const markers = await mkdtemp(path.join(tmpdir(),'kinex-smoke-'))
@@ -121,12 +123,12 @@ await io.request('world.wait',duration_s=60)`,{error:true})
   await exec(`try:
     await lib.frames.lookup_transform('world:base','gripper:tcp',timeout_s=.1)
 except Exception:
-    return {'unloaded_frame_unavailable':True}
+    finish({'unloaded_frame_unavailable':True})
 else:
     raise AssertionError('unloaded frame remained available')`)
   await (await runtime.devices.load('gripper')).ready
   await exec(`await lib.frames.lookup_transform('world:base','gripper:tcp')
-return {'reloaded_frame_available':True}`)
+finish({'reloaded_frame_available':True})`)
 } finally {
   for (const name of owned.reverse()) {
     try {await runtime.devices.unload(name)} catch(error) {console.error('unload',name,error);process.exitCode=1}
