@@ -18,8 +18,8 @@ pytestmark = requires_kinex
     ("study", "libero-10-06"),
 ])
 def test_catalog_arm_and_camera_geometry_matches_measurements(tmp_path, variant, task):
-    from kinex.lib.geometry import compose_rt, xyzq_to_rt
-    from kinex.lib.joints import JointModel
+    from kinex.common.geometry import compose_rt, xyzq_to_rt
+    from kinex.common.joints import JointModel
     project = Path(__file__).resolve().parents[4]
     result = setup(f"libero/{task}", tmp_path, seed=0, project=project)
     assert result["robot"] == f"libero/libero-panda-{variant}"

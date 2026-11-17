@@ -2,7 +2,7 @@
 
 Kinex derives an undistorted pinhole's field of view and rays from its profile. A distorted camera's profile
 states its field of view, and the camera's node serves its rays through the same model
-(kinex.lib.camera_geometry.OpenCVGeometry).
+(kinex.common.camera_geometry.OpenCVGeometry).
 """
 import math
 

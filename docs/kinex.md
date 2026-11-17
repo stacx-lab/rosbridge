@@ -53,7 +53,7 @@ discovered `stop` reaches the device.
 Joint states and CameraInfo use transient-local reliable QoS. Images are reliable
 and volatile and render only for subscribers: once per camera sample (30 Hz of
 simulation time, or the simulator's own rate, 2 Hz for HandsOn), and at once for each
-new subscriber, so a Kinex read (`helpers.camera_frame`, snapshots) gets
+new subscriber, so a Kinex read (`lib.images.camera_frame`, snapshots) gets
 the current frame even in a paused stepped world.
 
 Camera profiles declare pinhole intrinsics in ROS pixel centers. A camera rendered
@@ -68,7 +68,7 @@ render on demand rather than at a fixed rate.
 
 The simulator publishes state and measurements without TF. Kinex computes FK/IK
 from the arm URDF, publishes calibrated mounts and fixed frames such as
-`gripper/tcp`, and owns tf2 lookup through `kinex.helpers.lookup_transform`.
+`gripper/tcp`, and owns tf2 lookup through `kinex.lib.frames.lookup_transform`.
 
 ## Robot catalog and workspace setup
 

@@ -10,8 +10,7 @@ import pytest
 if os.environ.get("KINEX_PYTHON"):
     sys.path.insert(0, os.environ["KINEX_PYTHON"])
 pytest.importorskip("kinex.node")
-from kinex import helpers
-from kinex.communication import communication, qos
+from kinex.communication import ambient, communication, qos
 from kinex.host.device import DeviceHost
 from kinex_interfaces import srv as kinex_srv
 
@@ -38,8 +37,9 @@ def test_urdf_links_and_kinex_frames_without_simulator(tmp_path):
     from rosgraph_msgs.msg import Clock
     from sensor_msgs.msg import JointState
     from tf2_ros import StaticTransformBroadcaster, TransformException
+    from kinex.common.frames import transform
     from kinex.host.frame_graph import SERVICE_HISTORY_S
-    from kinex.lib.frames import transform
+    from kinex.lib.frames import lookup_transform
 
     arm_entry = tmp_path / "links.py"
     arm_entry.write_text("from pathlib import Path\nfrom kinex.node import LinkPublisher\n"
@@ -105,8 +105,8 @@ def test_urdf_links_and_kinex_frames_without_simulator(tmp_path):
                 measured = graph.buffer.lookup_transform("world/base", name + "/tip", Time(seconds=11))
                 assert measured.transform.translation.x == pytest.approx(2 + math.cos(3.5))
                 # Reset invalidates history, retains mounts and admits the reset state.
-                pending = asyncio.create_task(helpers.lookup_transform(graph_host.io, "world/base", name + "/tip",
-                                                   stamp=Stamp(sec=12), timeout_s=2.))
+                with ambient(graph_host.io):  # the task keeps the scope it starts in
+                    pending = asyncio.create_task(lookup_transform("world/base", name + "/tip", Stamp(sec=12), 2.))
                 await until(lambda: bool(graph.pending))
                 clock.publish(Clock(clock=Stamp(sec=1)))
                 with pytest.raises(RuntimeError, match="world clock reset"):
@@ -132,7 +132,7 @@ def test_delayed_frames_cannot_restore_pre_reset_history():
     from rclpy.time import Time
     from tf2_ros import TransformException
     from kinex.host.frame_graph import FrameBuffer
-    from kinex.lib.frames import transform
+    from kinex.common.frames import transform
 
     buffer = FrameBuffer()
     buffer.set_transform_static(transform("world/base", "arm/base", [2, 0, 0, 0, 0, 0, 1]), "kinex")
@@ -159,7 +159,7 @@ def test_failed_lookups_name_their_cause():
     from rclpy.time import Time
     from tf2_ros import TransformException
     from kinex.host.frame_graph import FrameBuffer
-    from kinex.lib.frames import transform
+    from kinex.common.frames import transform
 
     buffer = FrameBuffer()
     buffer.set_transform_static(transform("world/base", "arm/base", [1, 0, 0, 0, 0, 0, 1]), "kinex")
@@ -193,7 +193,7 @@ def test_the_frame_service_keeps_longer_history_than_a_scope():
     from builtin_interfaces.msg import Time as Stamp
     from rclpy.time import Time
     from kinex.host.frame_graph import SCOPE_HISTORY_S, SERVICE_HISTORY_S, FrameBuffer
-    from kinex.lib.frames import transform
+    from kinex.common.frames import transform
 
     buffers = FrameBuffer(), FrameBuffer(SERVICE_HISTORY_S)
     for buffer in buffers:
@@ -207,7 +207,7 @@ def test_the_frame_service_keeps_longer_history_than_a_scope():
 
 def test_unloaded_static_frames_cannot_leak_from_tf2_cache():
     from kinex.host.frame_graph import FrameBuffer
-    from kinex.lib.frames import transform
+    from kinex.common.frames import transform
     from rclpy.time import Time
     from tf2_ros import TransformException
     buffer = FrameBuffer()
@@ -226,7 +226,7 @@ def test_unloaded_static_frames_cannot_leak_from_tf2_cache():
 
 def test_static_publication_roots_unknown_edges_and_stereo_frames():
     from unittest.mock import patch
-    from kinex.lib.frames import publish_profile, ros_frame
+    from kinex.common.frames import publish_profile, ros_frame
     from tf2_ros import Buffer, TransformException
     from rclpy.time import Time
 

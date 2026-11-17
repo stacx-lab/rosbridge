@@ -53,7 +53,7 @@ meta:
 type: joint
 description: YAM six-joint right arm of the ABC station. Geometry is the sibling arm.urdf
   with flange (link_6) as the tip link; measured links are on TF as right_arm/<link>, and
-  helpers.joint_model('right_arm') computes FK/IK from it. Commands are the native absolute
+  lib.kinematics.joint_model('right_arm') computes FK/IK from it. Commands are the native absolute
   joint positions of upstream's 14-D policy action; rosbridge rejects targets outside the
   native joint ranges.
 source: introspected

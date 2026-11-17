@@ -25,7 +25,7 @@ def create(profile, context):
 GEOMETRY = '''"""Serve the camera's lens geometry from its profile; Kinex computes undistorted pinholes' rays itself."""
 from rclpy.node import Node
 
-from kinex.lib.camera_geometry import OpenCVGeometry, serve_geometry
+from kinex.common.camera_geometry import OpenCVGeometry, serve_geometry
 from kinex.node import node_name
 
 

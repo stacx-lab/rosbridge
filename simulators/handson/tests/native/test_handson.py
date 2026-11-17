@@ -172,8 +172,8 @@ def test_cameras_render_the_geometry_their_profiles_state(tmp_path, sim):
     """Each image lines up with its undistorted spectator through the rays Kinex computes from the camera's
     profile: locally for the wrists' pinholes, through the OpenCV adapter of the head camera's geometry node.
     Without the head camera's lens, its edges miss by pixels."""
-    from kinex.lib.camera import rays
-    from kinex.lib.camera_geometry import OpenCVGeometry
+    from kinex.common.camera import rays
+    from kinex.common.camera_geometry import OpenCVGeometry
     rig = Rig(TASK, tmp_path, seed=0)
     for camera, view in (("head_camera", "third_person"), ("left_camera", "left_wrist"),
                          ("right_camera", "right_wrist")):

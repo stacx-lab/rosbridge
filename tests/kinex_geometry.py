@@ -23,7 +23,7 @@ PROJECT = Path(__file__).resolve().parents[1]
 
 def available():
     try:
-        return importlib.util.find_spec("kinex.lib.joints") is not None
+        return importlib.util.find_spec("kinex.common.joints") is not None
     except ModuleNotFoundError:
         return False
 
@@ -33,12 +33,12 @@ requires_kinex = pytest.mark.skipif(not available(),
 
 
 def compose(a, b):
-    from kinex.lib.geometry import compose_rt
+    from kinex.common.geometry import compose_rt
     return compose_rt(a, b)
 
 
 def xyzq(value):
-    from kinex.lib.geometry import xyzq_to_rt
+    from kinex.common.geometry import xyzq_to_rt
     return xyzq_to_rt(value)
 
 
@@ -60,7 +60,7 @@ class Rig:
 
     def link(self, name, positions, link=None):
         """A URDF link pose in the device base; grippers name a finger link."""
-        from kinex.lib.joints import JointModel
+        from kinex.common.joints import JointModel
         profile = self.profiles[name]
         if profile["type"] == "gripper":
             profile = {"type": "joint", "name": name,
