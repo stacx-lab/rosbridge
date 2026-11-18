@@ -2,15 +2,12 @@ name: right_gripper
 runtime:
   domain_id: 0
   observation: joint_state
-  nodes:
-  - entry: links.py
-    factory: create
+  nodes: []
   ready_timeout_s: 30
 operations:
   joint_state:
     description: Measured right_gripper, the native normalized gripper opening (0 closed,
-      1 open), stamped at acquisition; links.py publishes the URDF finger links on TF from
-      it.
+      1 open), stamped at acquisition; the URDF finger links follow it.
     transport: topic
     direction: output
     endpoint: /right_gripper/joint_state

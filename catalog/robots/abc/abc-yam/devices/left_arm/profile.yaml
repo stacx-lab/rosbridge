@@ -1,9 +1,7 @@
 name: left_arm
 runtime:
   domain_id: 0
-  nodes:
-  - entry: links.py
-    factory: create
+  nodes: []
   ready_timeout_s: 30
 operations:
   joint_state:
@@ -52,7 +50,7 @@ meta:
   updated_at: '2026-10-24T00:00:00Z'
 type: joint
 description: YAM six-joint left arm of the ABC station. Geometry is the sibling arm.urdf with
-  flange (link_6) as the tip link; measured links are on TF as left_arm/<link>. Commands are
+  flange (link_6) as the tip link; its links are the frames left_arm/<link>. Commands are
   the native absolute joint positions of upstream's 14-D policy action; rosbridge rejects
   targets outside the native joint ranges.
 source: introspected

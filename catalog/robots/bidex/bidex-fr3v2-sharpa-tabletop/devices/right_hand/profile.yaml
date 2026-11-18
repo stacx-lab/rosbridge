@@ -1,9 +1,7 @@
 name: right_hand
 runtime:
   domain_id: 0
-  nodes:
-  - entry: links.py
-    factory: create
+  nodes: []
   ready_timeout_s: 30
 operations:
   joint_state:

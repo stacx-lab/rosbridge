@@ -2,15 +2,12 @@ name: gripper
 runtime:
   domain_id: 0
   observation: joint_state
-  nodes:
-  - entry: links.py
-    factory: create
+  nodes: []
   ready_timeout_s: 30
 operations:
   joint_state:
     description: Integrated native gripper command, -1 (open) to +1 (closed), stamped at acquisition;
-      links.py publishes the URDF finger links on TF from it. Fingers reach the commanded
-      opening only when unobstructed.
+      the URDF finger links follow it. Fingers reach the commanded opening only when unobstructed.
     transport: topic
     direction: output
     endpoint: /gripper/joint_state

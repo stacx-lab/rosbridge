@@ -77,14 +77,12 @@ def test_every_rig_exports_unloaded_profiles_on_rosbridge_endpoints(tmp_path, id
         assert all(isinstance(op["description"], str) and op["description"]
                    for op in profile["operations"].values())
         assert all("parent" in frame for frame in profile["frames"].values())
-        # Every operation is an endpoint of rosbridge's world node; the only device nodes are URDF link publishers.
-        nodes = [{"entry": "links.py", "factory": "create"}] if profile["type"] in ("joint", "gripper") else []
-        assert profile["runtime"]["nodes"] == nodes
-        for node in nodes:
-            exported = root / "devices" / name / node["entry"]
-            assert not exported.is_symlink() and "LinkPublisher(profile, context" in exported.read_text()
-            if "model" in profile:
-                assert (root / "devices" / name / profile["model"]["path"]).is_file()
+        # Every operation is an endpoint of rosbridge's world node, so no device declares a node of its own.
+        assert profile["runtime"]["nodes"] == []
+        assert ("model" in profile) == (profile["type"] in ("joint", "gripper"))
+        if "model" in profile:
+            assert profile["model"]["format"] == "urdf" and "joint_state" in profile["operations"]
+            assert (root / "devices" / name / profile["model"]["path"]).is_file()
     assert not any(root.rglob("*.pyc")) and not any(path.is_symlink() for path in root.rglob("*"))
     assert result["robot"] == identifier and result["task"] == task_of(identifier)
     with pytest.raises(ValueError, match="already contains"), \

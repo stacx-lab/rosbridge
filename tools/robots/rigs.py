@@ -1,4 +1,4 @@
-"""Write Kinex workspace rigs: profiles, kinematic-only URDFs and link publishers.
+"""Write Kinex workspace rigs: profiles and kinematic-only URDFs.
 
 Builders (build_<simulator>.py) measure frames from the native simulator and
 call these templates, so every rig shares one endpoint layout and wording.
@@ -13,16 +13,6 @@ import yaml
 from rosbridge.catalog import cameras
 
 CREATED = "2026-10-24T00:00:00Z"
-LINKS = '''"""Publish the device's URDF links on TF from measured joint states."""
-from pathlib import Path
-
-from kinex.node import LinkPublisher
-
-
-def create(profile, context):
-    return LinkPublisher(profile, context, Path(__file__).parent)
-'''
-NODES = {"links.py": LINKS}
 
 
 def qos(reliability="reliable", durability="volatile"):
@@ -44,13 +34,13 @@ def clean(value, digits=12):
     return 0.0 if value == 0 else value
 
 
-def device(name, kind, description, operations, *, nodes=(), observation=None, layout=None, **facts):
+def device(name, kind, description, operations, *, observation=None, layout=None, **facts):
     """A device profile; layout is an rgb camera's (mono or stereo)."""
     runtime = {"domain_id": 0}
     if observation:
         runtime["observation"] = observation
-    runtime.update({"nodes": [{"entry": entry, "factory": "create"} for entry in nodes],
-                    "ready_timeout_s": 30})
+    # Every operation is an endpoint of the world node, so a device declares no nodes of its own.
+    runtime.update({"nodes": [], "ready_timeout_s": 30})
     return {"name": name, "runtime": runtime, "operations": operations, "loaded": False,
             "meta": {"created_at": CREATED, "updated_at": CREATED}, "type": kind,
             **({"layout": layout} if layout else {}), "description": description,
@@ -97,7 +87,7 @@ def joint(name, description, joints, home, base, *, units="radians", part="arm",
             "point (metres, unit quaternion xyzw), time_from_start strictly increasing and within 120 "
             "seconds; a zero header stamp starts it now. It is interpolated from the current target. "
             f"{pose} A new trajectory replaces the active one and an invalid one is ignored; verify "
-            f"the {tip} on TF.",
+            f"the {tip} with pose_state.",
             "topic", "input", f"/{name}/pose_target", "trajectory_msgs/msg/MultiDOFJointTrajectory")
         ops["pose_state"] = operation(
             f"Measured {tip} pose in {name}/base, stamped with joint_state.",
@@ -114,7 +104,7 @@ def joint(name, description, joints, home, base, *, units="radians", part="arm",
             "topic", "input", f"/{name}/joint_target", "trajectory_msgs/msg/JointTrajectory")
     ops["stop"] = operation(f"Stop {part} motion and hold the measured posture.", "service", "input",
                             f"/{name}/stop", "std_srvs/srv/Trigger")
-    return device(name, "joint", description, ops, nodes=("links.py",),
+    return device(name, "joint", description, ops,
                   model={"format": "urdf", "path": model, "base_link": "base_link",
                          "tip_links": [tip] if tip else []},
                   limits="native", home={joint: clean(q) for joint, q in zip(joints, home)},
@@ -127,14 +117,14 @@ def gripper(name, description, joint, target, base, tcp, *, state=None, hold=Non
     ops = {
         "joint_state": operation(
             state or f"Measured {joint}, the native normalized gripper opening (0 closed, 1 open), "
-            "stamped at acquisition; links.py publishes the URDF finger links on TF from it.",
+            "stamped at acquisition; the URDF finger links follow it.",
             "topic", "output", f"/{name}/joint_state", "sensor_msgs/msg/JointState",
             qos(durability="transient_local")),
         "target": operation(target, "topic", "input", f"/{name}/target", "std_msgs/msg/Float64"),
         "stop": operation(hold or "Hold the measured opening; fingers may settle briefly after "
                           "the stop.", "service", "input", f"/{name}/stop", "std_srvs/srv/Trigger"),
     }
-    return device(name, "gripper", description, ops, nodes=("links.py",), observation="joint_state",
+    return device(name, "gripper", description, ops, observation="joint_state",
                   stop={"behavior": "hold", "affected_devices": [name]},
                   frames={"base": base, "tcp": tcp},
                   model={"format": "urdf", "path": "gripper.urdf", "base_link": "base_link"},
@@ -453,8 +443,7 @@ def source_tree(source, root, name, comment):
 
 
 def write_rig(directory, manifest, devices, files=None):
-    """devices: name -> profile; files: relative path -> text, for URDFs. Each device's nodes are written from
-    NODES."""
+    """devices: name -> profile; files: relative path -> text, for URDFs."""
     directory = Path(directory)
     (directory / "devices").mkdir(parents=True, exist_ok=True)
     (directory / "workspace.yaml").write_text(yaml.safe_dump(manifest, sort_keys=False))
@@ -462,7 +451,5 @@ def write_rig(directory, manifest, devices, files=None):
         folder = directory / "devices" / name
         folder.mkdir(exist_ok=True)
         (folder / "profile.yaml").write_text(yaml.safe_dump(profile, sort_keys=False, width=88))
-        for node in profile["runtime"]["nodes"]:
-            (folder / node["entry"]).write_text(NODES[node["entry"]])
     for path, text in (files or {}).items():
         (directory / path).write_text(text)

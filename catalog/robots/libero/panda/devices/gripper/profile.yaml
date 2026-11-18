@@ -1,16 +1,13 @@
 name: gripper
 runtime:
   domain_id: 0
-  nodes:
-  - entry: links.py
-    factory: create
+  nodes: []
   ready_timeout_s: 30
   observation: joint_state
 operations:
   joint_state:
     description: Measured finger_joint1 in metres, half the summed finger travel,
-      stamped at acquisition; links.py publishes the URDF finger and pad links on
-      TF from it.
+      stamped at acquisition; the URDF finger and pad links follow it.
     transport: topic
     direction: output
     endpoint: /gripper/joint_state

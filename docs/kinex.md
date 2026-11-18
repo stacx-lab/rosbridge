@@ -15,8 +15,8 @@ rosbridge launch libero/libero-spatial-01 --execution-mode stepped --domain-id 8
 Every operation of a profile is an endpoint of rosbridge's world node, so Kinex borrows the
 simulator instead of relaying it. What Kinex adds runs in Kinex:
 
-- the `links.py` of each joint and gripper device, which publishes its URDF links on TF from
-  `joint_state`;
+- the links of each joint and gripper device's URDF, which Kinex publishes on TF from
+  `joint_state` while the device is loaded;
 - its frame host, which publishes the mounts and fixed frames of the profiles' `frames`,
   such as `gripper/tcp`, and answers frame lookups;
 - FK and IK from the URDFs, and the rays of undistorted pinhole cameras from their profiles.

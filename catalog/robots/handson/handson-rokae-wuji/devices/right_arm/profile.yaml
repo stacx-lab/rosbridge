@@ -1,9 +1,7 @@
 name: right_arm
 runtime:
   domain_id: 0
-  nodes:
-  - entry: links.py
-    factory: create
+  nodes: []
   ready_timeout_s: 30
 operations:
   joint_state:
@@ -24,7 +22,7 @@ operations:
       one transform per point (metres, unit quaternion xyzw), time_from_start strictly increasing
       and within 120 seconds; a zero header stamp starts it now. It is interpolated from the
       current target. HandsOn''s own IK tracks it and may stop short of a pose. A new trajectory
-      replaces the active one and an invalid one is ignored; verify the palm on TF.'
+      replaces the active one and an invalid one is ignored; verify the palm with pose_state.'
     transport: topic
     direction: input
     endpoint: /right_arm/pose_target

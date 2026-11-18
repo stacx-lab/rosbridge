@@ -1,9 +1,7 @@
 name: arm
 runtime:
   domain_id: 0
-  nodes:
-  - entry: links.py
-    factory: create
+  nodes: []
   ready_timeout_s: 30
 operations:
   joint_state:
@@ -52,7 +50,7 @@ meta:
   updated_at: '2026-10-24T00:00:00Z'
 type: joint
 description: Franka Panda seven-joint arm on the torso. Geometry is the sibling arm.urdf with
-  flange as the tip link; measured links are on TF as arm/<link>. Commands are absolute native
+  flange as the tip link; its links are the frames arm/<link>. Commands are absolute native
   joint positions; rosbridge rejects targets outside the native joint ranges.
 source: introspected
 calibrated_at: null

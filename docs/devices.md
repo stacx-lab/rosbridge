@@ -107,7 +107,7 @@ with the simulator.
 The LIBERO rigs are the same Panda arm and gripper
 with distinct fixed mounts and camera calibration. Each rig directory is a complete
 workspace skeleton (`workspace.yaml` and `devices/<name>/profile.yaml`) whose
-profiles carry its calibration. Files shared by all rigs (URDFs, `links.py`, and the
+profiles carry its calibration. Files shared by all rigs (URDFs and the
 gripper, wrist-camera and world profiles) are symlinks into `libero/panda`; export
 copies their content.
 

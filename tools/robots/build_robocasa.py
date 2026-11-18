@@ -75,7 +75,7 @@ def main():
         "arm": rigs.joint(
             "arm",
             "Franka Panda seven-joint arm on the torso. Geometry is the sibling arm.urdf with "
-            "flange as the tip link; measured links are on TF as arm/<link>. Commands are absolute native "
+            "flange as the tip link; its links are the frames arm/<link>. Commands are absolute native "
             "joint positions; rosbridge rejects targets outside the native joint ranges.",
             list(robot.robot_joints), robot.init_qpos,
             rigs.pose_frame("torso:top", rigs.relative(top, pose["robot0_link0"]))),
@@ -94,7 +94,7 @@ def main():
             rigs.pose_frame("arm:flange", rigs.relative(flange, hand)),
             rigs.pose_frame("gripper:base", rigs.relative(hand, pose["gripper0_right_eef"])),
             state="Integrated native gripper command, -1 (open) to +1 (closed), stamped at "
-                  "acquisition; links.py publishes the URDF finger links on TF from it. Fingers reach "
+                  "acquisition; the URDF finger links follow it. Fingers reach "
                   "the commanded opening only when unobstructed.",
             hold="Hold the integrated command, keeping any grip on an object.",
             opened=-1.0, closed=1.0),

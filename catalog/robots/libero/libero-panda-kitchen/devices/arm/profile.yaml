@@ -1,9 +1,7 @@
 name: arm
 runtime:
   domain_id: 0
-  nodes:
-  - entry: links.py
-    factory: create
+  nodes: []
   ready_timeout_s: 30
 operations:
   joint_state:
@@ -51,8 +49,8 @@ meta:
   updated_at: '2026-10-20T17:24:01.462Z'
 type: joint
 description: Panda seven-joint manipulator mounted in the tabletop workspace. Geometry
-  is the sibling arm.urdf with flange as the tip link; measured links are on TF as
-  arm/<link>. rosbridge rejects targets outside the URDF joint limits.
+  is the sibling arm.urdf with flange as the tip link; its links are the frames arm/<link>.
+  rosbridge rejects targets outside the URDF joint limits.
 source: introspected
 calibrated_at: null
 method: introspection
