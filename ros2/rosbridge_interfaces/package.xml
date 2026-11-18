@@ -3,7 +3,7 @@
 <package format="3">
   <name>rosbridge_interfaces</name>
   <version>0.2.0</version>
-  <description>The world Wait service of a rosbridge graph.</description>
+  <description>The world Wait service and the free-form Json service of a rosbridge graph.</description>
   <maintainer email="haitongma8@gmail.com">haitongma</maintainer>
   <license>Apache-2.0</license>
 

@@ -32,15 +32,16 @@ def test_build_selects_one_simulator_and_rosbridges_own_interfaces(tmp_path, mon
     assert (tmp_path / ".workspaces/fake/interpreter.json").is_file()
 
 
-def test_wait_keeps_the_definition_of_kinexs():
-    """rosbridge's Wait is its own type; its request and reply stay those of Kinex's world wait."""
+def test_the_interfaces_keep_the_definitions_of_kinexs():
+    """rosbridge's Wait and Json are its own types; their requests and replies stay those of Kinex's."""
     project = Path(__file__).resolve().parents[2]
-    own = project / "ros2/rosbridge_interfaces/srv/Wait.srv"
-    kinex = project.parent / "kinex2.0/packages/core/assets/ros/kinex_interfaces/srv/Wait.srv"
-    if not kinex.is_file():
+    own = project / "ros2/rosbridge_interfaces/srv"
+    kinex = project.parent / "kinex2.0/packages/core/assets/ros/kinex_interfaces/srv"
+    if not kinex.is_dir():
         pytest.skip("needs a Kinex checkout next to this one")
-    assert own.read_bytes() == kinex.read_bytes()
-    assert sorted(p.name for p in own.parent.iterdir()) == ["Wait.srv"]
+    assert sorted(p.name for p in own.iterdir()) == ["Json.srv", "Wait.srv"]
+    for definition in own.iterdir():
+        assert definition.read_bytes() == (kinex / definition.name).read_bytes()
 
 
 def test_the_launch_files_forward_every_world_node_parameter():
