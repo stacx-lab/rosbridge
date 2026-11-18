@@ -25,7 +25,7 @@ operations:
     transport: service
     direction: input
     endpoint: /head_camera/geometry
-    type: rosbridge_interfaces/srv/Json
+    type: custom_interfaces/srv/Json
     qos:
       depth: 1
       reliability: reliable
@@ -37,7 +37,7 @@ operations:
     transport: service
     direction: input
     endpoint: /head_camera/unproject
-    type: rosbridge_interfaces/srv/Json
+    type: custom_interfaces/srv/Json
     qos:
       depth: 1
       reliability: reliable
@@ -50,7 +50,7 @@ operations:
     transport: service
     direction: input
     endpoint: /head_camera/project
-    type: rosbridge_interfaces/srv/Json
+    type: custom_interfaces/srv/Json
     qos:
       depth: 1
       reliability: reliable

@@ -25,7 +25,7 @@ operations:
     transport: service
     direction: input
     endpoint: /world/wait
-    type: rosbridge_interfaces/srv/Wait
+    type: custom_interfaces/srv/Wait
     qos:
       depth: 1
       reliability: reliable

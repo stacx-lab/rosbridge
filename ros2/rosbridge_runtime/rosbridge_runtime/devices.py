@@ -8,7 +8,7 @@ from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.event_handler import PublisherEventCallbacks
 from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy
 from rosbridge.core.lens import LensGeometry
-from rosbridge_interfaces.srv import Json
+from custom_interfaces.srv import Json
 from sensor_msgs.msg import CameraInfo, Image, JointState, MultiDOFJointState
 from std_msgs.msg import Float64
 from std_srvs.srv import Trigger

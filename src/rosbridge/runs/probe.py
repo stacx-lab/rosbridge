@@ -6,7 +6,7 @@ import time
 
 def probe(timeout=10.):
     import rclpy
-    from rosbridge_interfaces.srv import Wait
+    from custom_interfaces.srv import Wait
     from rclpy.node import Node
     from rosgraph_msgs.msg import Clock
     from rosbridge_runtime.devices import STREAM_QOS

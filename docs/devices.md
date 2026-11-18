@@ -1,11 +1,11 @@
 # Devices and robot catalog
 
 Every device of a run is a set of endpoints on the single `world` node. They use
-standard ROS types, `std_srvs/srv/Trigger` stops and two types of rosbridge's own
-(`ros2/rosbridge_interfaces`): `Wait`, the world service, and `Json`, the free-form
+standard ROS types, `std_srvs/srv/Trigger` stops and the two types of `custom_interfaces`
+(`ros2/custom_interfaces`): `Wait`, the world service, and `Json`, the free-form
 service of a lensed camera's geometry. A ROS 2 program on the run's domain operates the
 devices with nothing else: in the run's environment (`rosbridge exec`), or anywhere
-`rosbridge_interfaces` is built. Each device is described by a profile of the
+`custom_interfaces` is built. Each device is described by a profile of the
 robot catalog (its endpoints, types, QoS, units, limits, frames and URDF), which
 `rosbridge setup` exports. The device types, operation names and profile format are
 Kinex's, so a Kinex workspace uses an export as it is; see [Kinex](kinex.md).
@@ -63,7 +63,7 @@ as an undistorted pinhole declares `distortion: {model: none}`; its FOV and rays
 follow from the projection. A camera its evaluator renders through a lens
 (HandsOn's head camera) declares the lens as OpenCV's Brown-Conrady model
 (`opencv_brown_conrady`: k1, k2, p1, p2, k3) and its FOV, and the world node serves
-three `rosbridge_interfaces/srv/Json` services through that lens; images stay as rendered:
+three `custom_interfaces/srv/Json` services through that lens; images stay as rendered:
 
 | Service | JSON request | JSON reply |
 |---|---|---|

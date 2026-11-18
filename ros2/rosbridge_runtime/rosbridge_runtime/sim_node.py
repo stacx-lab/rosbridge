@@ -11,7 +11,7 @@ import time
 import traceback
 
 import rclpy
-from rosbridge_interfaces.srv import Wait
+from custom_interfaces.srv import Wait
 from rcl_interfaces.msg import ParameterDescriptor
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import ExternalShutdownException, MultiThreadedExecutor

@@ -67,7 +67,7 @@ def world(description):
             "is rejected. A terminal episode rejects further progression. The reply's message "
             "also names the device commands refused since the previous reply, with their "
             "reasons.", "service", "input", "/world/wait",
-            "rosbridge_interfaces/srv/Wait",
+            "custom_interfaces/srv/Wait",
             timeout_s=120),
         "stop": operation("Cancel the pending wait.", "service", "input", "/world/stop",
                           "std_srvs/srv/Trigger"),
@@ -216,7 +216,7 @@ def camera(name, description, intrinsics, base, depth_range=None, distortion=Non
                             "points: [[X, Y, Z], ...]} with Z > 0 returns {pixels: [[u, v], ...]}, null "
                             "where invalid; at most 8192 points.")):
             ops[operation_name] = operation(text, "service", "input", f"/{name}/{operation_name}",
-                                            "rosbridge_interfaces/srv/Json")
+                                            "custom_interfaces/srv/Json")
     ops["camera_info"] = operation(info, "topic", "output", f"/{name}/camera_info",
                                    "sensor_msgs/msg/CameraInfo", qos(durability="transient_local"))
     facts = {"color": color}

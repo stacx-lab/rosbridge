@@ -10,7 +10,7 @@ separate from simulator environments.
 Linux x86-64, Git, uv, Pixi, and an EGL-capable graphics driver are required.
 ROS Jazzy and Python 3.12 come from the locked RoboStack/Pixi environment; a system
 ROS installation is not required. Every graph serves the world service
-`rosbridge_interfaces/srv/Wait`, which rosbridge builds from `ros2/rosbridge_interfaces`.
+`custom_interfaces/srv/Wait`, which rosbridge builds from `ros2/custom_interfaces`.
 
 ```bash
 bash tools/bootstrap.sh
@@ -93,7 +93,7 @@ simulation time. Commands, zero waits, discovery, and camera reads do not step.
 Both modes retain the backend's native control period and physics decimation.
 Rendering can make realtime slower than wall time; it never changes simulated dt.
 
-`world/wait` uses `rosbridge_interfaces/srv/Wait`: `duration_s` in, then `success`,
+`world/wait` uses `custom_interfaces/srv/Wait`: `duration_s` in, then `success`,
 `message`, `time_s` and actual `waited_s` out. Positive durations round up to whole
 native control steps; zero is immediate; negative, nonfinite or unrepresentable
 waits fail. Waits are sequential: a wait requested while another is pending is

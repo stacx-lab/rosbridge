@@ -23,17 +23,12 @@ simulator instead of relaying it. What Kinex adds runs in Kinex:
 
 ## Interface types
 
-The world's `wait` is `rosbridge_interfaces/srv/Wait` and a lensed camera's `geometry`,
-`unproject` and `project` are `rosbridge_interfaces/srv/Json`. Both have the request and
-reply of Kinex's `kinex_interfaces` types of the same names, and the camera operations take
-and return the JSON of Kinex's camera geometry operations, but they are rosbridge's own
-types. To call them, Kinex needs:
-
-- `rosbridge_interfaces` in its Python environment: build `ros2/rosbridge_interfaces` there,
-  or source a simulator overlay (`.workspaces/<simulator>/install/local_setup.bash`);
-- to treat `rosbridge_interfaces/srv/Json` as it treats its own `Json`, a JSON object in
-  `request` and one in `response`, and `rosbridge_interfaces/srv/Wait` as its own `Wait`,
-  whose abandoned wait stops the world.
+The world's `wait` is `custom_interfaces/srv/Wait` and a lensed camera's `geometry`,
+`unproject` and `project` are `custom_interfaces/srv/Json`. `custom_interfaces` holds only
+these two services. rosbridge and Kinex each build an identical copy of the package, from
+`ros2/custom_interfaces` here and from Kinex's own assets there, so the types are the same on
+the wire and neither project needs the other to build or to call them. The camera
+operations take and return the JSON of Kinex's camera geometry operations.
 
 ## Compatibility checks
 
@@ -43,7 +38,7 @@ run without it. They take Kinex Python from
 
 | Directory | Checks | Runs in |
 |---|---|---|
-| `tests/kinex/unit` | `rosbridge_interfaces` keeps the definitions of Kinex's `Wait` and `Json`; Kinex's profile schema and readiness plan accept every rig | the default environment, next to a Kinex checkout |
+| `tests/kinex/unit` | `custom_interfaces` is the same package here and in Kinex; Kinex's profile schema and readiness plan accept every rig | the default environment, next to a Kinex checkout |
 | `tests/kinex/ros` | Kinex's ROS communication and device host on a rosbridge overlay; `workspace.mjs`, an end-to-end program against a launched LIBERO run | a sourced simulator overlay |
 | `tests/kinex/native` | `test_<simulator>.py`: the exported rig's FK, mounts and camera frames, through Kinex's kinematics, against the simulator | that simulator's native environment |
 

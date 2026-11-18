@@ -6,7 +6,7 @@ import sys
 import time
 
 import rclpy
-from rosbridge_interfaces.srv import Wait
+from custom_interfaces.srv import Wait
 from rclpy.context import Context
 from rclpy.executors import SingleThreadedExecutor
 from rclpy.node import Node

@@ -3,7 +3,7 @@ import json
 
 import numpy as np
 import pytest
-from rosbridge_interfaces.srv import Json
+from custom_interfaces.srv import Json
 from sensor_msgs.msg import CameraInfo
 
 from rosbridge_runtime.devices import STREAM_QOS

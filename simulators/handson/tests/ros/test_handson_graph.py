@@ -6,7 +6,7 @@ import psutil
 import pytest
 from builtin_interfaces.msg import Duration
 from geometry_msgs.msg import Quaternion, Transform, Vector3
-from rosbridge_interfaces.srv import Json
+from custom_interfaces.srv import Json
 from sensor_msgs.msg import CameraInfo, Image, JointState, MultiDOFJointState
 from std_msgs.msg import Header
 from std_srvs.srv import Trigger
