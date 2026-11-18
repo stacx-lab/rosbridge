@@ -190,8 +190,8 @@ def locomotion(name, description, axes, base, *, timeout_s, units="normalized"):
 
 def camera(name, description, intrinsics, base, depth_range=None, distortion=None):
     """An RGB or RGB-D camera; distortion is its lens's OpenCV Brown-Conrady (k1, k2, p1, p2, k3), or None for
-    an undistorted pinhole. Kinex derives an undistorted pinhole's FOV and rays from the profile; a distorted
-    camera's node serves its geometry (GEOMETRY)."""
+    an undistorted pinhole. An undistorted pinhole's FOV and rays follow from the profile; the world node serves
+    a distorted camera's geometry, unproject and project (rosbridge.core.lens)."""
     width, height = intrinsics[:2]
     color = cameras.color(*intrinsics, distortion)
     rgbd = depth_range is not None
@@ -215,9 +215,9 @@ def camera(name, description, intrinsics, base, depth_range=None, distortion=Non
                 "not from this topic; intrinsics are not TF transforms.")
     else:
         info = ("CameraInfo mirroring the profile, with K and P from color.projection, plumb_bob "
-                "distortion from color.distortion, image size and optical frame. Kinex reads camera "
-                "geometry from the profile and the geometry services, not from this topic; intrinsics are "
-                "not TF transforms.")
+                "distortion from color.distortion, image size and optical frame. The camera's geometry "
+                "is the profile's and the geometry services', not this topic's; intrinsics are not TF "
+                "transforms.")
         for operation_name, text in (
                 ("geometry", "The active lens geometry: {} returns {streams: {color: descriptor}}, the "
                              "profile's width, height, projection and distortion with the optical frame and "
@@ -229,7 +229,7 @@ def camera(name, description, intrinsics, base, depth_range=None, distortion=Non
                             "points: [[X, Y, Z], ...]} with Z > 0 returns {pixels: [[u, v], ...]}, null "
                             "where invalid; at most 8192 points.")):
             ops[operation_name] = operation(text, "service", "input", f"/{name}/{operation_name}",
-                                            "kinex_interfaces/srv/Json")
+                                            "rosbridge_interfaces/srv/Json")
     ops["camera_info"] = operation(info, "topic", "output", f"/{name}/camera_info",
                                    "sensor_msgs/msg/CameraInfo", qos(durability="transient_local"))
     facts = {"color": color}
@@ -240,8 +240,7 @@ def camera(name, description, intrinsics, base, depth_range=None, distortion=Non
                           "scale_m_per_unit": 0.001, "invalid_value": 0, "valid_range_m": span,
                           "reliable_range_m": dict(span), "registration": "color"}
     facts["frames"] = {"base": base}
-    return device(name, "rgbd" if rgbd else "rgb", description, ops, layout=None if rgbd else "mono",
-                  nodes=() if distortion is None else ("geometry.py",), **facts)
+    return device(name, "rgbd" if rgbd else "rgb", description, ops, layout=None if rgbd else "mono", **facts)
 
 
 def workspace(identifier, name, kind, model):

@@ -77,6 +77,23 @@ class CameraToy(ToyBackend):
         return np.ones((2, 4), np.float32)
 
 
+class LensToy(CameraToy):
+    """The camera toy rendering through a lens: HandsOn's head camera lens on a 64 x 48 image."""
+    distortion = {"top": (0.00646656053141, -0.0479530096054, -0.000352804054273, -0.000104829683551,
+                          0.0332237109542)}
+
+    def intrinsics(self, source):
+        return 64, 48, 40., 40., 31.5, 23.5
+
+    def render(self, source):
+        assert threading.get_ident() == self.owner
+        return np.zeros((48, 64, 3), np.uint8)
+
+    def render_depth(self, source):
+        assert threading.get_ident() == self.owner
+        return np.ones((48, 64), np.float32)
+
+
 class PoseToy(ToyBackend):
     """A planar arm commanded by its tip pose: joints x and y place the tip at (x, y, 0), unrotated."""
     layout = ActionLayout(("x", "y"), (CommandGroup("reach", (0, 1), (-2., -2.), (2., 2.), tip="tip"),))

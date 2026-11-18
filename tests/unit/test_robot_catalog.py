@@ -23,8 +23,8 @@ OPERATIONS = {
 # A joint device commanded by the pose of its one tip link serves pose_target in place of joint_target.
 POSE = {"joint_state": "sensor_msgs/msg/JointState", "pose_state": "sensor_msgs/msg/MultiDOFJointState",
         "pose_target": "trajectory_msgs/msg/MultiDOFJointTrajectory", "stop": "std_srvs/srv/Trigger"}
-# A camera rendered through a lens also serves its geometry, from a node that runs in Kinex.
-GEOMETRY = {op: "kinex_interfaces/srv/Json" for op in ("geometry", "unproject", "project")}
+# The world node also serves the geometry of a camera rendered through a lens.
+GEOMETRY = {op: "rosbridge_interfaces/srv/Json" for op in ("geometry", "unproject", "project")}
 WORLD = {"time": ("/clock", "rosgraph_msgs/msg/Clock"),
          "wait": ("/world/wait", "rosbridge_interfaces/srv/Wait"),
          "stop": ("/world/stop", "std_srvs/srv/Trigger")}
@@ -77,14 +77,12 @@ def test_every_rig_exports_unloaded_profiles_on_rosbridge_endpoints(tmp_path, id
         assert all(isinstance(op["description"], str) and op["description"]
                    for op in profile["operations"].values())
         assert all("parent" in frame for frame in profile["frames"].values())
-        # Profiles borrow rosbridge's endpoints; only URDF link publishers and lens geometry run in Kinex.
-        entry = "links.py" if profile["type"] in ("joint", "gripper") else "geometry.py" if lens else None
-        nodes = [{"entry": entry, "factory": "create"}] if entry else []
+        # Every operation is an endpoint of rosbridge's world node; the only device nodes are URDF link publishers.
+        nodes = [{"entry": "links.py", "factory": "create"}] if profile["type"] in ("joint", "gripper") else []
         assert profile["runtime"]["nodes"] == nodes
         for node in nodes:
             exported = root / "devices" / name / node["entry"]
-            marker = {"links.py": "LinkPublisher(profile, context", "geometry.py": "serve_geometry(node, profile"}
-            assert not exported.is_symlink() and marker[node["entry"]] in exported.read_text()
+            assert not exported.is_symlink() and "LinkPublisher(profile, context" in exported.read_text()
             if "model" in profile:
                 assert (root / "devices" / name / profile["model"]["path"]).is_file()
     assert not any(root.rglob("*.pyc")) and not any(path.is_symlink() for path in root.rglob("*"))
@@ -246,7 +244,7 @@ def test_a_handson_workspace_holds_the_cameras_its_task_and_seed_render(tmp_path
 @pytest.mark.skipif(not HANDSON.is_file(), reason="HandsOn is not prepared")
 def test_every_handson_task_renders_the_lenses_of_the_catalog_rig():
     """A task's cameras may change their pinhole, never whether they have a lens: the lens decides the geometry
-    services and node of the rig's profile."""
+    operations of the rig's profile."""
     from rosbridge.catalog import resolve, tasks
     from rosbridge.catalog.robots import changes
     rig = PROJECT / "catalog/robots/handson/handson-rokae-wuji/devices"

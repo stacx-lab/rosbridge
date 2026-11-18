@@ -60,10 +60,11 @@ Camera profiles declare pinhole intrinsics in ROS pixel centers. A camera render
 as an undistorted pinhole declares `distortion: {model: none}`, and Kinex derives
 its FOV and computes its rays locally. A camera its evaluator renders through a lens
 (HandsOn's head camera) declares the lens as OpenCV's Brown-Conrady model
-(`opencv_brown_conrady`: k1, k2, p1, p2, k3) and its FOV. A Kinex node in its device
-directory (`geometry.py`) serves `geometry`, `unproject` and `project` through Kinex's
-`OpenCVGeometry`, and images stay as rendered. `camera_info` mirrors the profile, its
-plumb_bob D included, and is not a geometry source. `fps` is null because frames
+(`opencv_brown_conrady`: k1, k2, p1, p2, k3) and its FOV. The world node serves its
+`geometry`, `unproject` and `project` as `rosbridge_interfaces/srv/Json` services, whose
+JSON requests and replies are those of Kinex's camera geometry operations, and images stay
+as rendered. `camera_info` mirrors the profile, its plumb_bob D included, and is not a
+geometry source. `fps` is null because frames
 render on demand rather than at a fixed rate.
 
 The simulator publishes state and measurements without TF. Kinex computes FK/IK

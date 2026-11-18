@@ -1,8 +1,7 @@
 """A camera profile's color geometry: its pinhole and, for a distorted lens, OpenCV's Brown-Conrady model.
 
-Kinex derives an undistorted pinhole's field of view and rays from its profile. A distorted camera's profile
-states its field of view, and the camera's node serves its rays through the same model
-(kinex.common.camera_geometry.OpenCVGeometry).
+An undistorted pinhole's field of view and rays follow from its profile. A distorted camera's profile also
+states its field of view, and the world node serves its rays through the same model (rosbridge.core.lens).
 """
 import math
 
@@ -36,7 +35,7 @@ def undistort(xd, yd, coefficients, iterations=100):
 
 def fov(width, height, fx, fy, cx, cy, coefficients):
     """Horizontal and vertical field of view in degrees, between the rays through the image's edge midpoints,
-    as Kinex derives it for an undistorted pinhole."""
+    with a zero lens, an undistorted pinhole's."""
     def ray(u, v):
         return np.array([*undistort((u - cx) / fx, (v - cy) / fy, coefficients), 1.])
 

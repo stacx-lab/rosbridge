@@ -229,9 +229,9 @@ one frame, unsubscribe) renders the current step whenever it reads. The cameras 
 evaluator's for the task and seed:
 - **Head camera:** the Gemini 336's calibration (854×480, fx 463.39, fy 463.00, an
   off-center principal point) and lens, OpenCV's Brown-Conrady model (k1, k2, p1, p2, k3).
-  Its profile states the lens (`opencv_brown_conrady`) and field of view, and a Kinex node
-  in its device directory (`geometry.py`) serves `geometry`, `unproject` and `project`
-  through Kinex's OpenCV adapter; images stay as rendered.
+  Its profile states the lens (`opencv_brown_conrady`) and field of view, and the world node
+  serves `head_camera/geometry`, `unproject` and `project` (`rosbridge_interfaces/srv/Json`)
+  through that lens; images stay as rendered.
 - **Wrist cameras:** undistorted pinholes of 848×480 on the palms (fx 272.14 left, 267.01
   right), or both 269.56 in `t05` and `t15`, whose camera profile is their own.
 - **Principal points:** Isaac's lens places upstream's K with pixel corners at integers, so

@@ -473,7 +473,7 @@ Upstream renders the head camera through the Gemini 336's calibrated lens. Isaac
 
 Status: rosbridge.
 - The head camera renders through its lens, as the evaluator does.
-- Its profile states the lens (`opencv_brown_conrady`) and its field of view, and its device's Kinex node serves `geometry`, `unproject` and `project` through Kinex's OpenCV adapter.
+- Its profile states the lens (`opencv_brown_conrady`) and its field of view, and the world node serves `geometry`, `unproject` and `project` through that lens.
 - `camera_info` carries the same plumb_bob D.
 - Every profile's principal point is K's less half a pixel.
 - HandsOn's native suite checks all three cameras this way.

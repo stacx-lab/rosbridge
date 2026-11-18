@@ -1,9 +1,7 @@
 name: head_camera
 runtime:
   domain_id: 0
-  nodes:
-  - entry: geometry.py
-    factory: create
+  nodes: []
   ready_timeout_s: 30
 operations:
   image:
@@ -27,7 +25,7 @@ operations:
     transport: service
     direction: input
     endpoint: /head_camera/geometry
-    type: kinex_interfaces/srv/Json
+    type: rosbridge_interfaces/srv/Json
     qos:
       depth: 1
       reliability: reliable
@@ -39,7 +37,7 @@ operations:
     transport: service
     direction: input
     endpoint: /head_camera/unproject
-    type: kinex_interfaces/srv/Json
+    type: rosbridge_interfaces/srv/Json
     qos:
       depth: 1
       reliability: reliable
@@ -52,7 +50,7 @@ operations:
     transport: service
     direction: input
     endpoint: /head_camera/project
-    type: kinex_interfaces/srv/Json
+    type: rosbridge_interfaces/srv/Json
     qos:
       depth: 1
       reliability: reliable
@@ -60,9 +58,9 @@ operations:
     timeout_s: 10
   camera_info:
     description: CameraInfo mirroring the profile, with K and P from color.projection, plumb_bob
-      distortion from color.distortion, image size and optical frame. Kinex reads camera geometry
-      from the profile and the geometry services, not from this topic; intrinsics are not
-      TF transforms.
+      distortion from color.distortion, image size and optical frame. The camera's geometry
+      is the profile's and the geometry services', not this topic's; intrinsics are not TF
+      transforms.
     transport: topic
     direction: output
     endpoint: /head_camera/camera_info

@@ -1,4 +1,5 @@
 """Device endpoints on the world node; commands and renders run on the simulator owner thread."""
+import json
 import time
 
 from geometry_msgs.msg import Twist
@@ -6,6 +7,8 @@ from nav_msgs.msg import Odometry
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.event_handler import PublisherEventCallbacks
 from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy
+from rosbridge.core.lens import LensGeometry
+from rosbridge_interfaces.srv import Json
 from sensor_msgs.msg import CameraInfo, Image, JointState, MultiDOFJointState
 from std_msgs.msg import Float64
 from std_srvs.srv import Trigger
@@ -148,7 +151,8 @@ class Base(Actuator):
 
 class Camera:
     """`image` and `camera_info` in frame `<name>/base`; RGB-D cameras add registered `depth`
-    (16UC1 mm) with the same stamp.
+    (16UC1 mm) with the same stamp. A camera its backend renders through a lens also serves `geometry`,
+    `unproject` and `project` (rosbridge.core.lens), for the lens of the episode the world loaded.
 
     Frames render only for subscribers: at each camera sample, and at once for a new
     subscriber, so a reader receives the current frame even while the world is paused.
@@ -169,6 +173,13 @@ class Camera:
                                             event_callbacks=events)
                       if spec.kind == 'rgbd' else None)
         self.info = node.create_publisher(CameraInfo, f'{spec.name}/camera_info', STREAM_QOS)
+        lens = getattr(node.sim, 'distortion', {}).get(spec.source)
+        if lens is not None:
+            geometry = LensGeometry(self.frame, *node.sim.intrinsics(spec.source), lens)
+            callbacks = ReentrantCallbackGroup()  # pure arithmetic, off the simulator owner thread
+            for operation in ('geometry', 'unproject', 'project'):
+                node.create_service(Json, f'{spec.name}/{operation}', json_handler(getattr(geometry, operation)),
+                                    callback_group=callbacks)
         node.create_timer(KEEPALIVE_S / 2, self.keepalive)
 
     def render(self, stamp):
@@ -219,6 +230,18 @@ class Camera:
             self.send(conv.stamp(self.node.world.time_s))
         except Exception as error:
             self.node.get_logger().error(f'{self.spec.name} render failed: {error}')
+
+
+def json_handler(operation):
+    """A Json service callback: operation(**request) -> reply, both JSON objects. A failure is a reply."""
+    def call(request, response):
+        try:
+            response.response = json.dumps(operation(**json.loads(request.request)), allow_nan=False)
+            response.success = True
+        except Exception as error:
+            response.message = f'{type(error).__name__}: {error}'
+        return response
+    return call
 
 
 def device(spec, node):

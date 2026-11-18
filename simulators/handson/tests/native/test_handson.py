@@ -167,26 +167,27 @@ def lined_up(image, view, spectator_k, rays, size=96):
     return np.array(shifts)
 
 
-@requires_kinex
 def test_cameras_render_the_geometry_their_profiles_state(tmp_path, sim):
-    """Each image lines up with its undistorted spectator through the rays Kinex computes from the camera's
-    profile: locally for the wrists' pinholes, through the OpenCV adapter of the head camera's geometry node.
+    """Each image lines up with its undistorted spectator through the rays of the camera's profile: the pinhole's
+    for the wrists, and for the head camera those the world node serves through its lens (rosbridge.core.lens).
     Without the head camera's lens, its edges miss by pixels."""
-    from kinex.common.camera import rays
-    from kinex.common.camera_geometry import OpenCVGeometry
+    from rosbridge.catalog.cameras import BROWN_CONRADY
+    from rosbridge.core.lens import LensGeometry
     rig = Rig(TASK, tmp_path, seed=0)
     for camera, view in (("head_camera", "third_person"), ("left_camera", "left_wrist"),
                          ("right_camera", "right_wrist")):
         color = rig.profiles[camera]["color"]
         width, height = color["width"], color["height"]
+        fx, fy, cx, cy = (color["projection"][key] for key in ("fx", "fy", "cx", "cy"))
         u, v = (grid.ravel() for grid in np.meshgrid(np.arange(width, dtype=float), np.arange(height, dtype=float)))
         image, spectator = sim.render(camera), sim.render_spectator(view)
+        pinhole = np.column_stack([(u - cx) / fx, (v - cy) / fy, np.ones_like(u)])
         if color["distortion"]["model"] == "none":
-            through = rays(color, u, v)
+            through = pinhole
         else:
-            stream = {key: color[key] for key in ("width", "height", "projection", "distortion")}
-            through = np.asarray(OpenCVGeometry({**stream, "frame": f"{camera}/base"}).unproject(
-                np.column_stack([u, v]).tolist()))
+            lens = LensGeometry(f"{camera}/base", width, height, fx, fy, cx, cy,
+                                [color["distortion"][key] for key in BROWN_CONRADY])
+            through = lens.rays(np.column_stack([u, v]))
         shifts = lined_up(image, spectator, sim.spectator_intrinsics(view), through.reshape(height, width, 3))
         size = np.hypot(shifts[:, 2], shifts[:, 3])
         assert len(shifts) > 50 and np.median(size) < .3, camera
@@ -194,9 +195,8 @@ def test_cameras_render_the_geometry_their_profiles_state(tmp_path, sim):
         if camera == "head_camera":
             edges = np.abs(shifts[:, 0] - color["projection"]["cx"]) > 300
             assert np.median(size[edges]) < .35
-            pinhole = lined_up(image, spectator, sim.spectator_intrinsics(view), rays(
-                {**color, "distortion": {"model": "none"}}, u, v).reshape(height, width, 3))
-            assert np.median(np.hypot(*pinhole[edges][:, 2:].T)) > 1.
+            without = lined_up(image, spectator, sim.spectator_intrinsics(view), pinhole.reshape(height, width, 3))
+            assert np.median(np.hypot(*without[edges][:, 2:].T)) > 1.
 
 
 def test_episode_ends_at_its_step_limit_and_serves_one_episode(sim):

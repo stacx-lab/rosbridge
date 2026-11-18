@@ -5,7 +5,7 @@ mount; t05 and t15 have a profile of their own. Each episode draws a small mount
 (evaluation/camera_randomization.py: sample, at most 2 mm and 0.3 deg per axis) from its camera seed: the
 setting's camera seed for the 16 tasks with a setting, else the native seed (evaluation/native.py: run_episode).
 The head camera renders through its calibrated lens, OpenCV's Brown-Conrady model, which its rig profile states and
-its camera node serves to Kinex; the wrist cameras are undistorted pinholes.
+the world node serves; the wrist cameras are undistorted pinholes.
 """
 import numpy as np
 
@@ -39,7 +39,7 @@ def distortion(spec):
     """A contract camera's lens as OpenCV Brown-Conrady (k1, k2, p1, p2, k3), or None for an undistorted pinhole."""
     d = [float(v) for v in spec["D_effective"]]
     if any(d[5:]):
-        raise ValueError(f"lens {d} has rational terms; Kinex's OpenCV geometry takes k1, k2, p1, p2, k3")
+        raise ValueError(f"lens {d} has rational terms; the lens geometry takes k1, k2, p1, p2, k3")
     return tuple(d[:5]) if any(d) else None
 
 

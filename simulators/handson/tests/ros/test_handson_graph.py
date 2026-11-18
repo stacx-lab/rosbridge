@@ -1,9 +1,12 @@
 """The Kinex-facing HandsOn graph: a Python 3.12 world node proxying Isaac Lab in a worker."""
+import json
+
 import numpy as np
 import psutil
 import pytest
 from builtin_interfaces.msg import Duration
 from geometry_msgs.msg import Quaternion, Transform, Vector3
+from rosbridge_interfaces.srv import Json
 from sensor_msgs.msg import CameraInfo, Image, JointState, MultiDOFJointState
 from std_msgs.msg import Header
 from std_srvs.srv import Trigger
@@ -81,6 +84,19 @@ def test_handson_graph_serves_the_kinex_devices_from_a_native_worker(tmp_path, m
         # The head camera's lens, in ROS pixel centers.
         assert last["info"].distortion_model == "plumb_bob" and last["info"].d[0] == pytest.approx(.00646656)
         assert last["info"].k[2] == pytest.approx(431.267, abs=1e-3)
+        # The world node serves that lens: its descriptor, and rays through it.
+        geometry, unproject = (node.create_client(Json, f"head_camera/{name}") for name in ("geometry", "unproject"))
+        graph.until(lambda: geometry.service_is_ready() and unproject.service_is_ready())
+        stream = json.loads(graph.call(geometry, Json.Request(request="{}")).response)["streams"]["color"]
+        assert stream["frame"] == "head_camera/base" and stream["distortion"]["model"] == "opencv_brown_conrady"
+        assert stream["distortion"]["k1"] == pytest.approx(last["info"].d[0])
+        assert stream["projection"]["cx"] == pytest.approx(last["info"].k[2])
+        corner = json.loads(graph.call(unproject, Json.Request(request=json.dumps(
+            {"stream": "color", "calibration_id": stream["calibration_id"], "pixels": [[0., 0.]]}))).response)["rays"][0]
+        pinhole = [-stream["projection"]["cx"] / stream["projection"]["fx"],
+                   -stream["projection"]["cy"] / stream["projection"]["fy"]]
+        assert 1. < np.hypot(*np.subtract(corner[:2], pinhole)) * stream["projection"]["fx"] < 10.  # pixels
+        assert not any(name.startswith("/left_camera/") for name, _ in node.get_service_names_and_types())
         assert (last["spectator"].width, last["spectator"].height) == (960, 720)
         assert last["palm"].header.frame_id == "left_arm/base" and list(last["palm"].joint_names) == ["palm"]
         goal, hand = pose(last["palm"]), list(last["hand"].position)
