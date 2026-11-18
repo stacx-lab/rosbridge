@@ -1,0 +1,9 @@
+# One git patch filename per line, applied in order to .runtime/robocasa (robosuite is
+# exported to its robosuite/ subdirectory). Ported from RoboEnv:
+# 0001 loads rewritten object MJCF from a private temporary file, so the shared asset
+#      cache is never written; RoboEnv's helper is inlined so upstream imports nothing new.
+# 0002 removes duplicate counter geoms in first-seen order, so a seed rebuilds one kitchen.
+# 0003 checks MUJOCO_EGL_DEVICE_ID against index CUDA masks only, not GPU UUIDs.
+0001-private-object-xml.patch
+0002-deterministic-counter-regions.patch
+0003-robosuite-egl-device-check.patch

@@ -126,6 +126,28 @@ build = "python -m rosbridge.provisioning.workspace --simulator robocasa"
 test-ros = "bash -c 'source .workspaces/robocasa/install/local_setup.bash && python -m pytest -q simulators/robocasa/tests/ros'"
 smoke = "python -m pytest -q simulators/robocasa/tests/native"
 
+# PSI-Bench's kitchen (simulators/psi-kitchen): RoboCasa's dependencies, in an environment of its own.
+[feature.psi-kitchen.dependencies]
+numpy = "2.2.5.*"
+
+[feature.psi-kitchen.pypi-dependencies]
+mujoco = "==3.3.1"
+numba = "==0.61.2"
+scipy = "==1.15.3"
+opencv-python = "==4.10.0.84"
+gymnasium = "==0.29.1"
+imageio = "==2.37.4"
+h5py = "==3.16.0"
+termcolor = "==3.3.0"
+tqdm = "==4.70.0"
+pyarrow = "==21.0.0"
+pyyaml = "*"
+
+[feature.psi-kitchen.tasks]
+build = "python -m rosbridge.provisioning.workspace --simulator psi-kitchen"
+test-ros = "bash -c 'source .workspaces/psi-kitchen/install/local_setup.bash && python -m pytest -q simulators/psi-kitchen/tests/ros'"
+smoke = "python -m pytest -q simulators/psi-kitchen/tests/native"
+
 # BiDex-100's simulation requirements (requirements.txt plus its evaluator's h5py and msgpack)
 # without the replay extras; quaternionic serves the Astribot arm retargeting BiDexEnv builds.
 [feature.bidex.pypi-dependencies]
@@ -314,6 +336,7 @@ abc = { features = ["abc"] }
 libero = { features = ["libero"] }
 robotwin = { features = ["robotwin"] }
 robocasa = { features = ["robocasa"] }
+psi-kitchen = { features = ["psi-kitchen"] }
 bidex = { features = ["bidex"] }
 robodojo = { features = ["robodojo"], solve-group = "jazzy" }
 robodojo-native = { features = ["isaaclab", "robodojo-native"], no-default-feature = true }
