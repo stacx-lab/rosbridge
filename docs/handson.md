@@ -207,8 +207,8 @@ to idle.
 Single-arm tasks `eval_comb01`, `eval_gen01`, `eval_gen03`, `eval_gen06` and `eval_gen07`
 hold the left arm and hand at home and never ask for their targets
 (`bimanual_assembly_env.py:_apply_joint_targets`). Their workspaces from `rosbridge setup`
-declare no commands on those two devices, only their state, so Kinex refuses a command at
-once. The other single-arm tasks drive both arms upstream: those built on the frozen bases,
+declare no commands on those two devices, only their state, so a client that goes by the
+profiles, as Kinex does, has no command to send. The other single-arm tasks drive both arms upstream: those built on the frozen bases,
 which predate the hold, and the five Core tasks upstream exempts from it (`t11`, `t29`,
 `t33`, `t34`, `t47`).
 
@@ -224,7 +224,7 @@ Cameras are RGB and render through upstream's three-view RTX capture: its exposu
 sensor, and wrist views that hide the wrist's own cables. One capture renders all three
 views at a camera sample, six path-traced passes each (about 4 s, 14 s on a shared L40S); it
 never steps physics. A subscribed camera therefore samples at 2 Hz of simulation time, not
-30 Hz. A new subscriber still gets the current frame at once, so a Kinex read (subscribe, take
+30 Hz. A new subscriber still gets the current frame at once, so a read (subscribe, take
 one frame, unsubscribe) renders the current step whenever it reads. The cameras are the
 evaluator's for the task and seed:
 - **Head camera:** the Gemini 336's calibration (854×480, fx 463.39, fy 463.00, an

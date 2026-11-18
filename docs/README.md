@@ -1,7 +1,7 @@
 # Design and usage
 
 rosbridge exposes public robotics simulators, currently ABC, LIBERO, RoboTwin,
-RoboDojo, RoboCasa, BEHAVIOR, HandsOn and BiDex-100, as managed ROS 2 graphs that speak Kinex's device contract. It uses native ROS topics and
+RoboDojo, RoboCasa, BEHAVIOR, HandsOn and BiDex-100, as managed ROS 2 graphs. It uses native ROS topics and
 services, with no HTTP or WebSocket bridge. The command-line environment stays
 separate from simulator environments.
 
@@ -59,8 +59,8 @@ Management commands accept `--project` and `--json`.
 | `src/rosbridge/core`, `runtime` | Backend/device contracts, commands, stepping, wait scheduling |
 | `ros2/rosbridge_runtime` | The world node, device endpoints, observation publication, shared launch files |
 | `simulators/<sim>` | Native backend, asset preparation, catalog, demo and tests |
-| `tools/robots` | Rig builders that measure Kinex profiles and URDFs from each simulator |
-| `catalog/robots` | Kinex workspace skeletons; see [Kinex integration](kinex.md) |
+| `tools/robots` | Rig builders that measure device profiles and URDFs from each simulator |
+| `catalog/robots` | Robot rigs: device profiles and URDFs; see [Devices and robot catalog](devices.md) |
 | `third_party/<sim>`, `patches/<sim>` | Pinned upstream source and explicit patch series |
 
 A run has one process containing a `world` node that hosts every device's
@@ -72,8 +72,8 @@ and `native_backend` in its manifest: the world node then holds a proxy
 process in that environment. Calls are sequential over a private socket; arrays
 cross it independently of the NumPy versions on either side, and a dead worker
 terminates the graph like an executor failure. World owns
-the backend, stepping and clock; native judging stays internal. Kinex owns
-frame publication and composition outside the simulator.
+the backend, stepping and clock; native judging stays internal. Frame publication
+and composition are a client's, from the profiles' frames and URDFs.
 
 The main thread exclusively creates, loads, steps, renders and destroys native
 objects. ROS callbacks queue functions that the main thread runs between steps, so
@@ -137,8 +137,7 @@ pose of its tip link, as HandsOn's arms are, takes instead a
 `std_msgs/msg/Float64` position on `<gripper>/target`, in each simulator's native
 command units (LIBERO's finger metres; the normalized 0..1 opening of ABC, RoboTwin
 and RoboDojo; RoboCasa's integrated -1..1 command; BEHAVIOR's smooth -1..1 R1Pro command).
-Mobile bases (Kinex
-`locomotion`) accept a body-frame `geometry_msgs/msg/Twist` on `<base>/velocity`,
+Mobile bases (`locomotion` devices) accept a body-frame `geometry_msgs/msg/Twist` on `<base>/velocity`,
 held for 0.5 s of world time after the last one, and publish `nav_msgs/msg/Odometry`
 on `<base>/odometry`. Invalid targets are logged
 and rejected; a target within 0.001 (rad or m) of a limit, such as a measured
@@ -149,7 +148,7 @@ held until replaced or stopped. `<device>/stop` holds the measured position; a b
 commands zero velocity. Each command
 subscription is created before its device's stop service. Cameras publish RGB8
 `Image` on `<camera>/image` and `CameraInfo`; frames are `<camera>/base`. RGB-D
-cameras (Kinex `rgbd`) add registered `<camera>/depth` (16UC1 millimetres along the
+cameras (`rgbd` devices) add registered `<camera>/depth` (16UC1 millimetres along the
 optical axis, 0 invalid) with the same stamp as its image. Frames are reliable and
 render only for subscribers: once per camera sample (30 per simulated second, unless the
 simulator sets fewer, as HandsOn's 2 for its seconds-long renders), and at once for each new
@@ -244,7 +243,7 @@ and register a lazy `rosbridge.backends` entry point (a `WorkerBackend` subclass
 for a native worker). Supply an `ActionLayout` whose commands are positions in
 feedback units (or, for a base's velocity group, body velocities whose feedback is
 odometry; for a pose group, its tip pose, passed to `step(action, poses)` with
-`tip_pose(group)` measuring it), a `device_inventory` naming its devices by Kinex device type (`joint`,
+`tip_pose(group)` measuring it), a `device_inventory` naming its devices by type (`joint`,
 `gripper`, `locomotion`, `rgb`, `rgbd`), each camera's image size and intrinsics
 (`intrinsics(camera)`: width, height, fx, fy, cx, cy) and `SpectatorView` settings, and
 declare the inventory in the manifest's `[devices]` table. A manifest's `install`

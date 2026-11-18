@@ -1,7 +1,7 @@
 # rosbridge
 
-Run public robotics simulators as managed ROS 2 graphs that speak Kinex's device
-contract. One `world` node exposes every device's topics and services; world
+Run public robotics simulators as managed ROS 2 graphs. One `world` node exposes every
+device's topics and services, described by exportable device profiles; world
 coordinates native stepping and, when recording, spectator streams. ABC, LIBERO,
 RoboTwin, RoboDojo, RoboCasa, BEHAVIOR, HandsOn and BiDex-100 have separate native environments managed
 with RoboStack and Pixi; Isaac Sim 5.1 (RoboDojo, BEHAVIOR's OmniGibson, HandsOn) runs in a
@@ -23,4 +23,5 @@ rosbridge launch abc --execution-mode stepped --record ./recordings/abc
 - [BEHAVIOR household activities with the R1Pro](docs/behavior.md)
 - [HandsOn dexterous manipulation with two ROKAE arms and Wuji hands](docs/handson.md)
 - [BiDex-100 bimanual dexterous manipulation with Franka or Astribot arms and Sharpa hands](docs/bidex.md)
-- [Kinex device contract and robot catalog](docs/kinex.md)
+- [Devices, robot catalog and workspace export](docs/devices.md)
+- [Using rosbridge with Kinex](docs/kinex.md)

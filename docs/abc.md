@@ -49,7 +49,7 @@ The simulator hosts these devices on one `world` node:
 | `left_gripper`, `right_gripper` | `<gripper>/joint_state`, `<gripper>/target`, `<gripper>/stop` |
 | `camera_top`, `camera_left`, `camera_right` | `<camera>/image`, `<camera>/depth`, `<camera>/camera_info` |
 
-Every task runs on the Kinex rig `abc/abc-yam`; `rosbridge setup abc/TASK`
+Every task runs on the rig `abc/abc-yam`; `rosbridge setup abc/TASK`
 exports its workspace (arm URDFs measured from the MuJoCo model, mounts at
 (0.2525, ±0.31, 0.76), wrist cameras on the `link_6` flanges).
 
@@ -62,7 +62,7 @@ rig's gripper URDF drives both finger links from it. Invalid targets are logged
 and leave the held target unchanged. Each `stop` (`std_srvs/srv/Trigger`) holds
 the measured position.
 
-The cameras are Kinex `rgbd` devices, as in RoboEnv: `<camera>/depth` publishes
+The cameras are `rgbd` devices, as in RoboEnv: `<camera>/depth` publishes
 16UC1 millimetres along the optical axis, registered to the image (0 where nothing
 lies within MuJoCo's clip range), with the same stamp as its image.
 

@@ -20,8 +20,8 @@ and CPU PyTorch 2.5.1.
 
 ## Graph
 
-Every interface runs on the single `world` node; names match the Kinex devices of
-the [robot catalog](kinex.md).
+Every interface runs on the single `world` node; names match the devices of
+the [robot catalog](devices.md).
 
 | Device | Interfaces |
 | --- | --- |
@@ -36,7 +36,7 @@ a run's environment and domain.
 
 ```mermaid
 flowchart LR
-  client[Kinex or a controller] -->|joint and gripper targets, stops| world
+  client[A controller or agent harness] -->|joint and gripper targets, stops| world
   client -->|wait / stop| world
   world -->|one native interval| native[LIBERO / robosuite]
   native -->|state, images| world
@@ -79,8 +79,8 @@ success, as the evaluator's `done` does; LIBERO has no failure termination.
 Observation cameras are 256×256 RGB in frames `camera_agentview/base` and
 `camera_wrist/base`, with principal point `(width-1)/2, (height-1)/2`. Images are
 rendered at 30 Hz of simulation time only while subscribed, and at once for a new
-subscriber, also while the world is paused; reading never advances time. Kinex owns
-the calibrated camera frames and TF.
+subscriber, also while the world is paused; reading never advances time. The
+calibrated camera frames are in the profiles; the graph publishes no TF.
 
 With `--record`, spectator views render the native `agentview` and
 `robot0_eye_in_hand` cameras at 960×720 and 10 Hz into `third_person.mp4` and

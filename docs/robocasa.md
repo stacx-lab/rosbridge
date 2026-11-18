@@ -40,7 +40,7 @@ ROSBRIDGE_ASSET_SEED=../RoboEnv/.cache/roboenv/assets rosbridge prepare robocasa
 
 ## Graph
 
-| Device | Kinex type | Interfaces |
+| Device | Type | Interfaces |
 | --- | --- | --- |
 | `world` | world | `/clock`, `world/wait`, `world/stop`, `world/spectator/*` while recording |
 | `base` | locomotion | `base/velocity`, `base/odometry`, `base/stop` |
@@ -64,7 +64,7 @@ and gripper commands.
 - `base/velocity` (`geometry_msgs/msg/Twist`) carries upstream's normalized base
   action: `linear.x`, `linear.y` and `angular.z` in [-1, 1], in the body frame (the
   native kitchen controller already rotates them by the base's heading). Other
-  fields must be zero. As Kinex locomotion requires, the base stops 0.5 s of world
+  fields must be zero. The base stops 0.5 s of world
   time after the last twist, so re-send to keep moving; `base/stop` commands zero.
   `base/odometry` (`nav_msgs/msg/Odometry`) reports the measured body twist in m/s
   and rad/s at the chassis origin (21 cm ahead of the yaw axis) in `base/base`, and
