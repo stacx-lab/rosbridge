@@ -43,8 +43,8 @@ def main():
         devices[f"{side}_arm"] = rigs.joint(
             f"{side}_arm",
             f"ARX X5 six-joint {side} arm of the RoboDojo rig. Geometry is the sibling arm.urdf "
-            f"with flange (link6) as the tip link; measured links are on TF as {side}_arm/<link>, "
-            f"and lib.kinematics.joint_model('{side}_arm') computes FK/IK from it. Commands are "
+            f"with flange (link6) as the tip link; measured links are on TF as {side}_arm/<link>. "
+            "Commands are "
             "upstream's absolute joint positions ({side}_arm_joint_state of EvalEnv.take_action), "
             "interpolated by the native controller over each 0.04 s frame. Both arms use the "
             "native joint names joint1..joint6.".replace("{side}", side),

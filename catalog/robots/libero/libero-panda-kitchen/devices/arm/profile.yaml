@@ -52,8 +52,7 @@ meta:
 type: joint
 description: Panda seven-joint manipulator mounted in the tabletop workspace. Geometry
   is the sibling arm.urdf with flange as the tip link; measured links are on TF as
-  arm/<link>, and lib.kinematics.joint_model('arm') computes FK/IK from it. rosbridge rejects
-  targets outside the URDF joint limits.
+  arm/<link>. rosbridge rejects targets outside the URDF joint limits.
 source: introspected
 calibrated_at: null
 method: introspection

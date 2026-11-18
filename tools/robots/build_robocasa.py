@@ -75,8 +75,7 @@ def main():
         "arm": rigs.joint(
             "arm",
             "Franka Panda seven-joint arm on the torso. Geometry is the sibling arm.urdf with "
-            "flange as the tip link; measured links are on TF as arm/<link>, and "
-            "lib.kinematics.joint_model('arm') computes FK/IK from it. Commands are absolute native "
+            "flange as the tip link; measured links are on TF as arm/<link>. Commands are absolute native "
             "joint positions; rosbridge rejects targets outside the native joint ranges.",
             list(robot.robot_joints), robot.init_qpos,
             rigs.pose_frame("torso:top", rigs.relative(top, pose["robot0_link0"]))),

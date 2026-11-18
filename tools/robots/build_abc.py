@@ -65,9 +65,8 @@ def main():
         devices[f"{side}_arm"] = rigs.joint(
             f"{side}_arm",
             f"YAM six-joint {side} arm of the ABC station. Geometry is the sibling arm.urdf with "
-            f"flange (link_6) as the tip link; measured links are on TF as {side}_arm/<link>, and "
-            f"lib.kinematics.joint_model('{side}_arm') computes FK/IK from it. Commands are the native "
-            "absolute joint positions of upstream's 14-D policy action; rosbridge rejects "
+            f"flange (link_6) as the tip link; measured links are on TF as {side}_arm/<link>. "
+            "Commands are the native absolute joint positions of upstream's 14-D policy action; rosbridge rejects "
             "targets outside the native joint ranges.",
             [f"{side}_joint{i}" for i in range(1, 7)], HOME[side], base)
         site = model.site(f"{side}_grasp_site").id

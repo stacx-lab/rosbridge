@@ -55,7 +55,7 @@ def main():
             f"{side}_arm",
             f"ARX5 six-joint {side} arm of the RoboTwin ALOHA AgileX. Geometry is the sibling "
             f"arm.urdf with flange ({p}_link6) as the tip link; measured links are on TF as "
-            f"{side}_arm/<link>, and lib.kinematics.joint_model('{side}_arm') computes FK/IK from it. "
+            f"{side}_arm/<link>. "
             "Commands are upstream's absolute joint positions (the arm part of its 14-D qpos "
             "action), applied as native drive targets once per 0.04 s frame. The native URDF "
             "limits are +/-10 rad placeholders.",
