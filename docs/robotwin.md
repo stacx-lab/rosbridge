@@ -92,5 +92,5 @@ pixi run --frozen -e robotwin test-ros
 rosbridge demo robotwin
 ```
 
-`test_kinex_geometry.py` (with `KINEX_PYTHON`) checks the exported rig's arm FK,
+`tests/kinex/native/test_robotwin.py` (with `KINEX_PYTHON`) checks the exported rig's arm FK,
 finger links, TCP and camera mounts against SAPIEN.

@@ -14,7 +14,6 @@ import yaml
 from rosbridge.catalog import tasks
 from rosbridge.catalog.robots import setup
 from rosbridge.core.worker import WorkerBackend
-from tests.kinex_geometry import Rig, compose, requires_kinex, rt, xyzq
 
 # The default task: both arms move freely.
 TASK, STEPS = "t24_place_ball_in_bowl", 150
@@ -111,43 +110,6 @@ def test_cameras_render_the_contract_and_leave_physics_unchanged(sim):
     np.testing.assert_array_equal(before[1], after[1])
 
 
-@requires_kinex
-def test_rig_matches_native_palms_fingers_and_cameras(tmp_path, sim):
-    rig = Rig(TASK, tmp_path, seed=0)  # the workspace of the episode the fixture loaded
-    action = sim.state()[0]
-    for _, offset in SIDES:
-        action[[offset + 7 + i for i in CURL]] += .3
-    for _ in range(2):
-        poses = {f"{side}_arm": lifted(sim, side, .03) for side, _ in SIDES}
-        for _ in range(15):
-            sim.step(action, poses)
-        q = sim.state()[0]
-        palms = {}
-        for side, offset in SIDES:
-            palms[side] = palm = rig.flange(f"{side}_arm", q[offset:offset + 7])
-            measured = sim.native("link_pose", side, f"{side}_palm_link")
-            np.testing.assert_allclose(palm[0], measured[0], atol=1e-4)
-            np.testing.assert_allclose(palm[1], measured[1], atol=1e-4)
-            # A pose target is the palm in the arm base, which Isaac places at the arm's profile mount.
-            in_world = compose(rig.mount(f"{side}_arm"), xyzq(list(sim.native("tip_pose", f"{side}_arm"))))
-            np.testing.assert_allclose(in_world[0], measured[0], atol=1e-4)
-            np.testing.assert_allclose(in_world[1], measured[1], atol=1e-4)
-            hand = compose(palm, rig.mount(f"{side}_hand"))
-            for finger in range(1, 6):
-                link = f"{side}_finger{finger}_link4"
-                expected = compose(hand, rig.link(f"{side}_hand", q[offset + 7:offset + 27], link))
-                measured = sim.native("link_pose", side, link)
-                np.testing.assert_allclose(expected[0], measured[0], atol=1e-4)
-                np.testing.assert_allclose(expected[1], measured[1], atol=1e-4)
-        sim.render("head_camera")  # a capture places every camera at its drawn mount
-        for camera, expected in (("head_camera", rig.mount("head_camera")),
-                                 ("left_camera", compose(palms["left"], rig.mount("left_camera"))),
-                                 ("right_camera", compose(palms["right"], rig.mount("right_camera")))):
-            measured = rt(*sim.camera_pose(camera))
-            np.testing.assert_allclose(expected[0], measured[0], atol=1e-4)
-            np.testing.assert_allclose(expected[1], measured[1], atol=1e-4)
-
-
 def lined_up(image, view, spectator_k, rays, size=96):
     """Shifts (x, y, dx, dy) in pixels of a camera image's textured patches against its spectator view, an
     undistorted pinhole at the same pose, resampled where rays (H x W x 3, the profile's) meet it."""
@@ -173,10 +135,10 @@ def test_cameras_render_the_geometry_their_profiles_state(tmp_path, sim):
     Without the head camera's lens, its edges miss by pixels."""
     from rosbridge.catalog.cameras import BROWN_CONRADY
     from rosbridge.core.lens import LensGeometry
-    rig = Rig(TASK, tmp_path, seed=0)
+    setup(TASK, tmp_path, seed=0)  # the workspace of the episode the fixture loaded
     for camera, view in (("head_camera", "third_person"), ("left_camera", "left_wrist"),
                          ("right_camera", "right_wrist")):
-        color = rig.profiles[camera]["color"]
+        color = yaml.safe_load((tmp_path / ".kinex/devices" / camera / "profile.yaml").read_text())["color"]
         width, height = color["width"], color["height"]
         fx, fy, cx, cy = (color["projection"][key] for key in ("fx", "fy", "cx", "cy"))
         u, v = (grid.ravel() for grid in np.meshgrid(np.arange(width, dtype=float), np.arange(height, dtype=float)))

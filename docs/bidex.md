@@ -162,5 +162,5 @@ rosbridge demo bidex
 pixi run --frozen -e bidex python tools/robots/build_bidex.py   # rewrites the three catalog rigs
 ```
 
-With `KINEX_PYTHON`, the native checks also compare each rig's arm FK, hand mounts,
-fingertips and camera mounts with MuJoCo, on ID and OOD episodes.
+`tests/kinex/native/test_bidex.py` (with `KINEX_PYTHON`) compares each rig's arm FK, hand
+mounts, fingertips and camera mounts with MuJoCo, on ID and OOD episodes.

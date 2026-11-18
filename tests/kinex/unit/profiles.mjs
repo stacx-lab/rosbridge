@@ -1,5 +1,5 @@
 // Validate exported workspaces with Kinex's own profile schema and readiness plan:
-//   node tests/kinex_profiles.mjs KINEX_CORE_DIST WORKSPACE...
+//   node tests/kinex/unit/profiles.mjs KINEX_CORE_DIST WORKSPACE...
 // Prints one {robot, devices, items} JSON object per workspace; exits nonzero when a
 // profile fails to parse.
 import path from 'node:path'

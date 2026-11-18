@@ -76,8 +76,8 @@ from the arm URDF, publishes calibrated mounts and fixed frames such as
 `rosbridge robots list` lists every rig. Builders in `tools/robots` measure each
 rig from its simulator (`build_abc.py`, `build_robotwin.py`, `build_robodojo.py`,
 `build_robocasa.py`, `build_behavior.py`, `build_handson.py`, `build_bidex.py`);
-native geometry tests check the exported profiles with Kinex's own FK against the
-simulator.
+the native [compatibility checks](#compatibility-checks) compare the exported profiles,
+through Kinex's own FK, with the simulator.
 
 | Robot ID | Devices | Catalog tasks |
 |---|---|---:|
@@ -120,8 +120,34 @@ unloaded profiles on the selected ROS domain and writes `.kinex/kinex.json` with
 provider; it neither starts Kinex nor launches a simulator, and it refuses an existing
 workspace. Prepare Kinex Python separately; to call `world.wait`, its environment also needs
 `rosbridge_interfaces` (build `ros2/rosbridge_interfaces` there, or source a simulator overlay). Export a workspace for each task and seed whose devices
-differ, and launch that task and seed in it. Each simulator's native
-`test_kinex_geometry.py` checks its default task's workspace against the simulator.
+differ, and launch that task and seed in it.
+
+## Compatibility checks
+
+Every check that needs Kinex is in `tests/kinex`, apart from rosbridge's own tests, which
+run without it. They take Kinex Python from
+`KINEX_PYTHON=../kinex2.0/packages/core/assets/python` and are skipped without it.
+
+| Directory | Checks | Runs in |
+|---|---|---|
+| `tests/kinex/unit` | `rosbridge_interfaces` keeps the definitions of Kinex's `Wait` and `Json`; Kinex's profile schema and readiness plan accept every rig | the default environment, next to a Kinex checkout |
+| `tests/kinex/ros` | Kinex's ROS communication and device host on a rosbridge overlay; `workspace.mjs`, an end-to-end program against a launched LIBERO run | a sourced simulator overlay |
+| `tests/kinex/native` | `test_<simulator>.py`: the exported rig's FK, mounts and camera frames, through Kinex's kinematics, against the simulator | that simulator's native environment |
+
+```bash
+export KINEX_PYTHON=$PWD/../kinex2.0/packages/core/assets/python
+pixi run --frozen python -m pytest -q tests/kinex/unit
+pixi run --frozen -e abc bash -c \
+    'source .workspaces/abc/install/local_setup.bash && python -m pytest -q tests/kinex/ros'
+pixi run --frozen -e abc python -m pytest -q tests/kinex/native/test_abc.py
+pixi run --frozen -e handson-native env PYTHONPATH=src:simulators/handson:.runtime/handson \
+    python -m pytest -q -p no:cacheprovider tests/kinex/native/test_handson.py
+```
+
+LIBERO, RoboTwin, RoboCasa and BiDex-100 run as ABC does, and RoboDojo and BEHAVIOR as
+HandsOn does, in `robodojo-native` and `behavior-native`. The schema and readiness check also
+needs Node, a built Kinex core and `KINEX_PYTHON_PROJECT`, one prepared `.kinex/python`
+directory, because Kinex provisions a multi-gigabyte environment per workspace.
 
 ## Episodes and judging
 

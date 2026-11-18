@@ -1,11 +1,11 @@
 // Native cross-repository smoke: start rosbridge, export a workspace, prepare its
-// Kinex Python, then: node tests/ros/kinex_workspace.mjs WORKSPACE.
+// Kinex Python, then: node tests/kinex/ros/workspace.mjs WORKSPACE.
 import assert from 'node:assert/strict'
 import { access, mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
-import { createKinexRuntime } from '../../../kinex2.0/packages/core/dist/index.js'
+import { createKinexRuntime } from '../../../../kinex2.0/packages/core/dist/index.js'
 const directory = path.resolve(process.argv[2])
 const runtime = createKinexRuntime({directory, enableRecording:true})
 const owned = []

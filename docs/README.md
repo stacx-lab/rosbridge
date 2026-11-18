@@ -283,11 +283,8 @@ rosbridge demo handson --timeout 1800
 rosbridge demo bidex
 ```
 
-Kinex-backed checks (rig geometry against each simulator, Kinex client tests)
-need `KINEX_PYTHON=../kinex2.0/packages/core/assets/python`; without it they are
-skipped while the remaining tests still run. The Kinex schema and readiness check
-of every rig also needs `KINEX_PYTHON_PROJECT`, one prepared `.kinex/python`
-directory, because Kinex provisions a multi-gigabyte environment per workspace.
+None of the commands above needs Kinex. The checks that do are together in `tests/kinex`
+and run on their own; see [Kinex compatibility checks](kinex.md#compatibility-checks).
 
 Unit tests cover the command buffer, scheduling, the robot catalog, source
 preparation and caches. Native checks compare actions and timing with upstream and

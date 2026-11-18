@@ -107,5 +107,5 @@ rosbridge demo robodojo --timeout 1800
 ```
 
 The native checks run the backend in worker subprocesses because Isaac's shutdown
-ends its process. With `KINEX_PYTHON`, they also check the exported rig's arm FK,
-finger links and camera mounts against Isaac.
+ends its process. `tests/kinex/native/test_robodojo.py` (with `KINEX_PYTHON`) checks the
+exported rig's arm FK, finger links and camera mounts against Isaac.

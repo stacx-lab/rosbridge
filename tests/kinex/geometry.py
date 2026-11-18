@@ -1,24 +1,19 @@
 """Exported catalog rigs evaluated with Kinex's own URDF kinematics.
 
-Simulator geometry tests compare these poses with native measurements. They
+The native geometry tests compare these poses with each simulator's measurements. They
 need Kinex Python (KINEX_PYTHON=packages/core/assets/python) and mark
 themselves with `requires_kinex`. A module-level skip would end collection of
 sibling test modules under ROS's launch_testing pytest plugin.
 """
 import importlib.util
-import os
 from pathlib import Path
-import sys
 
 import pytest
 import yaml
 
 from rosbridge.catalog.robots import setup
 
-if os.environ.get("KINEX_PYTHON") and os.environ["KINEX_PYTHON"] not in sys.path:
-    sys.path.insert(0, os.environ["KINEX_PYTHON"])
-
-PROJECT = Path(__file__).resolve().parents[1]
+PROJECT = Path(__file__).resolve().parents[2]
 
 
 def available():

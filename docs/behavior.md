@@ -182,12 +182,13 @@ The spectators render with every step, and loading settles them at their start p
 16 renders; a spectator sample reads the latest frame.
 
 ```bash
-pixi run --frozen -e behavior-native smoke   # controls, cameras, reset, rig geometry, slicer and vacuum rules
+pixi run --frozen -e behavior-native smoke   # controls, cameras, reset, slicer and vacuum rules
 pixi run --frozen -e behavior test-ros
 rosbridge demo behavior --timeout 1800
 ```
 
 The rig is rebuilt with `tools/robots/build_behavior.py` in the native environment.
 Native checks boot
-one activity (`ROSBRIDGE_ALL_TASKS=1` loads every R1Pro activity); with
-`KINEX_PYTHON`, they compare the exported rigs' FK with OmniGibson.
+one activity (`ROSBRIDGE_ALL_TASKS=1` loads every R1Pro activity).
+`tests/kinex/native/test_behavior.py` (with `KINEX_PYTHON`) compares the exported rig's FK
+with OmniGibson.

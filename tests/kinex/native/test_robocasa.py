@@ -2,7 +2,7 @@
 import numpy as np
 
 from rosbridge_robocasa.backend import RoboCasaSim
-from tests.kinex_geometry import Rig, compose, requires_kinex, rt
+from tests.kinex.geometry import Rig, compose, requires_kinex, rt
 
 pytestmark = requires_kinex
 

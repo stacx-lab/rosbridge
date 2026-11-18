@@ -131,9 +131,9 @@ The finite demo checks arm trajectories and return, gripper close/open,
 invalid-target rejection, an RGB-D frame read and advancing simulation time. It
 reports measured realtime factor; this is an actuation check, not a task-success
 benchmark. Native tests additionally compare a wrapped rollout to upstream and
-check that 960×720 spectator capture leaves physics and observation images intact,
-and `test_kinex_geometry.py` checks the exported rig's arm FK, finger mimics, TCP
-and camera mounts against MuJoCo on patched and unpatched scenes.
+check that 960×720 spectator capture leaves physics and observation images intact.
+`tests/kinex/native/test_abc.py` (with `KINEX_PYTHON`) checks the exported rig's arm FK,
+finger mimics, TCP and camera mounts against MuJoCo on patched and unpatched scenes.
 All 33 cataloged tasks also have a native load-and-step check, which validates
 actual XML/mesh references beyond cached asset inventories. ROS tests check
 observations and initial and advancing spectator streams in stepped and realtime

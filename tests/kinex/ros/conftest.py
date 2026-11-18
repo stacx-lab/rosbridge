@@ -6,9 +6,9 @@ pytest_ignore_collect first, so collect_ignore is not consulted.
 """
 import pytest
 
-from tests.kinex_geometry import available
+from tests.kinex.geometry import available
 
-KINEX_MODULES = {"test_kinex.py", "test_device_nodes.py"}
+KINEX_MODULES = {"test_communication.py", "test_device_nodes.py"}
 
 
 @pytest.hookimpl(tryfirst=True)

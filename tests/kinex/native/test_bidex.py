@@ -3,7 +3,7 @@ import numpy as np
 import pytest
 
 from rosbridge_bidex.backend import BiDexSim
-from tests.kinex_geometry import Rig, compose, requires_kinex, rt
+from tests.kinex.geometry import Rig, compose, requires_kinex, rt
 
 pytestmark = requires_kinex
 

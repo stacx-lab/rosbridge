@@ -265,6 +265,7 @@ pixi run --frozen -e handson-native env PYTHONPATH=src:simulators/handson:.runti
 ```
 
 The native checks drive both palms by pose and check, per task, that the exported workspace
-commands exactly the arms upstream drives. With `KINEX_PYTHON` they also compare the exported
-workspace of `t24` at seed 0 (palm FK, the arm base mounts, fingertips and drawn camera
-mounts) with Isaac.
+commands exactly the arms upstream drives, and that each camera's image lines up with the
+geometry its profile states. `tests/kinex/native/test_handson.py` (with `KINEX_PYTHON`)
+compares the exported workspace of `t24` at seed 0 (palm FK, the arm base mounts, fingertips
+and drawn camera mounts) with Isaac.

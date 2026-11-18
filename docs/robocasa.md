@@ -128,10 +128,10 @@ and the ROS workspace in `.workspaces/robocasa`. The rig is rebuilt with
 ## Checks
 
 ```bash
-pixi run --frozen -e robocasa smoke      # representative tasks, controls, rendering and rig geometry
+pixi run --frozen -e robocasa smoke      # representative tasks, controls and rendering
 pixi run --frozen -e robocasa test-ros
 ```
 
 Native checks cover an atomic and a composite evaluation task and a task without a
-dataset horizon, not all 365. Rig geometry compares Kinex's FK through base, torso
-and arm with MuJoCo and needs `KINEX_PYTHON`.
+dataset horizon, not all 365. `tests/kinex/native/test_robocasa.py` (with `KINEX_PYTHON`)
+compares the exported rig's FK through base, torso and arm with MuJoCo.

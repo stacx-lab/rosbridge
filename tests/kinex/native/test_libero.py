@@ -7,7 +7,7 @@ import yaml
 
 from rosbridge.catalog.robots import setup
 from rosbridge_libero.backend import LiberoSim
-from tests.kinex_geometry import requires_kinex
+from tests.kinex.geometry import requires_kinex
 
 pytestmark = requires_kinex
 
@@ -20,7 +20,7 @@ pytestmark = requires_kinex
 def test_catalog_arm_and_camera_geometry_matches_measurements(tmp_path, variant, task):
     from kinex.common.geometry import compose_rt, xyzq_to_rt
     from kinex.common.joints import JointModel
-    project = Path(__file__).resolve().parents[4]
+    project = Path(__file__).resolve().parents[3]
     result = setup(f"libero/{task}", tmp_path, seed=0, project=project)
     assert result["robot"] == f"libero/libero-panda-{variant}"
     directory = tmp_path / ".kinex/devices"

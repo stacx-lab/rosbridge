@@ -1,13 +1,9 @@
-"""Native protocol helper tests. Set KINEX_PYTHON to core/assets/python."""
+"""Kinex's ROS communication on a rosbridge overlay: fan-out, bounded queues, service failures and teardown."""
 import asyncio
-import os
-import sys
 import uuid
 
 import pytest
 
-if os.environ.get('KINEX_PYTHON'):
-    sys.path.insert(0, os.environ['KINEX_PYTHON'])
 pytest.importorskip('kinex.communication')
 from kinex.communication import communication
 

@@ -12,7 +12,6 @@ import pytest
 
 from rosbridge.catalog import tasks
 from rosbridge.core.worker import WorkerBackend
-from tests.kinex_geometry import Rig, compose, requires_kinex
 
 ALL = [t["native_task"] for t in tasks(name="behavior").values()]
 SELECTED = ALL if os.environ.get("ROSBRIDGE_ALL_TASKS") else ["picking_up_trash"]
@@ -102,43 +101,6 @@ def test_step_limit_ends_the_episode_and_reset_restores_the_instance(sim):
     with pytest.raises(ValueError, match="one task"):
         sim.reset("picking_up_trash", 0)
     assert not sim.done and sim.task == "turning_on_radio"
-
-
-def rt(matrix):
-    return matrix[:3, :3].tolist(), matrix[:3, 3].tolist()
-
-
-def assert_pose(expected, measured, atol=1e-4):
-    np.testing.assert_allclose(expected[0], measured[0], atol=atol)
-    np.testing.assert_allclose(expected[1], measured[1], atol=atol)
-
-
-@requires_kinex
-def test_rig_matches_native_chains_grippers_and_cameras(tmp_path, sim):
-    rig = Rig("behavior", tmp_path)
-    target = sim.state()[0]
-    torso, grips = channels(sim, "torso"), [channels(sim, f"{side}_gripper")[0] for side in ("left", "right")]
-    target[torso[1]] += .1
-    target[grips] = 0.
-    for _ in range(30):
-        sim.step(target)
-    q = sim.state()[0]
-    base = np.linalg.inv(sim.native("link_pose", "base_link"))
-
-    def measured(link):
-        return rt(base @ sim.native("link_pose", link))
-    top = compose(rig.mount("torso"), rig.link("torso", q[torso], "top"))
-    assert_pose(top, measured("torso_link4"))
-    assert_pose(compose(top, rig.mount("head_camera")), rt(base @ sim.camera_pose("head_camera")))
-    for side in ("left", "right"):
-        flange = compose(top, compose(rig.mount(f"{side}_arm"), rig.link(f"{side}_arm", q[channels(sim, f"{side}_arm")])))
-        assert_pose(flange, measured(f"{side}_arm_link7"))
-        assert_pose(compose(flange, rig.mount(f"{side}_camera")), rt(base @ sim.camera_pose(f"{side}_camera")))
-        hand = compose(flange, rig.mount(f"{side}_gripper"))
-        grip = q[channels(sim, f"{side}_gripper")]
-        for finger, link in (("finger_a", "1"), ("finger_b", "2")):
-            assert_pose(compose(hand, rig.link(f"{side}_gripper", grip, finger)),
-                        measured(f"{side}_gripper_finger_link{link}"), atol=2e-3)
 
 
 def test_particles_out_of_the_loaded_rooms_are_removed_at_every_load_and_recorded():

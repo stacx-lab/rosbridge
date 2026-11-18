@@ -1,16 +1,12 @@
 """Owned implementations and borrowed interfaces have independent lifecycles."""
 import asyncio
 import copy
-import os
 from pathlib import Path
-import sys
 import uuid
 
 import pytest
 import yaml
 
-if os.environ.get("KINEX_PYTHON"):
-    sys.path.insert(0, os.environ["KINEX_PYTHON"])
 pytest.importorskip("kinex.host.device")
 from kinex.communication import communication, qos
 from kinex.host.device import DeviceHost
@@ -102,7 +98,7 @@ def test_two_devices_can_borrow_endpoints_from_one_node():
 def test_catalog_camera_borrows_rosbridge_endpoints_and_checks_readiness():
     from sensor_msgs.msg import CameraInfo, Image
 
-    profile = Path(__file__).resolve().parents[2] / "catalog/robots/libero/libero-panda-tabletop/devices/camera_agentview/profile.yaml"
+    profile = Path(__file__).resolve().parents[3] / "catalog/robots/libero/libero-panda-tabletop/devices/camera_agentview/profile.yaml"
     definition = yaml.safe_load(profile.read_text())
     assert definition["runtime"]["nodes"] == []
     definition["runtime"].update(domain_id=201, ready_timeout_s=.15)
