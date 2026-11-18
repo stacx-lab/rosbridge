@@ -288,9 +288,6 @@ need `KINEX_PYTHON=../kinex2.0/packages/core/assets/python`; without it they are
 skipped while the remaining tests still run. The Kinex schema and readiness check
 of every rig also needs `KINEX_PYTHON_PROJECT`, one prepared `.kinex/python`
 directory, because Kinex provisions a multi-gigabyte environment per workspace.
-The Kinex frame-host tests (`tests/ros/test_kinex_frames.py`) also need Kinex's full
-`kinex_interfaces`, which rosbridge does not build: source that directory's
-`ros/install/local_setup.bash` after the simulator overlay, or they are skipped.
 
 Unit tests cover the command buffer, scheduling, the robot catalog, source
 preparation and caches. Native checks compare actions and timing with upstream and

@@ -8,7 +8,7 @@ import pytest
 
 from tests.kinex_geometry import available
 
-KINEX_MODULES = {"test_kinex.py", "test_kinex_frames.py", "test_device_nodes.py"}
+KINEX_MODULES = {"test_kinex.py", "test_device_nodes.py"}
 
 
 @pytest.hookimpl(tryfirst=True)
