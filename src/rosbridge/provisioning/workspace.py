@@ -27,7 +27,7 @@ def main():
     command = [sys.executable, "-m", "colcon", "--log-base", str(workspace / "log"),
                "build", "--symlink-install", "--build-base", str(workspace / "build"),
                "--install-base", str(workspace / "install"),
-               # ros2/ holds rosbridge's runtime and its Wait interface.
+               # ros2/ holds rosbridge's runtime and the interface package.
                "--base-paths", str(root / "ros2"), str(directory),
                "--packages-up-to", config["ros_package"], "--cmake-args",
                f"-DPython3_EXECUTABLE={sys.executable}", f"-DPYTHON_EXECUTABLE={sys.executable}"]

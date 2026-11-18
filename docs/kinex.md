@@ -24,10 +24,11 @@ simulator instead of relaying it. What Kinex adds runs in Kinex:
 ## Interface types
 
 The world's `wait` is `custom_interfaces/srv/Wait` and a lensed camera's `geometry`,
-`unproject` and `project` are `custom_interfaces/srv/Json`. `custom_interfaces` holds only
-these two services. rosbridge and Kinex each build an identical copy of the package, from
-`ros2/custom_interfaces` here and from Kinex's own assets there, so the types are the same on
-the wire and neither project needs the other to build or to call them. The camera
+`unproject` and `project` are `custom_interfaces/srv/Json`. rosbridge and Kinex each build an
+identical copy of the package, from `ros2/custom_interfaces` here and from Kinex's own assets
+there, so the types are the same on the wire and neither project needs the other to build or
+to call them. The package also holds `LookupTransform`, the type of Kinex's frame service;
+rosbridge carries it to keep the two copies the same and does not serve it. The camera
 operations take and return the JSON of Kinex's camera geometry operations.
 
 ## Compatibility checks

@@ -1,7 +1,7 @@
 # Devices and robot catalog
 
 Every device of a run is a set of endpoints on the single `world` node. They use
-standard ROS types, `std_srvs/srv/Trigger` stops and the two types of `custom_interfaces`
+standard ROS types, `std_srvs/srv/Trigger` stops and two types of `custom_interfaces`
 (`ros2/custom_interfaces`): `Wait`, the world service, and `Json`, the free-form
 service of a lensed camera's geometry. A ROS 2 program on the run's domain operates the
 devices with nothing else: in the run's environment (`rosbridge exec`), or anywhere
