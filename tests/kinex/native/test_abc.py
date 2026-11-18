@@ -50,21 +50,3 @@ def test_rig_matches_native_arms_grippers_and_cameras(tmp_path, task):
             sim.step(target)
     finally:
         sim.close()
-
-
-def test_rig_intrinsics_and_depth_range_match_rendering(tmp_path):
-    rig = Rig("abc", tmp_path)
-    sim = AbcSim()
-    try:
-        sim.reset(sim.default_task, 0, False)
-        for camera in sim.cameras:
-            profile = rig.profiles[f"camera_{camera}"]
-            color = profile["color"]
-            pinhole = [color["projection"][k] for k in ("fx", "fy", "cx", "cy")]
-            assert [color["width"], color["height"], *pinhole] == pytest.approx(sim.intrinsics(camera))
-            depth = sim.render_depth(camera)
-            valid = depth[depth > 0]
-            span = profile["depth"]["valid_range_m"]
-            assert valid.size and span["min"] <= valid.min() and valid.max() <= span["max"]
-    finally:
-        sim.close()

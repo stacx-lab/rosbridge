@@ -110,7 +110,10 @@ def test_wrapped_actions_match_native_rollout():
         upstream.close()
 
 
+import yaml  # noqa: E402
+
 from rosbridge.catalog import tasks  # noqa: E402
+from rosbridge.catalog.robots import setup  # noqa: E402
 
 
 @pytest.mark.parametrize('task', [entry['native_task'] for entry in tasks(name='abc').values()])
@@ -144,5 +147,23 @@ def test_rgbd_cameras_and_supplemental_judging():
         assert np.abs(image.astype(int) - sim.render("top")).max() <= 1
         sim.step(sim.state()[0])
         assert sim._supplemental.last_time == pytest.approx(sim.env.data.time)
+    finally:
+        sim.close()
+
+
+def test_profile_intrinsics_and_depth_range_match_rendering(tmp_path):
+    setup("abc", tmp_path)
+    sim = AbcSim()
+    try:
+        sim.reset(sim.default_task, 0, False)
+        for camera in sim.cameras:
+            profile = yaml.safe_load((tmp_path / ".kinex/devices" / f"camera_{camera}" / "profile.yaml").read_text())
+            color = profile["color"]
+            pinhole = [color["projection"][k] for k in ("fx", "fy", "cx", "cy")]
+            assert [color["width"], color["height"], *pinhole] == pytest.approx(sim.intrinsics(camera))
+            depth = sim.render_depth(camera)
+            valid = depth[depth > 0]
+            span = profile["depth"]["valid_range_m"]
+            assert valid.size and span["min"] <= valid.min() and valid.max() <= span["max"]
     finally:
         sim.close()

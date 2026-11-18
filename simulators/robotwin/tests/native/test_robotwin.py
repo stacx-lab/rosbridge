@@ -7,8 +7,10 @@ import os
 
 import numpy as np
 import pytest
+import yaml
 
 from rosbridge.catalog import tasks
+from rosbridge.catalog.robots import setup
 from rosbridge_robotwin.backend import RoboTwinSim
 
 SEEDS = {t["native_task"]: t.get("seed", 0) for t in tasks(name="robotwin").values()}
@@ -60,6 +62,18 @@ def test_rendering_and_spectators_leave_physics_unchanged(sim):
         fx, fy, cx, cy = sim.spectator_intrinsics(view.name)
         assert fx == pytest.approx(fy) and (cx, cy) == pytest.approx((479.5, 359.5))
     np.testing.assert_array_equal(before, physics(sim))
+
+
+def test_profile_intrinsics_and_depth_range_match_rendering(tmp_path, sim):
+    setup("robotwin", tmp_path)
+    for camera in sim.cameras:
+        profile = yaml.safe_load((tmp_path / ".kinex/devices" / camera / "profile.yaml").read_text())
+        color = profile["color"]
+        pinhole = [color["projection"][k] for k in ("fx", "fy", "cx", "cy")]
+        assert [color["width"], color["height"], *pinhole] == pytest.approx(sim.intrinsics(camera))
+        depth = sim.render_depth(camera)
+        span = profile["depth"]["valid_range_m"]
+        assert (depth > 0).mean() > .9 and span["min"] <= depth[depth > 0].min()
 
 
 def test_reset_is_seeded_bounded_and_failures_keep_the_episode(sim, monkeypatch):

@@ -53,15 +53,3 @@ def test_rig_matches_native_arms_grippers_tcp_and_cameras(tmp_path, sim):
             assert_pose(compose(grip, rig.mount(f"{side}_gripper", "tcp")), rt(tcp[:3], tcp[3:]))
             assert_pose(compose(flange, rig.mount(f"{side}_camera")), rt(*sim.camera_pose(f"{side}_camera")))
         assert_pose(rig.mount("head_camera"), rt(*sim.camera_pose("head_camera")))
-
-
-def test_rig_intrinsics_match_rendering(tmp_path, sim):
-    rig = Rig("robotwin", tmp_path)
-    for camera in sim.cameras:
-        profile = rig.profiles[camera]
-        color = profile["color"]
-        pinhole = [color["projection"][k] for k in ("fx", "fy", "cx", "cy")]
-        assert [color["width"], color["height"], *pinhole] == pytest.approx(sim.intrinsics(camera))
-        depth = sim.render_depth(camera)
-        span = profile["depth"]["valid_range_m"]
-        assert (depth > 0).mean() > .9 and span["min"] <= depth[depth > 0].min()
