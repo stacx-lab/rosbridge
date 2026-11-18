@@ -9,7 +9,8 @@ runtime:
 operations:
   joint_state:
     description: Measured finger_joint1 in metres, half the summed finger travel,
-      stamped at acquisition; Kinex publishes the URDF finger and pad links from it.
+      stamped at acquisition; links.py publishes the URDF finger and pad links on
+      TF from it.
     transport: topic
     direction: output
     endpoint: /gripper/joint_state

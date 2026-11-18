@@ -140,7 +140,7 @@ def gripper(name, description, joint, target, base, tcp, *, state=None, hold=Non
     ops = {
         "joint_state": operation(
             state or f"Measured {joint}, the native normalized gripper opening (0 closed, 1 open), "
-            "stamped at acquisition; Kinex publishes the URDF finger links from it.",
+            "stamped at acquisition; links.py publishes the URDF finger links on TF from it.",
             "topic", "output", f"/{name}/joint_state", "sensor_msgs/msg/JointState",
             qos(durability="transient_local")),
         "target": operation(target, "topic", "input", f"/{name}/target", "std_msgs/msg/Float64"),
@@ -211,8 +211,8 @@ def camera(name, description, intrinsics, base, depth_range=None, distortion=Non
             "sensor_msgs/msg/Image")
     if distortion is None:
         info = ("CameraInfo mirroring the profile, with K and P from color.projection, zero plumb_bob "
-                "distortion, image size and optical frame. Kinex reads camera geometry from the profile, "
-                "not from this topic; intrinsics are not TF transforms.")
+                "distortion, image size and optical frame. The camera's geometry is the profile's, "
+                "not this topic's; intrinsics are not TF transforms.")
     else:
         info = ("CameraInfo mirroring the profile, with K and P from color.projection, plumb_bob "
                 "distortion from color.distortion, image size and optical frame. The camera's geometry "

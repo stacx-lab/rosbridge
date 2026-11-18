@@ -48,8 +48,7 @@ meta:
   updated_at: '2026-10-20T17:24:01.458Z'
 type: world
 description: Scene reference and authoritative world clock. Bounds and surfaces describe
-  known scene geometry. Kinex supplies frame transforms independently. This device
-  exposes no task instructions or evaluator results.
+  known scene geometry. This device exposes no task instructions or evaluator results.
 source: default
 method: unknown
 calibrated_at: null

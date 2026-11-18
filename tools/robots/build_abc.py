@@ -55,9 +55,8 @@ def main():
         return rigs.transform(data.cam_xpos[cid], data.cam_xmat[cid].reshape(3, 3) @ OPTICAL)
 
     devices = {"world": rigs.world(
-        "Scene reference and authoritative world clock of the ABC bimanual YAM station. Kinex "
-        "supplies frame transforms independently. This device exposes no task instructions or "
-        "evaluator results.")}
+        "Scene reference and authoritative world clock of the ABC bimanual YAM station. This device "
+        "exposes no task instructions or evaluator results.")}
     files = {}
     for side in ("left", "right"):
         flange = rigs.body_world(data, model.body(f"{side}_link_6").id)

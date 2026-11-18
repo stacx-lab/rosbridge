@@ -47,8 +47,7 @@ meta:
   updated_at: '2026-10-24T00:00:00Z'
 type: world
 description: Scene reference and authoritative world clock of the ABC bimanual YAM station.
-  Kinex supplies frame transforms independently. This device exposes no task instructions
-  or evaluator results.
+  This device exposes no task instructions or evaluator results.
 source: default
 calibrated_at: null
 method: unknown

@@ -34,8 +34,8 @@ operations:
     timeout_s: 10
   camera_info:
     description: CameraInfo mirroring the profile, with K and P from color.projection, zero
-      plumb_bob distortion, image size and optical frame. Kinex reads camera geometry from
-      the profile, not from this topic; intrinsics are not TF transforms.
+      plumb_bob distortion, image size and optical frame. The camera's geometry is the profile's,
+      not this topic's; intrinsics are not TF transforms.
     transport: topic
     direction: output
     endpoint: /camera_left/camera_info

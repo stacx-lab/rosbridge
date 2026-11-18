@@ -94,7 +94,7 @@ def main():
             rigs.pose_frame("arm:flange", rigs.relative(flange, hand)),
             rigs.pose_frame("gripper:base", rigs.relative(hand, pose["gripper0_right_eef"])),
             state="Integrated native gripper command, -1 (open) to +1 (closed), stamped at "
-                  "acquisition; Kinex publishes the URDF finger links from it. Fingers reach "
+                  "acquisition; links.py publishes the URDF finger links on TF from it. Fingers reach "
                   "the commanded opening only when unobstructed.",
             hold="Hold the integrated command, keeping any grip on an object.",
             opened=-1.0, closed=1.0),

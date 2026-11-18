@@ -9,8 +9,8 @@ runtime:
 operations:
   joint_state:
     description: Integrated native gripper command, -1 (open) to +1 (closed), stamped at acquisition;
-      Kinex publishes the URDF finger links from it. Fingers reach the commanded opening only
-      when unobstructed.
+      links.py publishes the URDF finger links on TF from it. Fingers reach the commanded
+      opening only when unobstructed.
     transport: topic
     direction: output
     endpoint: /gripper/joint_state

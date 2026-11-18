@@ -46,8 +46,8 @@ meta:
   created_at: '2026-10-24T00:00:00Z'
   updated_at: '2026-10-24T00:00:00Z'
 type: world
-description: Scene reference and authoritative world clock of the RoboDojo table. Kinex supplies
-  frame transforms independently. This device exposes no task instructions or evaluator results.
+description: Scene reference and authoritative world clock of the RoboDojo table. This device
+  exposes no task instructions or evaluator results.
 source: default
 calibrated_at: null
 method: unknown
