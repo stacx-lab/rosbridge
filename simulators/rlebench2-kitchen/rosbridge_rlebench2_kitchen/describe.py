@@ -1,18 +1,18 @@
 """Print scenes' public facts as JSON lines, without a ROS graph: one line per scene, in order, with an "error"
 instead of the time limit and instruction when the scene cannot be built.
 
-    [PSI_TIME_LIMIT_S=T] python -m rosbridge_psi_kitchen.describe TASK SEED SCENE [SCENE ...]
+    [RLEBENCH2_TIME_LIMIT_S=T] python -m rosbridge_rlebench2_kitchen.describe TASK SEED SCENE [SCENE ...]
 """
 import json
 import os
 import sys
 
-from .backend import PsiKitchenSim
+from .backend import Rlebench2KitchenSim
 
 
 def describe(task, seed, scene):
-    os.environ['PSI_SCENE'] = str(scene)
-    sim = PsiKitchenSim(cameras=())
+    os.environ['RLEBENCH2_SCENE'] = str(scene)
+    sim = Rlebench2KitchenSim(cameras=())
     try:
         sim.reset(task, seed)
         return {'task': task, 'scene': scene, 'seed': seed, 'time_limit_s': sim.max_steps * sim.period,

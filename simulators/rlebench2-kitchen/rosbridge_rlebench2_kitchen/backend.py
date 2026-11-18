@@ -1,8 +1,8 @@
-"""PSI-Bench kitchen: RoboCasa's kitchens with the PandaOmron's native part controllers, as
-simulators/robocasa, plus PSI additions:
+"""RLE-Bench 2 kitchen: RoboCasa's kitchens with the PandaOmron's native part controllers, as
+simulators/robocasa, plus RLE-Bench 2 additions:
 
-- scene: PSI_SCENE=k builds target kitchen k (layout k, style k) instead of drawing one from the seed;
-- time limit: PSI_TIME_LIMIT_S (robot seconds) overrides the dataset horizon (0 or unset keeps it);
+- scene: RLEBENCH2_SCENE=k builds target kitchen k (layout k, style k) instead of drawing one from the seed;
+- time limit: RLEBENCH2_TIME_LIMIT_S (robot seconds) overrides the dataset horizon (0 or unset keeps it);
 - evidence: the build writes meta.json and model.xml, and every step appends [time, action, qpos] to
   steps.f64, under $ROSBRIDGE_RUN_DIR/episode-0/ (render.py replays it).
 No ROS dependencies.
@@ -51,14 +51,14 @@ def controller_config():
     return config
 
 
-class PsiKitchenSim:
+class Rlebench2KitchenSim:
     default_task = 'OpenDrawer'
     period = 1 / 20
 
     def __init__(self, *, cameras=tuple(CAMERAS), width=256, height=256,
                  max_steps=None, early_stop=False):
         self.cameras, self.width, self.height = tuple(cameras), width, height
-        limit = float(os.environ.get('PSI_TIME_LIMIT_S') or 0)
+        limit = float(os.environ.get('RLEBENCH2_TIME_LIMIT_S') or 0)
         self.requested_max_steps = self.max_steps = max_steps or math.ceil(limit / self.period - 1e-9) or None
         self.early_stop = early_stop
         self.env = self._depth = self._spectator = None
@@ -86,10 +86,10 @@ class PsiKitchenSim:
         self.spectators = spectator_views(SPECTATORS, width, height, views)
 
     def reset(self, task, seed, randomize=True):
-        """Build the kitchen (a run's one episode): PSI_SCENE and the seed fully determine it, its objects and the
+        """Build the kitchen (a run's one episode): RLEBENCH2_SCENE and the seed fully determine it, its objects and the
         instruction."""
-        spec = resolve('psi-kitchen', task=task)[2]
-        check_task(project_root() / '.runtime/psi-kitchen', spec['native_task'])
+        spec = resolve('rlebench2-kitchen', task=task)[2]
+        check_task(project_root() / '.runtime/rlebench2-kitchen', spec['native_task'])
         self._initialize(spec, seed)
         self._start_evidence()
 
@@ -119,7 +119,7 @@ class PsiKitchenSim:
         horizon = ({**ATOMIC_TASK_DATASETS, **COMPOSITE_TASK_DATASETS}.get(self.task, {}).get('horizon')
                    or spec['horizon'])  # tasks.toml's, for tasks upstream gives none
         split = dict(SPLITS[spec['split']])
-        self.scene = int(os.environ['PSI_SCENE']) if os.environ.get('PSI_SCENE') else None
+        self.scene = int(os.environ['RLEBENCH2_SCENE']) if os.environ.get('RLEBENCH2_SCENE') else None
         if self.scene is not None:
             if (self.scene, self.scene) not in split['layout_and_style_ids']:
                 raise ValueError(f'unknown scene {self.scene} for split {spec["split"]}')
@@ -140,7 +140,7 @@ class PsiKitchenSim:
             if mj.mj_name2id(self.model, mj.mjtObj.mjOBJ_CAMERA, camera) < 0:
                 raise ValueError(f'unknown camera: {camera}')
         self.max_steps = self.requested_max_steps or horizon
-        print(f'[psi-kitchen] {self.task} scene {self.scene} seed {seed}: '
+        print(f'[rlebench2-kitchen] {self.task} scene {self.scene} seed {seed}: '
               f'{self.env.get_ep_meta().get("lang", "")}', flush=True)
         # Pixel-center depth from a separate single-sample context; RGB keeps native antialiasing.
         quality = self.model.vis.quality

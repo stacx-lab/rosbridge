@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-package = "rosbridge_psi_kitchen"
+package = "rosbridge_rlebench2_kitchen"
 
 setup(
     name=package,
@@ -13,7 +13,7 @@ setup(
     install_requires=["setuptools"],
     zip_safe=True,
     entry_points={
-        "rosbridge.backends": ["psi-kitchen = rosbridge_psi_kitchen.backend:PsiKitchenSim"],
-        "console_scripts": ["control_demo = rosbridge_psi_kitchen.demos.control:main"],
+        "rosbridge.backends": ["rlebench2-kitchen = rosbridge_rlebench2_kitchen.backend:Rlebench2KitchenSim"],
+        "console_scripts": ["control_demo = rosbridge_rlebench2_kitchen.demos.control:main"],
     },
 )

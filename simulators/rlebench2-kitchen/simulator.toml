@@ -1,16 +1,16 @@
-# PSI-Bench's kitchen: RoboCasa365 with the PandaOmron, as simulators/robocasa, plus scene choice,
+# RLE-Bench 2's kitchen: RoboCasa365 with the PandaOmron, as simulators/robocasa, plus scene choice,
 # a robot-time limit, evidence logging (per-step actions and states), and offline re-rendering.
-name = "psi-kitchen"
+name = "rlebench2-kitchen"
 source = "third_party/robocasa"
 source_url = "https://github.com/robocasa/robocasa.git"
 source_revision = "456174f62b89b8fca99eaaf33949c29fec9cfc2a"
-patches = "patches/psi-kitchen"
-python_path = "simulators/psi-kitchen"
-asset_preparer = "rosbridge_psi_kitchen.assets:prepare"
-asset_checker = "rosbridge_psi_kitchen.assets:check_task"
+patches = "patches/rlebench2-kitchen"
+python_path = "simulators/rlebench2-kitchen"
+asset_preparer = "rosbridge_rlebench2_kitchen.assets:prepare"
+asset_checker = "rosbridge_rlebench2_kitchen.assets:check_task"
 default_task = "OpenDrawer"
-ros_package = "rosbridge_psi_kitchen"
-environment = "psi-kitchen"
+ros_package = "rosbridge_rlebench2_kitchen"
+environment = "rlebench2-kitchen"
 task_catalog = "tasks.toml"
 
 # RoboCasa365 requires robosuite 1.5.2; the pinned upstream is exported beside it.

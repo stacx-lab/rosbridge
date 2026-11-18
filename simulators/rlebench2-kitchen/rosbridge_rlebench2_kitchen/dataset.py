@@ -1,13 +1,13 @@
 """RoboCasa365's human demonstrations of a task, in the robot's own terms: what its devices report and see at each
 control step, and the command that reproduces the recording.
 
-    python -m rosbridge_psi_kitchen.dataset TASK --out DIR [--kitchens 1-5] [--size 128] [--cache DIR] [--limit N]
+    python -m rosbridge_rlebench2_kitchen.dataset TASK --out DIR [--kitchens 1-5] [--size 128] [--cache DIR] [--limit N]
                                                [--jobs N]
 
-TASK is a psi-kitchen task id (open-drawer). Its target-split human dataset (500 teleoperated demonstrations over
-target kitchens 1-10, the kitchens PSI_SCENE builds) is downloaded into --cache once. Each episode from --kitchens is
-restored from its recorded states into a psi-kitchen robot (backend.PsiKitchenSim, the same controllers and device
-readings as a live run):
+TASK is a rlebench2-kitchen task id (open-drawer). Its target-split human dataset (500 teleoperated demonstrations over
+target kitchens 1-10, the kitchens RLEBENCH2_SCENE builds) is downloaded into --cache once. Each episode from --kitchens
+is restored from its recorded states into a rlebench2-kitchen robot (backend.Rlebench2KitchenSim, the same controllers
+and device readings as a live run):
 
 - state: the robot's device readings, as backend state() gives them;
 - images: the three cameras at the robot's 256 x 256, resized to --size with cv2.INTER_AREA (resize());
@@ -31,7 +31,7 @@ import cv2
 import numpy as np
 
 from rosbridge.catalog import resolve
-from .backend import CAMERAS, ROBOT, PsiKitchenSim
+from .backend import CAMERAS, ROBOT, Rlebench2KitchenSim
 
 FPS = 20
 STATE = ['arm_joint1', 'arm_joint2', 'arm_joint3', 'arm_joint4', 'arm_joint5', 'arm_joint6', 'arm_joint7',
@@ -218,8 +218,8 @@ SIM = None  # each conversion process's robot
 
 def start(task, kitchen):
     global SIM
-    os.environ['PSI_SCENE'] = str(kitchen)
-    SIM = PsiKitchenSim()
+    os.environ['RLEBENCH2_SCENE'] = str(kitchen)
+    SIM = Rlebench2KitchenSim()
     SIM.reset(task, 0)
 
 
@@ -234,7 +234,7 @@ def build(task, out, kitchens, size=128, cache=None, limit=None, jobs=1):
     meta.json's content."""
     from concurrent.futures import ProcessPoolExecutor  # a crashed process fails the build; a Pool would hang
     from multiprocessing import get_context
-    native = resolve('psi-kitchen', task=task)[2]['native_task']
+    native = resolve('rlebench2-kitchen', task=task)[2]['native_task']
     out = Path(out)
     folder = source(native, Path(cache or out.parent / 'raw'))
     out.mkdir(parents=True, exist_ok=True)

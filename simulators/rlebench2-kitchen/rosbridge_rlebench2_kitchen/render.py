@@ -1,6 +1,6 @@
 """Re-render an episode offline from its evidence (model.xml + steps.f64); nothing is simulated.
 
-    python -m rosbridge_psi_kitchen.render EPISODE_DIR [--camera NAME] [--out FILE]
+    python -m rosbridge_rlebench2_kitchen.render EPISODE_DIR [--camera NAME] [--out FILE]
 """
 import argparse
 import json

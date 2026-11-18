@@ -23,6 +23,6 @@ rosbridge launch abc --execution-mode stepped --record ./recordings/abc
 - [BEHAVIOR household activities with the R1Pro](docs/behavior.md)
 - [HandsOn dexterous manipulation with two ROKAE arms and Wuji hands](docs/handson.md)
 - [BiDex-100 bimanual dexterous manipulation with Franka or Astribot arms and Sharpa hands](docs/bidex.md)
-- [PSI kitchen: RoboCasa with evidence logging and offline re-rendering](docs/psi-kitchen.md)
+- [RLE-Bench 2 kitchen: RoboCasa with evidence logging and offline re-rendering](docs/rlebench2-kitchen.md)
 - [Devices, robot catalog and workspace export](docs/devices.md)
 - [Using rosbridge with Kinex](docs/kinex.md)

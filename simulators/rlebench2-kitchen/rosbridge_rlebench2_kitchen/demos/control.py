@@ -20,7 +20,7 @@ CAMERAS = ('camera_left', 'camera_right', 'camera_wrist')
 
 class ControlDemo(Node):
     def __init__(self):
-        super().__init__('psi_kitchen_control_demo')
+        super().__init__('rlebench2_kitchen_control_demo')
         self.last, self.image_count = {}, dict.fromkeys(CAMERAS, 0)
         for device in ('arm', 'torso', 'gripper'):
             self.create_subscription(JointState, f'{device}/joint_state',

@@ -1,29 +1,29 @@
-"""PSI additions on a real kitchen: scene choice, evidence logging, offline re-rendering, time limit."""
+"""RLE-Bench 2 additions on a real kitchen: scene choice, evidence logging, offline re-rendering, time limit."""
 import json
 
 import numpy as np
 import pytest
 
-from rosbridge_psi_kitchen import render
-from rosbridge_psi_kitchen.backend import PsiKitchenSim
+from rosbridge_rlebench2_kitchen import render
+from rosbridge_rlebench2_kitchen.backend import Rlebench2KitchenSim
 
 CAMERA = 'robot0_agentview_left'
 
 
 @pytest.fixture
 def make_sim():
-    """PsiKitchenSim(**kwargs), each closed after the test."""
+    """Rlebench2KitchenSim(**kwargs), each closed after the test."""
     sims = []
-    yield lambda **kwargs: sims.append(PsiKitchenSim(**kwargs)) or sims[-1]
+    yield lambda **kwargs: sims.append(Rlebench2KitchenSim(**kwargs)) or sims[-1]
     for sim in sims:
         sim.close()
 
 
 def test_scene_evidence_and_rerender(tmp_path, monkeypatch):
     monkeypatch.setenv('ROSBRIDGE_RUN_DIR', str(tmp_path))
-    monkeypatch.setenv('PSI_SCENE', '3')
-    monkeypatch.delenv('PSI_TIME_LIMIT_S', raising=False)
-    sim = PsiKitchenSim(cameras=(CAMERA,))
+    monkeypatch.setenv('RLEBENCH2_SCENE', '3')
+    monkeypatch.delenv('RLEBENCH2_TIME_LIMIT_S', raising=False)
+    sim = Rlebench2KitchenSim(cameras=(CAMERA,))
     try:
         sim.reset('OpenDrawer', 0)
         assert sim.max_steps == 750
@@ -46,20 +46,20 @@ def test_scene_evidence_and_rerender(tmp_path, monkeypatch):
 
 
 def test_time_limit_and_unknown_scene(monkeypatch, make_sim):
-    monkeypatch.setenv('PSI_TIME_LIMIT_S', '0.15')
-    monkeypatch.delenv('PSI_SCENE', raising=False)
+    monkeypatch.setenv('RLEBENCH2_TIME_LIMIT_S', '0.15')
+    monkeypatch.delenv('RLEBENCH2_SCENE', raising=False)
     sim = make_sim(cameras=())
     sim.reset('OpenDrawer', 0)
     for _ in range(3):
         sim.step(sim.state()[0])
     assert sim.max_steps == 3 and sim.done
-    monkeypatch.setenv('PSI_SCENE', '11')
+    monkeypatch.setenv('RLEBENCH2_SCENE', '11')
     with pytest.raises(ValueError, match='unknown scene'):
         make_sim(cameras=()).reset('OpenDrawer', 0)
 
 
 def test_dataset_labels():
-    from rosbridge_psi_kitchen import dataset
+    from rosbridge_rlebench2_kitchen import dataset
     positions = np.arange(10, dtype=float)[:, None] * np.ones(12)
     arm, torso = np.full((10, 7), 5.), np.full(10, .2)
     grip, base = np.array([1., 1., 0., -1., 0, 0, 0, 0, 0, 0]), np.arange(30.).reshape(10, 3)
@@ -73,8 +73,8 @@ def test_dataset_labels():
 def test_dataset_aims_at_the_commanded_hand_pose(monkeypatch, make_sim):
     """A recorded Cartesian command becomes the joints for the hand pose it aimed at (5 cm along the arm base's x)."""
     import mujoco as mj
-    from rosbridge_psi_kitchen import dataset
-    monkeypatch.setenv('PSI_SCENE', '3')
+    from rosbridge_rlebench2_kitchen import dataset
+    monkeypatch.setenv('RLEBENCH2_SCENE', '3')
     sim = make_sim(cameras=())
     sim.reset('OpenDrawer', 0)
     arm, model = sim.robot.part_controllers['right'], sim.model
@@ -90,8 +90,8 @@ def test_dataset_aims_at_the_commanded_hand_pose(monkeypatch, make_sim):
 
 def test_dataset_conversion_matches_the_live_robot(monkeypatch, make_sim):
     """A recorded episode restored into another robot reads and looks as the live one did."""
-    from rosbridge_psi_kitchen import dataset
-    monkeypatch.setenv('PSI_SCENE', '3')
+    from rosbridge_rlebench2_kitchen import dataset
+    monkeypatch.setenv('RLEBENCH2_SCENE', '3')
     monkeypatch.delenv('ROSBRIDGE_RUN_DIR', raising=False)
     live = make_sim()
     live.reset('OpenDrawer', 0)

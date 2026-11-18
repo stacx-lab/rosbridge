@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>rosbridge_psi_kitchen</name>
+  <name>rosbridge_rlebench2_kitchen</name>
   <version>0.2.0</version>
-  <description>PSI-Bench kitchen: RoboCasa365 (MuJoCo, Panda on an Omron mobile base) with evidence logging and offline re-rendering, as a ROS 2 node.</description>
+  <description>RLE-Bench 2 kitchen: RoboCasa365 (MuJoCo, Panda on an Omron mobile base) with evidence logging and offline re-rendering, as a ROS 2 node.</description>
   <maintainer email="haitongma8@gmail.com">haitongma</maintainer>
   <license>Apache-2.0</license>
 

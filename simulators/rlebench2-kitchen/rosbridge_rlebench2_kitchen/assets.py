@@ -1,5 +1,5 @@
 """RoboCasa's kitchen asset archives (simulators/robocasa's, sharing its cache), overlaid onto the
-psi-kitchen tree.
+rlebench2-kitchen tree.
 
 Every task samples kitchens from the fixture, texture and generative-texture archives and
 objects from the objaverse, lightwheel and aigen registries, so all six archives are
@@ -114,4 +114,4 @@ def check_task(runtime, task):
     except (OSError, ValueError):
         pass
     raise RuntimeError("RoboCasa assets are not prepared. Run: "
-                       f"rosbridge prepare psi-kitchen --task {shlex.quote(task)}")
+                       f"rosbridge prepare rlebench2-kitchen --task {shlex.quote(task)}")
