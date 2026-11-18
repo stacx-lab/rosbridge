@@ -24,7 +24,7 @@ operations:
     transport: service
     direction: input
     endpoint: /world/wait
-    type: kinex_interfaces/srv/Wait
+    type: rosbridge_interfaces/srv/Wait
     qos:
       depth: 1
       reliability: reliable

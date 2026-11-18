@@ -26,7 +26,7 @@ POSE = {"joint_state": "sensor_msgs/msg/JointState", "pose_state": "sensor_msgs/
 # A camera rendered through a lens also serves its geometry, from a node that runs in Kinex.
 GEOMETRY = {op: "kinex_interfaces/srv/Json" for op in ("geometry", "unproject", "project")}
 WORLD = {"time": ("/clock", "rosgraph_msgs/msg/Clock"),
-         "wait": ("/world/wait", "kinex_interfaces/srv/Wait"),
+         "wait": ("/world/wait", "rosbridge_interfaces/srv/Wait"),
          "stop": ("/world/stop", "std_srvs/srv/Trigger")}
 
 

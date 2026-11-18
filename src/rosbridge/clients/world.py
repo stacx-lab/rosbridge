@@ -8,7 +8,7 @@ class WorldClockClient:
 
     def __init__(self, node, service="world/wait"):
         from rclpy.callback_groups import ReentrantCallbackGroup
-        from kinex_interfaces.srv import Wait
+        from rosbridge_interfaces.srv import Wait
         self.node, self._type = node, Wait
         self.client = node.create_client(Wait, service, callback_group=ReentrantCallbackGroup())
 

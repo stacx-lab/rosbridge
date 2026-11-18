@@ -9,9 +9,8 @@ separate from simulator environments.
 
 Linux x86-64, Git, uv, Pixi, and an EGL-capable graphics driver are required.
 ROS Jazzy and Python 3.12 come from the locked RoboStack/Pixi environment; a system
-ROS installation is not required. Every graph serves Kinex's world service
-`kinex_interfaces/srv/Wait`; rosbridge builds it from its own identical copy in
-`ros2/kinex_interfaces`, so preparation needs no Kinex checkout.
+ROS installation is not required. Every graph serves the world service
+`rosbridge_interfaces/srv/Wait`, which rosbridge builds from `ros2/rosbridge_interfaces`.
 
 ```bash
 bash tools/bootstrap.sh
@@ -27,7 +26,7 @@ rosbridge stop RUN_ID
 
 `prepare SIMULATOR` synchronizes the pinned source (and any pinned nested sources,
 such as RoboDojo's Isaac Lab and cuRobo forks), prepares assets for every cataloged
-task, builds the ROS overlay with Kinex's interfaces, and checks readiness. `--task TASK` restricts asset preparation to a single task. Repeat
+task, builds the ROS overlay with rosbridge's interfaces, and checks readiness. `--task TASK` restricts asset preparation to a single task. Repeat
 preparation reuses source and assets. `doctor SIMULATOR [--task TASK]` checks
 readiness without installation or downloads. Preparation refuses to modify
 environments used by active managed runs.
@@ -94,7 +93,7 @@ simulation time. Commands, zero waits, discovery, and camera reads do not step.
 Both modes retain the backend's native control period and physics decimation.
 Rendering can make realtime slower than wall time; it never changes simulated dt.
 
-`world/wait` uses `kinex_interfaces/srv/Wait`: `duration_s` in, then `success`,
+`world/wait` uses `rosbridge_interfaces/srv/Wait`: `duration_s` in, then `success`,
 `message`, `time_s` and actual `waited_s` out. Positive durations round up to whole
 native control steps; zero is immediate; negative, nonfinite or unrepresentable
 waits fail. Waits are sequential: a wait requested while another is pending is

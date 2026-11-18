@@ -80,7 +80,7 @@ def world(description):
             "is rejected. A terminal episode rejects further progression. The reply's message "
             "also names the device commands refused since the previous reply, with their "
             "reasons.", "service", "input", "/world/wait",
-            "kinex_interfaces/srv/Wait",
+            "rosbridge_interfaces/srv/Wait",
             timeout_s=120),
         "stop": operation("Cancel the pending wait.", "service", "input", "/world/stop",
                           "std_srvs/srv/Trigger"),

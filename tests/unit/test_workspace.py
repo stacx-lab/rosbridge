@@ -21,7 +21,6 @@ def test_build_selects_one_simulator_and_rosbridges_own_interfaces(tmp_path, mon
     monkeypatch.setattr(sys, "argv", ["workspace.py", "--simulator", "fake", "--project", str(tmp_path)])
     calls = []
     monkeypatch.setattr(workspace.subprocess, "call", lambda command, **_: calls.append(command) or 0)
-    monkeypatch.delenv("KINEX_ROS_PACKAGES", raising=False)  # no Kinex checkout is needed
     with pytest.raises(SystemExit) as finished:
         workspace.main()
     assert finished.value.code == 0
@@ -33,15 +32,15 @@ def test_build_selects_one_simulator_and_rosbridges_own_interfaces(tmp_path, mon
     assert (tmp_path / ".workspaces/fake/interpreter.json").is_file()
 
 
-def test_vendored_wait_matches_kinex():
-    """ROS 2 matches services by type name and definition hash, so the copy must not drift."""
+def test_wait_keeps_the_definition_of_kinexs():
+    """rosbridge's Wait is its own type; its request and reply stay those of Kinex's world wait."""
     project = Path(__file__).resolve().parents[2]
-    vendored = project / "ros2/kinex_interfaces/srv/Wait.srv"
+    own = project / "ros2/rosbridge_interfaces/srv/Wait.srv"
     kinex = project.parent / "kinex2.0/packages/core/assets/ros/kinex_interfaces/srv/Wait.srv"
     if not kinex.is_file():
         pytest.skip("needs a Kinex checkout next to this one")
-    assert vendored.read_bytes() == kinex.read_bytes()
-    assert sorted(p.name for p in vendored.parent.iterdir()) == ["Wait.srv"]
+    assert own.read_bytes() == kinex.read_bytes()
+    assert sorted(p.name for p in own.parent.iterdir()) == ["Wait.srv"]
 
 
 def test_the_launch_files_forward_every_world_node_parameter():

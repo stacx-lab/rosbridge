@@ -19,7 +19,7 @@ def main():
         getattr(importlib.import_module(module), name)
     else:
         import rclpy  # noqa: F401
-        from kinex_interfaces.srv import Wait  # noqa: F401
+        from rosbridge_interfaces.srv import Wait  # noqa: F401
         from rosbridge.core import load_backend
         load_backend(config["name"])
         if config.get("native_environment"):

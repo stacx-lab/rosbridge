@@ -2,7 +2,7 @@
 import time
 
 import pytest
-from kinex_interfaces.srv import Wait
+from rosbridge_interfaces.srv import Wait
 from sensor_msgs.msg import JointState
 from std_msgs.msg import Float64
 from std_srvs.srv import Trigger

@@ -2,11 +2,11 @@
 
 rosbridge speaks Kinex's device contract directly: every device of a run is a set
 of endpoints on the single `world` node, using standard ROS types,
-`std_srvs/srv/Trigger` stops and Kinex's `kinex_interfaces/srv/Wait` world service.
+`std_srvs/srv/Trigger` stops and rosbridge's own `rosbridge_interfaces/srv/Wait` world service.
 Exported Kinex profiles point straight at those endpoints, so Kinex borrows the
 simulator instead of relaying it; only the URDF link publishers (`links.py`) of the
-joint and gripper devices run in Kinex. rosbridge builds `Wait` from its own copy
-(`ros2/kinex_interfaces`, byte-identical to Kinex's), so builds need no Kinex checkout.
+joint and gripper devices run in Kinex. `Wait` (`ros2/rosbridge_interfaces`) has the request
+and reply of Kinex's world wait under rosbridge's own type name.
 
 ## Device contract
 
@@ -117,8 +117,8 @@ makes for that task and seed. Only HandsOn makes any: its cameras' intrinsics an
 by task and seed (see its page). The seed defaults as launch's does. Setup is offline: it exports
 unloaded profiles on the selected ROS domain and writes `.kinex/kinex.json` with the `ros-jazzy`
 provider; it neither starts Kinex nor launches a simulator, and it refuses an existing
-workspace. Prepare Kinex Python separately; it builds `kinex_interfaces` and installs ROS
-clients in its own environment. Export a workspace for each task and seed whose devices
+workspace. Prepare Kinex Python separately; to call `world.wait`, its environment also needs
+`rosbridge_interfaces` (build `ros2/rosbridge_interfaces` there, or source a simulator overlay). Export a workspace for each task and seed whose devices
 differ, and launch that task and seed in it. Each simulator's native
 `test_kinex_geometry.py` checks its default task's workspace against the simulator.
 

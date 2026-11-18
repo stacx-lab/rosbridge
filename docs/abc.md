@@ -70,7 +70,7 @@ lies within MuJoCo's clip range), with the same stamp as its image.
 rosbridge exec RUN_ID -- ros2 topic pub --once /left_gripper/target \
   std_msgs/msg/Float64 '{data: 0.0}'
 rosbridge exec RUN_ID -- ros2 service call /world/wait \
-  kinex_interfaces/srv/Wait '{duration_s: 1.0}'
+  rosbridge_interfaces/srv/Wait '{duration_s: 1.0}'
 ```
 
 In stepped mode, follow commands with a positive wait to advance physics. Use a
