@@ -4,7 +4,7 @@ import bisect
 
 import numpy as np
 
-# A base stops this long in world time after its last velocity command (Kinex locomotion watchdog).
+# A base stops this long in world time after its last velocity command.
 VELOCITY_TIMEOUT_S = 0.5
 # Targets this close outside a limit (rad or m) are held at it, not refused. Measured positions can sit slightly past
 # their limits, so a client that sends a measured posture back, or interpolates and rounds past a limit, sends a valid

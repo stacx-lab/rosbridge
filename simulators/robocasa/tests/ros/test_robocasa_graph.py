@@ -1,4 +1,4 @@
-"""The Kinex-facing RoboCasa graph: base velocity and odometry, torso, arm, gripper and RGB-D."""
+"""The RoboCasa graph: base velocity and odometry, torso, arm, gripper and RGB-D."""
 from builtin_interfaces.msg import Duration
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
@@ -11,7 +11,7 @@ from rosbridge_runtime.devices import STREAM_QOS
 from tests.ros.support import Graph, seconds
 
 
-def test_robocasa_graph_serves_the_mobile_kinex_devices(tmp_path):
+def test_robocasa_graph_serves_its_mobile_devices(tmp_path):
     graph = Graph(tmp_path, backend='robocasa', mode='stepped', startup_s=120.)
     node, last = graph.node, {}
     try:

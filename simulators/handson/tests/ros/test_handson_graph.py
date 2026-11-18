@@ -1,4 +1,4 @@
-"""The Kinex-facing HandsOn graph: a Python 3.12 world node proxying Isaac Lab in a worker."""
+"""The HandsOn graph: a Python 3.12 world node proxying Isaac Lab in a worker."""
 import json
 
 import numpy as np
@@ -56,7 +56,7 @@ def palm(target):
 
 
 @pytest.mark.parametrize("mode", ["stepped"])
-def test_handson_graph_serves_the_kinex_devices_from_a_native_worker(tmp_path, monkeypatch, mode):
+def test_handson_graph_serves_its_devices_from_a_native_worker(tmp_path, monkeypatch, mode):
     # The graph is stopped by signal, before the worker removes its episode's files; pytest prunes these.
     monkeypatch.setenv("ROSBRIDGE_RUN_DIR", str(tmp_path))
     graph = Graph(tmp_path, backend="handson", mode=mode, spectators=True, startup_s=STARTUP_S)

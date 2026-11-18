@@ -43,7 +43,7 @@ class ControlDemo(Node):
         self.info_count += 1
 
     def frame(self):
-        """The camera's current frame as a Kinex reader takes it: subscribe, then the first
+        """The camera's current frame as a reader takes it: subscribe, then the first
         image and, for RGB-D, the equally stamped depth."""
         received = {"image": [], "depth": []}
         names = ("image", "depth") if self.depth else ("image",)

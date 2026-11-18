@@ -90,7 +90,7 @@ class Graph:
         return future.result()
 
     def frame(self, camera, depth=False, timeout=15.):
-        """A camera's current frame as a Kinex reader takes it: subscribe, then the first
+        """A camera's current frame as a reader takes it: subscribe, then the first
         image and, with depth, the equally stamped depth. Returns (image, depth or None)."""
         from sensor_msgs.msg import Image
         from rosbridge_runtime.devices import FRAME_QOS

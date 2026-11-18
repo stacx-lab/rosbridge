@@ -1,4 +1,4 @@
-"""The Kinex-facing RoboDojo graph: a Python 3.12 world node proxying Isaac Sim 5.1 in a worker."""
+"""The RoboDojo graph: a Python 3.12 world node proxying Isaac Sim 5.1 in a worker."""
 import numpy as np
 import psutil
 import pytest
@@ -29,7 +29,7 @@ def workers(graph):
 
 
 @pytest.mark.parametrize("mode", ["stepped"])
-def test_robodojo_graph_serves_the_kinex_devices_from_a_native_worker(tmp_path, mode):
+def test_robodojo_graph_serves_its_devices_from_a_native_worker(tmp_path, mode):
     graph = Graph(tmp_path, backend="robodojo", mode=mode, spectators=True, startup_s=STARTUP_S)
     node, last = graph.node, {}
     try:

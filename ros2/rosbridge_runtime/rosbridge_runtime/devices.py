@@ -38,7 +38,7 @@ class Actuator:
         self.names = [node.sim.layout.joint_names[i] for i in self.indices]
         callbacks = ReentrantCallbackGroup()
         self._endpoints(callbacks)
-        # Kinex discovers stop before commanding, so it must follow the command subscription.
+        # A client may discover stop before commanding, so it must follow the command subscription.
         node.create_service(Trigger, f'{spec.name}/stop', self.stop, callback_group=callbacks)
 
     def _endpoints(self, callbacks):

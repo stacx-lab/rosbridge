@@ -64,7 +64,7 @@ def test_a_running_world_keeps_its_camera_rate_and_an_unsubscribed_camera_sends_
 def fresh_frame(domain, camera, timeout=3.):
     """The first image and equally stamped depth a new participant receives; None after timeout.
 
-    Like a Kinex exec, the reader subscribes before its participant has discovered the camera.
+    The reader subscribes before its participant has discovered the camera.
     """
     context = Context()
     rclpy.init(context=context, domain_id=domain)

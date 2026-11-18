@@ -1,4 +1,4 @@
-"""The Kinex-facing BEHAVIOR graph: a Python 3.12 world node proxying OmniGibson in a worker."""
+"""The BEHAVIOR graph: a Python 3.12 world node proxying OmniGibson in a worker."""
 import numpy as np
 import psutil
 import pytest

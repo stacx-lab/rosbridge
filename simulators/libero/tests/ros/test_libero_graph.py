@@ -1,4 +1,4 @@
-"""The Kinex-facing LIBERO graph: arm and gripper targets, camera frames and world waits."""
+"""The LIBERO graph: arm and gripper targets, camera frames and world waits."""
 import pytest
 from builtin_interfaces.msg import Duration
 from rclpy.qos import qos_profile_sensor_data
@@ -12,7 +12,7 @@ from tests.ros.support import Graph, seconds
 
 
 @pytest.mark.parametrize('mode', ['stepped', 'realtime'])
-def test_libero_graph_serves_the_kinex_devices(tmp_path, mode):
+def test_libero_graph_serves_its_devices(tmp_path, mode):
     graph = Graph(tmp_path, backend='libero', mode=mode)
     node, last = graph.node, {}
     try:

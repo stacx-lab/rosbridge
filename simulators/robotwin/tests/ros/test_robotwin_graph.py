@@ -1,4 +1,4 @@
-"""The Kinex-facing RoboTwin graph: native joint names, normalized grippers, RGB-D and spectators."""
+"""The RoboTwin graph: native joint names, normalized grippers, RGB-D and spectators."""
 import numpy as np
 import pytest
 from builtin_interfaces.msg import Duration
@@ -15,7 +15,7 @@ STARTUP_S = 600.
 
 
 @pytest.mark.parametrize("mode", ["stepped", "realtime"])
-def test_robotwin_graph_serves_the_kinex_devices(tmp_path, mode):
+def test_robotwin_graph_serves_its_devices(tmp_path, mode):
     graph = Graph(tmp_path, backend="robotwin", mode=mode, spectators=True, startup_s=STARTUP_S)
     node, last = graph.node, {}
     try:

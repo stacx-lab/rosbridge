@@ -8,7 +8,7 @@ from rosbridge.catalog.robots import list_robots, setup
 
 
 PROJECT = Path(__file__).resolve().parents[2]
-# The operations rosbridge serves for each Kinex device type.
+# The operations rosbridge serves for each device type.
 OPERATIONS = {
     "joint": {"joint_state": "sensor_msgs/msg/JointState",
               "joint_target": "trajectory_msgs/msg/JointTrajectory", "stop": "std_srvs/srv/Trigger"},

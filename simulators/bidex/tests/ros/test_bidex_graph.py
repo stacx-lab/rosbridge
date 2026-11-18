@@ -1,4 +1,4 @@
-"""The Kinex-facing BiDex-100 graph: arms, Sharpa hands, RGB-D cameras and spectators on the world node."""
+"""The BiDex-100 graph: arms, Sharpa hands, RGB-D cameras and spectators on the world node."""
 import numpy as np
 import pytest
 from builtin_interfaces.msg import Duration
