@@ -71,7 +71,14 @@ class SimulatorBackend(Protocol):
     """Created, reset, stepped, rendered and closed only on the main thread.
 
     A run is one episode: the world resets the backend once, to load the launch's
-    task and seed, then steps it. Every step advances exactly one `period`.
+    task, seed and scene options, then steps it. Every step advances exactly one
+    `period`.
+
+    A simulator that selects scenes in its own terms, such as RoboCasa's kitchen
+    layout and style ids, names them in its manifest's scene_options; a launch
+    passes those it gives to reset as keyword arguments, which the backend checks
+    and defaults. The seed selects everything the scene options do not.
+
     A backend whose native command is not a position, such as a gripper
     direction, converts the position target inside step().
 
@@ -121,7 +128,7 @@ class SimulatorBackend(Protocol):
     spectators: tuple[SpectatorView, ...]
 
     def __init__(self, *, max_steps, early_stop): ...
-    def reset(self, task: str, seed: int, randomize: bool = True) -> None: ...
+    def reset(self, task: str, seed: int, randomize: bool = True, **scene) -> None: ...
     def state(self) -> tuple[np.ndarray, np.ndarray]: ...
     def step(self, action: np.ndarray) -> None: ...
     # A camera's image size and pinhole: width, height, fx, fy, cx, cy (ROS pixel centers).

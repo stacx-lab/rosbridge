@@ -5,6 +5,9 @@ import math
 from pathlib import Path
 import sys
 
+# Scene options a simulator may declare in its manifest (scene_options); launch passes the ones given to reset.
+SCENE_FLAGS = ("layout_id", "style_id", "object_split")
+
 
 def positive(value):
     result = float(value)
@@ -41,6 +44,13 @@ def parser():
         command.add_argument("--domain-id", type=domain, help="Explicit ROS domain; default: automatically leased")
         command.add_argument("--timeout", type=positive, default=900., help="Startup timeout in wall seconds")
         command.add_argument("--seed", type=int)
+        command.add_argument("--layout-id", type=int, metavar="ID",
+                             help="Kitchen layout, for simulators that take one (RoboCasa: 1-60, default 1)")
+        command.add_argument("--style-id", type=int, metavar="ID",
+                             help="Kitchen style, for simulators that take one (RoboCasa: 1-60, default 1)")
+        command.add_argument("--object-split", choices=("pretrain", "target", "all"),
+                             help="Object instances, for simulators that take them (RoboCasa: default all); "
+                                  "the seed selects the rest of the scene")
         command.add_argument("--record", type=Path, metavar="DIR",
                              help="Save spectator recordings to a new or empty directory")
         command.add_argument("--record-type", choices=("mp4", "bag", "both"),
@@ -139,8 +149,9 @@ def main(argv=None):
             for flag in ("record_type", "record_rate", "record_size", "record_views", "record_quality"):
                 if getattr(args, flag, None) is not None and args.record is None:
                     raise ValueError(f"--{flag.replace('_', '-')} requires --record DIR")
-            record, process = api.launch(args.selection, project=args.project, options=vars(args),
-                                         demo=args.command == "demo")
+            scene = {name: getattr(args, name) for name in SCENE_FLAGS if getattr(args, name) is not None}
+            record, process = api.launch(args.selection, project=args.project,
+                                         options=dict(vars(args), scene=scene), demo=args.command == "demo")
             emit(record, args.json)
             if getattr(args, "detach", False):
                 return 0

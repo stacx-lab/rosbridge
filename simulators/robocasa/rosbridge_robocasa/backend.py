@@ -18,9 +18,27 @@ ROBOT = 'PandaOmron'
 CAMERAS = {'robot0_agentview_left': 'camera_left', 'robot0_agentview_right': 'camera_right',
            'robot0_eye_in_hand': 'camera_wrist'}
 SPECTATORS = (('third_person', 'robot0_agentview_left'), ('wrist', 'robot0_eye_in_hand'))
-# Upstream create_env(split="target"): held-out object instances in the 10 target kitchens.
-SPLITS = {'target': {'obj_instance_split': 'target',
-                     'layout_and_style_ids': [(i, i) for i in range(1, 11)]}}
+# Upstream's object instance splits (obj_instance_split): "all" samples every instance, as its default does.
+OBJECT_SPLITS = {'pretrain': 'pretrain', 'target': 'target', 'all': None}
+KITCHEN_IDS = range(1, 61)  # upstream's layout and style ids (LayoutType, StyleType)
+
+
+def scene_options(layout_id=1, style_id=1, object_split='all'):
+    """The checked scene: the kitchen's upstream layout and style ids and its object instance split."""
+    for name, value in (('layout_id', layout_id), ('style_id', style_id)):
+        if type(value) is not int or value not in KITCHEN_IDS:
+            raise ValueError(f'{name} must be an upstream id in 1-60, not {value!r}')
+    if not isinstance(object_split, str) or object_split not in OBJECT_SPLITS:
+        raise ValueError(f'object_split must be one of {", ".join(OBJECT_SPLITS)}, not {object_split!r}')
+    return {'layout_id': layout_id, 'style_id': style_id, 'object_split': object_split}
+
+
+def excluded(task, env, scene):
+    """Why a task cannot build the scene's kitchen: the layout or style it excludes."""
+    reasons = [f'{kind} {scene[f"{kind}_id"]} (it excludes {kind}s {sorted(set(ids))}; pass another --{kind}-id)'
+               for kind, ids in (('layout', env.EXCLUDE_LAYOUTS), ('style', env.EXCLUDE_STYLES))
+               if scene[f'{kind}_id'] in ids]
+    return f'{task} excludes ' + ' and '.join(reasons)
 
 
 def controller_config():
@@ -69,9 +87,11 @@ class RoboCasaSim:
     def configure_spectators(self, width=960, height=720, views=None):
         self.spectators = spectator_views(SPECTATORS, width, height, views)
 
-    def reset(self, task, seed, randomize=True):
-        """The seed fully determines the kitchen, its objects and the instruction."""
+    def reset(self, task, seed, randomize=True, *, layout_id=1, style_id=1, object_split='all'):
+        """The scene options pin the kitchen and its object instances; with them, the seed determines the rest:
+        fixtures and textures, objects, placements, the base pose and the instruction."""
         spec = resolve('robocasa', task=task)[2]
+        scene = scene_options(layout_id, style_id, object_split)
         check_task(project_root() / '.runtime/robocasa', spec['native_task'])
         candidate = RoboCasaSim(cameras=self.cameras, width=self.width, height=self.height,
                                 max_steps=self.requested_max_steps,
@@ -81,7 +101,7 @@ class RoboCasaSim:
         # live episode's future randomness.
         python_rng, numpy_rng = random.getstate(), np.random.get_state()
         try:
-            candidate._initialize(spec, seed)
+            candidate._initialize(spec, seed, scene)
             if hasattr(self, 'layout') and candidate.layout != self.layout:
                 raise ValueError('reset cannot change the action layout')
         except BaseException:
@@ -92,7 +112,7 @@ class RoboCasaSim:
         self.close()
         self.__dict__.update(candidate.__dict__)
 
-    def _initialize(self, spec, seed):
+    def _initialize(self, spec, seed, scene):
         import robocasa  # noqa: F401  (registers the kitchen environments)
         import robosuite
         from robocasa.utils.dataset_registry import ATOMIC_TASK_DATASETS, COMPOSITE_TASK_DATASETS
@@ -104,7 +124,12 @@ class RoboCasaSim:
             self.task, robots=ROBOT, controller_configs=controller_config(), has_renderer=False,
             has_offscreen_renderer=True, use_camera_obs=False, camera_names=list(self.cameras),
             camera_widths=self.width, camera_heights=self.height, camera_depths=False,
-            ignore_done=True, translucent_robot=False, seed=seed, **SPLITS.get(spec.get('split'), {}))
+            ignore_done=True, translucent_robot=False, seed=seed, layout_ids=scene['layout_id'],
+            style_ids=scene['style_id'], obj_instance_split=OBJECT_SPLITS[scene['object_split']])
+        # Upstream drops the task's excluded layouts and styles from the kitchens it may build; no kitchen is built
+        # until the first reset, so an excluded one fails here at no cost.
+        if not self.env.layout_and_style_ids:
+            raise ValueError(excluded(self.task, self.env, scene))
         self.env.reset()
         # Measurements and frames describe the current state, not the last substep's start.
         self.env.sim.forward()
@@ -126,7 +151,11 @@ class RoboCasaSim:
         self.steps, self.done, self.success, self.reward = 0, False, False, 0.
         horizon = {**ATOMIC_TASK_DATASETS, **COMPOSITE_TASK_DATASETS}.get(self.task, {}).get('horizon')
         self.max_steps = self.requested_max_steps or horizon
-        print(f'[robocasa] {self.task} seed {seed}: {self.env.get_ep_meta().get("lang", "")}', flush=True)
+        meta = self.env.get_ep_meta()
+        self.scene = {'layout_id': meta['layout_id'], 'style_id': meta['style_id'],
+                      'object_split': scene['object_split']}
+        print(f'[robocasa] {self.task} seed {seed}, layout {meta["layout_id"]}, style {meta["style_id"]}, '
+              f'objects {scene["object_split"]}: {meta.get("lang", "")}', flush=True)
         # Pixel-center depth from a separate single-sample context; RGB keeps native antialiasing.
         quality = self.model.vis.quality
         samples, quality.offsamples = quality.offsamples, 0
@@ -162,6 +191,10 @@ class RoboCasaSim:
     @property
     def time_s(self):
         return self.steps * self.period
+
+    def measures(self):
+        """The episode's kitchen and object split, as its record states them."""
+        return dict(self.scene)
 
     def _odometry(self):
         """Base pose relative to its episode-start pose, and its body-frame twist."""

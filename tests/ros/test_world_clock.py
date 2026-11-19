@@ -106,6 +106,18 @@ def test_an_early_stop_run_ends_saying_why(tmp_path, task, message):
         graph.close()
 
 
+def test_scene_options_reach_reset_and_the_episode_record(tmp_path, monkeypatch):
+    import json
+    monkeypatch.setenv("ROSBRIDGE_RUN_DIR", str(tmp_path))
+    graph = Graph(tmp_path, backend="scene_toy", max_steps=1, scene={"layout": 4})
+    try:
+        assert graph.wait(.1).message == f"ok; {TIME_LIMIT}"
+    finally:
+        graph.close()
+    record, = (json.loads(line) for line in (tmp_path / "episode-results.jsonl").read_text().splitlines())
+    assert record["layout"] == 4 and record["reason"] == "timeout"
+
+
 def test_a_step_that_fails_ends_the_episode_and_the_world_goes_on_answering(tmp_path):
     graph = Graph(tmp_path, task="fails")
     failed = "the episode ended because the simulation failed (FloatingPointError)"

@@ -5,8 +5,8 @@ from launch.event_handlers import OnProcessExit
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
-TYPES = {"backend": str, "task": str, "seed": int, "mode": str, "max_steps": int, "spectator_rate_hz": float,
-         "spectator_width": int, "spectator_height": int, "spectator_select": str,
+TYPES = {"backend": str, "task": str, "seed": int, "scene": str, "mode": str, "max_steps": int,
+         "spectator_rate_hz": float, "spectator_width": int, "spectator_height": int, "spectator_select": str,
          "early_stop": lambda value: {"true": True, "false": False}[value.lower()]}
 
 

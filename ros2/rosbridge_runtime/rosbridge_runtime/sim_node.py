@@ -40,8 +40,8 @@ class SimNode(Node):
             unknown = sorted(set(selected) - {view.name for view in self.sim.spectators})
             if unknown:
                 raise ValueError(f"this simulator offers no spectator views {unknown}")
-        # A run is one episode: the launch's task and seed, loaded once.
-        self.sim.reset(p["task"] or self.sim.default_task, p["seed"], p["randomize"])
+        # A run is one episode: the launch's task, seed and scene options, loaded once.
+        self.sim.reset(p["task"] or self.sim.default_task, p["seed"], p["randomize"], **p["scene"])
         self.world = WorldRuntime(self.sim, p["mode"], lambda: self.observations.publish(),
                                   early_stop=p["early_stop"])
         self.devices = [device(spec, self) for spec in self.sim.devices]
@@ -54,16 +54,21 @@ class SimNode(Node):
         self.create_service(Wait, "world/wait", self._wait, callback_group=services)
         self.create_service(Trigger, "world/stop", self._stop, callback_group=services)
         self.observations.publish()
-        self.get_logger().info(f"task={self.sim.task} seed={self.sim.seed} mode={p['mode']} "
+        scene = "".join(f" {name}={value}" for name, value in sorted(p["scene"].items()))
+        self.get_logger().info(f"task={self.sim.task} seed={self.sim.seed}{scene} mode={p['mode']} "
                                f"period={self.sim.period:.4f}s")
 
     def _read_parameters(self):
-        defaults = {"backend": "", "task": "", "seed": 0, "randomize": True, "mode": "realtime",
+        defaults = {"backend": "", "task": "", "seed": 0, "scene": "", "randomize": True, "mode": "realtime",
                     "max_steps": 0, "early_stop": False, "spectator_rate_hz": 0.,
                     "spectator_width": 960, "spectator_height": 720, "spectator_select": ""}
         for name, value in defaults.items():
             self.declare_parameter(name, value, ParameterDescriptor(read_only=True))
         params = {name: self.get_parameter(name).value for name in defaults}
+        # The scene options the launch gave, as one JSON object; reset receives them as keyword arguments.
+        params["scene"] = json.loads(params["scene"]) if params["scene"] else {}
+        if not isinstance(params["scene"], dict):
+            raise ValueError("scene must be a JSON object of scene options")
         if params["mode"] not in ("realtime", "stepped"):
             raise ValueError("mode must be realtime or stepped")
         if params["max_steps"] < 0:

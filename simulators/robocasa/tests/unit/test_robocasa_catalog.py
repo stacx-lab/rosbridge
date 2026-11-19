@@ -11,17 +11,28 @@ from rosbridge_robocasa import assets
 SLUG = re.compile(r'(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])')
 
 
-def test_catalog_holds_robocasa365_with_the_evaluation_split():
+def test_catalog_holds_robocasa365_and_leaves_the_scene_to_the_launch():
     entries = list(tasks(name='robocasa').values())
     assert len(entries) == 365
-    assert sum(t.get('split') == 'target' for t in entries) == 50
-    assert {t.get('split') for t in entries} == {None, 'target'}
+    # Kitchens and object instances are scene options, not task fields.
+    assert all(set(t) == {'id', 'robot', 'native_task', 'simulator'} for t in entries)
     assert {t['robot'] for t in entries} == {'robocasa/robocasa-panda-omron'}
     for task in entries:
         assert task['id'] == 'robocasa/' + SLUG.sub('-', task['native_task']).lower()
         assert resolve(task['id'])[2] == task
     assert resolve('robocasa')[2]['id'] == 'robocasa/pick-place-counter-to-cabinet'
     assert resolve('PrepareVeggieDip')[2]['id'] == 'robocasa/prepare-veggie-dip'
+
+
+def test_manifest_scene_options_are_the_backend_reset_keywords():
+    import ast
+    from pathlib import Path
+    from rosbridge.catalog import simulator
+    # The backend imports MuJoCo, which the CLI environment lacks; read reset's signature from its source.
+    source = Path(assets.__file__).with_name('backend.py').read_text()
+    reset, = (node for node in ast.walk(ast.parse(source))
+              if isinstance(node, ast.FunctionDef) and node.name == 'reset')
+    assert simulator('robocasa')[2]['scene_options'] == [arg.arg for arg in reset.args.kwonlyargs]
 
 
 def test_seeded_prepare_adopts_verified_archives_and_overlays_the_upstream_tree(tmp_path,

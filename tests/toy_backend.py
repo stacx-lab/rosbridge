@@ -119,3 +119,14 @@ class PoseToy(ToyBackend):
     def tip_pose(self, group):
         assert threading.get_ident() == self.owner and group == "reach"
         return np.r_[self.position, 0., 0., 0., 0., 1.]
+
+
+class SceneToy(ToyBackend):
+    """Selects scenes in its own terms: a layout, which reset takes as a keyword and the record states."""
+
+    def reset(self, task, seed, randomize, *, layout=0):
+        super().reset(task, seed, randomize)
+        self.scene_layout = layout
+
+    def measures(self):
+        return {"layout": self.scene_layout}

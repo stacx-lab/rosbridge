@@ -146,7 +146,7 @@ step or, with `--early-stop`, where the simulator's evaluator ends it (a success
 task failure with its cause) pauses physics, and wait replies from then on say which.
 The graph remains available for images and clock; new commands are rejected. The
 episode's native outcome is appended once, when it ends or the run stops, to
-`episode-results.jsonl` in rosbridge's run directory; a simulator may add its own measures, such as BEHAVIOR's partial credit `q_score`, except
-after a failed step. An interrupted run is marked stopped, not a successful terminal
+`episode-results.jsonl` in rosbridge's run directory; a simulator may add its own measures, such as BEHAVIOR's partial credit `q_score`
+or RoboCasa's kitchen `layout_id`, `style_id` and `object_split`, except after a failed step. An interrupted run is marked stopped, not a successful terminal
 episode. Judge records are separate from the agent workspace; this separation is not
 an OS security sandbox.

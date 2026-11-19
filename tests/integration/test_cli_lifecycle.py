@@ -125,15 +125,15 @@ rclpy.init()
 node=Node("parameters_probe")
 client=node.create_client(GetParameters,"/world/get_parameters")
 assert client.wait_for_service(timeout_sec=5.)
-future=client.call_async(GetParameters.Request(names=["mode","seed","spectator_rate_hz"]))
+future=client.call_async(GetParameters.Request(names=["mode","seed","spectator_rate_hz","scene"]))
 rclpy.spin_until_future_complete(node,future,timeout_sec=5.)
 values=future.result().values
-print(json.dumps([values[0].string_value,values[1].integer_value,values[2].double_value]))
+print(json.dumps([values[0].string_value,values[1].integer_value,values[2].double_value,values[3].string_value]))
 node.destroy_node()
 rclpy.shutdown()
 '''
     result = invoke("exec", record["id"], "--", "python", "-c", code)
-    assert json.loads(result.stdout) == ["stepped", 21, 0.]
+    assert json.loads(result.stdout) == ["stepped", 21, 0., ""]  # abc declares no scene options
     assert json.loads(invoke("status", record["id"], "--json").stdout)["time_s"] == 0.
     error = json.loads(invoke("prepare", "abc", "--json", expected=1).stdout)["error"]
     assert "stop its runs" in error

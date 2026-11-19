@@ -1,24 +1,25 @@
-"""Pinned RoboCasa acceptance on representative tasks: splits, determinism, native controls and rendering."""
+"""Pinned RoboCasa acceptance on representative tasks: scene options, determinism, native controls and rendering."""
+import random
+
 import numpy as np
 import pytest
 
 from rosbridge_robocasa.backend import RoboCasaSim
 
 
-@pytest.mark.parametrize('task,horizon,target', [
-    ('PickPlaceCounterToCabinet', 750, True),   # atomic, evaluation split
-    ('WashLettuce', 1650, True),                # composite, evaluation split
-    ('PrepareVeggieDip', None, False),          # composite without a dataset horizon
+@pytest.mark.parametrize('task,horizon', [
+    ('PickPlaceCounterToCabinet', 750),   # atomic
+    ('WashLettuce', 1650),                # composite
+    ('PrepareVeggieDip', None),           # composite without a dataset horizon
 ])
-def test_representative_tasks_load_step_and_keep_their_split(task, horizon, target):
+def test_representative_tasks_load_and_step_in_the_default_kitchen(task, horizon):
     sim = RoboCasaSim(cameras=())
     try:
         sim.reset(task, 3)
         assert sim.steps == 0 and sim.time_s == 0 and sim.period == .05 and sim.max_steps == horizon
         meta = sim.env.get_ep_meta()
-        if target:
-            assert meta['layout_id'] == meta['style_id'] and 1 <= meta['layout_id'] <= 10
-            assert sim.env.obj_instance_split == 'target'
+        assert (meta['layout_id'], meta['style_id']) == (1, 1) and sim.env.obj_instance_split is None
+        assert sim.measures() == {'layout_id': 1, 'style_id': 1, 'object_split': 'all'}
         assert meta['lang']
         sim.step(sim.state()[0])
         assert sim.steps == 1 and sim.time_s == pytest.approx(.05)
@@ -28,23 +29,42 @@ def test_representative_tasks_load_step_and_keep_their_split(task, horizon, targ
         sim.close()
 
 
-def test_seed_determines_the_kitchen_and_failed_resets_keep_the_episode(monkeypatch):
+def test_scene_and_seed_determine_the_episode_and_failed_resets_keep_it(monkeypatch):
     sim = RoboCasaSim(cameras=(), max_steps=2)
     try:
-        sim.reset(sim.default_task, 5)
+        scene = dict(layout_id=12, style_id=3, object_split='target')
+        sim.reset('PrepareVeggieDip', 5, **scene)
         meta, qpos = sim.env.get_ep_meta(), sim.data.qpos.copy()
+        assert (meta['layout_id'], meta['style_id']) == (12, 3) and sim.env.obj_instance_split == 'target'
+        assert sim.measures() == scene
         sim.step(sim.state()[0])
-        sim.reset(sim.default_task, 5)
+        sim.reset('PrepareVeggieDip', 5, **scene)
         assert {k: sim.env.get_ep_meta()[k] for k in ('layout_id', 'style_id', 'lang')} == {
             k: meta[k] for k in ('layout_id', 'style_id', 'lang')}
         np.testing.assert_array_equal(qpos, sim.data.qpos)
-        previous = sim.env
+        previous, rngs = sim.env, (random.getstate(), np.random.get_state()[1].copy())
+
+        def kept():
+            assert sim.env is previous and sim.steps == 0 and sim.measures() == scene
+            assert random.getstate() == rngs[0]
+            np.testing.assert_array_equal(np.random.get_state()[1], rngs[1])
+            np.testing.assert_array_equal(qpos, sim.data.qpos)
         with monkeypatch.context() as patch:
             patch.setattr(RoboCasaSim, '_index', lambda _: (_ for _ in ()).throw(ValueError('failure')))
             with pytest.raises(ValueError, match='failure'):
-                sim.reset(sim.default_task, 6)
-        assert sim.env is previous and sim.steps == 0
-        np.testing.assert_array_equal(qpos, sim.data.qpos)
+                sim.reset('PrepareVeggieDip', 6, **scene)
+        kept()
+        for options in ({'layout_id': 0}, {'layout_id': 61}, {'style_id': True}, {'layout_id': '3'}):
+            with pytest.raises(ValueError, match='must be an upstream id in 1-60'):
+                sim.reset('PrepareVeggieDip', 6, **options)
+        with pytest.raises(ValueError, match='object_split must be one of pretrain, target, all'):
+            sim.reset('PrepareVeggieDip', 6, object_split='test')
+        # A kitchen the task excludes fails before it is built.
+        with pytest.raises(ValueError, match=r'DeliverStraw excludes layout 1 \(it excludes layouts \[1, 3,'):
+            sim.reset('DeliverStraw', 0)
+        with pytest.raises(ValueError, match=r'PrepareVeggieDip excludes style 13 \(it excludes styles \[13, 29'):
+            sim.reset('PrepareVeggieDip', 0, style_id=13)
+        kept()
         for _ in range(2):
             sim.step(sim.state()[0])
         assert sim.done and sim.time_s == pytest.approx(.1)

@@ -39,9 +39,24 @@ def recording_settings(options):
     return rate, width, height, views, crf
 
 
+def scene_argument(config, scene):
+    """The world's scene launch argument: the given scene options, which the simulator's manifest must declare
+    (scene_options), as one compact JSON object; None when none is given. The backend checks their values."""
+    declared = tuple(config.get("scene_options", ()))
+    unknown = sorted(set(scene) - set(declared))
+    if unknown:
+        flags = ", ".join("--" + name.replace("_", "-") for name in unknown)
+        takes = ", ".join("--" + name.replace("_", "-") for name in declared) or "none"
+        raise ValueError(f"{config['name']} takes no {flags} (its scene options: {takes})")
+    if not scene:
+        return None
+    return "scene:=" + json.dumps(scene, separators=(",", ":"), sort_keys=True, allow_nan=False)
+
+
 def launch(selection, *, project=None, options=None, demo=False):
     options = options or {}
     root, config, task = resolve(selection, project)
+    scene = scene_argument(config, options.get("scene") or {})
     report = doctor(task["id"], project=root)
     if not report["ready"]:
         raise ValueError("; ".join(report["issues"] + report["next_steps"]))
@@ -54,6 +69,8 @@ def launch(selection, *, project=None, options=None, demo=False):
     for name, value in (("mode", mode), ("seed", seed), ("early_stop", options.get("early_stop") or None)):
         if value is not None:
             arguments.append(f"{name}:={str(value).lower() if isinstance(value, bool) else value}")
+    if scene is not None:
+        arguments.append(scene)
     if recording_dir is not None:
         rate, width, height, views, crf = recording_settings(options)
         arguments += [f"spectator_rate_hz:={rate}", f"spectator_width:={width}", f"spectator_height:={height}"]

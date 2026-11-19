@@ -35,6 +35,11 @@ environments used by active managed runs.
 or a simulator's default-task alias. It takes `--execution-mode`, `--seed`,
 `--early-stop`, `--domain-id`, `--timeout`, `--record DIR` and
 `--record-type`. It requires preparation; launch never downloads assets.
+A simulator that selects scenes in its own terms names them in its manifest's
+`scene_options`, and launch takes those as flags: RoboCasa's `--layout-id`,
+`--style-id` and `--object-split` (see its page). Launch passes the ones given to
+the backend, which checks them, and refuses any the simulator does not declare; the
+seed selects the rest of the scene.
 Launch remains in the foreground unless `--detach` is supplied. Ctrl-C stops the
 complete graph. Detached launch returns once the world node, its clock and wait
 service are discoverable and, when recording, the recorder holds every initial
@@ -98,7 +103,7 @@ Rendering can make realtime slower than wall time; it never changes simulated dt
 native control steps; zero is immediate; negative, nonfinite or unrepresentable
 waits fail. Waits are sequential: a wait requested while another is pending is
 rejected, and `world/stop` (`std_srvs/srv/Trigger`) cancels the pending one. A run
-is one episode, of the task and seed it was launched with. There is no reset: to
+is one episode, of the task, seed and scene options it was launched with. There is no reset: to
 start over, stop the run and launch another. An episode ends at its step limit, if it
 has one, or when a simulator step fails. Launched with `--early-stop`, it also ends where
 its simulator's own evaluator ends one: at a success for every simulator, and at a task

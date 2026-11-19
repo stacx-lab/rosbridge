@@ -3,7 +3,9 @@
 RoboCasa runs in its own Python 3.12 / ROS Jazzy environment with the official
 RoboCasa365 kitchens, tasks, success predicates and PandaOmron mobile manipulator: a
 Franka Panda on a lift torso on an Omron holonomic base. The catalog holds all 365
-tasks (65 atomic, 300 composite); 50 are upstream's evaluation tasks (`TARGET_TASKS`):
+tasks (65 atomic, 300 composite), including upstream's 300 training and 50 evaluation
+tasks; a run's flags select the kitchen and objects (see
+[Scenes](#scenes-layout-style-and-objects)):
 
 ```bash
 rosbridge prepare robocasa
@@ -89,18 +91,82 @@ Each `stop` holds the measured joint positions, the gripper's integrated command
 
 ## Episode timing and tasks
 
-Each action interval advances 0.05 simulation seconds (25 MuJoCo substeps). The
-seed fully determines the kitchen layout and style, objects, placements and
-instruction; building the kitchen takes about 10 s. Tasks marked
-`split = "target"` in `tasks.toml` use upstream's evaluation split, as
-`create_env(split="target")` does: held-out object instances in kitchens 1–10 with
-matching layout and style. The other tasks sample all kitchens and objects. The
-default horizon is upstream's dataset horizon for the task (for example 750 steps
+Each action interval advances 0.05 simulation seconds (25 MuJoCo substeps). The task,
+seed and scene options (see [Scenes](#scenes-layout-style-and-objects)) determine the
+episode; building the kitchen takes about 10 s. The default horizon is upstream's dataset horizon for the task (for example 750 steps
 for `PickPlaceCounterToCabinet`), or none when upstream has no dataset; the world
 node's `max_steps` parameter overrides it. Success is Kitchen's native predicate,
 evaluated once per step; `--early-stop` ends the episode at its first success, and
-RoboCasa has no failure termination. The native language instruction is printed to the
-run log when the episode starts; rosbridge does not publish it.
+RoboCasa has no failure termination. The kitchen and the native language instruction
+are printed to the run log when the episode starts; rosbridge does not publish the
+instruction.
+
+## Scenes: layout, style and objects
+
+A run selects its scene with upstream's own kitchen arguments, as launch flags:
+
+| Flag | Values | Default | Upstream argument | Selects |
+|---|---|---|---|---|
+| `--layout-id` | 1–60 | 1 | `layout_ids` | the floor plan: walls, counters, cabinets and where each appliance stands (`kitchen_layouts/*/layoutNNN.yaml`) |
+| `--style-id` | 1–60 | 1 | `style_ids` | the materials and appliance models: cabinet, counter, floor and wall textures, which sink, stove, fridge and so on (`kitchen_styles/*/styleNNN.yaml`) |
+| `--object-split` | `pretrain`, `target`, `all` | `all` | `obj_instance_split` | the object instances: per category, `pretrain` keeps the first ones and `target` the held-out rest (up to 5), `all` every one |
+
+The layout and style always pin one kitchen; the seed never chooses it. The seed selects
+everything else: the fixtures' initial state, object categories and instances within the
+split, their placements, the robot's base pose and the instruction. The same task, seed and
+scene options rebuild the same episode, and each episode record states `layout_id`,
+`style_id` and `object_split`. Each option applies on its own: `--layout-id 4` alone
+builds layout 4 in style 1. A task excludes the layouts or styles that lack the fixtures it
+needs, and launching one of those fails with an error naming the ids it excludes, as 95 tasks
+exclude layout 1:
+
+```bash
+rosbridge launch robocasa/close-fridge --layout-id 4 --style-id 4 --object-split target --seed 2
+```
+
+### Training and evaluation splits
+
+Upstream's benchmark trains on 300 tasks in its training kitchens and evaluates on 50 tasks
+in 10 held-out kitchens, with held-out objects. Its `create_env(split=...)` presets map onto
+the scene options; rosbridge ships no datasets, so the split is the scene a run launches:
+
+| | Train: pretraining (`pretrain300`) | Test: target (`TARGET_TASKS`) |
+|---|---|---|
+| Tasks | 300: 65 atomic and 235 composite | 50: 18 atomic-seen, 16 composite-seen, 16 composite-unseen |
+| Kitchens | layouts 11–60 × styles 11–60, any pair (2,500) | the 10 pairs `(i, i)`, i in 1–10 |
+| Objects | `--object-split pretrain` | `--object-split target` |
+| Flags | `--layout-id L --style-id S --object-split pretrain`, L and S in 11–60 | `--layout-id i --style-id i --object-split target` |
+| Human data | 100 demonstrations per task (`pretrain_human300`) | 500 demonstrations per task (`target50`) |
+
+The 34 seen test tasks are also training tasks, and the 16 unseen ones are not. Layouts and
+styles 1–10, and target objects, are the test scene: a training run should never use them.
+All 350 tasks are in the catalog, which also holds 49 composite tasks in neither split. The
+300 training tasks are upstream's registry, `PRETRAINING_TASKS["pretrain300"]`:
+
+```bash
+pixi run --frozen -e robocasa python -c "from robocasa.utils.dataset_registry import PRETRAINING_TASKS; print(*PRETRAINING_TASKS['pretrain300'], sep='\n')" | grep -v '^WARNING'
+```
+
+The 50 test tasks (`TARGET_TASKS`, native names, which also resolve as task IDs):
+
+| Group | Tasks |
+|---|---|
+| Atomic, seen (18) | CloseBlenderLid, CloseFridge, CloseToasterOvenDoor, CoffeeSetupMug, NavigateKitchen, OpenCabinet, OpenDrawer, OpenStandMixerHead, PickPlaceCounterToCabinet, PickPlaceCounterToStove, PickPlaceDrawerToCounter, PickPlaceSinkToCounter, PickPlaceToasterToCounter, SlideDishwasherRack, TurnOffStove, TurnOnElectricKettle, TurnOnMicrowave, TurnOnSinkFaucet |
+| Composite, seen (16) | DeliverStraw, GetToastedBread, KettleBoiling, LoadDishwasher, PackIdenticalLunches, PreSoakPan, PrepareCoffee, RinseSinkBasin, ScrubCuttingBoard, SearingMeat, SetUpCuttingStation, StackBowlsCabinet, SteamInMicrowave, StirVegetables, StoreLeftoversInBowl, WashLettuce |
+| Composite, unseen (16) | ArrangeBreadBasket, ArrangeTea, BreadSelection, CategorizeCondiments, CuttingToolSelection, GarnishPancake, GatherTableware, HeatKebabSandwich, MakeIceLemonade, PanTransfer, PortionHotDogs, RecycleBottlesByType, SeparateFreezerRack, WaffleReheat, WashFruitColander, WeighIngredients |
+
+Nine test tasks exclude some test kitchens, as upstream's evaluation does; launching an
+excluded one fails, so an evaluation loop skips it:
+
+| Test task | Test kitchens `(i, i)` it builds |
+|---|---|
+| DeliverStraw, GetToastedBread, StoreLeftoversInBowl, ArrangeBreadBasket, GarnishPancake, PortionHotDogs | 2, 4, 7, 8, 9, 10 |
+| RecycleBottlesByType | 2, 4, 7, 9, 10 |
+| SeparateFreezerRack | 2, 7, 9 |
+| WaffleReheat | all but 9 |
+
+Likewise 116 training tasks exclude some training kitchens (RetrieveIceTray builds 450 of
+the 2,500), and 30 of them exclude layout or style 11.
 
 ## Cameras, recording and demo
 
@@ -115,6 +181,7 @@ the optical axis. The near clip plane scales with each kitchen's extent (about
 ```bash
 rosbridge demo robocasa --record ../ros_robocasa/demo
 rosbridge demo robocasa/prepare-veggie-dip --execution-mode realtime --seed 2
+rosbridge launch robocasa/close-fridge --layout-id 4 --style-id 4 --object-split target --seed 0
 ```
 
 The finite ROS-only demo moves the arm and torso, closes and opens the gripper,
@@ -133,5 +200,6 @@ pixi run --frozen -e robocasa test-ros
 ```
 
 Native checks cover an atomic and a composite evaluation task and a task without a
-dataset horizon, not all 365. `tests/kinex/native/test_robocasa.py` (with `KINEX_PYTHON`)
+dataset horizon in the default kitchen, not all 365, and a pinned kitchen and object
+split, invalid scene options and excluded kitchens. `tests/kinex/native/test_robocasa.py` (with `KINEX_PYTHON`)
 compares the exported rig's FK through base, torso and arm with MuJoCo.

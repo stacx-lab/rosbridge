@@ -51,6 +51,20 @@ def test_round_trip_keeps_layout_state_and_errors():
         sim.state()
 
 
+def test_scene_options_reach_the_native_reset():
+    class SceneWorker(WorkerBackend):
+        target = "tests.toy_backend:SceneToy"
+    sim = SceneWorker(python=sys.executable, env=dict(os.environ, PYTHONPATH=str(ROOT)))
+    try:
+        sim.reset("toy", 3, False, layout=4)
+        assert sim.seed == 3 and sim.native("measures") == {"layout": 4}
+        with pytest.raises(WorkerError, match="TypeError") as error:
+            sim.reset("toy", 3, False, style=2)  # a keyword the backend does not declare
+        assert error.value.kind == "TypeError" and sim.native("measures") == {"layout": 4}
+    finally:
+        sim.close()
+
+
 def test_a_backends_camera_rate_reaches_the_proxy():
     from rosbridge.core.devices import camera_rate
 

@@ -173,8 +173,8 @@ class WorkerBackend:
     def configure_spectators(self, width=960, height=720, views=None):
         return self._call("configure_spectators", width, height, views)
 
-    def reset(self, task, seed, randomize=True):
-        return self._call("reset", task, seed, randomize)
+    def reset(self, task, seed, randomize=True, **scene):
+        return self._call("reset", task, seed, randomize, **scene)
 
     def state(self):
         return self._call("state")

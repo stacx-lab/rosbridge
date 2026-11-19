@@ -10,7 +10,7 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
-WORLD = ("backend", "task", "seed", "mode", "max_steps", "spectator_rate_hz", "spectator_width",
+WORLD = ("backend", "task", "seed", "scene", "mode", "max_steps", "spectator_rate_hz", "spectator_width",
          "spectator_height", "spectator_select", "early_stop")
 
 

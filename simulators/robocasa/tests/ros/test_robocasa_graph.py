@@ -12,7 +12,9 @@ from tests.ros.support import Graph, seconds
 
 
 def test_robocasa_graph_serves_its_mobile_devices(tmp_path):
-    graph = Graph(tmp_path, backend='robocasa', mode='stepped', startup_s=120.)
+    # Launched in a pinned evaluation kitchen: the scene options reach the backend through the launch files.
+    graph = Graph(tmp_path, backend='robocasa', mode='stepped', startup_s=120.,
+                  scene={'layout_id': 4, 'style_id': 4, 'object_split': 'target'})
     node, last = graph.node, {}
     try:
         for kind, topic, key in ((JointState, 'arm/joint_state', 'arm'),
@@ -67,3 +69,6 @@ def test_robocasa_graph_serves_its_mobile_devices(tmp_path):
         assert seconds(image.header.stamp) == seconds(graph.last['clock'].clock)
     finally:
         graph.close()
+    log = (tmp_path / 'process_0.log').read_text()
+    assert 'seed 0, layout 4, style 4, objects target:' in log
+    assert 'layout_id=4 object_split=target style_id=4' in log
