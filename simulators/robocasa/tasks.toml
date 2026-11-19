@@ -1,9 +1,8 @@
 # RoboCasa365 kitchen tasks at robocasa 456174f6: every registered composite task and the
 # 65 atomic tasks with datasets (robocasa.environments.ALL_KITCHEN_ENVIRONMENTS without Kitchen
 # and the parameterized atomic bases such as ManipulateDrawer, which named tasks cover).
-# A launch's scene options, not the catalog, choose the kitchen (--layout-id, --style-id) and the
-# object instances (--object-split); upstream's evaluation split is kitchens (i, i), i in 1-10,
-# with its target objects.
+# A launch's scene options, not the catalog, choose the scene: upstream's split (--split) and
+# kitchen ids that override it (--layout-id, --style-id); the seed picks the rest as upstream's does.
 tasks = [
   { id = "robocasa/add-ice-cubes", robot = "robocasa/robocasa-panda-omron", native_task = "AddIceCubes" },
   { id = "robocasa/add-lemon-to-fish", robot = "robocasa/robocasa-panda-omron", native_task = "AddLemonToFish" },

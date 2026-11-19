@@ -36,10 +36,10 @@ or a simulator's default-task alias. It takes `--execution-mode`, `--seed`,
 `--early-stop`, `--domain-id`, `--timeout`, `--record DIR` and
 `--record-type`. It requires preparation; launch never downloads assets.
 A simulator that selects scenes in its own terms names them in its manifest's
-`scene_options`, and launch takes those as flags: RoboCasa's `--layout-id`,
-`--style-id` and `--object-split` (see its page). Launch passes the ones given to
-the backend, which checks them, and refuses any the simulator does not declare; the
-seed selects the rest of the scene.
+`scene_options`, and launch takes those as flags: RoboCasa's `--split`,
+`--layout-id` and `--style-id` (see its page). Launch passes the ones given to the
+backend, which checks them, and refuses any the simulator does not declare; the seed
+selects the rest of the scene.
 Launch remains in the foreground unless `--detach` is supplied. Ctrl-C stops the
 complete graph. Detached launch returns once the world node, its clock and wait
 service are discoverable and, when recording, the recorder holds every initial

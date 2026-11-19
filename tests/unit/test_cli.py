@@ -115,7 +115,7 @@ def test_overlay_preserves_command_arguments(tmp_path):
 def test_invalid_flags_fail_before_launch():
     for args in (["launch", "abc", "--domain-id", "102"],
                  ["launch", "abc", "--timeout", "nan"],
-                 ["launch", "robocasa", "--object-split", "test"],
+                 ["launch", "robocasa", "--split", "test"],
                  ["demo", "robocasa", "--style-id", "x"]):
         with pytest.raises(SystemExit) as error:
             main(args)
@@ -126,8 +126,8 @@ def test_scene_options_are_those_the_simulator_declares(capsys):
     from rosbridge.catalog import simulator
     robocasa, abc = (simulator(name, ROOT)[2] for name in ("robocasa", "abc"))
     assert api.scene_argument(robocasa, {}) is None
-    assert api.scene_argument(robocasa, {"style_id": 7, "object_split": "target", "layout_id": 3}) == (
-        'scene:={"layout_id":3,"object_split":"target","style_id":7}')
+    assert api.scene_argument(robocasa, {"style_id": 7, "split": "target", "layout_id": 3}) == (
+        'scene:={"layout_id":3,"split":"target","style_id":7}')
     with pytest.raises(ValueError, match=r"abc takes no --layout-id \(its scene options: none\)"):
         api.scene_argument(abc, {"layout_id": 3})
     # Refused before preparation is checked or a run is created.

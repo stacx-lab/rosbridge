@@ -10,9 +10,9 @@ default_task = "PickPlaceCounterToCabinet"
 ros_package = "rosbridge_robocasa"
 environment = "robocasa"
 task_catalog = "tasks.toml"
-# Upstream's own scene arguments, which launch passes to reset: the kitchen's layout and style ids and the object
-# instance split. The seed selects everything else.
-scene_options = ["layout_id", "style_id", "object_split"]
+# Upstream's own scene arguments, which launch passes to reset: create_env's split preset, and layout and style ids
+# that override the split's kitchens. The seed selects the rest as upstream's does.
+scene_options = ["split", "layout_id", "style_id"]
 
 # RoboCasa365 requires robosuite 1.5.2; the pinned upstream is exported beside it.
 [[nested_sources]]

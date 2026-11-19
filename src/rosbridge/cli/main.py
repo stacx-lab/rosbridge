@@ -6,7 +6,7 @@ from pathlib import Path
 import sys
 
 # Scene options a simulator may declare in its manifest (scene_options); launch passes the ones given to reset.
-SCENE_FLAGS = ("layout_id", "style_id", "object_split")
+SCENE_FLAGS = ("split", "layout_id", "style_id")
 
 
 def positive(value):
@@ -44,13 +44,15 @@ def parser():
         command.add_argument("--domain-id", type=domain, help="Explicit ROS domain; default: automatically leased")
         command.add_argument("--timeout", type=positive, default=900., help="Startup timeout in wall seconds")
         command.add_argument("--seed", type=int)
+        command.add_argument("--split", choices=("pretrain", "target", "all"),
+                             help="Scene split, for simulators that take one (RoboCasa: upstream's create_env "
+                                  "split; default none, every kitchen and object); the seed picks within it")
         command.add_argument("--layout-id", type=int, metavar="ID",
-                             help="Kitchen layout, for simulators that take one (RoboCasa: 1-60, default 1)")
+                             help="Kitchen layout overriding the split's, for simulators that take one "
+                                  "(RoboCasa: 1-60; default: the seed picks)")
         command.add_argument("--style-id", type=int, metavar="ID",
-                             help="Kitchen style, for simulators that take one (RoboCasa: 1-60, default 1)")
-        command.add_argument("--object-split", choices=("pretrain", "target", "all"),
-                             help="Object instances, for simulators that take them (RoboCasa: default all); "
-                                  "the seed selects the rest of the scene")
+                             help="Kitchen style overriding the split's, for simulators that take one "
+                                  "(RoboCasa: 1-60; default: the seed picks)")
         command.add_argument("--record", type=Path, metavar="DIR",
                              help="Save spectator recordings to a new or empty directory")
         command.add_argument("--record-type", choices=("mp4", "bag", "both"),

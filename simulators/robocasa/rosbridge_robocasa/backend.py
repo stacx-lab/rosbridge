@@ -18,27 +18,42 @@ ROBOT = 'PandaOmron'
 CAMERAS = {'robot0_agentview_left': 'camera_left', 'robot0_agentview_right': 'camera_right',
            'robot0_eye_in_hand': 'camera_wrist'}
 SPECTATORS = (('third_person', 'robot0_agentview_left'), ('wrist', 'robot0_eye_in_hand'))
-# Upstream's object instance splits (obj_instance_split): "all" samples every instance, as its default does.
-OBJECT_SPLITS = {'pretrain': 'pretrain', 'target': 'target', 'all': None}
+# Upstream's create_env(split=...) presets (robocasa/utils/env_utils.py:86-104), passed to the kitchen unchanged so
+# that the seed selects the kitchen, objects and the rest exactly as upstream does. No split passes nothing, as
+# create_env(split=None) does: every kitchen and object.
+SPLITS = {'target': {'obj_instance_split': 'target', 'layout_and_style_ids': [(i, i) for i in range(1, 11)]},
+          'pretrain': {'obj_instance_split': 'pretrain', 'layout_ids': -2, 'style_ids': -2},
+          'all': {'obj_instance_split': None, 'layout_ids': -3, 'style_ids': -3}}
+# A layout or style id given replaces the split's; one not given ranges over the split's group, as upstream's
+# collect_demos --layout/--style does (robocasa/scripts/collect_demos.py:449-466).
+GROUPS = {'target': -1, 'pretrain': -2, 'all': -3, None: None}
 KITCHEN_IDS = range(1, 61)  # upstream's layout and style ids (LayoutType, StyleType)
 
 
-def scene_options(layout_id=1, style_id=1, object_split='all'):
-    """The checked scene: the kitchen's upstream layout and style ids and its object instance split."""
+def kitchen_arguments(split=None, layout_id=None, style_id=None):
+    """The kitchen's upstream constructor arguments for a split and optional layout and style ids, checked."""
+    if split is not None and split not in SPLITS:
+        raise ValueError(f'split must be one of {", ".join(SPLITS)}, not {split!r}')
     for name, value in (('layout_id', layout_id), ('style_id', style_id)):
-        if type(value) is not int or value not in KITCHEN_IDS:
+        if value is not None and (type(value) is not int or value not in KITCHEN_IDS):
             raise ValueError(f'{name} must be an upstream id in 1-60, not {value!r}')
-    if not isinstance(object_split, str) or object_split not in OBJECT_SPLITS:
-        raise ValueError(f'object_split must be one of {", ".join(OBJECT_SPLITS)}, not {object_split!r}')
-    return {'layout_id': layout_id, 'style_id': style_id, 'object_split': object_split}
+    arguments = dict(SPLITS.get(split, {}))
+    if layout_id is None and style_id is None:
+        return arguments
+    arguments.pop('layout_and_style_ids', None)
+    group = GROUPS[split]
+    arguments.update(layout_ids=group if layout_id is None else layout_id,
+                     style_ids=group if style_id is None else style_id)
+    return arguments
 
 
-def excluded(task, env, scene):
-    """Why a task cannot build the scene's kitchen: the layout or style it excludes."""
-    reasons = [f'{kind} {scene[f"{kind}_id"]} (it excludes {kind}s {sorted(set(ids))}; pass another --{kind}-id)'
-               for kind, ids in (('layout', env.EXCLUDE_LAYOUTS), ('style', env.EXCLUDE_STYLES))
-               if scene[f'{kind}_id'] in ids]
-    return f'{task} excludes ' + ' and '.join(reasons)
+def excluded(task, env, layout_id, style_id):
+    """Why a task has no kitchen left to build: the layout or style it excludes."""
+    reasons = [f'{kind} {value} (it excludes {kind}s {sorted(set(ids))}; pass another --{kind}-id)'
+               for kind, value, ids in (('layout', layout_id, env.EXCLUDE_LAYOUTS),
+                                        ('style', style_id, env.EXCLUDE_STYLES))
+               if value in ids]
+    return f'{task} excludes ' + (' and '.join(reasons) or 'every kitchen these scene options allow')
 
 
 def controller_config():
@@ -87,11 +102,13 @@ class RoboCasaSim:
     def configure_spectators(self, width=960, height=720, views=None):
         self.spectators = spectator_views(SPECTATORS, width, height, views)
 
-    def reset(self, task, seed, randomize=True, *, layout_id=1, style_id=1, object_split='all'):
-        """The scene options pin the kitchen and its object instances; with them, the seed determines the rest:
-        fixtures and textures, objects, placements, the base pose and the instruction."""
+    def reset(self, task, seed, randomize=True, *, split=None, layout_id=None, style_id=None):
+        """Upstream's split and seed determine the episode as create_env(split=..., seed=...) does: the seed picks
+        the kitchen from the split's, its objects, their placements, the base pose and the instruction. A layout or
+        style id given overrides the split's."""
         spec = resolve('robocasa', task=task)[2]
-        scene = scene_options(layout_id, style_id, object_split)
+        kitchen_arguments(split, layout_id, style_id)  # checked before anything is built
+        scene = {'split': split, 'layout_id': layout_id, 'style_id': style_id}
         check_task(project_root() / '.runtime/robocasa', spec['native_task'])
         candidate = RoboCasaSim(cameras=self.cameras, width=self.width, height=self.height,
                                 max_steps=self.requested_max_steps,
@@ -124,12 +141,11 @@ class RoboCasaSim:
             self.task, robots=ROBOT, controller_configs=controller_config(), has_renderer=False,
             has_offscreen_renderer=True, use_camera_obs=False, camera_names=list(self.cameras),
             camera_widths=self.width, camera_heights=self.height, camera_depths=False,
-            ignore_done=True, translucent_robot=False, seed=seed, layout_ids=scene['layout_id'],
-            style_ids=scene['style_id'], obj_instance_split=OBJECT_SPLITS[scene['object_split']])
+            ignore_done=True, translucent_robot=False, seed=seed, **kitchen_arguments(**scene))
         # Upstream drops the task's excluded layouts and styles from the kitchens it may build; no kitchen is built
         # until the first reset, so an excluded one fails here at no cost.
         if not self.env.layout_and_style_ids:
-            raise ValueError(excluded(self.task, self.env, scene))
+            raise ValueError(excluded(self.task, self.env, scene['layout_id'], scene['style_id']))
         self.env.reset()
         # Measurements and frames describe the current state, not the last substep's start.
         self.env.sim.forward()
@@ -152,10 +168,10 @@ class RoboCasaSim:
         horizon = {**ATOMIC_TASK_DATASETS, **COMPOSITE_TASK_DATASETS}.get(self.task, {}).get('horizon')
         self.max_steps = self.requested_max_steps or horizon
         meta = self.env.get_ep_meta()
-        self.scene = {'layout_id': meta['layout_id'], 'style_id': meta['style_id'],
-                      'object_split': scene['object_split']}
-        print(f'[robocasa] {self.task} seed {seed}, layout {meta["layout_id"]}, style {meta["style_id"]}, '
-              f'objects {scene["object_split"]}: {meta.get("lang", "")}', flush=True)
+        # The kitchen the seed picked, or the one the ids pinned.
+        self.scene = {'split': scene['split'], 'layout_id': meta['layout_id'], 'style_id': meta['style_id']}
+        print(f'[robocasa] {self.task} seed {seed}, split {scene["split"] or "none"}, layout {meta["layout_id"]}, '
+              f'style {meta["style_id"]}: {meta.get("lang", "")}', flush=True)
         # Pixel-center depth from a separate single-sample context; RGB keeps native antialiasing.
         quality = self.model.vis.quality
         samples, quality.offsamples = quality.offsamples, 0
@@ -193,7 +209,7 @@ class RoboCasaSim:
         return self.steps * self.period
 
     def measures(self):
-        """The episode's kitchen and object split, as its record states them."""
+        """The episode's split and the kitchen it built, as its record states them."""
         return dict(self.scene)
 
     def _odometry(self):

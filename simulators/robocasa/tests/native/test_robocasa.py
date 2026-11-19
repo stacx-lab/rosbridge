@@ -1,4 +1,4 @@
-"""Pinned RoboCasa acceptance on representative tasks: scene options, determinism, native controls and rendering."""
+"""Pinned RoboCasa acceptance on representative tasks: upstream splits and seeds, kitchen ids, controls and rendering."""
 import random
 
 import numpy as np
@@ -7,20 +7,28 @@ import pytest
 from rosbridge_robocasa.backend import RoboCasaSim
 
 
+TARGET_KITCHENS = [(i, i) for i in range(1, 11)]
+
+
+def kitchen(sim):
+    meta = sim.env.get_ep_meta()
+    return meta['layout_id'], meta['style_id']
+
+
 @pytest.mark.parametrize('task,horizon', [
     ('PickPlaceCounterToCabinet', 750),   # atomic
     ('WashLettuce', 1650),                # composite
     ('PrepareVeggieDip', None),           # composite without a dataset horizon
 ])
-def test_representative_tasks_load_and_step_in_the_default_kitchen(task, horizon):
+def test_representative_tasks_load_and_step_without_a_split(task, horizon):
     sim = RoboCasaSim(cameras=())
     try:
         sim.reset(task, 3)
         assert sim.steps == 0 and sim.time_s == 0 and sim.period == .05 and sim.max_steps == horizon
-        meta = sim.env.get_ep_meta()
-        assert (meta['layout_id'], meta['style_id']) == (1, 1) and sim.env.obj_instance_split is None
-        assert sim.measures() == {'layout_id': 1, 'style_id': 1, 'object_split': 'all'}
-        assert meta['lang']
+        layout, style = kitchen(sim)  # create_env(split=None): every kitchen and object
+        assert 1 <= layout <= 60 and 1 <= style <= 60 and sim.env.obj_instance_split is None
+        assert sim.measures() == {'split': None, 'layout_id': layout, 'style_id': style}
+        assert sim.env.get_ep_meta()['lang']
         sim.step(sim.state()[0])
         assert sim.steps == 1 and sim.time_s == pytest.approx(.05)
         assert np.isfinite(np.concatenate(sim.state())).all()
@@ -29,13 +37,49 @@ def test_representative_tasks_load_and_step_in_the_default_kitchen(task, horizon
         sim.close()
 
 
-def test_scene_and_seed_determine_the_episode_and_failed_resets_keep_it(monkeypatch):
+@pytest.mark.parametrize('task,split,seed', [('CloseFridge', 'target', 3), ('PrepareVeggieDip', 'pretrain', 5)])
+def test_split_and_seed_select_the_episode_upstream_create_env_does(task, split, seed):
+    import robocasa  # noqa: F401
+    from robocasa.utils.env_utils import create_env
+
+    def episode(env):
+        meta = env.get_ep_meta()
+        return (meta['layout_id'], meta['style_id'], meta['lang'],
+                [cfg['info']['mjcf_path'].split('/')[-2] for cfg in meta['object_cfgs']], env.obj_instance_split)
+    random.seed(seed)  # rosbridge also seeds the process generators, which upstream leaves as they are
+    np.random.seed(seed)
+    native = create_env(task, split=split, seed=seed)
+    try:
+        native.reset()
+        expected = episode(native)
+    finally:
+        native.close()
+    sim = RoboCasaSim(cameras=())
+    try:
+        sim.reset(task, seed, split=split)
+        assert episode(sim.env) == expected and expected[-1] == split
+        if split == 'target':
+            assert kitchen(sim) in TARGET_KITCHENS
+        else:
+            assert min(kitchen(sim)) >= 11
+        assert sim.measures() == {'split': split, 'layout_id': expected[0], 'style_id': expected[1]}
+    finally:
+        sim.close()
+
+
+def test_kitchen_ids_override_the_split_and_failed_resets_keep_the_episode(monkeypatch):
     sim = RoboCasaSim(cameras=(), max_steps=2)
     try:
-        scene = dict(layout_id=12, style_id=3, object_split='target')
+        # The split's kitchens without the task's exclusions: DeliverStraw has no target kitchen 1.
+        sim.reset('DeliverStraw', 0, split='target')
+        assert kitchen(sim) in [(i, i) for i in (2, 4, 7, 8, 9, 10)]
+        # An id not given ranges over the split's group, as upstream's collect_demos --layout does.
+        sim.reset('CloseFridge', 5, split='target', layout_id=4)
+        assert kitchen(sim)[0] == 4 and 1 <= kitchen(sim)[1] <= 10 and sim.env.obj_instance_split == 'target'
+        scene = dict(split='target', layout_id=12, style_id=3)  # ids given override the split's kitchens
         sim.reset('PrepareVeggieDip', 5, **scene)
         meta, qpos = sim.env.get_ep_meta(), sim.data.qpos.copy()
-        assert (meta['layout_id'], meta['style_id']) == (12, 3) and sim.env.obj_instance_split == 'target'
+        assert kitchen(sim) == (12, 3) and sim.env.obj_instance_split == 'target'
         assert sim.measures() == scene
         sim.step(sim.state()[0])
         sim.reset('PrepareVeggieDip', 5, **scene)
@@ -57,11 +101,11 @@ def test_scene_and_seed_determine_the_episode_and_failed_resets_keep_it(monkeypa
         for options in ({'layout_id': 0}, {'layout_id': 61}, {'style_id': True}, {'layout_id': '3'}):
             with pytest.raises(ValueError, match='must be an upstream id in 1-60'):
                 sim.reset('PrepareVeggieDip', 6, **options)
-        with pytest.raises(ValueError, match='object_split must be one of pretrain, target, all'):
-            sim.reset('PrepareVeggieDip', 6, object_split='test')
+        with pytest.raises(ValueError, match='split must be one of target, pretrain, all'):
+            sim.reset('PrepareVeggieDip', 6, split='test')
         # A kitchen the task excludes fails before it is built.
         with pytest.raises(ValueError, match=r'DeliverStraw excludes layout 1 \(it excludes layouts \[1, 3,'):
-            sim.reset('DeliverStraw', 0)
+            sim.reset('DeliverStraw', 0, layout_id=1)
         with pytest.raises(ValueError, match=r'PrepareVeggieDip excludes style 13 \(it excludes styles \[13, 29'):
             sim.reset('PrepareVeggieDip', 0, style_id=13)
         kept()
