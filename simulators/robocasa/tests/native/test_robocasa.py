@@ -37,6 +37,28 @@ def test_representative_tasks_load_and_step_without_a_split(task, horizon):
         sim.close()
 
 
+def test_success_is_scored_as_upstream_gym_wrapper_scores_it(monkeypatch):
+    """Upstream's evaluation (robocasa/wrappers/gym_wrapper.py) scores _check_success called again after
+    env.step, past the kitchen's state update; predicates that count calls count twice per step, as there."""
+    sim = RoboCasaSim(cameras=())
+    try:
+        sim.reset('PickPlaceCounterToCabinet', 3)
+        events, check, update = [], sim.env._check_success, sim.env.update_state
+
+        def checked():
+            events.append(('check', bool(check())))
+            return events[-1][1]
+        monkeypatch.setattr(sim.env, '_check_success', checked)
+        monkeypatch.setattr(sim.env, 'update_state', lambda: (events.append(('update', None)), update())[1])
+        for _ in range(3):
+            events.clear()
+            sim.step(sim.state()[0])
+            assert [kind for kind, _ in events] == ['check', 'update', 'check']  # the reward, then upstream's
+            assert sim.success == events[-1][1] and sim.reward == float(sim.success)
+    finally:
+        sim.close()
+
+
 @pytest.mark.parametrize('task,split,seed', [('CloseFridge', 'target', 3), ('PrepareVeggieDip', 'pretrain', 5)])
 def test_split_and_seed_select_the_episode_upstream_create_env_does(task, split, seed):
     import robocasa  # noqa: F401

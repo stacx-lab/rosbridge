@@ -104,13 +104,20 @@ Each action interval advances 0.05 simulation seconds (25 MuJoCo substeps).
 Stepped mode advances only through `world/wait`; realtime mode advances on its
 own and a wait observes elapsed time. See the shared [wait semantics](README.md).
 
-The episode starts from an official initial state. `randomize: true` chooses a state
-with a seeded NumPy generator; `false` selects state zero. Five native
-initialization intervals hold the initial arm pose and finger position before the
-episode's public clock and step counter start at zero; under `--config osc` they are
-upstream's five idle OSC actions. Native reward and success are
-available through `rosbridge judge RUN_ID`; `--early-stop` ends the episode at the first
-success, as the evaluator's `done` does; LIBERO has no failure termination.
+The episode starts from an official initial state: seed k loads the task's initial state k
+(modulo its 50), the one upstream's evaluation gives its episode k
+(`libero/lifelong/metric.py`). Five native initialization intervals hold the initial arm
+pose and finger position before the episode's public clock and step counter start at
+zero; under `--config osc` they are upstream's five idle OSC actions.
+
+Episodes are scored as upstream's evaluation scores them:
+
+- **Step limit:** an episode ends after upstream's evaluation horizon of 600 steps
+  (`libero/configs/eval/default.yaml`); the world node's `max_steps` parameter overrides it.
+- **Success:** each step's success is `env.step`'s own `done`, the BDDL goal on the
+  kinematics the step leaves, as upstream reads it; reward is the same sparse value.
+- **Judging:** `rosbridge judge RUN_ID` reports them. `--early-stop` ends the episode at
+  the first success, as the evaluator's `done` does. LIBERO has no failure termination.
 
 ## Cameras, recording and demo
 

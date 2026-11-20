@@ -16,12 +16,13 @@ def test_catalog_task_loads_and_steps(task):
     sim = LiberoSim(cameras=())
     try:
         sim.reset(task, seed=17, randomize=False)
-        assert sim.steps == 0 and sim.time_s == 0 and sim.period == .05
+        # Upstream's evaluation horizon, libero/configs/eval/default.yaml.
+        assert sim.steps == 0 and sim.time_s == 0 and sim.period == .05 and sim.max_steps == 600
         sim.step(sim.state()[0])
         assert sim.steps == 1 and sim.time_s == pytest.approx(.05)
         assert np.isfinite(sim.state()[0]).all()
-        assert sim.reward == float(sim.env.reward())
-        assert sim.success == bool(sim.wrapper.check_success())
+        # The sparse reward and upstream's done read the same post-step kinematics.
+        assert sim.reward == float(sim.success)
     finally:
         sim.close()
 
@@ -49,7 +50,7 @@ def test_reset_determinism_failure_and_budget(monkeypatch):
         sim.reset(sim.default_task, 18, False)
         assert not sim.done
         sim.early_stop = True
-        monkeypatch.setattr(sim.wrapper, 'check_success', lambda: True)
+        monkeypatch.setattr(sim.env, '_check_success', lambda: True)  # upstream's done is the BDDL goal
         sim.step(sim.state()[0])
         assert sim.done and sim.success
     finally:
@@ -97,8 +98,9 @@ def test_rendering_calibration_and_failed_capture_preserve_world(monkeypatch):
 
 
 def reference_world(seed, controller='JOINT_POSITION'):
-    """Independent native construction, matching the documented initialization. OSC_POSE starts as upstream's
-    evaluation does (libero/lifelong/metric.py): five idle actions after the initial state."""
+    """Independent native construction, matching the documented initialization: seed k loads upstream's
+    initial state k, as its evaluation's episode k. OSC_POSE starts as that evaluation does
+    (libero/lifelong/metric.py): five idle actions after the initial state."""
     import torch
     from libero.libero.envs.env_wrapper import ControlEnv
     bddl, states = task_files(configure(), LiberoSim.default_task)
@@ -109,7 +111,8 @@ def reference_world(seed, controller='JOINT_POSITION'):
                         use_camera_obs=False, camera_names=[], ignore_done=True, control_freq=20)
     native.seed(seed)
     native.env.reset()
-    native.set_init_state(torch.load(states, weights_only=False)[0])
+    states = torch.load(states, weights_only=False)
+    native.set_init_state(states[seed % len(states)])
     if controller == 'OSC_POSE':
         for _ in range(5):
             native.step(np.zeros(7))
@@ -147,15 +150,14 @@ def test_native_joint_rollout_parity_and_gripper_steering():
         def equal():
             np.testing.assert_allclose(sim.data.qpos, native.sim.data.qpos, atol=1e-12, rtol=0)
             np.testing.assert_allclose(sim.data.qvel, native.sim.data.qvel, atol=1e-12, rtol=0)
-            assert sim.success == bool(native.check_success())
         equal()
         # Holding the measured finger position commands the native neutral direction.
         target = sim.state()[0]
         target[0] += .08
         for _ in range(5):
             sim.step(target)
-            _, reward, _, _ = native_joint_step(native, target[:7], 0.)
-            assert sim.reward == reward
+            _, reward, done, _ = native_joint_step(native, target[:7], 0.)
+            assert sim.reward == reward and sim.success == done  # upstream's success is env.step's done
             equal()
         for goal, reached in ((0., lambda q: q < .01), (.04, lambda q: q > .03)):
             target[-1] = goal
@@ -200,9 +202,9 @@ def test_osc_initialization_and_rollout_match_upstream_osc_pose():
             goal[:3, :3], goal[:3, 3] = Rotation.from_rotvec(scaled[3:]).as_matrix() @ site[:3, :3], site[:3, 3] + scaled[:3]
             flange = np.linalg.inv(base) @ goal @ np.linalg.inv(site) @ hand
             sim.step(sim.state()[0], {'arm': np.r_[flange[:3, 3], Rotation.from_matrix(flange[:3, :3]).as_quat()]})
-            _, reward, _, _ = native.step(np.r_[delta, 0.])
+            _, reward, done, _ = native.step(np.r_[delta, 0.])
             native.sim.forward()
-            assert sim.reward == reward and sim.success == bool(native.check_success())
+            assert sim.reward == reward and sim.success == done
             equal(1e-9)
     finally:
         sim.close()
