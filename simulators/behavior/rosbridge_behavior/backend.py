@@ -87,7 +87,9 @@ class R1ProSim:
             self.task = native
             self.episode = Episode(native, self.r1pro, self.requested_max_steps)
             self.layout = self.r1pro.layout(self.episode.robot)
-            self.max_steps = self.episode.max_steps
+            # Upstream's Timeout checks the step count before counting the step, so the evaluator's episode
+            # truncates on the step after its limit.
+            self.max_steps = self.requested_max_steps or self.episode.max_steps + 1
         self.done = True
         self.episode.load(seed)
         # The evaluator's TaskMetric takes the goal options' satisfaction here, once the instance has loaded and

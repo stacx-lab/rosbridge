@@ -96,6 +96,11 @@ only at its failure, with the cause `ball_dropped` or `ball_left_tray`; the
 `count_*_into_opaque_box` tasks report `ever_failed` as always false, so they never end
 early. The four tasks judged by RoboEnv's rules end at that success.
 
+Seed k resets the episode as `abc_minimal`'s evaluator resets its world k: with the world
+seed `SimEvalConfig.seed + k` (20260511 + k, `eval_policy.py: rollout_worlds`), which the
+episode record names `world_seed`. Each run starts from the task's initial arm pose, as the
+evaluator's first world does; later worlds there carry the previous arm pose.
+
 | Setting | Default |
 |---|---|
 | Execution, seed, randomize | realtime, 0, true |
