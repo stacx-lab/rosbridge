@@ -110,6 +110,38 @@ def test_pose_groups_hold_no_target_until_commanded_then_track_tip_poses():
     with pytest.raises(ValueError):
         ActionLayout(("j",), (CommandGroup("bad", (0,), (0.,), (1.,), scalar=True, tip="palm"),))
 
+
+def test_a_group_taking_joint_and_pose_targets_follows_the_latest_kind():
+    layout = ActionLayout(("j1", "j2"), (CommandGroup("arm", (0, 1), (-1.,)*2, (1.,)*2, tip="flange",
+                                                       joint_targets=True),))
+    tip = np.array([0.1, 0.2, 0.3, 0., 0., 0., 1.])
+    joints = np.array([0.25, -0.25])
+    b = CommandBuffer(layout, [0., 0.])
+    b.set_trajectory("arm", 0.0, [1.0], [[0.5, -0.5]], lambda: pytest.fail("no pose command to leave"))
+    b.action(0.5)
+    assert b.poses() == {"arm": None}  # a joint command: the action carries the joints
+    # A pose command takes over from the measured tip, mid-trajectory.
+    b.set_pose_trajectory("arm", 0.5, [1.0], [[0.3, 0.2, 0.3, 0., 0., 0., 1.]], lambda: tip)
+    b.action(1.0)
+    assert b.poses()["arm"][:3] == pytest.approx([0.2, 0.2, 0.3])
+    b.action(2.0)
+    assert b.poses()["arm"] == pytest.approx([0.3, 0.2, 0.3, 0., 0., 0., 1.])  # holds its last pose
+    # A joint command after a pose one starts from the measured joints and clears the pose target.
+    with pytest.raises(CommandError, match="measured joints"):
+        b.set_trajectory("arm", 2.0, [1.0], [[0., 0.]])
+    b.set_trajectory("arm", 2.0, [1.0], [[0.75, 0.25]], lambda: joints)
+    assert b.poses() == {"arm": None}
+    assert b.action(2.5).tolist() == pytest.approx([0.5, 0.])  # halfway from the measured joints
+    with pytest.raises(CommandError, match="outside"):
+        b.set_trajectory("arm", 3.0, [1.0], [[2., 0.]], lambda: joints)  # joint targets keep their limits
+    # A stop holds the measured joints and drops a pose target.
+    b.set_pose_trajectory("arm", 3.0, [1.0], [tip], lambda: tip)
+    b.action(3.5)
+    b.stop("arm", joints)
+    assert b.poses() == {"arm": None} and b.action(4.0).tolist() == joints.tolist()
+    with pytest.raises(ValueError):
+        ActionLayout(("j",), (CommandGroup("bad", (0,), (0.,), (1.,), joint_targets=True),))  # needs a tip
+
 def test_realtime_catches_up_without_skipping():
     now = [0.0]
     p = Pacer("realtime", 0.1, clock=lambda: now[0])

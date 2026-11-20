@@ -65,6 +65,20 @@ class WorldRuntime:
         key = (endpoint, str(reason))
         self.refused[key] = self.refused.get(key, 0) + 1
 
+    def hold(self, group):
+        """Stop a command group where it is, as its device's stop does: a base at zero velocity, a pose group that
+        takes only pose targets at its measured tip pose, any other group at its measured positions (a gripper
+        keeps its applied target instead). Owner thread."""
+        self._assert_owner()
+        spec = next(g for g in self.sim.layout.groups if g.name == group)
+        if spec.velocity:
+            values = [0.] * len(spec.indices)
+        elif spec.tip and not spec.joint_targets:
+            values = self.sim.tip_pose(group)
+        else:
+            values = self.sim.state()[0][list(spec.indices)]
+        self.commands.stop(group, values)
+
     def budget(self):
         """The episode budget in seconds of world time, Kinex's [used_s, max_s]: in stepped mode the control steps
         taken and the step limit that ends the episode (inf without one). Realtime has no budget, since world time
@@ -116,10 +130,7 @@ class WorldRuntime:
         action = self.commands.action(self.time_s + self.sim.period)
         poses = self.commands.poses()  # pose groups' tip targets for the same step
         try:
-            if poses:
-                self.sim.step(action, poses)
-            else:
-                self.sim.step(action)
+            unexecuted = self.sim.step(action, poses) if poses else self.sim.step(action)
         except Exception as failure:
             # A step that fails, as BEHAVIOR's physics can when the robot is driven into furniture, ends the episode;
             # the world goes on answering.
@@ -130,6 +141,10 @@ class WorldRuntime:
         else:
             self.pacer.advanced()
             self.time_s, self.steps = self.sim.time_s, self.sim.steps
+            # Pose targets the simulator could not execute: each group stops where it is, and its refusal names why.
+            for group, reason in (unexecuted or {}).items() if poses else ():
+                self.hold(group)
+                self.refuse(f"/{group}/pose_target", f"at t={self.time_s:.2f} s: {reason}")
             if self.sim.success and self.first_success_step is None:
                 self.first_success_step = self.steps
             self.publish()

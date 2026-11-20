@@ -22,8 +22,9 @@ operations:
       strictly increasing time_from_start and finishing within 120 seconds; velocities, accelerations
       and effort must be empty. A zero header stamp selects now; a nonzero stamp must not
       start in the past. Points are absolute native joint positions, linearly interpolated
-      at the native control period. Replacement clears pending references; invalid trajectories
-      are ignored, so verify measured joint_state.
+      at the native control period, from the measured joints when it replaces a pose_target.
+      Replacement clears pending references; invalid trajectories are ignored, so verify measured
+      joint_state.
     transport: topic
     direction: input
     endpoint: /right_arm/joint_target
@@ -32,6 +33,36 @@ operations:
       depth: 1
       reliability: reliable
       durability: volatile
+    timeout_s: 10
+  pose_target:
+    description: 'Trajectory of absolute flange poses in right_arm/base: joint_names [flange],
+      one transform per point (metres, unit quaternion xyzw), time_from_start strictly increasing
+      and within 120 seconds; a zero header stamp starts it now. It is interpolated from the
+      current target. Each point is a waypoint the flange reaches at its time along a straight
+      line (rotation by slerp); nothing plans around objects. Upstream''s cuRobo IK solves
+      every 0.04 s frame: if no solution stays within the joint limits, moves each joint at
+      most 0.20 rad per frame and avoids self and table collision, the arm stops and the next
+      wait reply says why. A new joint or pose trajectory replaces the active one and an invalid
+      one is ignored; verify the flange with pose_state.'
+    transport: topic
+    direction: input
+    endpoint: /right_arm/pose_target
+    type: trajectory_msgs/msg/MultiDOFJointTrajectory
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: volatile
+    timeout_s: 10
+  pose_state:
+    description: Measured flange pose in right_arm/base, stamped with joint_state.
+    transport: topic
+    direction: output
+    endpoint: /right_arm/pose_state
+    type: sensor_msgs/msg/MultiDOFJointState
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: transient_local
     timeout_s: 10
   stop:
     description: Stop arm motion and hold the measured posture.
@@ -50,10 +81,10 @@ meta:
   updated_at: '2026-10-24T00:00:00Z'
 type: joint
 description: ARX X5 six-joint right arm of the RoboDojo rig. Geometry is the sibling arm.urdf
-  with flange (link6) as the tip link; its links are the frames right_arm/<link>. Commands
-  are upstream's absolute joint positions (right_arm_joint_state of EvalEnv.take_action),
-  interpolated by the native controller over each 0.04 s frame. Both arms use the native joint
-  names joint1..joint6.
+  with flange (link6) as the tip link; its links are the frames right_arm/<link>. It takes
+  joint targets, upstream's absolute joint positions (right_arm_joint_state of EvalEnv.take_action),
+  or flange pose targets, which upstream's cuRobo IK turns into those joints; the native controller
+  interpolates them over each 0.04 s frame. Both arms use the native joint names joint1..joint6.
 source: introspected
 calibrated_at: null
 method: introspection

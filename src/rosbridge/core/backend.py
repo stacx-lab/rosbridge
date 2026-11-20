@@ -16,7 +16,9 @@ class CommandGroup:
     A pose group names the tip link of a joint device that takes pose targets:
     the tip's pose in the device base, [x, y, z, qx, qy, qz, qw], which the
     simulator's own Cartesian control executes. Its feedback stays joint positions,
-    and its limits bound nothing it is commanded.
+    and its limits bound nothing it is commanded. A pose group with joint_targets
+    takes joint targets too, within its limits: the latest command of either kind
+    replaces the active one, and a stop holds the measured joints.
     """
 
     name: str
@@ -26,6 +28,7 @@ class CommandGroup:
     scalar: bool = False
     velocity: bool = False
     tip: str | None = None
+    joint_targets: bool = False
 
 
 @dataclass(frozen=True)
@@ -55,6 +58,7 @@ class ActionLayout:
                     or (group.scalar and len(group.indices) != 1)
                     or (group.velocity and (group.scalar or len(group.indices) != 3))
                     or (group.tip is not None and (not group.tip or group.scalar or group.velocity))
+                    or (group.joint_targets and group.tip is None)
                     or not all(0 <= i < len(self.joint_names) for i in group.indices)):
                 raise ValueError(f"invalid command group: {group.name}")
             if len({self.joint_names[i] for i in group.indices}) != len(group.indices):
@@ -100,7 +104,11 @@ class SimulatorBackend(Protocol):
     poses maps each pose group to its tip's target pose in the device base,
     [x, y, z, qx, qy, qz, qw], or to None until the group's first command. Its
     tip_pose(group) returns the measured tip pose there, which a stop holds and
-    a group's first trajectory starts from.
+    a group's first trajectory starts from. A group that also takes joint
+    targets has None while a joint command is active, and the action carries
+    its joints. step may return the pose groups whose target it could not
+    execute, mapped to why; the world stops each, holding its measured joints,
+    and the next wait reply names the refusal.
 
     Optionally, camera_rate_hz sets how many times per simulated second a
     subscribed camera renders (default 30), for a simulator whose renders are

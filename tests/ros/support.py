@@ -40,7 +40,7 @@ class Graph:
         # Scene options travel as one JSON object, as launch passes them.
         scene = json.dumps(scene, separators=(",", ":"), sort_keys=True) if scene else None
         try:
-            if backend in ("toy", "pose_toy", "camera_toy", "depth_toy", "lens_toy", "scene_toy"):
+            if backend in ("toy", "pose_toy", "joint_pose_toy", "camera_toy", "depth_toy", "lens_toy", "scene_toy"):
                 self.owner = self.start([sys.executable, "-m", "tests.ros.toy_server", "--ros-args",
                                          "-p", f"backend:={backend}",
                                          "-p", f"mode:={mode}", "-p", f"max_steps:={max_steps}",

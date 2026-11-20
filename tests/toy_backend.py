@@ -132,6 +132,27 @@ class PoseToy(ToyBackend):
         return np.r_[self.position, 0., 0., 0., 0., 1.]
 
 
+class JointPoseToy(PoseToy):
+    """The planar arm taking joint targets too; it refuses a tip pose beyond its 1.5 m reach, keeping its joints."""
+    layout = ActionLayout(("x", "y"), (CommandGroup("reach", (0, 1), (-2., -2.), (2., 2.), tip="tip",
+                                                    joint_targets=True),))
+    devices = device_inventory(layout, {})
+
+    def step(self, action, poses):
+        assert threading.get_ident() == self.owner
+        pose, unexecuted = poses["reach"], None
+        self.commanded.append(pose)
+        if pose is None:
+            self.position = np.asarray(action, dtype=float).copy()
+        elif np.linalg.norm(pose[:2]) <= 1.5:
+            self.position = np.asarray(pose[:2], dtype=float).copy()
+        else:
+            unexecuted = {"reach": "the tip pose is beyond the 1.5 m reach"}
+        self.steps += 1
+        self.time_s = self.steps * self.period
+        return unexecuted
+
+
 class SceneToy(ToyBackend):
     """Selects scenes in its own terms: a layout, which reset takes as a keyword and the record states."""
 

@@ -3,10 +3,12 @@ import numpy as np
 import psutil
 import pytest
 from builtin_interfaces.msg import Duration
-from sensor_msgs.msg import CameraInfo, Image, JointState
-from std_msgs.msg import Float64
+from geometry_msgs.msg import Quaternion, Transform, Vector3
+from sensor_msgs.msg import CameraInfo, Image, JointState, MultiDOFJointState
+from std_msgs.msg import Float64, Header
 from std_srvs.srv import Trigger
-from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
+from trajectory_msgs.msg import (JointTrajectory, JointTrajectoryPoint, MultiDOFJointTrajectory,
+                                 MultiDOFJointTrajectoryPoint)
 
 from rosbridge_runtime.devices import STREAM_QOS
 from tests.ros.support import Graph, seconds
@@ -41,15 +43,17 @@ def test_robodojo_graph_serves_its_devices_from_a_native_worker(tmp_path, mode):
                                  (JointState, "right_arm/joint_state", "right"),
                                  (JointState, "left_gripper/joint_state", "gripper"),
                                  (CameraInfo, "head_camera/camera_info", "info"),
+                                 (MultiDOFJointState, "left_arm/pose_state", "flange"),
                                  (Image, "world/spectator/third_person/image_raw", "spectator")):
             node.create_subscription(kind, topic, lambda msg, k=key: last.update({k: msg}), STREAM_QOS)
         joint_target = node.create_publisher(JointTrajectory, "left_arm/joint_target", 1)
+        pose_target = node.create_publisher(MultiDOFJointTrajectory, "left_arm/pose_target", 1)
         gripper_target = node.create_publisher(Float64, "left_gripper/target", 1)
         stop = node.create_client(Trigger, "left_arm/stop")
-        graph.until(lambda: joint_target.get_subscription_count() and gripper_target.get_subscription_count()
-                    and stop.service_is_ready())
+        graph.until(lambda: joint_target.get_subscription_count() and pose_target.get_subscription_count()
+                    and gripper_target.get_subscription_count() and stop.service_is_ready())
         assert graph.wait(.2).success
-        graph.until(lambda: all(k in last for k in ("arm", "right", "gripper", "info", "spectator")))
+        graph.until(lambda: all(k in last for k in ("arm", "right", "gripper", "flange", "info", "spectator")))
         # Both arms keep the native joint names; devices disambiguate them.
         assert last["arm"].name == last["right"].name == [f"joint{i}" for i in range(1, 7)]
         assert last["gripper"].name == ["left_gripper"]
@@ -64,6 +68,27 @@ def test_robodojo_graph_serves_its_devices_from_a_native_worker(tmp_path, mode):
         assert graph.wait(1.).success
         graph.spin(.1)
         assert abs(last["arm"].position[0] - target[0]) < .03
+        # The same arm by its flange pose: a 4 cm lift through upstream's cuRobo IK, then one beyond reach.
+        assert (last["flange"].header.frame_id, list(last["flange"].joint_names)) == ("left_arm/base", ["flange"])
+        start = last["flange"].transforms[0]
+        (x, y, z), rotation = (start.translation.x, start.translation.y, start.translation.z), start.rotation
+
+        def lift(dz, seconds):
+            goal = Transform(translation=Vector3(x=x, y=y, z=z + dz),
+                             rotation=Quaternion(x=rotation.x, y=rotation.y, z=rotation.z, w=rotation.w))
+            return MultiDOFJointTrajectory(header=Header(frame_id="left_arm/base"), joint_names=["flange"], points=[
+                MultiDOFJointTrajectoryPoint(transforms=[goal], time_from_start=Duration(sec=seconds))])
+
+        pose_target.publish(lift(.04, 1))
+        graph.spin(.1)
+        assert graph.wait(1.5).message == "ok"
+        graph.spin(.1)
+        reached = last["flange"].transforms[0].translation
+        assert abs(reached.z - z - .04) < .003 and abs(reached.x - x) < .003 and abs(reached.y - y) < .003
+        pose_target.publish(lift(3., 1))
+        graph.spin(.1)
+        refused = graph.wait(1.)
+        assert refused.success and "/left_arm/pose_target: at t=" in refused.message, refused.message
         assert graph.call(stop, Trigger.Request()).success
         opened = last["gripper"].position[0]
         gripper_target.publish(Float64(data=0.))

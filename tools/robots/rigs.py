@@ -75,11 +75,13 @@ def world(description):
 
 
 def joint(name, description, joints, home, base, *, units="radians", part="arm", tip="flange",
-          model="arm.urdf", pose=None):
+          model="arm.urdf", pose=None, joint_targets=False):
     """A joint device; tip is its FK/IK link, None for trees such as hands. With pose, a sentence on how the
-    simulator executes them, the device takes pose targets of its tip instead of joint targets."""
+    simulator executes them, the device takes pose targets of its tip instead of joint targets, or, with
+    joint_targets, besides them: the latest command of either kind replaces the active one."""
     count = len(joints)
     over = f"all {count} {part} joints" if count > 1 else f"the {part} joint"
+    both = bool(pose and joint_targets)
     ops = {
         "joint_state": operation(
             f"Measured positions of {', '.join(joints)} in {units} with velocities and the "
@@ -87,27 +89,29 @@ def joint(name, description, joints, home, base, *, units="radians", part="arm",
             "topic", "output", f"/{name}/joint_state", "sensor_msgs/msg/JointState",
             qos(durability="transient_local")),
     }
-    if pose:
-        ops["pose_target"] = operation(
-            f"Trajectory of absolute {tip} poses in {name}/base: joint_names [{tip}], one transform per "
-            "point (metres, unit quaternion xyzw), time_from_start strictly increasing and within 120 "
-            "seconds; a zero header stamp starts it now. It is interpolated from the current target. "
-            f"{pose} A new trajectory replaces the active one and an invalid one is ignored; verify "
-            f"the {tip} with pose_state.",
-            "topic", "input", f"/{name}/pose_target", "trajectory_msgs/msg/MultiDOFJointTrajectory")
-        ops["pose_state"] = operation(
-            f"Measured {tip} pose in {name}/base, stamped with joint_state.",
-            "topic", "output", f"/{name}/pose_state", "sensor_msgs/msg/MultiDOFJointState",
-            qos(durability="transient_local"))
-    else:
+    if not pose or both:
         ops["joint_target"] = operation(
             f"Joint trajectory over {over} in {units}, timed from receipt by "
             "strictly increasing time_from_start and finishing within 120 seconds; velocities, "
             "accelerations and effort must be empty. A zero header stamp selects now; a nonzero "
             "stamp must not start in the past. Points are absolute native joint positions, "
-            "linearly interpolated at the native control period. Replacement clears pending "
+            "linearly interpolated at the native control period"
+            + (", from the measured joints when it replaces a pose_target. " if both else ". ")
+            + "Replacement clears pending "
             "references; invalid trajectories are ignored, so verify measured joint_state.",
             "topic", "input", f"/{name}/joint_target", "trajectory_msgs/msg/JointTrajectory")
+    if pose:
+        ops["pose_target"] = operation(
+            f"Trajectory of absolute {tip} poses in {name}/base: joint_names [{tip}], one transform per "
+            "point (metres, unit quaternion xyzw), time_from_start strictly increasing and within 120 "
+            "seconds; a zero header stamp starts it now. It is interpolated from the current target. "
+            f"{pose} A new {'joint or pose ' if both else ''}trajectory replaces the active one and an invalid "
+            f"one is ignored; verify the {tip} with pose_state.",
+            "topic", "input", f"/{name}/pose_target", "trajectory_msgs/msg/MultiDOFJointTrajectory")
+        ops["pose_state"] = operation(
+            f"Measured {tip} pose in {name}/base, stamped with joint_state.",
+            "topic", "output", f"/{name}/pose_state", "sensor_msgs/msg/MultiDOFJointState",
+            qos(durability="transient_local"))
     ops["stop"] = operation(f"Stop {part} motion and hold the measured posture.", "service", "input",
                             f"/{name}/stop", "std_srvs/srv/Trigger")
     return device(name, "joint", description, ops,

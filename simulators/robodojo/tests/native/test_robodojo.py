@@ -101,6 +101,84 @@ def test_a_gripper_stop_keeps_a_held_object_gripped(tmp_path):
     assert max(grip["offset"]) < .01 and abs(grip["drop"]) < .005
 
 
+def flange(urdf, q):
+    """The catalog arm URDF's tip transform in its base at joints q."""
+    import xml.etree.ElementTree as ET
+    import transforms3d as t3d
+    pose = np.eye(4)
+    for joint, angle in zip(ET.parse(urdf).getroot().iter("joint"), q):
+        origin, axis = joint.find("origin"), joint.find("axis")
+        step = np.eye(4)
+        step[:3, :3] = t3d.euler.euler2mat(*map(float, origin.get("rpy").split()), "sxyz")
+        step[:3, 3] = [float(v) for v in origin.get("xyz").split()]
+        turn = np.eye(4)
+        turn[:3, :3] = t3d.axangles.axangle2mat([float(v) for v in axis.get("xyz").split()], angle)
+        pose = pose @ step @ turn
+    return pose
+
+
+def test_flange_pose_targets_take_upstreams_curobo_ik_within_one_frames_travel():
+    """An arm's pose target through upstream's cuRobo IK: a held pose keeps the arm still, a straight lift arrives,
+    and a pose beyond reach or beyond one frame's native joint travel is refused, keeping the commanded joints."""
+    import time
+    import transforms3d as t3d
+    sim = native(max_steps=200)
+    try:
+        sim.reset("stack_bowls", 0)
+        arm = next(group for group in sim.layout.groups if group.name == "left_arm")
+        assert (arm.tip, arm.joint_targets) == ("flange", True)
+        assert sim.native("__getattribute__", "_limits")["left"][2] == pytest.approx(5. * .04)  # the profiles' 0.20
+        joints = list(arm.indices)
+        held = sim.state()[0]
+        tip = np.asarray(sim.tip_pose("left_arm"))
+        # pose_state is the catalog URDF's flange at the measured joints.
+        expected = flange(ROOT / "catalog/robots/robodojo/robodojo-arx-x5/devices/left_arm/arm.urdf", held[joints])
+        x, y, z, w = tip[3:]
+        assert tip[:3] == pytest.approx(expected[:3, 3], abs=1e-4)
+        assert t3d.quaternions.quat2mat([w, x, y, z]) == pytest.approx(expected[:3, :3], abs=1e-4)
+
+        def frame(pose):
+            return sim.step(held, {"left_arm": pose, "right_arm": None})
+
+        def error(pose):
+            now = np.asarray(sim.tip_pose("left_arm"))
+            return np.linalg.norm(now[:3] - pose[:3]), 2 * np.arccos(min(1., abs(float(np.dot(now[3:], pose[3:])))))
+
+        started = time.monotonic()
+        for _ in range(10):  # the measured pose, re-sent, holds the arm within upstream's IK tolerances
+            assert frame(tip) is None
+        print(f"first pose frames: {(time.monotonic() - started) / 10 * 1000:.0f} ms each")
+        moved, turned = error(tip)
+        assert moved < 1.5e-3 and turned < .03
+        goal = tip.copy()
+        goal[2] += .05
+        started = time.monotonic()
+        for s in np.linspace(0, 1, 26)[1:]:  # a straight 5 cm lift over one second
+            pose = tip.copy()
+            pose[2] += .05 * s
+            assert frame(pose) is None
+        print(f"moving pose frames: {(time.monotonic() - started) / 25 * 1000:.0f} ms each")
+        for _ in range(10):
+            assert frame(goal) is None
+        moved, turned = error(goal)
+        assert moved < 2e-3 and turned < .03
+        before = sim.state()[0][joints]
+        far = goal.copy()
+        far[0] += 2.
+        refused = frame(far)
+        assert set(refused) == {"left_arm"} and "no solution" in refused["left_arm"], refused
+        # A quarter turn about the flange's approach axis at once: joint6 would turn 1.57 rad in one frame.
+        quarter = t3d.quaternions.qmult(t3d.quaternions.qmult([goal[6], *goal[3:6]], [np.sqrt(.5), np.sqrt(.5),
+                                                                                       0., 0.]), [1., 0., 0., 0.])
+        twisted = np.r_[goal[:3], quarter[1:], quarter[0]]
+        refused = frame(twisted)
+        assert set(refused) == {"left_arm"} and "beyond 0.20 rad" in refused["left_arm"], refused
+        assert np.abs(sim.state()[0][joints] - before).max() < 5e-3  # refused frames kept the commanded joints
+        print("refusals:", refused)
+    finally:
+        sim.close()
+
+
 @pytest.mark.parametrize("task", SELECTED)
 def test_catalog_task_loads_and_steps(task):
     sim = native()

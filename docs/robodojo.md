@@ -46,7 +46,10 @@ Preparation exports RoboDojo with both forks into `.runtime/robodojo`, applies
 RoboEnv's four patches (success and a failed constraint end an episode only with early stop; an
 injected model client replaces the policy server; predicate diagnostics hooks;
 Isaac Lab's livestream dependency becomes an extra), and installs the forks as
-editable packages into `robodojo-native`.
+editable packages into `robodojo-native`. A fifth patch lets upstream's cuRobo planner read its
+`curobo_tmp.yml` template, with `${ASSETS_PATH}` replaced. Upstream's install script writes that
+same file as `curobo.yml` (`utils/update_embodiment_config_path.py`), but rosbridge never writes
+into the pinned asset store.
 
 Assets come from the `RoboDojo-Benchmark/RoboDojo` dataset at
 `0a709fe7863f6c869a8d141676585a883fce4270`: 15,365 files (41 GB) under
@@ -60,7 +63,7 @@ once at a polite request rate.
 | Device | Interfaces |
 |---|---|
 | `world` | `/clock`, `world/wait`, `world/stop`, `world/spectator/*` while recording |
-| `left_arm`, `right_arm` | `<arm>/joint_state`, `<arm>/joint_target`, `<arm>/stop` |
+| `left_arm`, `right_arm` | `<arm>/joint_state`, `<arm>/joint_target`, `<arm>/pose_target`, `<arm>/pose_state`, `<arm>/stop` |
 | `left_gripper`, `right_gripper` | `<gripper>/joint_state`, `<gripper>/target`, `<gripper>/stop` |
 | `head_camera`, `left_camera`, `right_camera` | `<camera>/image`, `<camera>/camera_info`; `<camera>/depth` with `--config depth` |
 
@@ -81,6 +84,40 @@ the principal point at the image center, (319.5, 239.5) in ROS pixel coordinates
 The rig `robodojo/robodojo-arx-x5` holds the X5 chains from `X5A.urdf`, mounts
 at (∓0.3, −0.45, 0.765) with a 90° yaw, RoboEnv's TCP (the pad center, 0.15 m
 ahead of `link6`) and the measured camera mounts.
+
+### Pose targets
+
+Each arm also takes `pose_target`: timed waypoints for its `flange` in `<arm>/base`. The flange
+is `link6`, upstream's `ee_link` and cuRobo's tool frame, and `pose_state` reports its measured
+pose. The flange reaches each waypoint at its time along a straight line, with rotation by
+slerp. Nothing plans a path around objects, so a single far waypoint is a straight move, and it
+needs enough time for every joint to stay within one frame's travel. The latest command of either kind replaces the active one: a `joint_target` after a pose
+command starts from the measured joints, and a `stop` holds them.
+
+Upstream's own `ee_pose` action solves a pose with cuRobo IK and, when the solve fails, leaves
+the arm on its previous target without saying so. The backend solves a pose the same way, then
+executes the result as upstream's joint action:
+
+1. Each frame, upstream's `RobotManager.solve_ik` solves that frame's pose from the measured
+   joints. It is the cuRobo `InverseKinematics` the `ee_pose` action uses: 32 seeds, self and
+   table collision, 1 mm and 0.02 rad. An unchanged pose keeps its solution.
+2. The solution must lie within the joint limits, taking a whole turn nearer the commanded joints
+   where the limits allow. It must move no joint more than 0.2 rad from the commanded joints: the
+   X5 actuators' 5 rad/s `velocity_limit_sim` over the 0.04 s frame. And its joint path, sampled
+   every 0.025 rad, must pass cuRobo's self and table constraints. If it fails any of these, the
+   next of cuRobo's 32 ranked solutions that passes is taken. These checks follow
+   uni-robot-agent's RoboDojo adapter, with the native velocity limit in place of its 1 rad
+   jump limit.
+3. If no solution passes, the arm keeps its commanded joints for that frame and the world then
+   stops it at its measured joints. The next `world/wait` reply names the pose target, the time
+   and the reason.
+
+The joints then go through `EvalEnv.take_action` exactly as joint targets do, so evaluation and
+scoring are unchanged. A pose is tracked only as precisely as upstream's IK tolerances, 1 mm and
+0.02 rad. To serve pose targets, rosbridge builds upstream's cuRobo planner for the arms, as
+upstream's evaluation does by default (`need_planner`). RoboEnv's adapter, whose arms took joints
+only, skipped it. `robodojo-native` carries cuRobo's `[cu12]` extra (`cuda-core`), as upstream's
+install does, because the planner compiles its kernels through it.
 
 ### Depth configuration
 

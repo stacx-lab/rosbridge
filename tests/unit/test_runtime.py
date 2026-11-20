@@ -166,6 +166,28 @@ def test_a_wait_reply_names_the_commands_refused_since_the_previous_reply():
     assert message.endswith("(5 commands); and 13 more")  # devices 5 and 6: 6 + 7 commands
 
 
+def test_a_pose_the_simulator_cannot_execute_stops_its_group_and_is_named_in_the_next_reply():
+    from tests.toy_backend import JointPoseToy
+    runtime, _ = world(backend=JointPoseToy)
+    measured = lambda: runtime.sim.tip_pose("reach")
+    runtime.submit(lambda: runtime.commands.set_pose_trajectory("reach", 0., [.2], [[1., 0., 0., 0., 0., 0., 1.]],
+                                                                 measured))
+    reached = replied(runtime, .3)
+    finish(runtime)
+    assert reached.result().message == "ok" and runtime.sim.position.tolist() == [1., 0.]
+    # Beyond reach on its second frame: that frame keeps the joints, then the world holds them.
+    runtime.submit(lambda: runtime.commands.set_pose_trajectory("reach", runtime.time_s, [.2],
+                                                                 [[2., 0., 0., 0., 0., 0., 1.]], measured))
+    refused = replied(runtime, .3)
+    finish(runtime)
+    assert refused.result().message == ("ok; refused since the previous wait reply: /reach/pose_target: "
+                                        "at t=0.50 s: the tip pose is beyond the 1.5 m reach")
+    held = runtime.sim.position.tolist()
+    assert 1. < held[0] <= 1.5 and runtime.commands.poses() == {"reach": None}  # stopped where it was
+    assert runtime.commands.action(runtime.time_s + .1).tolist() == held  # holding its measured joints
+    assert runtime.sim.commanded[-1] is None
+
+
 def test_only_a_stepped_world_has_an_episode_budget():
     """Kinex's world budget [used_s, max_s]: in stepped mode the control steps taken and the step limit times the
     control period, max_s inf without a limit; realtime has none, so both are NaN."""

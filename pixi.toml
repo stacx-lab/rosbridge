@@ -267,6 +267,8 @@ numpy-quaternion = "==2024.0.13"
 viser = "==0.2.11"
 yourdfpy = "==0.0.60"
 nvidia-cuda-runtime-cu12 = "==12.8.57"
+# cuRobo's [cu12] extra, as upstream installs it: its kernels compile through cuda.core.
+cuda-core = { version = "==0.7.0", extras = ["cu12"] }
 setuptools-scm = "==10.2.1"
 wheel = "==0.45.1"
 

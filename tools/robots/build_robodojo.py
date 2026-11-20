@@ -18,6 +18,22 @@ from rosbridge_robodojo.backend import RoboDojoSim, runtime  # noqa: E402
 
 # RoboEnv's parallel-gripper geometry: the pad center ahead of link6, in the flange frame.
 TCP = (0.15007, -0.000002, -0.00144)
+ARM = ("ARX X5 six-joint {side} arm of the RoboDojo rig. Geometry is the sibling arm.urdf with flange (link6) "
+       "as the tip link; its links are the frames {side}_arm/<link>. It takes joint targets, upstream's absolute "
+       "joint positions ({side}_arm_joint_state of EvalEnv.take_action), or flange pose targets, which upstream's "
+       "cuRobo IK turns into those joints; the native controller interpolates them over each 0.04 s frame. Both "
+       "arms use the native joint names joint1..joint6.")
+# How the backend executes a pose target (rosbridge_robodojo.backend.RoboDojoSim._solve); step is one frame's
+# joint travel at the native velocity limit.
+POSE = ("Each point is a waypoint the flange reaches at its time along a straight line (rotation by slerp); "
+        "nothing plans around objects. Upstream's cuRobo IK solves every 0.04 s frame: if no solution stays within "
+        "the joint limits, moves each joint at most {step:.2f} rad per frame and avoids self and table collision, "
+        "the arm stops and the next wait reply says why.")
+
+
+def arm(side, base, step):
+    return rigs.joint(f"{side}_arm", ARM.format(side=side), [f"joint{i}" for i in range(1, 7)], [0.0] * 6, base,
+                      pose=POSE.format(step=step), joint_targets=True)
 
 
 def link(sim, side, name):
@@ -52,16 +68,8 @@ def main():
         robot = sim._actuators[side][0]
         lower, upper = map(float, robot.gripper_scale)
         flange = link(sim, side, "link6")
-        devices[f"{side}_arm"] = rigs.joint(
-            f"{side}_arm",
-            f"ARX X5 six-joint {side} arm of the RoboDojo rig. Geometry is the sibling arm.urdf "
-            f"with flange (link6) as the tip link; its links are the frames {side}_arm/<link>. "
-            "Commands are "
-            "upstream's absolute joint positions ({side}_arm_joint_state of EvalEnv.take_action), "
-            "interpolated by the native controller over each 0.04 s frame. Both arms use the "
-            "native joint names joint1..joint6.".replace("{side}", side),
-            [f"joint{i}" for i in range(1, 7)], [0.0] * 6,
-            rigs.pose_frame("world:base", link(sim, side, "base_link")))
+        devices[f"{side}_arm"] = arm(side, rigs.pose_frame("world:base", link(sim, side, "base_link")),
+                                     sim._limits[side][2])
         devices[f"{side}_gripper"] = rigs.gripper(
             f"{side}_gripper",
             f"ARX X5 {side} parallel two-finger gripper on the {side}_arm flange. The grip joint "

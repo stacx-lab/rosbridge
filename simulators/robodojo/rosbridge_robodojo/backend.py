@@ -3,8 +3,10 @@
 Isaac Sim 5.1 needs Python 3.11, so the world node proxies this class through
 rosbridge.core.worker. Every 0.04 s frame passes absolute arm joints and the
 native normalized gripper value to upstream's EvalEnv.take_action, which
-interpolates the arm over its ten 250 Hz substeps. Resets load upstream's saved
-evaluation layouts. Ported from RoboEnv's RoboDojo adapter.
+interpolates the arm over its ten 250 Hz substeps. An arm's pose target becomes
+those joints through upstream's own cuRobo IK, the solver its ee_pose action
+uses, checked as uni-robot-agent's RoboDojo adapter checks it. Resets load
+upstream's saved evaluation layouts. Ported from RoboEnv's RoboDojo adapter.
 """
 import os
 import secrets
@@ -24,6 +26,11 @@ SIDES = ("left", "right")
 SPECTATORS = (("third_person", "head_camera"), ("left_wrist", "left_camera"),
               ("right_wrist", "right_camera"))
 UNSTABLE_RETRIES = 3
+# An arm's pose targets are poses of its flange, link6: upstream's ee_link and its cuRobo tool frame.
+TIP = "flange"
+# A pose solution's joint path from the commanded joints is checked against cuRobo's self and table constraints at
+# this spacing, as uni-robot-agent's RoboDojo adapter checks it.
+PATH_SAMPLE_RAD = .025
 _APP = None  # Isaac allows one SimulationApp per process.
 
 
@@ -96,6 +103,40 @@ def values(value):
     return np.asarray(value, dtype=float)
 
 
+def nearest_turn(q, previous, lower, upper):
+    """q with each joint moved by whole turns toward previous where its limits allow."""
+    tau = 2 * np.pi
+    turns = np.clip(np.round((previous - q) / tau), np.ceil((lower - q) / tau), np.floor((upper - q) / tau))
+    return q + tau * np.where(np.isfinite(turns), turns, 0.)
+
+
+def path(previous, q):
+    """The joint samples from previous (excluded) to q at most PATH_SAMPLE_RAD apart."""
+    count = max(1, int(np.ceil(np.max(np.abs(q - previous)) / PATH_SAMPLE_RAD)))
+    return np.linspace(previous, q, count + 1)[1:]
+
+
+def choose(candidates, previous, lower, upper, step_limit, path_free, names):
+    """The first candidate, in its solver's ranking, that one frame can execute: within [lower, upper] (a whole turn
+    nearer previous where the limits allow), moving no joint more than step_limit from previous, along a joint path
+    path_free(rows) accepts. Returns (joints, None), or (None, why the first candidate cannot be executed)."""
+    first = None
+    for candidate in candidates:
+        q = nearest_turn(np.asarray(candidate, dtype=float), previous, lower, upper)
+        steps = np.abs(q - previous)
+        if np.any(q < lower) or np.any(q > upper):
+            why = "lies outside the joint limits"
+        elif steps.max() > step_limit:
+            i = int(np.argmax(steps))
+            why = f"moves {names[i]} {q[i] - previous[i]:+.2f} rad in one frame, beyond {step_limit:.2f} rad"
+        elif not path_free(path(previous, q)):
+            why = "has a joint path that collides with the arm itself or the table"
+        else:
+            return q, None
+        first = first or why
+    return None, first
+
+
 def config(task, early_stop, env_cfg_type="arx_x5", depth=False):
     """Upstream src/eval_client/main.py configuration for one environment; with depth, every camera also
     captures upstream's distance_to_image_plane, as env_cfg/camera/camera_config.yml shows commented out."""
@@ -138,8 +179,6 @@ def config(task, early_stop, env_cfg_type="arx_x5", depth=False):
         # PhysX and URDF readers would normalize them differently.
         quaternion = np.asarray(robot["default_root_rot"], dtype=float)
         robot["default_root_rot"] = (quaternion / np.linalg.norm(quaternion)).tolist()
-        if robot.get("type", "target") == "target":
-            robot["need_planner"] = False
     return cfg
 
 
@@ -227,7 +266,7 @@ class RoboDojoSim:
 
     def _index(self):
         manager = self.env.robot_manager
-        names, groups, self._actuators = [], [], {}
+        names, groups, self._actuators, self._limits = [], [], {}, {}
         for side in SIDES:
             robot = manager.get_robot_by_arm_name(f"{side}_arm")
             if robot.type != "target":
@@ -236,12 +275,20 @@ class RoboDojoSim:
             arm = list(robot.arm_joint_indices)
             limits = values(key.data.joint_pos_limits[0])[arm]
             self._actuators[side] = (robot, key, arm, list(robot.gripper_joint_indices))
+            # A frame moves no joint further than its native velocity limit allows (upstream's 5 rad/s actuators).
+            step = float(np.min(values(key.data.joint_vel_limits[0])[arm])) * self.period
+            self._limits[side] = (limits[:, 0], limits[:, 1], step)
             offset = len(names)
             names += list(robot.arm_joints_name) + [f"{side}_gripper"]
+            # Joint targets as upstream's arm_joint_state; flange pose targets through upstream's cuRobo IK.
             groups.append(CommandGroup(f"{side}_arm", tuple(range(offset, offset + len(arm))),
-                                       tuple(limits[:, 0]), tuple(limits[:, 1])))
+                                       tuple(limits[:, 0]), tuple(limits[:, 1]), tip=TIP, joint_targets=True))
             groups.append(CommandGroup(f"{side}_gripper", (offset + len(arm),), (0.,), (1.,), scalar=True))
         self.layout = ActionLayout(tuple(names), tuple(groups))
+        measured = self.state()[0]
+        # The joints each arm was last commanded, which a pose solution moves on from, and its last solved pose.
+        self._commanded = {side: measured[offset:offset + 6].copy() for side, offset in zip(SIDES, (0, 7))}
+        self._solved = dict.fromkeys(SIDES)
 
     @property
     def time_s(self):
@@ -264,15 +311,23 @@ class RoboDojoSim:
             velocities += [*qvel[arm], sign * qvel[fingers[0]] / (high - low)]
         return np.asarray(positions), np.asarray(velocities)
 
-    def step(self, action):
+    def step(self, action, poses=None):
+        """One 0.04 s frame. An arm with a pose target takes the joints upstream's cuRobo IK solves it to; one no
+        solution can reach in this frame keeps its commanded joints and is returned with why, so the world stops it."""
         import torch
         if self.done:
             raise RuntimeError("episode is done")
         action = np.asarray(action, dtype=float)
-        manager, native = self.env.robot_manager, {}
+        manager, native, unexecuted = self.env.robot_manager, {}, {}
         for side, offset in zip(SIDES, (0, 7)):
             robot, key, arm, fingers = self._actuators[side]
             joints, grip = action[offset:offset + len(arm)], float(action[offset + len(arm)])
+            pose = (poses or {}).get(f"{side}_arm")
+            if pose is not None:
+                joints, why = self._solve(side, np.asarray(pose, dtype=float))
+                if why:
+                    unexecuted[f"{side}_arm"] = why
+            self._commanded[side] = np.array(joints, dtype=float)
             for name, target, indices in ((robot.arm_name, list(joints), arm),
                                           (robot.gripper_name, [grip], fingers)):
                 command = manager.process_name(name)
@@ -290,6 +345,8 @@ class RoboDojoSim:
                 manager.control_manager.prev_control[0][command] = {"position": positions, "velocity": 0}
         self.env.take_action(native)
         self.steps, self._captures = self.steps + 1, {}
+        if unexecuted:
+            self._solved.update({side: None for side in SIDES if f"{side}_arm" in unexecuted})
         self._score()
         if self.early_stop and self.env.end_flag[0]:
             # EvalEnv ends at its completion, or at a failed constraint (patch 0001 keeps both for early_stop).
@@ -300,6 +357,103 @@ class RoboDojoSim:
             elif found or self.steps < self.max_steps:
                 self.stop = ("failure", found or "a task constraint failed")
         self.done = bool(self.env.end_flag[0] or self.steps >= self.max_steps)
+        return unexecuted or None
+
+    # Pose targets -----------------------------------------------------------------------
+
+    def _link(self, side, link):
+        """A robot link's pose in the environment frame as a 4x4 transform."""
+        robot = self._actuators[side][0]
+        pose = values(self.env.robot_manager.get_link_pose(robot, link, [0], is_relative=True)[0])
+        import transforms3d as t3d
+        matrix = np.eye(4)
+        matrix[:3, :3], matrix[:3, 3] = t3d.quaternions.quat2mat(pose[3:7] / np.linalg.norm(pose[3:7])), pose[:3]
+        return matrix
+
+    def tip_pose(self, group):
+        """The measured flange (link6) pose in <arm>/base, [x, y, z, qx, qy, qz, qw]."""
+        import transforms3d as t3d
+        side = group.removesuffix("_arm")
+        relative = np.linalg.inv(self._link(side, "base_link")) @ self._link(side, "link6")
+        w, x, y, z = t3d.quaternions.mat2quat(relative[:3, :3])
+        return np.r_[relative[:3, 3], x, y, z, w]
+
+    def _native_pose(self, side, pose):
+        """A flange pose in <arm>/base as upstream's <side>_ee_pose: the link6 pose in the environment frame,
+        [x, y, z, qw, qx, qy, qz], as its observation reports it."""
+        import transforms3d as t3d
+        x, y, z, w = pose[3:] / np.linalg.norm(pose[3:])
+        relative = np.eye(4)
+        relative[:3, :3], relative[:3, 3] = t3d.quaternions.quat2mat([w, x, y, z]), pose[:3]
+        world = self._link(side, "base_link") @ relative
+        return np.r_[world[:3, 3], t3d.quaternions.mat2quat(world[:3, :3])]
+
+    def _solve(self, side, pose):
+        """The joints a flange pose takes this frame, and None, or the commanded joints and why none can.
+
+        Upstream's own ee_pose solve (RobotManager.solve_ik: its cuRobo IK from the measured joints) gives the
+        solution it would execute. That solution, or failing it the next of cuRobo's 32 ranked solutions, must lie
+        within the joint limits and one frame's native joint travel of the commanded joints, along a joint path
+        clear of cuRobo's self and table constraints. An unchanged pose keeps its solution."""
+        previous = self._commanded[side]
+        cached = self._solved[side]
+        if cached is not None and np.array_equal(cached[0], pose) and np.array_equal(cached[1], previous):
+            return cached[1], None
+        robot = self._actuators[side][0]
+        manager = self.env.robot_manager
+        target = self._native_pose(side, pose)
+        lower, upper, step = self._limits[side]
+        planner = manager.ik_solver[robot.robot_name]
+
+        def free(rows):
+            return self._path_free(planner, rows)
+
+        result = manager.solve_ik(target_pose=target.tolist(), env_idx=0, robot=robot)
+        if result["status"] != "Success":
+            return previous, "upstream's cuRobo IK found no solution for this flange pose"
+        names = list(robot.arm_joints_name)
+        q, why = choose([result["joint_value"]], previous, lower, upper, step, free, names)
+        if q is None:
+            q, _ = choose(self._candidates(planner, robot, target), previous, lower, upper, step, free, names)
+            if q is None:
+                return previous, f"no IK solution can execute this flange pose: cuRobo's best {why}, and none of " \
+                    "its other solutions can be executed either"
+        self._solved[side] = (pose.copy(), q)
+        return q, None
+
+    def _candidates(self, planner, robot, target):
+        """cuRobo's ranked successful IK solutions for an ee_pose target, built as upstream's
+        CuroboPlanner.solve_ik_to_joint builds its goal, from the measured joints."""
+        from utils.transformer import calculate_target_pose
+        goal = calculate_target_pose(robot.entity_origin_pose, planner.robot_origin_pose, list(target))
+        position, rotation = planner._trans_from_world_to_base(
+            np.asarray(planner.robot_origin_pose, dtype=np.float32), np.asarray(goal, dtype=np.float32))
+        position = position + np.asarray(planner.frame_bias, dtype=position.dtype)
+        current = self.env.robot_manager.get_joint(robot, env_idx_list=[0])[0]
+        result = planner.ik_solver.solve_pose(goal_tool_poses=planner._build_goal_pose(position, rotation),
+                                              current_state=planner._build_joint_state(current), return_seeds=32)
+        solution = result.js_solution
+        names = list(solution.joint_names)
+        joints = values(solution.position).reshape(-1, len(names))[:, [names.index(n) for n in
+                                                                        planner.active_joints_name]]
+        success = values(result.success).reshape(-1) > 0
+        return [q for q, ok in zip(joints, success) if ok]
+
+    @staticmethod
+    def _path_free(planner, rows):
+        """Whether cuRobo's IK constraints (self collision, the table, joint limits) hold at every joint row, in
+        batches of the IK's 32 seeds so its rollout keeps its shape."""
+        import torch
+        solver = planner.ik_solver
+        for start in range(0, len(rows), 32):
+            chunk = np.stack([planner._build_cspace_joint_values(q) for q in rows[start:start + 32]])
+            padded = np.concatenate([chunk, np.repeat(chunk[-1:], 32 - len(chunk), axis=0)])
+            action = torch.as_tensor(padded, device=planner.device_cfg.device, dtype=torch.float32)[:, None, :]
+            feasible = solver.metrics_rollout.compute_metrics_from_action(action).costs_and_constraints.get_feasible(
+                include_all_hybrid=False, sum_horizon=True)
+            if not (feasible if isinstance(feasible, bool) else bool(values(feasible).reshape(32, -1)[:len(chunk)].all())):
+                return False
+        return True
 
     def _score(self):
         self.success = bool(self.env.completed[0] and self.env.success[0])

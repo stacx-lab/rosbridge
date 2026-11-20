@@ -48,6 +48,10 @@ class Trajectory:
         self.blend = blend
 
     @property
+    def pose(self):
+        return self.blend is pose_blend
+
+    @property
     def end_s(self):
         return self.start_s + self.times[-1]
 
@@ -66,7 +70,9 @@ class CommandBuffer:
     """Retain the last valid target per command group of the backend layout.
 
     Velocity groups start at rest and return to rest VELOCITY_TIMEOUT_S after their last command. Pose groups hold
-    a tip pose target, None until their first command; poses() gives each with the action.
+    a tip pose target, None until their first command; poses() gives each with the action. A pose group that also
+    takes joint targets holds one kind at a time: a joint command clears its pose target, so poses() gives None and
+    the action carries its joints, and a pose command takes over again from the measured tip.
     """
 
     def __init__(self, layout, initial):
@@ -83,14 +89,18 @@ class CommandBuffer:
 
     def stop(self, group, values):
         """Hold values: measured positions, which can fall outside command limits, or a pose group's measured tip
-        pose. A pose group never commanded keeps no target: the simulator holds it as it was. A gripper (a scalar
-        group) keeps its applied target instead, as Kinex's grip contract requires, since its measured opening
-        would release a held object; it starts at the reset opening, so a stop never closes it."""
-        if group in self._pose:
+        pose. A pose group never commanded keeps no target: the simulator holds it as it was. A pose group that also
+        takes joint targets holds its measured joints and drops its pose target. A gripper (a scalar group) keeps its
+        applied target instead, as Kinex's grip contract requires, since its measured opening would release a held
+        object; it starts at the reset opening, so a stop never closes it."""
+        spec = self._groups[group]
+        if group in self._pose and not spec.joint_targets:
             if self._pose[group] is not None or self._trajectory[group] is not None:
                 self._pose[group] = self._unit_pose(values, f"{group} hold")
-        elif not self._groups[group].scalar:
-            self._target[list(self._groups[group].indices)] = values
+        elif not spec.scalar:
+            self._target[list(spec.indices)] = values
+            if group in self._pose:
+                self._pose[group] = None
         self._trajectory[group] = None
         self._expiry.pop(group, None)
 
@@ -140,7 +150,7 @@ class CommandBuffer:
 
     def _group(self, name, values):
         group = self._open_group(name)
-        if group.tip:
+        if group.tip and not group.joint_targets:
             raise CommandError(f"{name} takes {group.tip} pose targets, not joint targets")
         q = self._vector(values, len(group.indices), f"{name} target")
         lo, hi = np.asarray(group.lower), np.asarray(group.upper)
@@ -160,30 +170,47 @@ class CommandBuffer:
             self._expiry[name] = time_s + VELOCITY_TIMEOUT_S
         self._target[list(self._groups[name].indices)] = q
         self._trajectory[name] = None
+        if name in self._pose:
+            self._pose[name] = None
 
-    def set_trajectory(self, name, start_s, times, points):
-        """times: seconds from start_s, strictly increasing and >= 0."""
+    def _posed(self, name):
+        """Whether a pose command, a held pose target or a pose trajectory, is a group's active command."""
+        current = self._trajectory.get(name)
+        return current.pose if current is not None else self._pose.get(name) is not None
+
+    def set_trajectory(self, name, start_s, times, points, measured=None):
+        """times: seconds from start_s, strictly increasing and >= 0. It starts from the joint target held on
+        arrival; for a group leaving a pose command, from measured(), its measured joints."""
         if name in self._groups and self._groups[name].velocity:
             raise CommandError(f"{name} accepts velocities, not trajectories")
         self._times(start_s, times, points)
         points = [self._group(name, p).copy() for p in points]
+        indices = list(self._groups[name].indices)
         current = self._trajectory[name]
-        start_q = (current.sample(start_s) if current is not None
-                   else self._target[list(self._groups[name].indices)].copy())
+        if self._posed(name):
+            if measured is None:
+                raise CommandError(f"{name} needs its measured joints to leave its pose command")
+            start_q = self._vector(measured(), len(indices), f"{name} measured joints")
+        else:
+            start_q = current.sample(start_s) if current is not None else self._target[indices].copy()
         self._trajectory[name] = Trajectory(start_s, start_q, times, points)
+        if name in self._pose:
+            self._pose[name] = None
 
     def set_pose_trajectory(self, name, start_s, times, poses, measured):
         """Tip poses [x, y, z, qx, qy, qz, qw] in the device base at times, seconds from start_s, strictly
-        increasing and >= 0. It starts from the pose target held on arrival; before a group's first command, from
-        measured(), its measured tip pose."""
+        increasing and >= 0. It starts from the pose target held on arrival; before a group's first pose command,
+        or leaving a joint command, from measured(), its measured tip pose."""
         group = self._open_group(name)
         if not group.tip:
             raise CommandError(f"{name} takes joint targets, not pose targets")
         self._times(start_s, times, poses)
         points = [self._unit_pose(pose, f"{name} {group.tip} pose") for pose in poses]
         current = self._trajectory[name]
-        start = (current.sample(start_s) if current is not None else self._pose[name] if self._pose[name] is not None
-                 else self._unit_pose(measured(), f"{name} measured {group.tip} pose"))
+        if self._posed(name):
+            start = current.sample(start_s) if current is not None else self._pose[name]
+        else:
+            start = self._unit_pose(measured(), f"{name} measured {group.tip} pose")
         self._trajectory[name] = Trajectory(start_s, start, times, points, pose_blend)
 
     def action(self, t):
@@ -191,7 +218,7 @@ class CommandBuffer:
         for name, trajectory in self._trajectory.items():
             if trajectory is None:
                 continue
-            if name in self._pose:
+            if trajectory.pose:
                 self._pose[name] = trajectory.sample(t)
             else:
                 self._target[list(self._groups[name].indices)] = trajectory.sample(t)

@@ -27,8 +27,8 @@ KEEPALIVE_S = .2
 
 
 class Actuator:
-    """An arm (`joint_target`, or `pose_target` of its tip link with the measured `pose_state`) or gripper
-    (`target`) with `joint_state` and `stop`."""
+    """An arm (`joint_target`, `pose_target` of its tip link with the measured `pose_state`, or both, the latest
+    command of either kind replacing the active one) or gripper (`target`) with `joint_state` and `stop`."""
     stopped = 'holding the measured position'
 
     def __init__(self, spec, node):
@@ -53,6 +53,9 @@ class Actuator:
             self.pose_state = node.create_publisher(MultiDOFJointState, f'{name}/pose_state', STREAM_QOS)
             self.command = node.create_subscription(MultiDOFJointTrajectory, f'{name}/pose_target',
                                                     self.pose_target, 10, callback_group=callbacks)
+            if self.group.joint_targets:
+                self.joints = node.create_subscription(JointTrajectory, f'{name}/joint_target',
+                                                       self.joint_target, 10, callback_group=callbacks)
         else:
             self.command = node.create_subscription(JointTrajectory, f'{name}/joint_target', self.joint_target, 10,
                                                     callback_group=callbacks)
@@ -63,13 +66,13 @@ class Actuator:
             self.pose_state.publish(conv.pose_state(stamp, f'{self.spec.name}/base', self.group.tip,
                                                     self.node.sim.tip_pose(self.group.name)))
 
-    def _admit(self, apply):
+    def _admit(self, apply, subscription=None):
         def run():
             try:
                 apply()
             except ValueError as error:
                 # A topic publisher gets no reply; the next world wait's reply names the refusal.
-                self.node.world.refuse(self.command.topic_name, error)
+                self.node.world.refuse((subscription or self.command).topic_name, error)
                 self.node.get_logger().error(f'{self.spec.name} rejected a command: {error}',
                                              throttle_duration_sec=1.)
         self.node.world.submit(run)
@@ -89,8 +92,10 @@ class Actuator:
                 raise ValueError('trajectory must end within 120 seconds')
             if start is not None and start < world.time_s:
                 raise ValueError('trajectory start is in the past')
-            world.commands.set_trajectory(self.group.name, world.time_s if start is None else start, times, points)
-        self._admit(apply)
+            # A group leaving a pose command starts from its measured joints.
+            world.commands.set_trajectory(self.group.name, world.time_s if start is None else start, times, points,
+                                          lambda: self.node.sim.state()[0][self.indices])
+        self._admit(apply, getattr(self, 'joints', None))
 
     def pose_target(self, msg):
         def apply():
@@ -110,14 +115,9 @@ class Actuator:
                                                poses, lambda: self.node.sim.tip_pose(self.group.name))
         self._admit(apply)
 
-    def _hold(self):
-        if self.group.tip:
-            return self.node.sim.tip_pose(self.group.name)
-        return self.node.sim.state()[0][self.indices]
-
     async def stop(self, request, response):
         try:
-            await self.node.request(lambda: self.node.world.commands.stop(self.group.name, self._hold()))
+            await self.node.request(lambda: self.node.world.hold(self.group.name))
             response.success, response.message = True, self.stopped
         except Exception as error:
             response.success, response.message = False, str(error)
@@ -146,9 +146,6 @@ class Base(Actuator):
             world.commands.set_group(self.group.name, [msg.linear.x, msg.linear.y, msg.angular.z],
                                      world.time_s)
         self._admit(apply)
-
-    def _hold(self):
-        return [0.] * len(self.indices)
 
 
 class Camera:

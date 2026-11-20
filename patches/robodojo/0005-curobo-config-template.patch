@@ -1,0 +1,46 @@
+diff --git a/env/planner_manager/curobo_planner.py b/env/planner_manager/curobo_planner.py
+index 311c075..7c587e1 100644
+--- a/env/planner_manager/curobo_planner.py
++++ b/env/planner_manager/curobo_planner.py
+@@ -1,4 +1,5 @@
+ from copy import deepcopy
++import os
+ 
+ from curobo.batch_motion_planner import BatchMotionPlanner, MotionPlannerCfg
+ from curobo.inverse_kinematics import InverseKinematics, InverseKinematicsCfg
+@@ -16,12 +17,24 @@ import torch
+ import transforms3d as t3d
+ import yaml
+ 
+-from env.global_configs import BATCH_NUM
++from env.global_configs import BATCH_NUM, ROOT_DIR
+ from utils.transformer import calculate_target_pose
+ 
+ _curobo_runtime.cuda_graph_reset = True
+ 
+ 
++def read_curobo_config(path):
++    """The cuRobo config at path or, before utils/update_embodiment_config_path.py has written it, its
++    <name>_tmp.yml template with ${ASSETS_PATH} replaced by the repository root, as that script writes it."""
++    if os.path.isfile(path):
++        with open(path) as f:
++            return f.read()
++    with open(path[: -len(".yml")] + "_tmp.yml") as f:
++        content = f.read()
++    root = os.path.abspath(ROOT_DIR)
++    return content.replace("${ASSETS_PATH}", root).replace("$ASSETS_PATH", root)
++
++
+ class CuroboPlanner:
+     def __init__(
+         self,
+@@ -41,8 +54,7 @@ class CuroboPlanner:
+         self.active_joints_name = active_joints_name
+         self.all_joints = all_joints
+         # translate from baselink to arm's base
+-        with open(self.yml_path) as f:
+-            yml_data = yaml.safe_load(f)
++        yml_data = yaml.safe_load(read_curobo_config(self.yml_path))
+         self.frame_bias = yml_data["planner"]["frame_bias"]
+ 
+         self.robot_cfg, self.scene_model = self._build_robot_and_scene_cfg(yml_data, table_height)
