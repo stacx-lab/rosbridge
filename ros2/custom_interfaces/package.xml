@@ -3,7 +3,7 @@
 <package format="3">
   <name>custom_interfaces</name>
   <version>0.2.0</version>
-  <description>The world Wait service, the free-form Json service that devices declare, and a frame lookup service.</description>
+  <description>The world Wait service and Budget message, the free-form Json service that devices declare, and a frame lookup service.</description>
   <maintainer email="haitongma8@gmail.com">haitongma</maintainer>
   <license>Apache-2.0</license>
 

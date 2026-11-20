@@ -105,7 +105,8 @@ class SimNode(Node):
 
             def complete(result):
                 self.pending_wait = None
-                ready.set_result(self.world.reply(result))  # with the commands refused since the previous reply
+                # With the episode budget and the commands refused since the previous reply.
+                ready.set_result(self.world.reply(result))
             self.pending_wait = complete
             self.world.waits.admit(request.duration_s, self.world.time_s, self.world.steps,
                                    self.sim.period, self.world.ended, complete)
@@ -114,8 +115,13 @@ class SimNode(Node):
             result = await ready
             response.success, response.message = result.success, result.message
             response.time_s, response.waited_s = result.time_s, result.waited_s
+            response.used_s, response.max_s = result.used_s, result.max_s
         except Exception as error:
             response.success, response.message = False, str(error)
+            try:  # a rejected wait reports the budget too
+                response.used_s, response.max_s = await self.request(self.world.budget)
+            except Exception:
+                response.used_s = response.max_s = math.nan
         return response
 
     async def _stop(self, request, response):

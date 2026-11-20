@@ -17,11 +17,13 @@ operations:
       durability: transient_local
     timeout_s: 10
   wait:
-    description: Advance or await duration_s of world time (finite and nonnegative).
-      Zero is an observation barrier. Waits are sequential; one requested while another
-      is pending is rejected. A terminal episode rejects further progression. The
-      reply's message also names the device commands refused since the previous reply,
-      with their reasons.
+    description: 'Advance or await duration_s of world time (finite and nonnegative). Zero
+      is an observation barrier. Waits are sequential; one requested while another is pending
+      is rejected. A terminal episode rejects further progression. The reply''s message also
+      names the device commands refused since the previous reply, with their reasons. Every
+      reply reports the episode budget: used_s and max_s, the seconds of world time the episode
+      has used and is allowed (control steps times the control period; max_s inf without a
+      step limit).'
     transport: service
     direction: input
     endpoint: /world/wait
@@ -31,6 +33,18 @@ operations:
       reliability: reliable
       durability: volatile
     timeout_s: 120
+  budget:
+    description: The episode budget as wait replies report it, used_s and max_s seconds of
+      world time, published with every world step.
+    transport: topic
+    direction: output
+    endpoint: /world/budget
+    type: custom_interfaces/msg/Budget
+    qos:
+      depth: 1
+      reliability: reliable
+      durability: transient_local
+    timeout_s: 10
   stop:
     description: Cancel the pending wait.
     transport: service

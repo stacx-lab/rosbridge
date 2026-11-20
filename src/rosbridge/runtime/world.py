@@ -2,6 +2,7 @@
 from concurrent.futures import Future
 from dataclasses import replace
 import json
+import math
 import os
 from pathlib import Path
 import queue
@@ -64,10 +65,19 @@ class WorldRuntime:
         key = (endpoint, str(reason))
         self.refused[key] = self.refused.get(key, 0) + 1
 
-    def reply(self, result):
-        """A wait's result with the commands refused since the previous reply added to its message: a client
-        publishing commands on topics learns of a refusal no other way. Owner thread."""
+    def budget(self):
+        """The episode budget in seconds of world time, Kinex's (used_s, max_s): the control steps taken and the
+        step limit that ends the episode, inf without one. Owner thread."""
         self._assert_owner()
+        limit = getattr(self.sim, "max_steps", None)
+        return self.steps * self.sim.period, limit * self.sim.period if limit else math.inf
+
+    def reply(self, result):
+        """A wait's result with the episode budget, and the commands refused since the previous reply added to its
+        message: a client publishing commands on topics learns of a refusal no other way. Owner thread."""
+        self._assert_owner()
+        used_s, max_s = self.budget()
+        result = replace(result, used_s=used_s, max_s=max_s)
         if not self.refused:
             return result
         refused, self.refused = list(self.refused.items()), {}

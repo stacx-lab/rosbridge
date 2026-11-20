@@ -56,9 +56,15 @@ def world(description):
             "observation barrier. Waits are sequential; one requested while another is pending "
             "is rejected. A terminal episode rejects further progression. The reply's message "
             "also names the device commands refused since the previous reply, with their "
-            "reasons.", "service", "input", "/world/wait",
+            "reasons. Every reply reports the episode budget: used_s and max_s, the seconds of "
+            "world time the episode has used and is allowed (control steps times the control "
+            "period; max_s inf without a step limit).", "service", "input", "/world/wait",
             "custom_interfaces/srv/Wait",
             timeout_s=120),
+        "budget": operation(
+            "The episode budget as wait replies report it, used_s and max_s seconds of world "
+            "time, published with every world step.", "topic", "output", "/world/budget",
+            "custom_interfaces/msg/Budget", qos(durability="transient_local")),
         "stop": operation("Cancel the pending wait.", "service", "input", "/world/stop",
                           "std_srvs/srv/Trigger"),
     }

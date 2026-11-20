@@ -1,6 +1,7 @@
-"""Owner-thread observation publication: clock, joint states, cameras and spectator streams."""
+"""Owner-thread observation publication: clock, episode budget, joint states, cameras and spectator streams."""
 import threading
 
+from custom_interfaces.msg import Budget
 from rosgraph_msgs.msg import Clock
 from sensor_msgs.msg import CameraInfo, Image
 
@@ -39,6 +40,7 @@ class ObservationPublisher:
     def __init__(self, node, spectator_rate_hz):
         self.node, self.sim = node, node.sim
         self.clock = node.create_publisher(Clock, '/clock', STREAM_QOS)
+        self.budget = node.create_publisher(Budget, 'world/budget', STREAM_QOS)  # latched, as wait replies give it
         self.cameras = SampleSchedule(camera_rate(self.sim))
         self.spectator_schedule = SampleSchedule(spectator_rate_hz)
         self.spectators = [Spectator(node, view) for view in self.sim.spectators]
@@ -48,6 +50,8 @@ class ObservationPublisher:
         stamp = conv.stamp(time_s)
         positions, velocities = self.sim.state()
         self.clock.publish(conv.clock(stamp))
+        used_s, max_s = self.node.world.budget()
+        self.budget.publish(Budget(used_s=used_s, max_s=max_s))
         cameras = self.cameras.due(time_s)
         for device in self.node.devices:
             if not isinstance(device, Camera):

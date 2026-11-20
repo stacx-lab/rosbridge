@@ -9,6 +9,9 @@ class WaitResult:
     message: str
     waited_s: float
     time_s: float
+    # The episode budget, seconds of world time used and allowed (inf: no cap); the world fills it in its reply.
+    used_s: float = math.nan
+    max_s: float = math.nan
 
 
 @dataclass

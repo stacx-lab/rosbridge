@@ -104,7 +104,10 @@ Both modes retain the backend's native control period and physics decimation.
 Rendering can make realtime slower than wall time; it never changes simulated dt.
 
 `world/wait` uses `custom_interfaces/srv/Wait`: `duration_s` in, then `success`,
-`message`, `time_s` and actual `waited_s` out. Positive durations round up to whole
+`message`, `time_s` and actual `waited_s` out, with the episode budget: `used_s` and
+`max_s`, the seconds of world time the episode has used and is allowed (control steps
+times the control period; `max_s` inf without a step limit). `world/budget`
+(`custom_interfaces/msg/Budget`, latched) publishes the same after every step. Positive durations round up to whole
 native control steps; zero is immediate; negative, nonfinite or unrepresentable
 waits fail. Waits are sequential: a wait requested while another is pending is
 rejected, and `world/stop` (`std_srvs/srv/Trigger`) cancels the pending one. A run
