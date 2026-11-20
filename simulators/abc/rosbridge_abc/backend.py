@@ -21,6 +21,13 @@ GRIPPER_SCALE = 0.0475  # upstream _GRIPPER_CTRL_MAX: finger joint meters per po
 OPTICAL = np.diag([1.0, -1.0, -1.0])
 
 
+def world_seed(seed):
+    """Upstream's evaluation seed for world `seed`: abc_minimal's SimEvalConfig.seed + world index
+    (eval_policy.py: rollout_worlds)."""
+    from abc_minimal.config import SimEvalConfig
+    return SimEvalConfig.seed + int(seed)
+
+
 def joint_names():
     names = []
     for side in SIDES:
@@ -64,9 +71,11 @@ class AbcSim:
         return device_inventory(self.layout, cameras, depth=tuple(cameras))
 
     def reset(self, task, seed, randomize=True):
+        """Reset as upstream's evaluator resets world `seed`, with its world seed."""
         import abc_sim
 
         spec = abc_sim.get_task_spec(task)
+        native = world_seed(seed)
         require_assets(Path(abc_sim.__file__).resolve().parents[1], spec.name, spec.env_task)
         env = abc_sim.make_env(
             task=spec.name,
@@ -74,14 +83,14 @@ class AbcSim:
             max_episode_steps=self.max_steps,
             terminate_on_success=False,  # early stop follows the evaluator's rollout_over instead
             # inhand_transfer samples its object when the env is built.
-            **({"seed": seed} if spec.env_task == "inhand_transfer" else {}),
+            **({"seed": native} if spec.env_task == "inhand_transfer" else {}),
         )
         candidate = AbcSim(cameras=self.cameras, width=self.width, height=self.height,
                            max_steps=self.max_steps, early_stop=self.early_stop)
         candidate.spectators = self.spectators
-        candidate.env, candidate.task, candidate.seed = env, spec.name, seed
+        candidate.env, candidate.task, candidate.seed, candidate.world_seed = env, spec.name, seed, native
         try:
-            env.reset(seed=seed, randomize=randomize)
+            env.reset(seed=native, randomize=randomize)
             missing = [c for c in self.cameras
                        if mujoco.mj_name2id(env.model, mujoco.mjtObj.mjOBJ_CAMERA, c) < 0]
             if missing:
@@ -108,6 +117,9 @@ class AbcSim:
         # leaves the old environment, renderer, indices and score intact.
         self.close()
         self.__dict__.update(candidate.__dict__)
+
+    def measures(self):
+        return {"world_seed": self.world_seed}
 
     def _index(self, model):
         def joint(name):

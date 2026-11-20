@@ -110,7 +110,8 @@ class Episode:
     def __init__(self, task, r1pro, max_steps=None):
         import omnigibson as og
         from omnigibson.eval.utils.eval_utils import (
-            EVAL_TIMEOUT_MULTIPLIER, TASK_NAMES_TO_ROOMS, generate_basic_environment_config)
+            DEFAULT_EVAL_SEED, EVAL_TIMEOUT_MULTIPLIER, TASK_NAMES_TO_ROOMS, generate_basic_environment_config,
+            seed_everything)
         from omnigibson.eval.utils.score_utils import load_human_stats
         from omnigibson.macros import gm
 
@@ -122,12 +123,13 @@ class Episode:
         robot["position"] = values(task_cfg["robot_start_position"]).tolist()
         robot["orientation"] = values(task_cfg["robot_start_orientation"]).tolist()
         cfg["robots"] = [robot]
-        # load() places the robot at the instance's presampled pose, as the evaluator does, and the
-        # scene's initial state keeps it.
-        cfg["task"]["use_presampled_robot_pose"] = False
+        # load() places the robot at the instance's presampled pose, and env.reset places it there again once
+        # the scene has settled, as the evaluator's does (the task's use_presampled_robot_pose).
         self.max_steps = max_steps or int(load_human_stats(task)["length"] * EVAL_TIMEOUT_MULTIPLIER)
         cfg["task"]["termination_config"]["max_steps"] = self.max_steps
         self.task = task
+        # The evaluator seeds once, before it builds the environment (omnigibson/eval/eval.py).
+        seed_everything(DEFAULT_EVAL_SEED)
         self.env = og.Environment(configs=cfg)
         if self.env.num_envs != 1 or len(self.env.scene.robots) != 1:
             raise ValueError("BEHAVIOR episodes hold one scene with one robot")
@@ -144,15 +146,13 @@ class Episode:
     def load(self, seed):
         """Load public test instance seed % 20, as the evaluator's load_batch does."""
         import omnigibson as og
-        from omnigibson.eval.utils.eval_utils import (
-            NUM_PUBLIC_TEST_INSTANCES, TEST_INSTANCE_IDS, seed_everything)
+        from omnigibson.eval.utils.eval_utils import NUM_PUBLIC_TEST_INSTANCES, TEST_INSTANCE_IDS
         from omnigibson.eval.utils.light_utils import LightToggleSynchronizer, set_light_control_toggles
         from omnigibson.tasks.behavior_task import get_presampled_robot_poses
         from omnigibson.utils.asset_utils import get_task_instance_path
         from omnigibson.utils.bddl_utils import is_system_bddl_inst
         from omnigibson.utils.python_utils import recursively_convert_to_torch
 
-        seed_everything(seed)
         instance = TEST_INSTANCE_IDS[seed % NUM_PUBLIC_TEST_INSTANCES]
         env, robot, task, scene = self.env, self.robot, self.env.task, self.env.scene
         # The instance restores only the base pose; joints, controllers and grasps start clean.

@@ -103,6 +103,28 @@ def test_step_limit_ends_the_episode_and_reset_restores_the_instance(sim):
     assert not sim.done and sim.task == "turning_on_radio"
 
 
+def test_the_episode_starts_as_the_evaluator_starts_it(tmp_path):
+    """omnigibson/eval: one seed_everything(0) before the environment is built, the robot at the instance's
+    presampled pose 0 once env.reset has placed it again, and the episode truncated on the step after the Timeout's
+    limit, where upstream's Timeout ends it (it checks the step count before counting the step)."""
+    import json
+    import subprocess
+    path = tmp_path / "start.json"
+    run = subprocess.run([sys.executable, os.path.join(os.path.dirname(__file__), "evaluator_start.py"), str(path)],
+                         capture_output=True, text=True, timeout=2400)
+    assert path.is_file(), run.stderr[-4000:]
+    start = json.loads(path.read_text())
+    assert start["events"] == [["seed", 0], ["environment"]]
+    (position, orientation, frame), = start["teleports"]  # env.reset places the robot once, at the presampled pose
+    assert frame == "scene"
+    np.testing.assert_allclose(position + orientation, start["sampled"], atol=1e-6)
+    # env.reset then runs one physics step, which lifts the base off the floor by a few millimetres.
+    np.testing.assert_allclose(start["robot"][:2], start["sampled"][:2], atol=1e-4)
+    assert abs(start["robot"][2] - start["sampled"][2]) < .01
+    assert abs(np.dot(start["robot"][3:], start["sampled"][3:])) > 1 - 1e-6  # the same rotation, up to sign
+    assert start["max_steps"] == start["timeout"] + 1
+
+
 def test_particles_out_of_the_loaded_rooms_are_removed_at_every_load_and_recorded():
     """sweeping_garage's instance 301 has a sand and a dust particle of its goal on the garage floor just outside the
     locked garage door, which the room map places in the garden, a room the activity does not load."""

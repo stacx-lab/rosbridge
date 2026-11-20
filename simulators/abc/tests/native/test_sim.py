@@ -94,8 +94,10 @@ def test_wrapped_actions_match_native_rollout():
     sim = AbcSim(cameras=(), width=64, height=48)
     upstream = abc_sim.make_env(task=sim.default_task, render_cameras=False)
     try:
+        from abc_minimal.config import SimEvalConfig
         sim.reset(sim.default_task, seed=19)
-        upstream.reset(seed=19)
+        upstream.reset(seed=SimEvalConfig.seed + 19)  # upstream's evaluator resets world 19 so
+        assert sim.measures() == {"world_seed": SimEvalConfig.seed + 19}
         np.testing.assert_allclose(sim.env.data.qpos, upstream.data.qpos, atol=1e-12)
         target = np.asarray(upstream.get_state(), dtype=np.float32)
         target[0] += .1

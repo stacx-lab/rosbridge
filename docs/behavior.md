@@ -24,10 +24,12 @@ Each episode follows the official evaluator (`OmniGibson/omnigibson/eval`) for o
 environment. The activity loads in its scene with the rooms the evaluator loads
 (`B100_task_misc.csv`), with its three disabled transition rules (toggleable
 machines, mixing tools and cooking systems) and light synchronization for
-`turning_out_all_lights_before_sleep`. The seed selects public test instance
-`301 + seed % 20` and seeds Python, NumPy, Torch and Warp. Loading it restores the
+`turning_out_all_lights_before_sleep`. Python, NumPy, Torch and Warp are seeded once with
+the evaluator's seed 0 before the environment is built, as `omnigibson/eval/eval.py` does;
+the seed selects public test instance `301 + seed % 20`. Loading it restores the
 instance's objects and the robot's start pose and settles 25 physics steps holding
-task entities still, as the evaluator's `load_batch` does. OmniGibson loads every door of
+task entities still, as the evaluator's `load_batch` does; `env.reset` then places the
+robot at the instance's presampled pose again, as there. OmniGibson loads every door of
 the scene but the floors of the loaded rooms only, so a door can open onto no floor: a door
 with a loaded room on one side of the scene's room segmentation and none on the other is
 closed and locked. No such door is part of an activity. BEHAVIOR's sampler places a floor's
@@ -41,7 +43,8 @@ Success is the activity's BDDL goal predicate, evaluated every step; the reward 
 1 while it holds. `--early-stop` ends the episode at the first success, as the
 evaluator's termination does; BEHAVIOR has no failure termination. The default horizon is
 the evaluator's timeout, 1.5 average human demonstrations (`task.jsonl`), for example 3224
-steps (107 s) for `turning_on_radio`. The world node's `max_steps` parameter overrides the
+for `turning_on_radio`: upstream's `Timeout` checks the step count before counting the
+step, so the episode ends on the step after it, step 3225 (107.5 s). The world node's `max_steps` parameter overrides the
 horizon.
 
 Episode records add the evaluator's partial credit, `q_score`, as its `TaskMetric`

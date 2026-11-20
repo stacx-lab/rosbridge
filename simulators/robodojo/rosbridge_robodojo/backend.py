@@ -303,9 +303,10 @@ class RoboDojoSim:
 
     def _score(self):
         self.success = bool(self.env.completed[0] and self.env.success[0])
-        # Graded tasks keep the native 0..100 score; others are binary.
+        # Upstream's episode score (EvalEnv.run_eval): 1 for a success; a failed graded task
+        # keeps its native 0..100 score; other failures score 0.
         graded = getattr(self.env.reward_manager, "_gated_score_lst", None)
-        raw = float(graded[0]) if graded else 100. * self.success
+        raw = 100. if self.success else float(graded[0]) if graded else 0.
         self.reward = min(1., max(0., raw / 100.))
 
     def link_pose(self, side, link):
