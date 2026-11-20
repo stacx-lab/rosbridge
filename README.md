@@ -25,3 +25,4 @@ rosbridge launch abc --execution-mode stepped --record ./recordings/abc
 - [BiDex-100 bimanual dexterous manipulation with Franka or Astribot arms and Sharpa hands](docs/bidex.md)
 - [Devices, robot catalog and workspace export](docs/devices.md)
 - [Using rosbridge with Kinex](docs/kinex.md)
+- [Adding a simulator](docs/adding-a-simulator.md)

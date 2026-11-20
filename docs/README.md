@@ -248,7 +248,8 @@ checkout before removing it; to remove one finished run's history, delete
 `.runtime`, `.venv`, `.pixi`, `.workspaces` and `third_party`; they contain the
 prepared installation. Recordings stay in the directory passed to `--record`.
 
-To add a simulator, implement `SimulatorBackend` (`src/rosbridge/core/backend.py`)
+To add a simulator, follow [Adding a simulator](adding-a-simulator.md), the full procedure. In short:
+implement `SimulatorBackend` (`src/rosbridge/core/backend.py`)
 and register a lazy `rosbridge.backends` entry point (a `WorkerBackend` subclass
 for a native worker). Supply an `ActionLayout` whose commands are positions in
 feedback units (or, for a base's velocity group, body velocities whose feedback is
