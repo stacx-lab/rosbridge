@@ -7,8 +7,8 @@ import sys
 
 # Scene options a simulator may declare in its manifest (scene_options); launch passes the ones given to reset.
 SCENE_FLAGS = ("split", "layout_id", "style_id")
-CONFIGURATION_HELP = ("Device configuration the simulator declares, such as robodojo's depth (RGB-D cameras); "
-                      "default: its standard devices")
+CONFIGURATION_HELP = ("Device configuration the simulator declares, such as robodojo's depth (RGB-D cameras) or "
+                      "libero's osc (flange pose targets through upstream's OSC_POSE); default: its standard devices")
 
 
 def positive(value):

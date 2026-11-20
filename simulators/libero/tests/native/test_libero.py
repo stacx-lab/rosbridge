@@ -1,8 +1,10 @@
-"""Pinned LIBERO acceptance: every task, native rollout parity, gripper steering and render isolation."""
+"""Pinned LIBERO acceptance: every task, native rollout parity in both configurations, gripper steering and
+render isolation."""
 import random
 
 import numpy as np
 import pytest
+from scipy.spatial.transform import Rotation
 
 from rosbridge.catalog import tasks
 from rosbridge_libero.backend import LiberoSim
@@ -94,19 +96,25 @@ def test_rendering_calibration_and_failed_capture_preserve_world(monkeypatch):
         sim.close()
 
 
-def reference_world(seed):
-    """Independent native construction, matching the documented initialization."""
+def reference_world(seed, controller='JOINT_POSITION'):
+    """Independent native construction, matching the documented initialization. OSC_POSE starts as upstream's
+    evaluation does (libero/lifelong/metric.py): five idle actions after the initial state."""
     import torch
     from libero.libero.envs.env_wrapper import ControlEnv
     bddl, states = task_files(configure(), LiberoSim.default_task)
     random.seed(seed)
     np.random.seed(seed)
-    native = ControlEnv(bddl_file_name=str(bddl), controller='JOINT_POSITION',
+    native = ControlEnv(bddl_file_name=str(bddl), controller=controller,
                         has_renderer=False, has_offscreen_renderer=False,
                         use_camera_obs=False, camera_names=[], ignore_done=True, control_freq=20)
     native.seed(seed)
     native.env.reset()
     native.set_init_state(torch.load(states, weights_only=False)[0])
+    if controller == 'OSC_POSE':
+        for _ in range(5):
+            native.step(np.zeros(7))
+        native.sim.forward()
+        return native
     robot = native.env.robots[0]
     robot.controller.update(force=True)
     robot.controller.reset_goal()
@@ -158,3 +166,77 @@ def test_native_joint_rollout_parity_and_gripper_steering():
         sim.close()
         if native is not None:
             native.close()
+
+
+def world(sim, kind, name):
+    """A body's or site's world pose, from MuJoCo, as a 4x4 transform."""
+    element = getattr(sim.data, kind)(name)
+    result = np.eye(4)
+    result[:3, :3], result[:3, 3] = element.xmat.reshape(3, 3), element.xpos
+    return result
+
+
+def test_osc_initialization_and_rollout_match_upstream_osc_pose():
+    """In osc a flange target that moves the grip site by a policy's delta steps exactly as upstream's OSC_POSE
+    steps that delta, the clip included; the targets come from MuJoCo, not from the backend's frames."""
+    sim, native = LiberoSim(cameras=(), configuration='osc'), None
+    try:
+        sim.reset(sim.default_task, 7, False)
+        native = reference_world(7, 'OSC_POSE')
+
+        def equal(atol):
+            np.testing.assert_allclose(sim.data.qpos, native.sim.data.qpos, atol=atol, rtol=0)
+            np.testing.assert_allclose(sim.data.qvel, native.sim.data.qvel, atol=atol, rtol=0)
+        equal(1e-12)
+        robot, rng = sim.robot, np.random.default_rng(0)
+        # Every delta turns the hand (upstream keeps its orientation goal for an exactly zero one); the last
+        # saturates the clip.
+        deltas = [rng.uniform(-.6, .6, 6) for _ in range(9)] + [np.r_[1.5, -.2, .3, .4, 1.2, -.3]]
+        for delta in deltas:
+            base, hand = (world(sim, 'body', name) for name in (robot.robot_model.root_body, robot.robot_model.eef_name))
+            site = world(sim, 'site', robot.controller.eef_name)
+            scaled = np.clip(delta, -1, 1) * [.05, .05, .05, .5, .5, .5]
+            goal = np.eye(4)
+            goal[:3, :3], goal[:3, 3] = Rotation.from_rotvec(scaled[3:]).as_matrix() @ site[:3, :3], site[:3, 3] + scaled[:3]
+            flange = np.linalg.inv(base) @ goal @ np.linalg.inv(site) @ hand
+            sim.step(sim.state()[0], {'arm': np.r_[flange[:3, 3], Rotation.from_matrix(flange[:3, :3]).as_quat()]})
+            _, reward, _, _ = native.step(np.r_[delta, 0.])
+            native.sim.forward()
+            assert sim.reward == reward and sim.success == bool(native.check_success())
+            equal(1e-9)
+    finally:
+        sim.close()
+        if native is not None:
+            native.close()
+
+
+def test_osc_tracks_flange_poses_and_idles_as_upstream():
+    sim = LiberoSim(cameras=(), configuration='osc')
+    try:
+        sim.reset(sim.default_task, 0, False)
+        assert [group.tip for group in sim.layout.groups] == ['flange', None]
+        assert [(device.name, device.kind) for device in sim.devices] == [('arm', 'joint'), ('gripper', 'gripper')]
+        robot = sim.robot
+        # Uncommanded, the arm idles as upstream's: the grip site stays and the hand turns onto the orientation
+        # goal robosuite's controller started with, before the episode's state loaded (0.8 degrees measured).
+        before = world(sim, 'site', robot.controller.eef_name)
+        for _ in range(100):
+            sim.step(sim.state()[0])
+        after = world(sim, 'site', robot.controller.eef_name)
+        assert np.linalg.norm(after[:3, 3] - before[:3, 3]) < .001
+        assert Rotation.from_matrix(after[:3, :3] @ before[:3, :3].T).magnitude() < np.radians(1)
+        # 5 cm up and 15 degrees about the flange's z axis, measured on robosuite's eef body.
+        start = sim.tip_pose('arm')
+        rotation = Rotation.from_quat(start[3:]) * Rotation.from_euler('z', 15, degrees=True)
+        target = np.r_[start[:3] + [0, 0, .05], rotation.as_quat()]
+        for _ in range(40):
+            sim.step(sim.state()[0], {'arm': target})
+        flange = np.linalg.inv(world(sim, 'body', robot.robot_model.root_body)) @ world(
+            sim, 'body', robot.robot_model.eef_name)
+        assert np.linalg.norm(flange[:3, 3] - target[:3]) < .002
+        assert (Rotation.from_matrix(flange[:3, :3]).inv() * rotation).magnitude() < np.radians(.5)
+        np.testing.assert_allclose(sim.tip_pose('arm')[:3], flange[:3, 3], atol=1e-12)
+    finally:
+        sim.close()
+    with pytest.raises(ValueError, match="LIBERO has no configuration 'depth'"):
+        LiberoSim(configuration='depth')

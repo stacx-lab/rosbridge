@@ -1,0 +1,36 @@
+arm:
+  operations:
+    joint_target: null
+    stop:
+      description: Stop arm motion and hold the measured flange pose.
+    pose_target:
+      description: 'Trajectory of absolute flange poses in arm/base: joint_names [flange],
+        one transform per point (metres, unit quaternion xyzw), time_from_start strictly increasing
+        and within 120 seconds; a zero header stamp starts it now. It is interpolated from
+        the current target. LIBERO''s own OSC_POSE controller moves the gripper''s grip site
+        (gripper/tcp) under it, at most 5 cm and 0.5 rad per axis in each 0.05 s step, and
+        may stop short of a pose. A new trajectory replaces the active one and an invalid
+        one is ignored; verify the flange with pose_state.'
+      transport: topic
+      direction: input
+      endpoint: /arm/pose_target
+      type: trajectory_msgs/msg/MultiDOFJointTrajectory
+      qos:
+        depth: 1
+        reliability: reliable
+        durability: volatile
+      timeout_s: 10
+    pose_state:
+      description: Measured flange pose in arm/base, stamped with joint_state.
+      transport: topic
+      direction: output
+      endpoint: /arm/pose_state
+      type: sensor_msgs/msg/MultiDOFJointState
+      qos:
+        depth: 1
+        reliability: reliable
+        durability: transient_local
+      timeout_s: 10
+  description: Panda seven-joint manipulator. Geometry is the sibling arm.urdf with flange
+    as the tip link; its links are the frames arm/<link>. It takes flange pose targets, which
+    upstream's OSC_POSE controller executes as LIBERO's evaluation drives it.

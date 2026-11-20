@@ -4,11 +4,13 @@ import time
 
 import rclpy
 from builtin_interfaces.msg import Duration
+from geometry_msgs.msg import Transform, Vector3
 from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
-from sensor_msgs.msg import Image, JointState
+from sensor_msgs.msg import Image, JointState, MultiDOFJointState
 from std_msgs.msg import Float64
-from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
+from trajectory_msgs.msg import (JointTrajectory, JointTrajectoryPoint, MultiDOFJointTrajectory,
+                                 MultiDOFJointTrajectoryPoint)
 
 from rosbridge.clients import WorldClockClient
 from rosbridge_runtime.devices import STREAM_QOS
@@ -26,7 +28,11 @@ class ControlDemo(Node):
         for camera in CAMERAS:
             self.create_subscription(Image, f'{camera}/image', lambda m, c=camera: self.on_image(c, m),
                                      qos_profile_sensor_data)
+        self.create_subscription(MultiDOFJointState, 'arm/pose_state', lambda m: self.last.update({'pose': m}),
+                                 STREAM_QOS)
+        # The arm takes joint targets, or in the osc configuration flange pose targets.
         self.joint_target = self.create_publisher(JointTrajectory, 'arm/joint_target', 1)
+        self.pose_target = self.create_publisher(MultiDOFJointTrajectory, 'arm/pose_target', 1)
         self.gripper_target = self.create_publisher(Float64, 'gripper/target', 1)
         self.world = WorldClockClient(self)
 
@@ -63,6 +69,20 @@ class ControlDemo(Node):
         self.advance(1.2)
         return abs(self.last['arm'].position[0] - positions[0])
 
+    def lift(self, height):
+        """How far the flange rises after a pose target height metres above it."""
+        start = self.last['pose'].transforms[0]
+        position = start.translation
+        target = Transform(translation=Vector3(x=position.x, y=position.y, z=position.z + height),
+                           rotation=start.rotation)
+        message = MultiDOFJointTrajectory(joint_names=['flange'], points=[
+            MultiDOFJointTrajectoryPoint(transforms=[target], time_from_start=Duration(sec=1))])
+        message.header.frame_id = 'arm/base'
+        self.pose_target.publish(message)
+        self.spin()
+        self.advance(2.)
+        return self.last['pose'].transforms[0].translation.z - position.z
+
     def grip(self, target):
         self.gripper_target.publish(Float64(data=target))
         self.spin()
@@ -70,21 +90,32 @@ class ControlDemo(Node):
         return self.last['gripper'].position[0]
 
     def run(self):
-        self.wait(lambda: self.joint_target.get_subscription_count() and self.gripper_target.get_subscription_count())
+        self.wait(lambda: (self.joint_target.get_subscription_count() or self.pose_target.get_subscription_count())
+                  and self.gripper_target.get_subscription_count())
         self.advance(.2)
-        self.wait(lambda: 'arm' in self.last and 'gripper' in self.last)
-        start = list(self.last['arm'].position)
-        joint_error = self.move([start[0] + .1, *start[1:]])
-        if joint_error > .04:
-            raise AssertionError(f'joint target was not reached: error={joint_error}')
-        if self.move(start) > .04:
-            raise AssertionError('joint trajectory did not return to its start')
+        if self.pose_target.get_subscription_count():
+            self.wait(lambda: 'pose' in self.last and 'gripper' in self.last)
+            rise = self.lift(.03)
+            if abs(rise - .03) > .005:
+                raise AssertionError(f'flange pose target was not reached: rise={rise}')
+            if abs(self.lift(-.03) + .03) > .005:
+                raise AssertionError('flange pose trajectory did not return to its start')
+            arm = {'flange_rise_m': rise}
+        else:
+            self.wait(lambda: 'arm' in self.last and 'gripper' in self.last)
+            start = list(self.last['arm'].position)
+            joint_error = self.move([start[0] + .1, *start[1:]])
+            if joint_error > .04:
+                raise AssertionError(f'joint target was not reached: error={joint_error}')
+            if self.move(start) > .04:
+                raise AssertionError('joint trajectory did not return to its start')
+            arm = {'joint_error_rad': joint_error}
         closed, opened = self.grip(0.), self.grip(.04)
         if opened <= closed + .01:
             raise AssertionError('gripper did not open after closing')
         if not all(self.image_count.values()):
             raise AssertionError('missing observation camera stream')
-        print(json.dumps({'result': 'PASS', 'joint_error_rad': joint_error,
+        print(json.dumps({'result': 'PASS', **arm,
                           'finger_joint1_m': {'closed': closed, 'opened': opened},
                           'image_count': self.image_count}), flush=True)
 

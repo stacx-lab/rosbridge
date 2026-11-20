@@ -140,7 +140,7 @@ Arms accept `trajectory_msgs/msg/JointTrajectory` on `<arm>/joint_target`:
 position-only points over every arm joint, strictly increasing times ending within
 120 seconds, and a start that is now or later. Joint names are unique within a
 device; two arms may keep the same native names. An arm the simulator commands by the
-pose of its tip link, as HandsOn's arms are, takes instead a
+pose of its tip link, as HandsOn's arms and LIBERO's under `--config osc` are, takes instead a
 `trajectory_msgs/msg/MultiDOFJointTrajectory` of tip poses in `<arm>/base` on
 `<arm>/pose_target`, timed alike, and reports the measured tip on `<arm>/pose_state`
 (`sensor_msgs/msg/MultiDOFJointState`). Grippers accept a

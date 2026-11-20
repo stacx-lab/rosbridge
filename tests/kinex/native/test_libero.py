@@ -52,3 +52,27 @@ def test_catalog_arm_and_camera_geometry_matches_measurements(tmp_path, variant,
             sim.step(target)
     finally:
         sim.close()
+
+
+def test_osc_pose_state_is_kinex_forward_kinematics_of_the_flange(tmp_path):
+    """In osc the arm's pose_state, its flange in arm/base, is what Kinex's FK of the catalog URDF gives."""
+    from kinex.common.geometry import xyzq_to_rt
+    from kinex.common.joints import JointModel
+    project = Path(__file__).resolve().parents[3]
+    setup("libero/libero-spatial-01", tmp_path, seed=0, project=project, configuration="osc")
+    directory = tmp_path / ".kinex/devices/arm"
+    arm = yaml.safe_load((directory / "profile.yaml").read_text())
+    assert arm["model"]["tip_links"] == ["flange"] and "pose_target" in arm["operations"]
+    model = JointModel(arm, directory)
+    sim = LiberoSim(cameras=(), configuration="osc")
+    try:
+        sim.reset("libero-spatial-01", 0, False)
+        target = sim.tip_pose("arm") + np.r_[0, 0, .03, 0, 0, 0, 0]
+        for _ in range(10):
+            expected = xyzq_to_rt(model.fk(sim.state()[0][:7].tolist()))
+            measured = xyzq_to_rt(sim.tip_pose("arm").tolist())
+            np.testing.assert_allclose(measured[0], expected[0], atol=1e-6)
+            np.testing.assert_allclose(measured[1], expected[1], atol=1e-6)
+            sim.step(sim.state()[0], {"arm": target})
+    finally:
+        sim.close()

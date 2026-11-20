@@ -16,7 +16,7 @@ Kinex's, so a Kinex workspace uses an export as it is; see [Kinex](kinex.md).
 |---|---|
 | `world` | `time` (`/clock`, Clock), `wait` (`/world/wait`, Wait), `stop` (`/world/stop`) |
 | `joint` (arm, torso) | `joint_state` (`/<arm>/joint_state`, JointState), `joint_target` (`/<arm>/joint_target`, JointTrajectory), `stop` |
-| `joint` commanded by its tip pose (HandsOn's arms) | `joint_state`, `pose_target` (`/<arm>/pose_target`, MultiDOFJointTrajectory in `<arm>/base`), `pose_state` (`/<arm>/pose_state`, MultiDOFJointState), `stop` |
+| `joint` commanded by its tip pose (HandsOn's arms, LIBERO's arm with `--config osc`) | `joint_state`, `pose_target` (`/<arm>/pose_target`, MultiDOFJointTrajectory in `<arm>/base`), `pose_state` (`/<arm>/pose_state`, MultiDOFJointState), `stop` |
 | `gripper` | `joint_state`, `target` (`/<gripper>/target`, Float64 position), `stop` |
 | `locomotion` (base) | `velocity` (`/<base>/velocity`, Twist), `odometry` (`/<base>/odometry`, Odometry), `stop` |
 | `rgb` (camera) | `image` (`/<camera>/image`), `camera_info`, in frame `<camera>/base` |
@@ -107,8 +107,9 @@ with the simulator.
 The LIBERO rigs are the same Panda arm and gripper
 with distinct fixed mounts and camera calibration. Each rig directory is a complete
 workspace skeleton (`workspace.yaml` and `devices/<name>/profile.yaml`) whose
-profiles carry its calibration. Files shared by all rigs (URDFs and the
-gripper, wrist-camera and world profiles) are symlinks into `libero/panda`; export
+profiles carry its calibration. Files shared by all rigs (URDFs, the gripper,
+wrist-camera and world profiles, and the `osc` configuration that
+`tools/robots/build_libero.py` writes) are symlinks into `libero/panda`; export
 copies their content.
 
 | Robot ID | Catalog tasks | Example task |

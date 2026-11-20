@@ -54,3 +54,39 @@ def test_libero_graph_serves_its_devices(tmp_path, mode):
             assert seconds(image.header.stamp) == seconds(graph.last['clock'].clock)
     finally:
         graph.close()
+
+
+def test_libero_osc_graph_takes_flange_pose_targets(tmp_path):
+    """In osc the arm serves pose_target and pose_state, and no joint_target; upstream's OSC executes a lift."""
+    from geometry_msgs.msg import Transform, Vector3
+    from sensor_msgs.msg import MultiDOFJointState
+    from std_msgs.msg import Header
+    from trajectory_msgs.msg import MultiDOFJointTrajectory, MultiDOFJointTrajectoryPoint
+    graph = Graph(tmp_path, backend='libero', configuration='osc')
+    node, last = graph.node, {}
+    try:
+        node.create_subscription(MultiDOFJointState, 'arm/pose_state', lambda msg: last.update(pose=msg), STREAM_QOS)
+        pose_target = node.create_publisher(MultiDOFJointTrajectory, 'arm/pose_target', 1)
+        joint_target = node.create_publisher(JointTrajectory, 'arm/joint_target', 1)
+        stop = node.create_client(Trigger, 'arm/stop')
+        graph.until(lambda: pose_target.get_subscription_count() and stop.service_is_ready())
+        assert graph.wait(.2).success
+        graph.until(lambda: 'pose' in last)
+        assert not joint_target.get_subscription_count()
+        assert (last['pose'].header.frame_id, list(last['pose'].joint_names)) == ('arm/base', ['flange'])
+        start = last['pose'].transforms[0]
+        lift = Transform(translation=Vector3(x=start.translation.x, y=start.translation.y,
+                                             z=start.translation.z + .03), rotation=start.rotation)
+        pose_target.publish(MultiDOFJointTrajectory(header=Header(frame_id='arm/base'), joint_names=['flange'], points=[
+            MultiDOFJointTrajectoryPoint(transforms=[lift], time_from_start=Duration(sec=1))]))
+        graph.spin(.1)
+        assert graph.wait(2.).success
+        graph.spin(.1)
+        assert abs(last['pose'].transforms[0].translation.z - lift.translation.z) < .005
+        assert graph.call(stop, Trigger.Request()).success
+        held = last['pose'].transforms[0].translation.z
+        assert graph.wait(1.).success
+        graph.spin(.1)
+        assert abs(last['pose'].transforms[0].translation.z - held) < .002
+    finally:
+        graph.close()

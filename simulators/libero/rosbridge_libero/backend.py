@@ -1,4 +1,5 @@
-"""Official LIBERO physics with the native Panda joint controller; no ROS dependencies."""
+"""Official LIBERO physics with the native Panda joint controller, or in the osc configuration upstream's own
+OSC_POSE controller; no ROS dependencies."""
 import os
 import random
 
@@ -6,6 +7,7 @@ os.environ.setdefault('MUJOCO_GL', 'egl')
 
 import mujoco as mj  # noqa: E402
 import numpy as np  # noqa: E402
+from scipy.spatial.transform import Rotation  # noqa: E402
 
 from rosbridge.core import ActionLayout, CommandGroup
 from rosbridge.core.devices import device_inventory, spectator_views
@@ -16,6 +18,15 @@ INITIALIZATION_STEPS = 5
 CAMERAS = {'agentview': 'camera_agentview', 'robot0_eye_in_hand': 'camera_wrist'}
 FINGER_OPEN = .04
 GRIP_TOLERANCE = .001  # metres of finger_joint1 within which the gripper holds
+# Upstream's controller in each configuration: joint control by default, its evaluation's OSC_POSE in osc.
+CONTROLLERS = {None: 'JOINT_POSITION', 'osc': 'OSC_POSE'}
+
+
+def matrix(pose):
+    """[x, y, z, qx, qy, qz, qw] as a float64 4x4 transform."""
+    result = np.eye(4)
+    result[:3, :3], result[:3, 3] = Rotation.from_quat(pose[3:]).as_matrix(), pose[:3]
+    return result
 
 
 class LiberoSim:
@@ -23,7 +34,10 @@ class LiberoSim:
     period = 1 / 20
 
     def __init__(self, *, cameras=tuple(CAMERAS), width=256, height=256,
-                 max_steps=None, early_stop=False):
+                 max_steps=None, early_stop=False, configuration=None):
+        if configuration not in CONTROLLERS:
+            raise ValueError(f'LIBERO has no configuration {configuration!r}')
+        self.configuration = configuration
         self.cameras, self.width, self.height = tuple(cameras), width, height
         self.max_steps, self.early_stop = max_steps, early_stop
         self.wrapper = self._spectator = None
@@ -59,7 +73,8 @@ class LiberoSim:
         task = spec['native_task']
         check_task(runtime, task)
         candidate = LiberoSim(cameras=self.cameras, width=self.width, height=self.height,
-                              max_steps=self.max_steps, early_stop=self.early_stop)
+                              max_steps=self.max_steps, early_stop=self.early_stop,
+                              configuration=self.configuration)
         candidate.spectators = self.spectators
         # Native construction uses process RNGs. A failed reset must also preserve
         # the live episode's future randomness.
@@ -89,7 +104,7 @@ class LiberoSim:
         np.random.seed(seed)
         self.wrapper = ControlEnv.__new__(ControlEnv)
         self.wrapper.__init__(
-            bddl_file_name=str(bddl), controller='JOINT_POSITION', use_camera_obs=False,
+            bddl_file_name=str(bddl), controller=CONTROLLERS[self.configuration], use_camera_obs=False,
             has_renderer=False, has_offscreen_renderer=bool(self.cameras or self.spectators),
             camera_names=list(self.cameras),
             camera_widths=self.width, camera_heights=self.height, camera_depths=False,
@@ -102,14 +117,20 @@ class LiberoSim:
             if mj.mj_name2id(self.model, mj.mjtObj.mjOBJ_CAMERA, camera) < 0:
                 raise ValueError(f'unknown camera: {camera}')
         self._index()
-        self.robot.controller.update(force=True)
-        self.robot.controller.reset_goal()
-        low, high = self.model.actuator_ctrlrange[self.robot._ref_joint_gripper_actuator_indexes].T
-        fingers = self.data.qpos[self.robot._ref_gripper_joint_pos_indexes]
-        self.robot.gripper.current_action = np.clip(2 * (fingers - low) / (high - low) - 1, -1, 1)
-        initial = self.state()[0]
-        for _ in range(INITIALIZATION_STEPS):
-            self._advance(initial)
+        if self.configuration == 'osc':
+            # Upstream's evaluation start (libero/lifelong/metric.py): idle OSC actions from the loaded state.
+            for _ in range(INITIALIZATION_STEPS):
+                self.env.step(np.zeros(7))
+            self.env.sim.forward()
+        else:
+            self.robot.controller.update(force=True)
+            self.robot.controller.reset_goal()
+            low, high = self.model.actuator_ctrlrange[self.robot._ref_joint_gripper_actuator_indexes].T
+            fingers = self.data.qpos[self.robot._ref_gripper_joint_pos_indexes]
+            self.robot.gripper.current_action = np.clip(2 * (fingers - low) / (high - low) - 1, -1, 1)
+            initial = self.state()[0]
+            for _ in range(INITIALIZATION_STEPS):
+                self._advance(initial)
         self._time_origin = float(self.data.time)
         self.steps, self.done = 0, False
         self.success = bool(self.wrapper.check_success())
@@ -127,9 +148,22 @@ class LiberoSim:
         self._qpos = list(robot._ref_joint_pos_indexes)
         self._qvel = list(robot._ref_joint_vel_indexes)
         bounds = model.jnt_range[robot._ref_joint_indexes]
+        # In osc the arm takes poses of its flange, robosuite's eef body.
+        tip = 'flange' if self.configuration == 'osc' else None
         self.layout = ActionLayout(tuple(robot.robot_joints) + ('finger_joint1',), (
-            CommandGroup('arm', tuple(range(7)), tuple(bounds[:, 0]), tuple(bounds[:, 1])),
+            CommandGroup('arm', tuple(range(7)), tuple(bounds[:, 0]), tuple(bounds[:, 1]), tip=tip),
             CommandGroup('gripper', (7,), (0.,), (FINGER_OPEN,), scalar=True)))
+        # The arm base, and the grip site OSC tracks in the flange's frame; both are fixed.
+        self._base = self._frame('body', robot.robot_model.root_body)
+        self._grip = np.linalg.inv(self._frame('body', robot.robot_model.eef_name)) @ self._frame(
+            'site', robot.controller.eef_name)
+
+    def _frame(self, kind, name):
+        """A body's or site's world pose as a float64 4x4 transform."""
+        element = getattr(self.data, kind)(name)
+        result = np.eye(4)
+        result[:3, :3], result[:3, 3] = element.xmat.reshape(3, 3), element.xpos
+        return result
 
     @property
     def time_s(self):
@@ -142,30 +176,53 @@ class LiberoSim:
         return (np.r_[self.data.qpos[self._qpos], self.data.qpos[fingers] @ [.5, -.5]],
                 np.r_[self.data.qvel[self._qvel], self.data.qvel[velocities] @ [.5, -.5]])
 
-    def _advance(self, action):
+    def _advance(self, action, pose=None):
         # LIBERO integrates a gripper direction (-1 opens, +1 closes); steer it to the target.
         error = action[-1] - self.state()[0][-1]
         direction = 0. if abs(error) < GRIP_TOLERANCE else -1. if error > 0 else 1.
-        controller = self.robot.controller
-        controller.set_goal(np.zeros(7), set_qpos=action[:7])
-        # Suppress only the policy goal update; preserve native torque,
-        # gripper, reward, observable and task hooks on every substep.
-        previous = controller.__dict__.get('set_goal')
-        controller.set_goal = lambda _action: None
-        try:
-            result = self.env.step(np.r_[np.zeros(7), direction])
-        finally:
-            if previous is None:
-                del controller.set_goal
-            else:
-                controller.set_goal = previous
+        if self.configuration == 'osc':
+            result = self.env.step(np.r_[self._delta(pose), direction])
+        else:
+            controller = self.robot.controller
+            controller.set_goal(np.zeros(7), set_qpos=action[:7])
+            # Suppress only the policy goal update; preserve native torque,
+            # gripper, reward, observable and task hooks on every substep.
+            previous = controller.__dict__.get('set_goal')
+            controller.set_goal = lambda _action: None
+            try:
+                result = self.env.step(np.r_[np.zeros(7), direction])
+            finally:
+                if previous is None:
+                    del controller.set_goal
+                else:
+                    controller.set_goal = previous
         self.env.sim.forward()
         return result
 
-    def step(self, action):
+    def _delta(self, pose):
+        """The OSC_POSE action that reaches a flange pose in the arm base: upstream's delta of the grip site from
+        where it is now, as its policies send; zero, upstream's idle, while the arm has had no command."""
+        if pose is None:
+            return np.zeros(6)
+        controller = self.robot.controller
+        controller.update()  # the state set_goal reads next
+        goal = self._base @ matrix(pose) @ self._grip
+        error = np.r_[goal[:3, 3] - controller.ee_pos,
+                      Rotation.from_matrix(goal[:3, :3] @ controller.ee_ori_mat.T).as_rotvec()]
+        # The inverse of the controller's scale_action, whose clip is upstream's per-step limit.
+        low, high, out_low, out_high = (controller.input_min, controller.input_max,
+                                        controller.output_min, controller.output_max)
+        return (error - (out_high + out_low) / 2) * (high - low) / (out_high - out_low) + (high + low) / 2
+
+    def tip_pose(self, group):
+        """The measured flange, robosuite's eef body, in the arm base: [x, y, z, qx, qy, qz, qw]."""
+        pose = np.linalg.inv(self._base) @ self._frame('body', self.robot.robot_model.eef_name)
+        return np.r_[pose[:3, 3], Rotation.from_matrix(pose[:3, :3]).as_quat()]
+
+    def step(self, action, poses=None):
         if self.done:
             raise RuntimeError('episode is done')
-        _, reward, _, _ = self._advance(action)
+        _, reward, _, _ = self._advance(action, (poses or {}).get('arm'))
         self.steps += 1
         self.reward = float(reward)
         self.success = bool(self.wrapper.check_success())
