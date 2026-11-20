@@ -2,10 +2,9 @@
 import time
 
 import pytest
-from custom_interfaces.msg import Budget
 from custom_interfaces.srv import Wait
 from sensor_msgs.msg import JointState
-from std_msgs.msg import Float64
+from std_msgs.msg import Float64, Float64MultiArray
 from std_srvs.srv import Trigger
 from rosbridge.clients import WorldClockClient
 from rosbridge_runtime.devices import STREAM_QOS
@@ -23,6 +22,47 @@ def stepped(tmp_path):
 
 def ticks(graph):
     return round(seconds(graph.last["clock"].clock) / .1)
+
+
+def budgets(graph):
+    """The world/budget topic's [used_s, max_s] arrays, as received."""
+    received = []
+    graph.node.create_subscription(Float64MultiArray, "world/budget", lambda msg: received.append(list(msg.data)),
+                                   STREAM_QOS)
+    return received
+
+
+def test_the_budget_topic_reports_a_stepped_episodes_budget(tmp_path):
+    """Kinex's world budget: data [used_s, max_s], the control steps taken and the step limit times the 0.1 s
+    control period, latched for a new reader and published after every step."""
+    graph = Graph(tmp_path, max_steps=3)
+    received = budgets(graph)
+    try:
+        graph.until(lambda: received)
+        assert received[-1] == [0., pytest.approx(.3)]
+        assert graph.wait(.2).success
+        graph.until(lambda: received[-1][0] == pytest.approx(.2))
+        graph.wait(1.)
+        graph.until(lambda: received[-1] == [pytest.approx(.3), pytest.approx(.3)])
+    finally:
+        graph.close()
+
+
+def test_without_a_step_limit_the_budget_has_no_cap(stepped):
+    received = budgets(stepped)
+    stepped.until(lambda: received)
+    assert received[-1] == [0., float("inf")]
+
+
+def test_a_realtime_world_has_no_budget(tmp_path):
+    import math
+    graph = Graph(tmp_path, mode="realtime", max_steps=50)
+    received = budgets(graph)
+    try:
+        graph.until(lambda: received)
+        assert all(math.isnan(value) for value in received[-1])
+    finally:
+        graph.close()
 
 
 def test_stepped_pause_validation_and_rounding(stepped):
@@ -75,32 +115,6 @@ def test_realtime_runs_autonomously(tmp_path):
         assert time.monotonic() - start < 2.
     finally:
         graph.close()
-
-
-def test_wait_replies_and_the_budget_topic_report_the_episode_budget(tmp_path):
-    """Kinex's world budget: used_s and max_s, the control steps taken and the step limit times the 0.1 s control
-    period, on every wait reply, a rejected one included, and on the latched world/budget topic."""
-    graph = Graph(tmp_path, max_steps=3)
-    budgets = []
-    graph.node.create_subscription(Budget, "world/budget", budgets.append, STREAM_QOS)
-    try:
-        graph.until(lambda: budgets)
-        assert (budgets[-1].used_s, budgets[-1].max_s) == (0., pytest.approx(.3))
-        first = graph.wait(.2)
-        assert first.success and (first.used_s, first.max_s) == (pytest.approx(.2), pytest.approx(.3))
-        graph.until(lambda: budgets[-1].used_s == pytest.approx(.2))
-        rejected = graph.wait(-1.)
-        assert not rejected.success and (rejected.used_s, rejected.max_s) == (pytest.approx(.2), pytest.approx(.3))
-        last = graph.wait(1.)
-        assert last.used_s == pytest.approx(.3) == last.max_s
-        graph.until(lambda: budgets[-1].used_s == pytest.approx(.3))
-    finally:
-        graph.close()
-
-
-def test_a_world_without_a_step_limit_reports_no_cap(stepped):
-    reply = stepped.wait(.1)
-    assert reply.used_s == pytest.approx(.1) and reply.max_s == float("inf")
 
 
 def test_terminal_tick_and_runtime_unavailable(tmp_path):

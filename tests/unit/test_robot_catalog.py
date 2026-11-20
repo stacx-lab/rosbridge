@@ -30,7 +30,7 @@ POSE = {"joint_state": "sensor_msgs/msg/JointState", "pose_state": "sensor_msgs/
 GEOMETRY = {op: "custom_interfaces/srv/Json" for op in ("geometry", "unproject", "project")}
 WORLD = {"time": ("/clock", "rosgraph_msgs/msg/Clock"),
          "wait": ("/world/wait", "custom_interfaces/srv/Wait"),
-         "budget": ("/world/budget", "custom_interfaces/msg/Budget"),
+         "budget": ("/world/budget", "std_msgs/msg/Float64MultiArray"),
          "stop": ("/world/stop", "std_srvs/srv/Trigger")}
 
 
@@ -274,7 +274,7 @@ def test_every_gripper_stop_keeps_its_grip_target_as_the_rig_builders_say():
 
 def test_every_world_serves_the_operations_the_rig_builders_declare():
     """Every catalog world, the hand-maintained LIBERO ones included, declares rigs.world()'s operations: the clock,
-    waits whose replies report the episode budget, the latched budget topic and stop."""
+    waits, the latched episode budget topic and stop."""
     sys.path.insert(0, str(PROJECT / "tools/robots"))
     try:
         import rigs
@@ -285,7 +285,7 @@ def test_every_world_serves_the_operations_the_rig_builders_declare():
     for path in worlds:
         operations = yaml.safe_load(path.read_text())["operations"]
         assert operations == rigs.world("")["operations"], path
-        assert operations["budget"]["type"] == "custom_interfaces/msg/Budget"
+        assert operations["budget"]["type"] == "std_msgs/msg/Float64MultiArray"
 
 
 def test_rig_builders_write_configurations_as_patches_that_merge_back():

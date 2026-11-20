@@ -14,7 +14,7 @@ Kinex's, so a Kinex workspace uses an export as it is; see [Kinex](kinex.md).
 
 | Device type | Operations (endpoint, type) |
 |---|---|
-| `world` | `time` (`/clock`, Clock), `wait` (`/world/wait`, Wait), `budget` (`/world/budget`, Budget), `stop` (`/world/stop`) |
+| `world` | `time` (`/clock`, Clock), `wait` (`/world/wait`, Wait), `budget` (`/world/budget`, Float64MultiArray), `stop` (`/world/stop`) |
 | `joint` (arm, torso) | `joint_state` (`/<arm>/joint_state`, JointState), `joint_target` (`/<arm>/joint_target`, JointTrajectory), `stop` |
 | `joint` commanded by its tip pose (HandsOn's arms, LIBERO's arm with `--config osc`) | `joint_state`, `pose_target` (`/<arm>/pose_target`, MultiDOFJointTrajectory in `<arm>/base`), `pose_state` (`/<arm>/pose_state`, MultiDOFJointState), `stop` |
 | `gripper` | `joint_state`, `target` (`/<gripper>/target`, Float64 position), `stop` |
@@ -46,10 +46,10 @@ episode start. Its `frames.base` is an unlocalized root; a mobile rig chains its
 other devices from it (`torso` on `base:base`, the arm on `torso:top`).
 
 World waits are sequential: one requested while another is pending is rejected, and
-`world/stop` cancels the pending wait. Every wait reply, and the latched `world/budget`
-topic after each step, reports the episode budget: `used_s` and `max_s` seconds of world
-time, the control steps taken and the step limit times the control period (`max_s` inf
-without a limit). Realtime observes progress; stepped mode
+`world/stop` cancels the pending wait. The latched `world/budget` topic reports the
+episode budget after each step: `data` is `[used_s, max_s]`, seconds of world time, the
+control steps taken and the step limit times the control period (`max_s` inf without a
+limit). Only a stepped run has a budget; a realtime run publishes `[NaN, NaN]`. Realtime observes progress; stepped mode
 advances only for a pending wait; shutdown interrupts it. Commands are
 validated on the simulator owner thread; invalid ones are logged and keep the held
 target. A device's `stop` holds the measured position, a gripper's keeps its applied grip

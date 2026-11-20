@@ -166,23 +166,22 @@ def test_a_wait_reply_names_the_commands_refused_since_the_previous_reply():
     assert message.endswith("(5 commands); and 13 more")  # devices 5 and 6: 6 + 7 commands
 
 
-def test_every_wait_reply_reports_the_episode_budget_in_seconds():
-    """Kinex's world budget: used_s and max_s are the control steps taken and the step limit times the control
-    period, on every reply, including the one a terminal episode gives; max_s is inf without a step limit."""
+def test_only_a_stepped_world_has_an_episode_budget():
+    """Kinex's world budget [used_s, max_s]: in stepped mode the control steps taken and the step limit times the
+    control period, max_s inf without a limit; realtime has none, so both are NaN."""
+    import math
     runtime, _ = world(max_steps=3)
-    start, partway, past = replied(runtime, 0.), replied(runtime, .2), replied(runtime, 5.)
+    assert runtime.budget() == (0., pytest.approx(.3))
+    wait(runtime, .2)
     finish(runtime)
-    assert (start.result().used_s, start.result().max_s) == (0., pytest.approx(.3))
-    assert partway.result().used_s == pytest.approx(.2)
-    assert not past.result().success and past.result().used_s == pytest.approx(.3) == past.result().max_s
-    done = replied(runtime, .1)
-    runtime.drain()
-    assert not done.result().success and done.result().used_s == pytest.approx(.3)
+    assert runtime.budget() == (pytest.approx(.2), pytest.approx(.3))
+    wait(runtime, 1.)
+    finish(runtime)
+    assert runtime.budget() == (pytest.approx(.3), pytest.approx(.3))  # at the horizon: all of it used
     unbounded, _ = world()
-    reply = replied(unbounded, .1)
-    unbounded.drain()
-    unbounded.tick()
-    assert reply.result().used_s == pytest.approx(.1) and reply.result().max_s == float("inf")
+    assert unbounded.budget() == (0., math.inf)
+    realtime, _ = world(mode="realtime", max_steps=3)
+    assert all(math.isnan(value) for value in realtime.budget())
 
 
 def test_a_refusal_reaches_a_wait_that_the_end_or_stop_completes():
