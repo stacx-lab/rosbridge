@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
-from rosbridge.catalog import tasks
+from rosbridge.catalog import simulator, tasks
 from rosbridge.catalog.robots import list_robots, setup
 
 PROJECT = Path(__file__).resolve().parents[3]
@@ -25,16 +25,20 @@ def test_kinex_schema_and_readiness_accept_every_rig(tmp_path):
     python = os.environ.get("KINEX_PYTHON_PROJECT")
     if not python or not shutil.which("node") or not (dist / "device/profile/store.js").is_file():
         pytest.skip("needs Node, a built Kinex core next to this checkout and KINEX_PYTHON_PROJECT")
-    robots = list_robots(PROJECT)
-    workspaces = [tmp_path / robot.replace("/", "-") for robot in robots]
-    for robot, workspace in zip(robots, workspaces):
+    # Every rig in its standard devices and in each configuration its simulator declares.
+    exports = [(robot, configuration) for robot in list_robots(PROJECT)
+               for configuration in (None, *simulator(robot.split("/")[0], PROJECT)[2].get("configurations", {}))]
+    workspaces = [tmp_path / f"{robot.replace('/', '-')}-{configuration}" for robot, configuration in exports]
+    for (robot, configuration), workspace in zip(exports, workspaces):
         with patch("rosbridge.catalog.robots.changes", lambda *args: {}):  # the rig, without a task's changes
             setup(next(task["id"] for task in tasks(PROJECT).values() if task["robot"] == robot), workspace,
-                  project=PROJECT)
+                  project=PROJECT, configuration=configuration)
         (workspace / ".kinex/python").symlink_to(Path(python).resolve(), target_is_directory=True)
     result = subprocess.run(["node", str(Path(__file__).with_name("profiles.mjs")), str(dist), *map(str, workspaces)],
                             stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=300)
     assert result.returncode == 0, result.stderr
-    for robot, plan in zip(robots, json.loads(result.stdout)):
+    plans = json.loads(result.stdout)
+    assert len(plans) == len(exports)
+    for (robot, configuration), plan in zip(exports, plans):
         assert plan["robot"] == robot.split("/")[1]
-        assert {item["status"] for item in plan["items"]} == {"done"}, (robot, plan["items"])
+        assert {item["status"] for item in plan["items"]} == {"done"}, (robot, configuration, plan["items"])

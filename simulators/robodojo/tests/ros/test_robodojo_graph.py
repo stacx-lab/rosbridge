@@ -30,7 +30,9 @@ def workers(graph):
 
 @pytest.mark.parametrize("mode", ["stepped"])
 def test_robodojo_graph_serves_its_devices_from_a_native_worker(tmp_path, mode):
-    graph = Graph(tmp_path, backend="robodojo", mode=mode, spectators=True, startup_s=STARTUP_S)
+    # The depth configuration serves everything the standard devices do, and registered depth; one Isaac boot.
+    graph = Graph(tmp_path, backend="robodojo", mode=mode, spectators=True, startup_s=STARTUP_S,
+                  configuration="depth")
     node, last = graph.node, {}
     try:
         native = workers(graph)
@@ -69,9 +71,14 @@ def test_robodojo_graph_serves_its_devices_from_a_native_worker(tmp_path, mode):
         assert graph.wait(1.).success
         graph.spin(.1)
         assert last["gripper"].position[0] < opened - .5
-        image, _ = graph.frame("left_camera", timeout=60.)
+        image, depth = graph.frame("left_camera", depth=True, timeout=60.)
         assert image.header.frame_id == "left_camera/base" and (image.width, image.height) == (640, 480)
         assert np.frombuffer(bytes(image.data), np.uint8).std() > 1
+        # Registered depth: same grid, stamp and optical frame; 16UC1 millimetres.
+        assert (depth.encoding, depth.width, depth.height, depth.step) == ("16UC1", 640, 480, 1280)
+        assert depth.header == image.header
+        millimetres = np.frombuffer(bytes(depth.data), np.uint16)
+        assert (millimetres > 0).mean() > .99 and 50 < np.median(millimetres) < 2000
         before = seconds(last["spectator"].header.stamp)
         assert graph.wait(.2).success
         graph.until(lambda: seconds(last["spectator"].header.stamp) > before, 60.)

@@ -8,7 +8,7 @@ import sys
 import time
 import uuid
 
-from rosbridge.catalog import resolve, simulator
+from rosbridge.catalog import check_configuration, resolve, simulator
 from rosbridge.project import project_root
 from rosbridge.recording import destination, reserve
 from rosbridge.storage import run_environment, write_json
@@ -56,6 +56,7 @@ def scene_argument(config, scene):
 def launch(selection, *, project=None, options=None, demo=False):
     options = options or {}
     root, config, task = resolve(selection, project)
+    configuration = check_configuration(config, options.get("configuration"))
     scene = scene_argument(config, options.get("scene") or {})
     report = doctor(task["id"], project=root)
     if not report["ready"]:
@@ -66,7 +67,8 @@ def launch(selection, *, project=None, options=None, demo=False):
     arguments = [f"backend:={config['name']}", f"task:={task['native_task']}"]
     # A catalog task may name a default seed, e.g. a scene that is stable from seed 0.
     seed = options.get("seed") if options.get("seed") is not None else task.get("seed")
-    for name, value in (("mode", mode), ("seed", seed), ("early_stop", options.get("early_stop") or None)):
+    for name, value in (("mode", mode), ("seed", seed), ("configuration", configuration),
+                        ("early_stop", options.get("early_stop") or None)):
         if value is not None:
             arguments.append(f"{name}:={str(value).lower() if isinstance(value, bool) else value}")
     if scene is not None:

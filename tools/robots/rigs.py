@@ -212,7 +212,8 @@ def camera(name, description, intrinsics, base, depth_range=None, distortion=Non
     facts = {"color": color}
     if rgbd:
         near, far = depth_range
-        span = {"min": clean(near, 6), "max": clean(min(far, 65.535), 6)}
+        # The 16UC1 millimetre encoding carries 0.001 to 65.535 m.
+        span = {"min": clean(max(near, 0.001), 6), "max": clean(min(far, 65.535), 6)}
         facts["depth"] = {"width": width, "height": height, "fps": None, "quantity": "z",
                           "scale_m_per_unit": 0.001, "invalid_value": 0, "valid_range_m": span,
                           "reliable_range_m": dict(span), "registration": "color"}
@@ -442,8 +443,25 @@ def source_tree(source, root, name, comment):
     return urdf(name, comment, links, joints)
 
 
-def write_rig(directory, manifest, devices, files=None):
-    """devices: name -> profile; files: relative path -> text, for URDFs."""
+def patch(base, target):
+    """The merge patch that takes base to target, as rosbridge.catalog.robots.merge applies it: removed keys
+    become None, shared mappings recurse, and anything else, a new mapping whole, takes target's value."""
+    changes = {key: None for key in base if key not in target}
+    for key, value in target.items():
+        if isinstance(value, dict) and isinstance(base.get(key), dict):
+            if nested := patch(base[key], value):
+                changes[key] = nested
+        elif key not in base or base[key] != value:
+            if value is None:
+                raise ValueError(f"a merge patch cannot set {key} to null")
+            changes[key] = value
+    return changes
+
+
+def write_rig(directory, manifest, devices, files=None, configurations=None):
+    """devices: name -> profile; files: relative path -> text, for URDFs; configurations: name -> {device:
+    profile}, the profiles that differ in each configuration the simulator declares, written as patches of
+    devices' profiles to configurations/<name>/profiles.yaml."""
     directory = Path(directory)
     (directory / "devices").mkdir(parents=True, exist_ok=True)
     (directory / "workspace.yaml").write_text(yaml.safe_dump(manifest, sort_keys=False))
@@ -453,3 +471,8 @@ def write_rig(directory, manifest, devices, files=None):
         (folder / "profile.yaml").write_text(yaml.safe_dump(profile, sort_keys=False, width=88))
     for path, text in (files or {}).items():
         (directory / path).write_text(text)
+    for configuration, profiles in (configurations or {}).items():
+        folder = directory / "configurations" / configuration
+        folder.mkdir(parents=True, exist_ok=True)
+        changes = {name: patch(devices[name], profile) for name, profile in profiles.items()}
+        (folder / "profiles.yaml").write_text(yaml.safe_dump(changes, sort_keys=False, width=88))

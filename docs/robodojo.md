@@ -13,6 +13,8 @@ rosbridge prepare robodojo
 rosbridge tasks list --simulator robodojo
 rosbridge launch robodojo/stack-bowls --execution-mode stepped --timeout 1800
 rosbridge setup robodojo/stack-bowls --directory ../my-robodojo-workspace
+rosbridge setup robodojo/stack-bowls --config depth --directory ../my-robodojo-depth-workspace
+rosbridge launch robodojo/stack-bowls --config depth --execution-mode stepped --timeout 1800
 ```
 
 `robodojo` selects `pack_objects_into_box`. The twelve `*_random` variants are not
@@ -60,7 +62,7 @@ once at a polite request rate.
 | `world` | `/clock`, `world/wait`, `world/stop`, `world/spectator/*` while recording |
 | `left_arm`, `right_arm` | `<arm>/joint_state`, `<arm>/joint_target`, `<arm>/stop` |
 | `left_gripper`, `right_gripper` | `<gripper>/joint_state`, `<gripper>/target`, `<gripper>/stop` |
-| `head_camera`, `left_camera`, `right_camera` | `<camera>/image`, `<camera>/camera_info` |
+| `head_camera`, `left_camera`, `right_camera` | `<camera>/image`, `<camera>/camera_info`; `<camera>/depth` with `--config depth` |
 
 Both arms keep upstream's joint names `joint1..joint6` (radians; native limits
 ±10 rad for joints 1–5 and ±3.14 for joint 6); the device disambiguates them.
@@ -70,13 +72,30 @@ targets are upstream's normalized `<side>_ee_joint_state` value from 0 (closed) 
 `joint_state` reports the same normalization of the measured primary finger
 (about 0.185 when the fingers touch). Each `stop` holds the measured position.
 
-Cameras are RGB only, as upstream renders them: the head camera (Gemini 345Lg
-model, fx ≈ 288.13 px) and two D435 wrist cameras (fx ≈ 397.04 px), all 640×480,
+Cameras are RGB, as upstream's evaluation renders them, or RGB-D in the depth
+configuration below. They are the head camera (Gemini 345Lg model, fx ≈ 288.13 px) and
+two D435 wrist cameras (fx ≈ 397.04 px), all 640×480,
 rendered through RoboDojo's tiled render products. Isaac's symmetric frustum puts
 the principal point at the image center, (319.5, 239.5) in ROS pixel coordinates.
 The rig `robodojo/robodojo-arx-x5` holds the X5 chains from `X5A.urdf`, mounts
 at (∓0.3, −0.45, 0.765) with a 90° yaw, RoboEnv's TCP (the pad center, 0.15 m
 ahead of `link6`) and the measured camera mounts.
+
+### Depth configuration
+
+`--config depth` makes all three cameras RGB-D, through upstream's own depth capture.
+Every camera gets the `distance_to_image_plane` annotator, which upstream's
+`env_cfg/camera/camera_config.yml` carries commented out. Depth is metres along the optical
+axis, rendered with each image. Each camera serves it as `<camera>/depth`: 16UC1 millimetres
+registered to the image, with the same stamp and frame. The profiles state the cameras'
+clipping ranges as valid ranges:
+
+- head camera: 0.005–10 m;
+- wrist cameras: 0.001–10 m. Their 0.0001 m near clip is below the millimetre encoding.
+
+0 marks a missing sample. The rig's `configurations/depth/profiles.yaml` holds these profile
+changes, so setup and launch must name the same configuration. Upstream's policy observations
+are unchanged: `vision.depth` stays off.
 
 ## Timing and episodes
 

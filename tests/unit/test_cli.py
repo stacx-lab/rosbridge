@@ -137,6 +137,20 @@ def test_scene_options_are_those_the_simulator_declares(capsys):
     assert set((ROOT / ".cache/rosbridge/runs").glob("*/run.json")) == before
 
 
+def test_configurations_are_those_the_simulator_declares(capsys):
+    from rosbridge.catalog import check_configuration, simulator
+    robodojo, abc = (simulator(name, ROOT)[2] for name in ("robodojo", "abc"))
+    assert check_configuration(robodojo, None) is None and check_configuration(robodojo, "depth") == "depth"
+    with pytest.raises(ValueError, match=r"robodojo has no configuration 'stereo' \(its configurations: depth\)"):
+        check_configuration(robodojo, "stereo")
+    # Refused before preparation is checked or a run is created.
+    before = set((ROOT / ".cache/rosbridge/runs").glob("*/run.json"))
+    assert main(["launch", "abc", "--config", "depth", "--project", str(ROOT), "--json"]) == 1
+    assert "abc has no configuration 'depth' (its configurations: none)" in json.loads(
+        capsys.readouterr().out)["error"]
+    assert set((ROOT / ".cache/rosbridge/runs").glob("*/run.json")) == before
+
+
 def test_preparation_cannot_modify_a_running_environment(tmp_path):
     from rosbridge.provisioning.setup import workspace_lock
     with workspace_lock(tmp_path, "fake", shared=True):

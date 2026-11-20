@@ -10,9 +10,11 @@ import sys
 import numpy as np
 import pytest
 
-from rosbridge.catalog import tasks
+from rosbridge.catalog import simulator, tasks
+from rosbridge.catalog.robots import catalog_profiles
 from rosbridge.core.worker import WorkerBackend
 
+ROOT, _, MANIFEST = simulator("robodojo")
 ALL = [t["native_task"] for t in tasks(name="robodojo").values()]
 SELECTED = ALL if os.environ.get("ROSBRIDGE_ALL_TASKS") else ["stack_bowls"]
 
@@ -40,7 +42,7 @@ def test_native_period_layout_and_gripper_mapping(sim):
     names = sim.layout.joint_names
     assert names[:6] == names[7:13] == tuple(f"joint{i}" for i in range(1, 7))
     assert (names[6], names[13]) == ("left_gripper", "right_gripper")
-    assert [d.kind for d in sim.devices] == ["joint", "gripper", "joint", "gripper", "rgb", "rgb", "rgb"]
+    assert {d.name: d.kind for d in sim.devices} == MANIFEST["devices"]
     target = sim.state()[0]
     target[0] += .15
     target[[6, 13]] = .5
@@ -92,5 +94,32 @@ def test_catalog_task_loads_and_steps(task):
         assert not sim.done and sim.max_steps > 0
         sim.step(sim.state()[0])
         assert sim.steps == 1 and np.isfinite(sim.state()[0]).all() and 0 <= sim.reward <= 1
+    finally:
+        sim.close()
+
+
+def test_the_depth_configuration_renders_z_depth_registered_to_each_image():
+    """Upstream's distance_to_image_plane: metres along the optical axis, within the profile's range, so the
+    head camera sees the table flat at the arms' mount height."""
+    sim = native(configuration="depth")
+    try:
+        sim.reset("pack_objects_into_box", 0)
+        assert {d.name: d.kind for d in sim.devices} == MANIFEST["devices"] | MANIFEST["configurations"]["depth"]["devices"]
+        profiles = catalog_profiles(ROOT, "robodojo/robodojo-arx-x5", "depth")
+        for camera in sim.cameras:
+            image, depth = sim.render(camera), sim.render_depth(camera)
+            assert image.shape == (480, 640, 3) and depth.shape == (480, 640) and depth.dtype == np.float32
+            span = profiles[camera]["depth"]["valid_range_m"]
+            assert ((depth >= span["min"]) & (depth <= span["max"])).mean() > .99
+        width, height, fx, fy, cx, cy = sim.intrinsics("head_camera")
+        position, (w, x, y, z) = sim.native("camera_pose", "head_camera")
+        rotation = np.array([[1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w)],
+                             [2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w)],
+                             [2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)]])
+        v, u = np.mgrid[380:420, 128:512]  # the bare table between the arms, up to 33 degrees off axis
+        depth = sim.render_depth("head_camera")[380:420, 128:512]
+        points = np.stack([(u - cx) / fx * depth, (v - cy) / fy * depth, depth], -1) @ rotation.T + position
+        table = profiles["left_arm"]["frames"]["base"]["translation_m"][2]
+        assert np.median(np.abs(points[..., 2] - table), axis=0).max() < .003
     finally:
         sim.close()

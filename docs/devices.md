@@ -97,7 +97,7 @@ with the simulator.
 |---|---|---:|
 | `abc/abc-yam` | `left_arm`, `right_arm` (YAM, `<side>_joint1..6`), normalized grippers, RGB-D `camera_top`, `camera_left`, `camera_right` | 33 |
 | `robotwin/robotwin-aloha-agilex` | `left_arm` (`fl_joint1..6`), `right_arm` (`fr_joint1..6`), normalized grippers, RGB-D `head_camera`, `left_camera`, `right_camera` | 50 |
-| `robodojo/robodojo-arx-x5` | `left_arm`, `right_arm` (ARX X5, both `joint1..6`), normalized grippers, RGB `head_camera`, `left_camera`, `right_camera` | 42 |
+| `robodojo/robodojo-arx-x5` | `left_arm`, `right_arm` (ARX X5, both `joint1..6`), normalized grippers, RGB (RGB-D with `--config depth`) `head_camera`, `left_camera`, `right_camera` | 42 |
 | `robocasa/robocasa-panda-omron` | `base` (Omron, locomotion), `torso` (lift), `arm` (Panda, `robot0_joint1..7`), integrated-command `gripper`, RGB-D `camera_left`, `camera_right`, `camera_wrist` | 365 |
 | `behavior/behavior-r1pro` | `base` (holonomic, locomotion), `torso` (`torso_joint1..4`), `left_arm`, `right_arm` (`<side>_arm_joint1..7`), smooth grippers, RGB-D `head_camera` (720²), `left_camera`, `right_camera` (480²) | 100 |
 | `handson/handson-rokae-wuji` | `right_arm`, `left_arm` (ROKAE AR5, `joint1..7_<side>`, tip `palm`), `right_hand`, `left_hand` (Wuji, `<side>_finger1..5_joint1..4`), RGB `head_camera` (854×480), `left_camera`, `right_camera` (848×480, on the palms) | 66 |
@@ -126,13 +126,30 @@ rosbridge setup libero/libero-spatial-01 --directory ../my-libero-workspace --do
 rosbridge launch libero/libero-spatial-01 --execution-mode stepped --domain-id 83
 ```
 
-`rosbridge setup` takes a task as `launch` does, and `--seed`, and exports the workspace that
-a launch of that task and seed serves: the task's rig, with the profile changes its simulator
-makes for that task and seed. Only HandsOn makes any: its cameras' intrinsics and mounts differ
-by task and seed (see its page). The seed defaults as launch's does. Setup is offline: it exports
+`rosbridge setup` takes a task as `launch` does, with `--seed` and `--config`. It exports the
+workspace that a launch of that task, seed and configuration serves: the task's rig in that
+configuration, with the profile changes its simulator makes for that task and seed. HandsOn
+changes its cameras' intrinsics and mounts by task and seed, and BiDex-100 moves cameras in its
+`-ood` tasks (see their pages). The seed defaults as launch's does. Setup is offline: it exports
 unloaded profiles on the selected ROS domain into `.kinex/` (`workspace.yaml`, `devices/` and
 `kinex.json`); it launches nothing, and it refuses an existing workspace. Export a workspace
-for each task and seed whose devices differ, and launch that task and seed in it.
+for each task, seed and configuration whose devices differ, and launch with the same ones.
+
+A rig may also ship Kinex workspace content beside its profiles: a `lib/` function library
+(`kinex.lib.<module>`), `programs/` and `skills/`. Setup copies these into `.kinex/`, and it
+refuses a workspace that already has any of them. No rig ships any yet.
+
+A simulator that serves alternative device sets declares each one in its manifest, as
+`[configurations.NAME]` with a `description` and the device kinds it changes (`devices`).
+RoboDojo's `depth` makes its cameras RGB-D. Every rig of that simulator holds
+`configurations/NAME/`:
+
+- an optional `profiles.yaml`, the configuration's profile changes by device, as JSON merge
+  patches that the rig builder writes;
+- optional `lib/`, `programs/` and `skills/`, whose files are added over the rig's.
+
+The backend is created with `configuration=NAME`. The catalog tests export every rig in every
+configuration its simulator declares and check the device kinds against the manifest.
 
 ## Episodes and judging
 

@@ -1,10 +1,13 @@
+import copy
 from pathlib import Path
+import shutil
+import sys
 from unittest.mock import patch
 
 import pytest
 import yaml
 
-from rosbridge.catalog.robots import list_robots, setup
+from rosbridge.catalog.robots import list_robots, merge, setup
 
 
 PROJECT = Path(__file__).resolve().parents[2]
@@ -35,6 +38,18 @@ def manifest(simulator):
     return tomllib.loads((PROJECT / "simulators" / simulator / "simulator.toml").read_text())
 
 
+def kinds(simulator, configuration=None):
+    """The device kinds a simulator serves in a configuration it declares, or in its standard devices."""
+    config = manifest(simulator)
+    return config["devices"] | (config["configurations"][configuration]["devices"] if configuration else {})
+
+
+def configured(robots):
+    """Each robot in its standard devices and in every configuration its simulator declares."""
+    return [(robot, configuration) for robot in robots
+            for configuration in (None, *manifest(robot.split("/")[0]).get("configurations", {}))]
+
+
 def task_of(robot):
     """The first catalog task on a robot: setup exports a task's workspace."""
     from rosbridge.catalog import tasks
@@ -52,15 +67,15 @@ def export(identifier, directory, **options):
     return result, root, profiles
 
 
-@pytest.mark.parametrize("identifier", list_robots(PROJECT))
-def test_every_rig_exports_unloaded_profiles_on_rosbridge_endpoints(tmp_path, identifier):
+@pytest.mark.parametrize("identifier,configuration", configured(list_robots(PROJECT)))
+def test_every_rig_exports_unloaded_profiles_on_rosbridge_endpoints(tmp_path, identifier, configuration):
     import json
-    result, root, profiles = export(identifier, tmp_path, domain_id=83)
-    assert not result["loaded"]
+    result, root, profiles = export(identifier, tmp_path, domain_id=83, configuration=configuration)
+    assert not result["loaded"] and result["configuration"] == configuration
     assert json.loads((root / "kinex.json").read_text())["python"] == {"provider": "ros-jazzy"}
-    kinds = manifest(identifier.split("/")[0])["devices"]
-    assert kinds | {"world": "world"} == {
+    assert kinds(identifier.split("/")[0], configuration) | {"world": "world"} == {
         name: profile["type"] for name, profile in profiles.items()}
+    assert sorted(path.name for path in root.iterdir()) == ["devices", "kinex.json", "workspace.yaml"]
     for name, profile in profiles.items():
         assert profile["name"] == name and profile["loaded"] is False
         assert profile["runtime"]["domain_id"] == 83
@@ -80,6 +95,8 @@ def test_every_rig_exports_unloaded_profiles_on_rosbridge_endpoints(tmp_path, id
         # Every operation is an endpoint of rosbridge's world node, so no device declares a node of its own.
         assert profile["runtime"]["nodes"] == []
         assert ("model" in profile) == (profile["type"] in ("joint", "gripper"))
+        # An RGB camera states its layout; an RGB-D camera, which has none, states its depth stream.
+        assert ("layout" in profile, "depth" in profile) == (profile["type"] == "rgb", profile["type"] == "rgbd")
         if "model" in profile:
             assert profile["model"]["format"] == "urdf" and "joint_state" in profile["operations"]
             assert (root / "devices" / name / profile["model"]["path"]).is_file()
@@ -232,3 +249,66 @@ def test_a_workspace_hook_changes_profiles_by_json_merge_patch():
     merge(profile, {"operations": {"target": None, "state": {"type": "c"}}, "description": "held"})
     assert profile == {"operations": {"state": {"type": "c"}}, "frames": {"base": {"parent": None}},
                        "description": "held"}
+
+
+def test_rig_builders_write_configurations_as_patches_that_merge_back():
+    """A configuration's profiles.yaml holds patches of the rig's profiles, here an RGB camera made RGB-D."""
+    sys.path.insert(0, str(PROJECT / "tools/robots"))
+    try:
+        import rigs
+    finally:
+        sys.path.remove(str(PROJECT / "tools/robots"))
+    intrinsics, base = (640, 480, 288.1, 288.1, 319.5, 239.5), rigs.frame("world:base", (0, 0, 1), (0, 0, 0, 1))
+    rgb = rigs.camera("camera", "An RGB camera.", intrinsics, base)
+    rgbd = rigs.camera("camera", "An RGB-D camera.", intrinsics, base, (0.0001, 10.))
+    change = rigs.patch(rgb, rgbd)
+    # The layout goes; the new depth stream arrives whole, its null fps included; the calibration stays put.
+    assert change["layout"] is None and change["depth"]["fps"] is None and "color" not in change
+    assert rgbd["depth"]["valid_range_m"] == {"min": 0.001, "max": 10.0}  # the millimetre encoding's floor
+    merged = copy.deepcopy(rgb)
+    merge(merged, change)
+    assert merged == rgbd
+    with pytest.raises(ValueError, match="cannot set fps to null"):
+        rigs.patch({"fps": 30}, {"fps": None})
+
+
+def test_setup_ships_a_rigs_library_programs_and_skills_with_its_configurations_on_top(tmp_path):
+    """Kinex workspace content a rig ships, and a configuration's files over it; never over a workspace's own."""
+    project = tmp_path / "project"
+    (project / "src/rosbridge").mkdir(parents=True)  # what project_root takes for a checkout
+    (project / "pixi.toml").touch()
+    simulator = project / "simulators/toy"
+    simulator.mkdir(parents=True)
+    (simulator / "simulator.toml").write_text(
+        'name = "toy"\ndefault_task = "reach"\ntask_catalog = "tasks.toml"\n[devices]\n'
+        '[configurations.retry]\ndescription = "Ships a retrying grasp"\ndevices = {}\n')
+    (simulator / "tasks.toml").write_text('[[tasks]]\nid = "toy/reach"\nrobot = "toy/rig"\nnative_task = "reach"\n')
+    source, rig = PROJECT / "catalog/robots/robodojo/robodojo-arx-x5", project / "catalog/robots/toy/rig"
+    (rig / "devices/world").mkdir(parents=True)
+    shutil.copy(source / "workspace.yaml", rig)
+    shutil.copy(source / "devices/world/profile.yaml", rig / "devices/world")
+    overlay = rig / "configurations/retry"
+    for path, text in {rig / "lib/grasp.py": "base", rig / "lib/reach.py": "reach", rig / "skills/reach/SKILL.md": "",
+                       overlay / "lib/grasp.py": "retrying", overlay / "programs/retry.py": "retry"}.items():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text)
+    (rig / "programs").mkdir()
+    (rig / "programs/reach.py").symlink_to("../lib/reach.py")
+
+    def shipped(directory, **options):
+        setup("toy/reach", directory, project=project, **options)
+        root = directory / ".kinex"
+        assert not any(path.is_symlink() for path in root.rglob("*")) and not (root / "configurations").exists()
+        return {str(path.relative_to(root)): path.read_text()
+                for path in root.rglob("*") if path.is_file() and path.parts[-2] != "world"}
+    assert shipped(tmp_path / "plain") == {
+        "workspace.yaml": (source / "workspace.yaml").read_text(), "kinex.json": '{\n  "python": {\n    '
+        '"provider": "ros-jazzy"\n  }\n}\n', "lib/grasp.py": "base", "lib/reach.py": "reach",
+        "programs/reach.py": "reach", "skills/reach/SKILL.md": ""}
+    retry = shipped(tmp_path / "retry", configuration="retry")
+    assert (retry["lib/grasp.py"], retry["programs/retry.py"], retry["lib/reach.py"]) == ("retrying", "retry", "reach")
+    (tmp_path / "own/.kinex/programs").mkdir(parents=True)
+    with pytest.raises(ValueError, match="already contains programs"):
+        setup("toy/reach", tmp_path / "own", project=project)
+    with pytest.raises(ValueError, match="toy has no configuration 'depth'"):
+        setup("toy/reach", tmp_path / "other", project=project, configuration="depth")

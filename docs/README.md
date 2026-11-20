@@ -32,9 +32,14 @@ readiness without installation or downloads. Preparation refuses to modify
 environments used by active managed runs.
 
 `launch` accepts `SIMULATOR/TASK`, an unambiguous native task name or task slug,
-or a simulator's default-task alias. It takes `--execution-mode`, `--seed`,
+or a simulator's default-task alias. It takes `--execution-mode`, `--seed`, `--config`,
 `--early-stop`, `--domain-id`, `--timeout`, `--record DIR` and
 `--record-type`. It requires preparation; launch never downloads assets.
+A simulator that serves alternative device sets names them in its manifest's
+`configurations`, and `--config NAME` selects one, such as RoboDojo's `depth` (RGB-D
+cameras). Without it the simulator serves its standard devices. Launch refuses a name the
+simulator does not declare. `setup` takes the same flag, so export a workspace in the
+configuration you launch.
 A simulator that selects scenes in its own terms names them in its manifest's
 `scene_options`, and launch takes those as flags: RoboCasa's `--split`,
 `--layout-id` and `--style-id` (see its page). Launch passes the ones given to the

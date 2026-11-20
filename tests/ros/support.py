@@ -24,7 +24,7 @@ def seconds(stamp):
 
 class Graph:
     def __init__(self, tmp_path, mode="stepped", backend="toy", max_steps=0, spectators=False,
-                 startup_s=60., task="toy", early_stop=False, scene=None):
+                 startup_s=60., task="toy", early_stop=False, scene=None, configuration=None):
         self.lease = DomainLease()
         self.env = dict(os.environ, ROS_DOMAIN_ID=str(self.lease.domain))
         self.processes, self.logs = [], []
@@ -40,19 +40,21 @@ class Graph:
         # Scene options travel as one JSON object, as launch passes them.
         scene = json.dumps(scene, separators=(",", ":"), sort_keys=True) if scene else None
         try:
-            if backend in ("toy", "pose_toy", "camera_toy", "lens_toy", "scene_toy"):
+            if backend in ("toy", "pose_toy", "camera_toy", "depth_toy", "lens_toy", "scene_toy"):
                 self.owner = self.start([sys.executable, "-m", "tests.ros.toy_server", "--ros-args",
                                          "-p", f"backend:={backend}",
                                          "-p", f"mode:={mode}", "-p", f"max_steps:={max_steps}",
                                          "-p", f"task:={task}",
                                          "-p", f"early_stop:={str(early_stop).lower()}",
                                          # rcl reads -p values as YAML: quoted, the object stays a string.
-                                         *(["-p", f"scene:='{scene}'"] if scene else [])])
+                                         *(["-p", f"scene:='{scene}'"] if scene else []),
+                                         *(["-p", f"configuration:={configuration}"] if configuration else [])])
             else:
                 self.owner = self.start(["ros2", "launch", "rosbridge_runtime", "sim.launch.py",
                                          f"backend:={backend}", f"mode:={mode}",
                                          *([f"max_steps:={max_steps}"] if max_steps else []),
                                          *([f"scene:={scene}"] if scene else []),
+                                         *([f"configuration:={configuration}"] if configuration else []),
                                          *(["spectator_rate_hz:=10.0"] if spectators else [])])
             # Some backends build scenes or start renderers for minutes before serving.
             self.until(self.wait_client.service_is_ready, startup_s)

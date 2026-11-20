@@ -17,6 +17,15 @@ def simulator(name, project=None):
     return root, directory, config
 
 
+def check_configuration(config, name):
+    """A configuration the simulator's manifest declares (configurations), or None: its standard devices."""
+    declared = config.get("configurations", {})
+    if name is not None and name not in declared:
+        raise ValueError(f"{config['name']} has no configuration {name!r} "
+                         f"(its configurations: {', '.join(declared) or 'none'})")
+    return name
+
+
 def tasks(project=None, name=None):
     root = project_root(project)
     names = [name] if name else sorted(p.parent.name for p in (root / "simulators").glob("*/simulator.toml"))

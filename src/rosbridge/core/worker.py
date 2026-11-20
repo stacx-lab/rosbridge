@@ -99,7 +99,7 @@ class WorkerBackend:
     target = None
     close_timeout_s = 60.
 
-    def __init__(self, *, max_steps=None, early_stop=False, python=None, env=None):
+    def __init__(self, *, max_steps=None, early_stop=False, python=None, env=None, **options):
         self._cache, self._process, self._connection, self._unread = {}, None, None, False
         if python is None:
             python, env = native_environment(self.simulator)
@@ -122,7 +122,7 @@ class WorkerBackend:
             child.close()
         self._connection = Connection(parent.detach())
         try:
-            self._call("__init__", max_steps=max_steps, early_stop=early_stop)
+            self._call("__init__", max_steps=max_steps, early_stop=early_stop, **options)
         except BaseException:
             self._kill()
             raise

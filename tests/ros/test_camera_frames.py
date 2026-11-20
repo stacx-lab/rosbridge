@@ -88,6 +88,18 @@ def fresh_frame(domain, camera, timeout=3.):
         context.try_shutdown()
 
 
+@pytest.mark.parametrize("configuration", [None, "depth"])
+def test_a_configuration_selects_the_devices_the_world_serves(tmp_path, configuration):
+    graph = Graph(tmp_path, backend="depth_toy", configuration=configuration)
+    try:
+        def topics():
+            return {name for name, _ in graph.node.get_topic_names_and_types()}
+        graph.until(lambda: {"/camera/image", "/camera/camera_info"} <= topics())
+        assert ("/camera/depth" in topics()) == (configuration == "depth")
+    finally:
+        graph.close()
+
+
 def test_every_fresh_reader_of_a_paused_camera_receives_its_current_frame(tmp_path):
     graph = Graph(tmp_path, backend="camera_toy")
     try:

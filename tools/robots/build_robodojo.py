@@ -26,6 +26,19 @@ def link(sim, side, name):
     return rigs.transform(pose[:3], rigs.quat_matrix(pose[3:7]))
 
 
+def camera(sim, name, view, parent, mount, mounted=""):
+    """A camera's RGB profile and its RGB-D one in the depth configuration; view names the kind as {}."""
+    intrinsics, base = sim.intrinsics(name), rigs.pose_frame(parent, mount)
+    rgb = rigs.camera(
+        name, f"{view.format('RGB')}, rendered by RoboDojo's tiled Isaac renderer. Calibration and the "
+        f"optical-frame mount{mounted} are in the profile.", intrinsics, base)
+    rgbd = rigs.camera(
+        name, f"{view.format('RGB-D')}, rendered by RoboDojo's tiled Isaac renderer with upstream's "
+        f"distance_to_image_plane depth. Image and registered depth calibration and the optical-frame "
+        f"mount{mounted} are in the profile.", intrinsics, base, sim._camera(name).get_clipping_range())
+    return rgb, rgbd
+
+
 def main():
     sim = RoboDojoSim()
     sim.reset(sim.default_task, 0)
@@ -34,7 +47,7 @@ def main():
     devices = {"world": rigs.world(
         "Scene reference and authoritative world clock of the RoboDojo table. This device exposes "
         "no task instructions or evaluator results.")}
-    files = {}
+    files, depth = {}, {}
     for side in ("left", "right"):
         robot = sim._actuators[side][0]
         lower, upper = map(float, robot.gripper_scale)
@@ -75,24 +88,18 @@ def main():
             "gripper_scale. Closed targets lie below the finger stop to squeeze an object.")
         position, quaternion = sim.camera_pose(f"{side}_camera")
         optical = rigs.transform(position, rigs.quat_matrix(quaternion))
-        devices[f"{side}_camera"] = rigs.camera(
-            f"{side}_camera",
-            f"RGB camera (D435 model) on the {side} wrist, rendered by RoboDojo's tiled Isaac "
-            f"renderer. Calibration and the optical-frame mount on the {side}_arm flange are in "
-            "the profile.", sim.intrinsics(f"{side}_camera"),
-            rigs.pose_frame(f"{side}_arm:flange", rigs.relative(flange, optical)))
+        devices[f"{side}_camera"], depth[f"{side}_camera"] = camera(
+            sim, f"{side}_camera", f"{{}} camera (D435 model) on the {side} wrist", f"{side}_arm:flange",
+            rigs.relative(flange, optical), f" on the {side}_arm flange")
     position, quaternion = sim.camera_pose("head_camera")
-    devices["head_camera"] = rigs.camera(
-        "head_camera",
-        "Fixed RGB head camera (Gemini 345Lg model) above the table, rendered by RoboDojo's "
-        "tiled Isaac renderer. Calibration and the optical-frame mount are in the profile.",
-        sim.intrinsics("head_camera"),
-        rigs.pose_frame("world:base", rigs.transform(position, rigs.quat_matrix(quaternion))))
+    devices["head_camera"], depth["head_camera"] = camera(
+        sim, "head_camera", "Fixed {} head camera (Gemini 345Lg model) above the table", "world:base",
+        rigs.transform(position, rigs.quat_matrix(quaternion)))
     order = ["world", "left_arm", "left_gripper", "right_arm", "right_gripper",
              "head_camera", "left_camera", "right_camera"]
     rigs.write_rig(ROOT / "catalog/robots/robodojo/robodojo-arx-x5",
                    rigs.workspace("robodojo-arx-x5", "RoboDojo dual ARX X5", "arm", "ARX X5 (dual)"),
-                   {name: devices[name] for name in order}, files)
+                   {name: devices[name] for name in order}, files, {"depth": depth})
     print("rig written", flush=True)
     np.set_printoptions(precision=4)
     sim.close()

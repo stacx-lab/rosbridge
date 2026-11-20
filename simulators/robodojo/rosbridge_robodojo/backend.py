@@ -96,8 +96,9 @@ def values(value):
     return np.asarray(value, dtype=float)
 
 
-def config(task, early_stop, env_cfg_type="arx_x5"):
-    """Upstream src/eval_client/main.py configuration for one environment."""
+def config(task, early_stop, env_cfg_type="arx_x5", depth=False):
+    """Upstream src/eval_client/main.py configuration for one environment; with depth, every camera also
+    captures upstream's distance_to_image_plane, as env_cfg/camera/camera_config.yml shows commented out."""
     from env.global_configs import BENCHMARK, ENV_CONFIG_PATH, ROOT_DIR
     from omegaconf import OmegaConf
     from task.RoboDojo import task_registry
@@ -124,6 +125,10 @@ def config(task, early_stop, env_cfg_type="arx_x5"):
     cfg = process_randomization(cfg)
     cfg, eval_num = process_config(cfg, task_name=task)
     eval_cfg["eval_num"] = eval_num
+    for camera in CAMERAS.values() if depth else ():
+        # After process_config, which may load a task's own camera configuration.
+        OmegaConf.update(cfg, f"camera.annotator.{camera}.distance_to_image_plane_capture",
+                         {"type": "distance_to_image_plane", "device": "cpu"}, force_add=True)
     OmegaConf.update(cfg, "camera.default_frequency",
                      eval_cfg["observation"].get("collect_freq", 0), force_add=True)
     cfg.sim.seed = [0]
@@ -142,7 +147,11 @@ class RoboDojoSim:
     default_task = "pack_objects_into_box"
     width, height = 640, 480
 
-    def __init__(self, *, max_steps=None, early_stop=False):
+    def __init__(self, *, max_steps=None, early_stop=False, configuration=None):
+        if configuration not in (None, "depth"):
+            raise ValueError(f"RoboDojo has no configuration {configuration!r}")
+        self.depth = configuration == "depth"  # RGB-D cameras
+        self._captures = {}  # each camera's annotator outputs at the current step
         self.requested_max_steps = max_steps
         self.max_steps = max_steps
         self.early_stop = early_stop
@@ -154,7 +163,8 @@ class RoboDojoSim:
 
     @property
     def devices(self):
-        return device_inventory(self.layout, {name: name for name in CAMERAS})
+        return device_inventory(self.layout, {name: name for name in CAMERAS},
+                                depth=tuple(CAMERAS) if self.depth else ())
 
     def configure_spectators(self, width=960, height=720, views=None):
         self.spectators = spectator_views(SPECTATORS, width, height, views)
@@ -176,7 +186,7 @@ class RoboDojoSim:
             boot()
             import src.eval_client.eval_env as eval_env
             self.task = native
-            self.env = eval_env.create_eval_env(config(native, self.early_stop), _APP,
+            self.env = eval_env.create_eval_env(config(native, self.early_stop, depth=self.depth), _APP,
                                                 model_client=NoModelClient())
             self.interval = int(self.env.obs_manager.collect_interval)
             self.physics_dt = float(self.env.dt)
@@ -186,7 +196,7 @@ class RoboDojoSim:
                        or sorted(getattr(self.env.seed_manager, "seed_info", {})))
         if not layouts:
             raise ValueError(f"{native} has no saved evaluation layouts")
-        self.done = True
+        self.done, self._captures = True, {}
         layout = int(layouts[int(seed) % len(layouts)])
         from utils.cluttered_generator import UnStableError
         for attempt in range(UNSTABLE_RETRIES):
@@ -279,7 +289,7 @@ class RoboDojoSim:
                 key.set_joint_velocity_target(torch.zeros_like(tensor), joint_ids=indices)
                 manager.control_manager.prev_control[0][command] = {"position": positions, "velocity": 0}
         self.env.take_action(native)
-        self.steps += 1
+        self.steps, self._captures = self.steps + 1, {}
         self._score()
         if self.early_stop and self.env.end_flag[0]:
             # EvalEnv ends at its completion, or at a failed constraint (patch 0001 keeps both for early_stop).
@@ -326,16 +336,28 @@ class RoboDojoSim:
         position, quaternion = self._camera(camera).get_world_pose(camera_axes="ros")
         return values(position), values(quaternion)
 
-    def render(self, camera):
+    def _capture(self, camera, annotator, dtype):
+        """A camera's annotator output at the current step; one render serves its image and depth."""
         if camera not in CAMERAS:
             raise KeyError(camera)
-        self.env.obs_manager.render_for_capture()
-        # RoboDojo owns tiled render products and their RGB annotators.
-        index = self.env.camera_manager.cameras[0].index(self._camera(camera))
-        frame = np.asarray(self.env.capture_manager.step(env_ids=[0], cam_ids=[index])[0]["rgb"][0]["data"])
-        if frame.shape[:2] != (self.height, self.width) or frame.dtype != np.uint8:
-            raise RuntimeError(f"{camera} produced no valid RGB frame")
-        return np.ascontiguousarray(frame[..., :3])
+        if camera not in self._captures:
+            self.env.obs_manager.render_for_capture()
+            # RoboDojo owns tiled render products and their annotators.
+            index = self.env.camera_manager.cameras[0].index(self._camera(camera))
+            self._captures[camera] = self.env.capture_manager.step(env_ids=[0], cam_ids=[index])[0]
+        frame = np.asarray(self._captures[camera][annotator][0]["data"])
+        if frame.shape[:2] != (self.height, self.width) or frame.dtype != dtype:
+            raise RuntimeError(f"{camera} produced no valid {annotator} frame")
+        return frame
+
+    def render(self, camera):
+        return np.ascontiguousarray(self._capture(camera, "rgb", np.uint8)[..., :3])
+
+    def render_depth(self, camera):
+        """Metres along the optical axis: upstream's distance_to_image_plane capture."""
+        if not self.depth:
+            raise KeyError(camera)
+        return np.ascontiguousarray(self._capture(camera, "distance_to_image_plane", np.float32)[..., 0])
 
     # Spectators: separate USD cameras and render products that follow the observation mounts.
 

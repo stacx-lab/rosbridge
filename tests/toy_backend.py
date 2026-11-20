@@ -77,6 +77,17 @@ class CameraToy(ToyBackend):
         return np.ones((2, 4), np.float32)
 
 
+class DepthToy(CameraToy):
+    """The toy whose camera is RGB, or RGB-D in its depth configuration."""
+
+    def __init__(self, max_steps=None, early_stop=False, configuration=None):
+        if configuration not in (None, "depth"):
+            raise ValueError(f"the toy has no configuration {configuration!r}")
+        self.devices = device_inventory(ToyBackend.layout, {"camera": "top"},
+                                        depth=("camera",) if configuration else ())
+        super().__init__(max_steps, early_stop)
+
+
 class LensToy(CameraToy):
     """The camera toy rendering through a lens: HandsOn's head camera lens on a 64 x 48 image."""
     distortion = {"top": (0.00646656053141, -0.0479530096054, -0.000352804054273, -0.000104829683551,

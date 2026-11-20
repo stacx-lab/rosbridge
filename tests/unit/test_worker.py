@@ -51,6 +51,17 @@ def test_round_trip_keeps_layout_state_and_errors():
         sim.state()
 
 
+def test_a_configuration_reaches_the_native_backend():
+    class DepthWorker(WorkerBackend):
+        target = "tests.toy_backend:DepthToy"
+    for options, kind in (({}, "rgb"), ({"configuration": "depth"}, "rgbd")):
+        sim = DepthWorker(python=sys.executable, env=dict(os.environ, PYTHONPATH=str(ROOT)), **options)
+        try:
+            assert [device.kind for device in sim.devices if device.name == "camera"] == [kind]
+        finally:
+            sim.close()
+
+
 def test_scene_options_reach_the_native_reset():
     class SceneWorker(WorkerBackend):
         target = "tests.toy_backend:SceneToy"

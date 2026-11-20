@@ -79,6 +79,12 @@ class SimulatorBackend(Protocol):
     passes those it gives to reset as keyword arguments, which the backend checks
     and defaults. The seed selects everything the scene options do not.
 
+    A simulator that serves alternative device sets, such as RoboDojo's RGB-D
+    cameras, names them in its manifest's configurations; a launch that selects
+    one creates the backend with configuration=NAME, and the backend serves that
+    configuration's devices, as its rigs' configurations/NAME describe them. A
+    backend without configurations is never given one.
+
     A backend whose native command is not a position, such as a gripper
     direction, converts the position target inside step().
 

@@ -31,7 +31,10 @@ class SimNode(Node):
         self.sim = None
         self.executor_error = None
         p = self._read_parameters()
-        self.sim = load_backend(p["backend"])(max_steps=p["max_steps"] or None, early_stop=p["early_stop"])
+        # A configuration the simulator declares selects its alternative devices; other backends never see one.
+        options = {"configuration": p["configuration"]} if p["configuration"] else {}
+        self.sim = load_backend(p["backend"])(max_steps=p["max_steps"] or None, early_stop=p["early_stop"],
+                                              **options)
         if p["spectator_rate_hz"]:
             # The views a recording asked for (comma-separated; empty: every view the simulator offers). The
             # simulator sets up only these, so views nobody records cost no rendering.
@@ -54,13 +57,13 @@ class SimNode(Node):
         self.create_service(Wait, "world/wait", self._wait, callback_group=services)
         self.create_service(Trigger, "world/stop", self._stop, callback_group=services)
         self.observations.publish()
-        scene = "".join(f" {name}={value}" for name, value in sorted(p["scene"].items()))
+        scene = "".join(f" {name}={value}" for name, value in sorted({**options, **p["scene"]}.items()))
         self.get_logger().info(f"task={self.sim.task} seed={self.sim.seed}{scene} mode={p['mode']} "
                                f"period={self.sim.period:.4f}s")
 
     def _read_parameters(self):
-        defaults = {"backend": "", "task": "", "seed": 0, "scene": "", "randomize": True, "mode": "realtime",
-                    "max_steps": 0, "early_stop": False, "spectator_rate_hz": 0.,
+        defaults = {"backend": "", "task": "", "seed": 0, "scene": "", "configuration": "", "randomize": True,
+                    "mode": "realtime", "max_steps": 0, "early_stop": False, "spectator_rate_hz": 0.,
                     "spectator_width": 960, "spectator_height": 720, "spectator_select": ""}
         for name, value in defaults.items():
             self.declare_parameter(name, value, ParameterDescriptor(read_only=True))

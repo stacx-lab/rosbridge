@@ -43,3 +43,10 @@ right_gripper = "gripper"
 head_camera = "rgb"
 left_camera = "rgb"
 right_camera = "rgb"
+
+# Alternative device sets: setup, launch and demo select one with --config NAME (default: [devices] above).
+# devices overrides kinds in [devices]; each rig holds configurations/NAME/ with its profile changes
+# (profiles.yaml) and any lib, programs and skills it ships; the backend takes configuration=NAME.
+[configurations.depth]
+description = "RGB-D cameras: upstream's distance_to_image_plane depth, registered to each image"
+devices = { head_camera = "rgbd", left_camera = "rgbd", right_camera = "rgbd" }

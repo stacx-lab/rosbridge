@@ -7,6 +7,8 @@ import sys
 
 # Scene options a simulator may declare in its manifest (scene_options); launch passes the ones given to reset.
 SCENE_FLAGS = ("split", "layout_id", "style_id")
+CONFIGURATION_HELP = ("Device configuration the simulator declares, such as robodojo's depth (RGB-D cameras); "
+                      "default: its standard devices")
 
 
 def positive(value):
@@ -44,6 +46,7 @@ def parser():
         command.add_argument("--domain-id", type=domain, help="Explicit ROS domain; default: automatically leased")
         command.add_argument("--timeout", type=positive, default=900., help="Startup timeout in wall seconds")
         command.add_argument("--seed", type=int)
+        command.add_argument("--config", dest="configuration", metavar="NAME", help=CONFIGURATION_HELP)
         command.add_argument("--split", choices=("pretrain", "target", "all"),
                              help="Scene split, for simulators that take one (RoboCasa: upstream's create_env "
                                   "split; default none, every kitchen and object); the seed picks within it")
@@ -81,6 +84,7 @@ def parser():
     common(setup)
     setup.add_argument("selection", help="Task as launch takes it, such as handson/t24-place-ball-in-bowl")
     setup.add_argument("--seed", type=int, help="The launch seed whose devices to export (default: launch's)")
+    setup.add_argument("--config", dest="configuration", metavar="NAME", help=CONFIGURATION_HELP)
     setup.add_argument("--directory", type=Path)
     setup.add_argument("--domain-id", type=domain, default=0)
     task = commands.add_parser("tasks")
@@ -143,7 +147,7 @@ def main(argv=None):
             from rosbridge.catalog.robots import list_robots, setup
             result = ({"robots": list_robots(args.project)} if args.command == "robots" else
                       setup(args.selection, args.directory, seed=args.seed, project=args.project,
-                            domain_id=args.domain_id))
+                            domain_id=args.domain_id, configuration=args.configuration))
             emit(result, args.json)
             return 0
         from rosbridge.runs import api
