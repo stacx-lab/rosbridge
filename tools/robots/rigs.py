@@ -41,7 +41,7 @@ def device(name, kind, description, operations, *, observation=None, layout=None
         runtime["observation"] = observation
     # Every operation is an endpoint of the world node, so a device declares no nodes of its own.
     runtime.update({"nodes": [], "ready_timeout_s": 30})
-    return {"name": name, "runtime": runtime, "operations": operations, "loaded": False,
+    return {"name": name, "runtime": runtime, "operations": operations, "loaded": True,
             "meta": {"created_at": CREATED, "updated_at": CREATED}, "type": kind,
             **({"layout": layout} if layout else {}), "description": description,
             "source": "introspected", "calibrated_at": None, "method": "introspection", **facts}

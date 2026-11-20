@@ -71,16 +71,16 @@ def export(identifier, directory, **options):
 
 
 @pytest.mark.parametrize("identifier,configuration", configured(list_robots(PROJECT)))
-def test_every_rig_exports_unloaded_profiles_on_rosbridge_endpoints(tmp_path, identifier, configuration):
+def test_every_rig_exports_loaded_profiles_on_rosbridge_endpoints(tmp_path, identifier, configuration):
     import json
     result, root, profiles = export(identifier, tmp_path, domain_id=83, configuration=configuration)
-    assert not result["loaded"] and result["configuration"] == configuration
+    assert result["loaded"] and result["configuration"] == configuration
     assert json.loads((root / "kinex.json").read_text())["python"] == {"provider": "ros-jazzy"}
     assert kinds(identifier.split("/")[0], configuration) | {"world": "world"} == {
         name: profile["type"] for name, profile in profiles.items()}
     assert sorted(path.name for path in root.iterdir()) == ["devices", "kinex.json", "workspace.yaml"]
     for name, profile in profiles.items():
-        assert profile["name"] == name and profile["loaded"] is False
+        assert profile["name"] == name and profile["loaded"] is True  # Kinex activates them when it starts
         assert profile["runtime"]["domain_id"] == 83
         operations = OPERATIONS.get(profile["type"])
         if "pose_target" in profile["operations"]:
@@ -225,7 +225,7 @@ def test_a_handson_workspace_holds_the_cameras_its_task_and_seed_render(tmp_path
     # The head camera renders through its calibrated lens; the wrist cameras are undistorted pinholes.
     assert first["head_camera"]["color"]["distortion"]["model"] == "opencv_brown_conrady"
     assert first["left_camera"]["color"]["distortion"] == {"model": "none"}
-    assert first["right_arm"] == second["right_arm"] == {**nominal["right_arm"], "loaded": False}
+    assert first["right_arm"] == second["right_arm"] == {**nominal["right_arm"], "loaded": True}
     # Upstream holds a single-arm task's left arm and hand at home in some tasks; there they take no commands.
     held = profiles("eval-gen01-cover-lunchbox", 0)
     assert list(held["left_arm"]["operations"]) == ["joint_state", "pose_state"]

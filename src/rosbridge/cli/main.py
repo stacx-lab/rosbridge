@@ -80,7 +80,7 @@ def parser():
     robots = commands.add_parser("robots")
     listing = robots.add_subparsers(dest="robots_command", required=True).add_parser("list")
     common(listing)
-    setup = commands.add_parser("setup", help="Export the unloaded Kinex workspace of a task and seed")
+    setup = commands.add_parser("setup", help="Export the Kinex workspace of a task and seed, every device loaded")
     common(setup)
     setup.add_argument("selection", help="Task as launch takes it, such as handson/t24-place-ball-in-bowl")
     setup.add_argument("--seed", type=int, help="The launch seed whose devices to export (default: launch's)")

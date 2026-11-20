@@ -137,8 +137,9 @@ workspace that a launch of that task, seed and configuration serves: the task's 
 configuration, with the profile changes its simulator makes for that task and seed. HandsOn
 changes its cameras' intrinsics and mounts by task and seed, and BiDex-100 moves cameras in its
 `-ood` tasks (see their pages). The seed defaults as launch's does. Setup is offline: it exports
-unloaded profiles on the selected ROS domain into `.kinex/` (`workspace.yaml`, `devices/` and
-`kinex.json`); it launches nothing, and it refuses an existing workspace. Export a workspace
+the profiles on the selected ROS domain into `.kinex/` (`workspace.yaml`, `devices/` and
+`kinex.json`), every device loaded, so Kinex activates them all when it starts; it launches
+nothing, and it refuses an existing workspace. Export a workspace
 for each task, seed and configuration whose devices differ, and launch with the same ones.
 
 A rig may also ship Kinex workspace content beside its profiles: a `lib/` function library

@@ -100,7 +100,8 @@ def changes(root, config, task, seed, profiles=None):
 
 
 def setup(selection, directory=None, *, seed=None, project=None, domain_id=0, configuration=None):
-    """The unloaded workspace a launch of the same task, seed and configuration serves: the task's robot in that
+    """The workspace a launch of the same task, seed and configuration serves, every device loaded (Kinex activates
+    loaded devices when it starts): the task's robot in that
     configuration, with its simulator's profile changes for that task and seed and the content it ships. The seed
     defaults as a launch's does."""
     check_domain(domain_id)
@@ -131,7 +132,7 @@ def setup(selection, directory=None, *, seed=None, project=None, domain_id=0, co
                 if (source / name).is_dir():
                     shutil.copytree(source / name, staging / name, ignore=IGNORED, dirs_exist_ok=True)
         for name, value in profiles.items():
-            value["loaded"] = False
+            value["loaded"] = True
             value["runtime"] = {**value["runtime"], "domain_id": domain_id}
             (staging / "devices" / name / "profile.yaml").write_text(yaml.safe_dump(value, sort_keys=False))
         target.mkdir(exist_ok=True)
@@ -142,4 +143,4 @@ def setup(selection, directory=None, *, seed=None, project=None, domain_id=0, co
     config_value.setdefault("python", {"provider": "ros-jazzy"})
     config_file.write_text(json.dumps(config_value, indent=2) + "\n")
     return {"task": task["id"], "seed": seed, "configuration": configuration, "robot": identifier,
-            "workspace": str(target), "loaded": False}
+            "workspace": str(target), "loaded": True}
