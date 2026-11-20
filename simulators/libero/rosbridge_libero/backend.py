@@ -39,7 +39,8 @@ class LiberoSim:
             raise ValueError(f'LIBERO has no configuration {configuration!r}')
         self.configuration = configuration
         self.cameras, self.width, self.height = tuple(cameras), width, height
-        self.max_steps, self.early_stop = max_steps, early_stop
+        self.requested_max_steps = self.max_steps = max_steps
+        self.early_stop = early_stop
         self.wrapper = self._spectator = None
         self.spectators = ()
 
@@ -68,12 +69,14 @@ class LiberoSim:
                                           width, height, views)
 
     def reset(self, task, seed, randomize=True):
+        """Load upstream's initial state seed modulo their number, the one its evaluation gives episode seed
+        (libero/lifelong/metric.py); randomize has no effect."""
         runtime = configure()
         spec = task_spec(task)
         task = spec['native_task']
         check_task(runtime, task)
         candidate = LiberoSim(cameras=self.cameras, width=self.width, height=self.height,
-                              max_steps=self.max_steps, early_stop=self.early_stop,
+                              max_steps=self.requested_max_steps, early_stop=self.early_stop,
                               configuration=self.configuration)
         candidate.spectators = self.spectators
         # Native construction uses process RNGs. A failed reset must also preserve
@@ -99,7 +102,7 @@ class LiberoSim:
         bddl, state_file = task_files(runtime, self.task)
         # Only trusted files from the pinned upstream are deserialized.
         states = torch.load(state_file, map_location='cpu', weights_only=False)
-        index = int(np.random.default_rng(seed).integers(len(states))) if randomize else 0
+        index = seed % len(states)
         random.seed(seed)
         np.random.seed(seed)
         self.wrapper = ControlEnv.__new__(ControlEnv)
@@ -131,6 +134,10 @@ class LiberoSim:
             initial = self.state()[0]
             for _ in range(INITIALIZATION_STEPS):
                 self._advance(initial)
+        import yaml
+        # Upstream's evaluation horizon (libero/configs/eval/default.yaml), unless the launch gives one.
+        evaluation = yaml.safe_load((runtime / 'libero/configs/eval/default.yaml').read_text())
+        self.max_steps = self.requested_max_steps or int(evaluation['max_steps'])
         self._time_origin = float(self.data.time)
         self.steps, self.done = 0, False
         self.success = bool(self.wrapper.check_success())
@@ -222,12 +229,13 @@ class LiberoSim:
     def step(self, action, poses=None):
         if self.done:
             raise RuntimeError('episode is done')
-        _, reward, _, _ = self._advance(action, (poses or {}).get('arm'))
+        _, reward, done, _ = self._advance(action, (poses or {}).get('arm'))
         self.steps += 1
         self.reward = float(reward)
-        self.success = bool(self.wrapper.check_success())
-        self.done = bool((self.max_steps and self.steps >= self.max_steps)
-                         or (self.early_stop and self.success))
+        # Upstream's success is env.step's done: the BDDL goal on the kinematics the step leaves, before the
+        # forward above refreshes them.
+        self.success = bool(done)
+        self.done = bool(self.steps >= self.max_steps or (self.early_stop and self.success))
 
     @staticmethod
     def _quat(matrix):

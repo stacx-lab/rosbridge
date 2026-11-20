@@ -241,15 +241,16 @@ class RoboCasaSim:
         after = np.clip(before + gripper.speed * np.sign(error), -1, 1)
         direction = float(np.sign(error)) if abs(action[7] - after) < abs(error) else 0.
         # In kitchens the native (legacy) base controller already takes body-frame velocity.
-        _, reward, _, _ = self.env.step(self.robot.create_action_vector({
+        self.env.step(self.robot.create_action_vector({
             'right': action[:7], 'right_gripper': [direction], 'torso': action[8:9],
             'base': action[9:12]}))
+        # Upstream's evaluation (robocasa/wrappers/gym_wrapper.py) evaluates the task again after the step's
+        # state update and scores that, so predicates that count calls count twice per step, as there.
+        self.success = bool(self.env._check_success())
+        self.reward = float(self.success)
         self.env.sim.forward()
         self._grip_rate = (gripper.current_action[1] - before) / self.period
         self.steps += 1
-        # Kitchen's reward is its success predicate; evaluating it again would advance
-        # the history some tasks keep.
-        self.reward, self.success = float(reward), bool(reward)
         self.done = bool((self.max_steps and self.steps >= self.max_steps)
                          or (self.early_stop and self.success))
 
