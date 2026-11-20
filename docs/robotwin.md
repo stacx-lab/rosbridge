@@ -15,10 +15,43 @@ rosbridge setup robotwin/handover-block-aloha-agilex --directory ../my-robotwin-
 
 `robotwin` selects `handover_block`. Task IDs keep RoboEnv's embodiment suffix,
 for example `robotwin/stack-blocks-two-aloha-agilex`; native names such as
-`stack_blocks_two` also resolve. Four scenes are unstable at seed 0 upstream, so
-their catalog entries carry RoboEnv's default seed (`dump_bin_bigbin` 5,
-`pick_diverse_bottles` 1, `shake_bottle` and `shake_bottle_horizontally` 2), used
-when `--seed` is omitted.
+`stack_blocks_two` also resolve.
+
+## Seeds
+
+Seed k runs the scene upstream's evaluation runs as its episode k. Upstream
+(`scripts/eval_policy_xpolicylab.py`) tries the native seeds 100000 and up in order,
+and evaluates a seed only once its expert check passes:
+
+- its scripted expert solves the scene (`plan_success` and `check_success`);
+- the scene is stable;
+- setup raises no error.
+
+`simulators/robotwin/seeds.json` lists those seeds per task. The episode record names
+the one in use as `native_seed`, and a seed past the table is refused.
+
+`tools/robotwin_seeds.py` writes the table with upstream's own code:
+
+- **Tree:** the pinned revision unpatched, with this checkout's assets.
+- **Arguments and planner:** upstream's task arguments, and cuRobo v0.7.8, which
+  aloha-agilex's configuration plans with.
+- **Edits:** upstream's edits to mplib and SAPIEN (`scripts/_install.sh`).
+
+cuRobo needs CUDA torch, so the screen runs in its own `robotwin-screen` environment;
+the simulator's `robotwin` environment stays CPU-only.
+
+Screen on idle GPUs, one task per GPU. cuRobo plans under a 10 s wall-clock budget, so
+on a loaded GPU verdicts shift both ways: a screen at two tasks per busy GPU differed
+from an idle one in 18 of the 50 tasks. Even on idle GPUs, a borderline
+seed can flip between runs: about one seed in twenty to thirty in the hardest tasks
+(`put_object_cabinet`, `scan_object`), as it would in upstream's own evaluation. The
+table is one such run of upstream's check. The screen resumes an
+interrupted run, and a larger `--count` extends the table:
+
+```bash
+pixi run --frozen -e robotwin-screen install-curobo   # once
+pixi run --frozen -e robotwin-screen python tools/robotwin_seeds.py --gpus 0,1,2,4
+```
 
 ## Environment, source and assets
 
@@ -73,10 +106,11 @@ keeping its saturation and per-call rate limit. Upstream's own `take_action`
 retimes each action with TOPP over a variable number of substeps; that timing is
 not reproduced, as in RoboEnv.
 
-The episode starts as upstream evaluation does: `setup_demo` for the seed, the
+The episode starts as upstream evaluation does: `setup_demo` for the native seed, the
 expert dry run (`play_once`, whose planning may fail without consequence), then
 `setup_demo` again in evaluation mode. It takes about a minute. Success is
-upstream's `check_success`, evaluated on every substep and latched; the episode
+upstream's `check_success`, evaluated on every substep from the first action on, as
+upstream's `take_action` does, and latched; the episode
 horizon is the native `step_lim` unless a maximum is given. `--early-stop` ends the
 episode at the first success, as the evaluator does; RoboTwin has no failure termination.
 

@@ -101,6 +101,56 @@ build = "python -m rosbridge.provisioning.workspace --simulator robotwin"
 test-ros = "bash -c 'source .workspaces/robotwin/install/local_setup.bash && python -m pytest -q simulators/robotwin/tests/ros'"
 smoke = "python -m pytest -q simulators/robotwin/tests/native"
 
+# Upstream RoboTwin's own install (scripts/_install.sh, scripts/requirements.txt) for
+# tools/robotwin_seeds.py only: CUDA torch and cuRobo v0.7.8, the planner upstream's evaluation
+# checks its seeds with. The robotwin environment the simulator runs in stays CPU-only.
+[feature.robotwin-screen.dependencies]
+python = "3.12.*"
+numpy = "1.26.4.*"
+cuda-nvcc = "12.1.*"
+cuda-cudart-dev = "12.1.*"
+gxx = "12.*"
+pip = "*"
+setuptools = "69.5.1.*"
+
+[feature.robotwin-screen.system-requirements]
+libc = "2.31"
+
+[feature.robotwin-screen.activation.env]
+CUDA_HOME = "$CONDA_PREFIX"
+TORCH_CUDA_ARCH_LIST = "8.9"
+
+[feature.robotwin-screen.pypi-dependencies]
+sapien = "==3.0.0b1"
+mplib = "==0.2.1"
+toppra = "==0.6.9"
+torch = { version = "==2.4.1", index = "https://download.pytorch.org/whl/cu121" }
+torchvision = { version = "==0.19.1", index = "https://download.pytorch.org/whl/cu121" }
+scipy = "==1.13.1"
+transforms3d = "==0.4.2"
+trimesh = "==4.4.3"
+open3d = "==0.19.0"
+opencv-python = "==4.10.0.84"
+gymnasium = "==0.29.1"
+imageio = "==2.34.2"
+h5py = "==3.16.0"
+pyyaml = "*"
+warp-lang = "==1.12.0"
+# cuRobo's own requirements, solved here against NumPy 1.26 (install-curobo adds cuRobo without them).
+networkx = "*"
+numpy-quaternion = "*"
+yourdfpy = ">=0.0.53"
+scikit-image = "*"
+importlib-resources = "*"
+setuptools-scm = ">=6.2"
+pybind11 = "*"
+tqdm = "*"
+wheel = "*"
+
+[feature.robotwin-screen.tasks]
+# cuRobo v0.7.8 as upstream installs it: built against this environment's torch, without isolation.
+install-curobo = "python -m pip install --no-build-isolation --no-deps 'nvidia_curobo @ git+https://github.com/NVlabs/curobo.git@d64c4b005459db10c5dd867d8b30a87d5bda9bdb'"
+
 # RoboEnv's RoboCasa recipe (runtime/locks/robocasa-resolved.txt) on Python 3.12, without
 # its learning and teleoperation extras (torch, lerobot, tianshou, pygame, pynput, hidapi):
 # prepare installs robocasa and robosuite with --no-deps and the simulator never imports
@@ -313,6 +363,7 @@ default = { features = [], solve-group = "jazzy" }
 abc = { features = ["abc"] }
 libero = { features = ["libero"] }
 robotwin = { features = ["robotwin"] }
+robotwin-screen = { features = ["robotwin-screen"], no-default-feature = true }
 robocasa = { features = ["robocasa"] }
 bidex = { features = ["bidex"] }
 robodojo = { features = ["robodojo"], solve-group = "jazzy" }

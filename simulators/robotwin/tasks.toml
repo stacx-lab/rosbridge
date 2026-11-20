@@ -46,8 +46,6 @@ task_config = "demo_clean"
 
 [[tasks]]
 id = "robotwin/dump-bin-bigbin-aloha-agilex"
-# Upstream rejects seed 0 of this scene as unstable; RoboEnv starts from seed 5.
-seed = 5
 robot = "robotwin/robotwin-aloha-agilex"
 native_task = "dump_bin_bigbin"
 embodiment = "aloha-agilex"
@@ -132,8 +130,6 @@ task_config = "demo_clean"
 
 [[tasks]]
 id = "robotwin/pick-diverse-bottles-aloha-agilex"
-# Upstream rejects seed 0 of this scene as unstable; RoboEnv starts from seed 1.
-seed = 1
 robot = "robotwin/robotwin-aloha-agilex"
 native_task = "pick_diverse_bottles"
 embodiment = "aloha-agilex"
@@ -302,8 +298,6 @@ task_config = "demo_clean"
 
 [[tasks]]
 id = "robotwin/shake-bottle-aloha-agilex"
-# Upstream rejects seed 0 of this scene as unstable; RoboEnv starts from seed 2.
-seed = 2
 robot = "robotwin/robotwin-aloha-agilex"
 native_task = "shake_bottle"
 embodiment = "aloha-agilex"
@@ -311,8 +305,6 @@ task_config = "demo_clean"
 
 [[tasks]]
 id = "robotwin/shake-bottle-horizontally-aloha-agilex"
-# Upstream rejects seed 0 of this scene as unstable; RoboEnv starts from seed 2.
-seed = 2
 robot = "robotwin/robotwin-aloha-agilex"
 native_task = "shake_bottle_horizontally"
 embodiment = "aloha-agilex"

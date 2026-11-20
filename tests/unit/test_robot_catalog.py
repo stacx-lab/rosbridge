@@ -180,12 +180,16 @@ def test_cli_filters_tasks_by_rig(capsys):
     assert main(["tasks", "list", "--robot", "libero/missing"]) == 1
 
 
-def test_setup_takes_the_launch_seed_and_names_its_task(tmp_path):
-    from rosbridge.catalog import tasks
-    seeded = next(task for task in tasks(PROJECT, "robotwin").values() if "seed" in task)
-    result = setup(seeded["id"], tmp_path / "default", project=PROJECT)
-    assert (result["task"], result["seed"], result["robot"]) == (seeded["id"], seeded["seed"], seeded["robot"])
-    assert setup(seeded["id"], tmp_path / "chosen", seed=3, project=PROJECT)["seed"] == 3
+def test_setup_takes_the_launch_seed_and_names_its_task(tmp_path, monkeypatch):
+    import rosbridge.catalog.robots as robots
+    from rosbridge.catalog import resolve
+    task = resolve("robotwin", PROJECT)[2]
+    result = setup(task["id"], tmp_path / "default", project=PROJECT)
+    assert (result["task"], result["seed"], result["robot"]) == (task["id"], 0, task["robot"])
+    assert setup(task["id"], tmp_path / "chosen", seed=3, project=PROJECT)["seed"] == 3
+    # A catalog entry's seed is the default that launch and setup take.
+    monkeypatch.setattr(robots, "resolve", lambda *args: (lambda r: (*r[:2], dict(r[2], seed=5)))(resolve(*args)))
+    assert setup(task["id"], tmp_path / "catalog", project=PROJECT)["seed"] == 5
     with pytest.raises(ValueError, match="Unknown task"):
         setup("robotwin/no-such-task", tmp_path / "unknown", project=PROJECT)
 

@@ -8,6 +8,7 @@ reset (setup, expert dry run, evaluation setup) and success checks are kept.
 from contextlib import contextmanager
 from copy import deepcopy
 import importlib
+import json
 import os
 from pathlib import Path
 import random
@@ -21,6 +22,18 @@ from rosbridge.core import ActionLayout, CommandGroup
 from rosbridge.core.devices import device_inventory, spectator_views
 from rosbridge.project import project_root
 from .assets import check_task
+
+# The seeds upstream's evaluation runs, by task, in order (tools/robotwin_seeds.py screens them).
+SEEDS = Path(__file__).resolve().parents[1] / "seeds.json"
+
+
+def native_seed(task, seed):
+    """The native seed of upstream's evaluated episode `seed` of a task."""
+    seeds = json.loads(SEEDS.read_text())["tasks"].get(task, {}).get("seeds", [])
+    if not 0 <= int(seed) < len(seeds):
+        raise ValueError(f"{task} has {len(seeds)} screened seeds; seed {seed} needs "
+                         f"tools/robotwin_seeds.py --count {int(seed) + 1}")
+    return seeds[int(seed)]
 
 PHYSICS_DT = 1 / 250
 SUBSTEPS = 10
@@ -128,7 +141,7 @@ class RoboTwinSim:
         return device_inventory(self.layout, cameras, depth=tuple(cameras))
 
     def reset(self, task, seed, randomize=True):
-        """Episodes are fully determined by the seed, as in upstream evaluation."""
+        """Episode seed of upstream's evaluation: its seed-th evaluated scene, which the seed fully determines."""
         spec = resolve("robotwin", task=task)[2]
         check_task(runtime(), spec["native_task"])
         candidate = RoboTwinSim(cameras=self.cameras, max_steps=self.requested_max_steps,
@@ -151,6 +164,7 @@ class RoboTwinSim:
 
     def _initialize(self, spec, seed):
         self.task, self.seed = spec["native_task"], seed
+        self.native_seed = native = native_seed(self.task, seed)
         with in_runtime() as root:
             # Upstream reads ./assets while importing its action utilities.
             importlib.import_module("envs.utils.action")
@@ -158,7 +172,7 @@ class RoboTwinSim:
             args = task_args(root, self.task, task_config=spec.get("task_config", "demo_clean"),
                              embodiment=spec.get("embodiment", "aloha-agilex"))
             self.env = task_class()
-            self.env.setup_demo(now_ep_num=seed, seed=seed, is_test=True, **deepcopy(args))
+            self.env.setup_demo(now_ep_num=seed, seed=native, is_test=True, **deepcopy(args))
             # Upstream's evaluation runs the expert once, then rebuilds the scene: the
             # dry run assigns attributes that some check_success methods read.
             try:
@@ -167,7 +181,7 @@ class RoboTwinSim:
             except Exception as error:
                 self.expert_error = f"{type(error).__name__}: {error}"
             self.expert_plan_success = bool(getattr(self.env, "plan_success", False))
-            self.env.setup_demo(now_ep_num=seed, seed=seed, is_test=True,
+            self.env.setup_demo(now_ep_num=seed, seed=native, is_test=True,
                                  **{**deepcopy(args), "eval_mode": True})
         # Device control records nothing through upstream's data-collection hook.
         self.env._take_picture = lambda: None
@@ -179,7 +193,8 @@ class RoboTwinSim:
         self._index()
         self.steps, self.done = 0, False
         self.max_steps = self.requested_max_steps or int(self.env.step_lim)
-        self.success = bool(self.env.check_success())
+        # Upstream's evaluation first checks success within the first action, not at reset.
+        self.success = False
         self.reward = float(self.success)
         if self.spectators:
             for view in self.spectators:
@@ -341,6 +356,9 @@ class RoboTwinSim:
     def spectator_intrinsics(self, name):
         k = self._spectators[name][1].get_intrinsic_matrix()
         return float(k[0, 0]), float(k[1, 1]), float(k[0, 2]) - .5, float(k[1, 2]) - .5
+
+    def measures(self):
+        return {"native_seed": self.native_seed}
 
     def close(self):
         if self.env is not None:

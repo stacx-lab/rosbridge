@@ -19,6 +19,9 @@ third_party/
 
 recordings/
 
-# HandsOn seed screen: per-run detail and the table while it is rewritten
+# Seed screens (HandsOn, RoboTwin): per-run detail and the table while it is rewritten
 simulators/handson/seeds.json.log.jsonl
 simulators/handson/seeds.json.partial
+simulators/robotwin/seeds.json.log.jsonl
+simulators/robotwin/seeds.json.partial
+simulators/robotwin/seeds.json.*.stderr

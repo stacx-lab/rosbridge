@@ -45,3 +45,21 @@ def test_seed_adoption_verifies_archive_and_every_extracted_file(tmp_path):
     assert (data / "pack/sub/b.bin").read_bytes() == b"\x00\x01" and not seed.exists()
     with pytest.raises(ValueError, match="pinned"):
         assets.verify_seed(archive, "pack", 1, digest)(data / "pack")
+
+
+def test_every_task_has_the_seeds_upstream_evaluates():
+    """simulators/robotwin/seeds.json, from tools/robotwin_seeds.py: per task, the seeds upstream's evaluation runs
+    for eval seed 0, in order, from its first candidate 100000; a launch's seed k is the k-th."""
+    import json
+    from rosbridge.catalog import simulator
+    from rosbridge_robotwin.backend import SEEDS, native_seed
+    table = json.loads(SEEDS.read_text())
+    assert (table["eval_seed"], table["planner"]) == (0, "curobo v0.7.8")
+    assert table["source_revision"] == simulator("robotwin")[2]["source_revision"]
+    for task in {entry["native_task"] for entry in tasks(name="robotwin").values()}:
+        entry = table["tasks"][task]
+        seeds = entry["seeds"]
+        assert len(seeds) >= 10 and seeds == sorted(set(seeds)) and seeds[0] >= 100000 and entry["next"] > seeds[-1]
+        assert native_seed(task, 3) == seeds[3]
+    with pytest.raises(ValueError, match="needs tools/robotwin_seeds.py --count"):
+        native_seed("handover_block", len(table["tasks"]["handover_block"]["seeds"]))

@@ -27,6 +27,9 @@ def sim():
     sim = RoboTwinSim(max_steps=40)
     sim.configure_spectators()
     sim.reset("handover_block", 3)
+    # Seed 3 is upstream's fourth evaluated scene, not its native seed 3.
+    from rosbridge_robotwin.backend import native_seed
+    assert sim.measures() == {"native_seed": native_seed("handover_block", 3)} and not sim.success
     yield sim
     sim.close()
 
