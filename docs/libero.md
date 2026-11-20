@@ -58,7 +58,8 @@ interval the backend steers LIBERO's integrated direction command toward it with
 1 mm tolerance, so open and closed are reached reliably while intermediate targets
 oscillate by a few millimetres. `gripper/joint_state` reports `finger_joint1`.
 
-Each `stop` (`std_srvs/srv/Trigger`) holds the measured position. Commands to a
+Each `stop` (`std_srvs/srv/Trigger`) holds the measured position; the gripper's keeps its
+applied grip target, so a held object stays gripped. Commands to a
 finished episode are rejected.
 
 ## OSC configuration

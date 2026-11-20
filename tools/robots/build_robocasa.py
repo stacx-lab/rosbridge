@@ -96,7 +96,6 @@ def main():
             state="Integrated native gripper command, -1 (open) to +1 (closed), stamped at "
                   "acquisition; the URDF finger links follow it. Fingers reach "
                   "the commanded opening only when unobstructed.",
-            hold="Hold the integrated command, keeping any grip on an object.",
             opened=-1.0, closed=1.0),
     }
     for name, camera, parent, frame in (

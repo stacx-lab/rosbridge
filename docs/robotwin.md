@@ -87,8 +87,8 @@ URDF limits are ±10 rad placeholders. Gripper targets are upstream's normalized
 gripper value from 0 (closed) to 1 (open); the finger drive target is
 `gripper_scale` `-0.01 + 0.055 v` metres, so a closed command squeezes past the
 finger stop. `joint_state` reports the same normalization of the measured finger,
-which reads about 0.18 when the fingers touch. Each `stop` holds the measured
-position.
+which reads about 0.18 when the fingers touch. Each arm `stop` holds the measured
+position; a gripper `stop` keeps its applied grip target, so a held object stays squeezed.
 
 Cameras are D435 models at 320×240 (fx = fy ≈ 358.64 px, principal point at the
 image center). RGB is upstream's ray-traced render; registered depth comes from a

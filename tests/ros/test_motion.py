@@ -117,7 +117,7 @@ def test_pose_target_moves_the_tip_validates_and_stops(tmp_path):
         graph.close()
 
 
-def test_gripper_target_persists_until_stop_holds_it(tmp_path):
+def test_gripper_target_persists_and_stop_keeps_it(tmp_path):
     graph = Graph(tmp_path)
     try:
         states, publisher, stop = endpoints(graph, 'finger', 'target', Float64)
@@ -134,10 +134,11 @@ def test_gripper_target_persists_until_stop_holds_it(tmp_path):
         assert graph.wait(0.).message == 'ok'  # named once
         graph.spin(.1)
         assert states[-1].position[0] == -1.
-        assert graph.call(stop, Trigger.Request()).success
+        stopped = graph.call(stop, Trigger.Request())
+        assert stopped.success and stopped.message == 'keeping the grip target'
         assert graph.wait(.5).success
         graph.spin(.1)
-        assert states[-1].position[0] == -1.  # stop holds the measured position
+        assert states[-1].position[0] == -1.  # stop keeps the grip target
     finally:
         graph.close()
 

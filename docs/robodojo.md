@@ -70,7 +70,8 @@ Arm targets are upstream's `<side>_arm_joint_state` action entries. Gripper
 targets are upstream's normalized `<side>_ee_joint_state` value from 0 (closed) to
 1 (open), mapped by `gripper_scale` to finger targets `-0.01 + 0.054 v` metres;
 `joint_state` reports the same normalization of the measured primary finger
-(about 0.185 when the fingers touch). Each `stop` holds the measured position.
+(about 0.185 when the fingers touch). Each arm `stop` holds the measured position; a
+gripper `stop` keeps its applied grip target, so a held object stays squeezed.
 
 Cameras are RGB, as upstream's evaluation renders them, or RGB-D in the depth
 configuration below. They are the head camera (Gemini 345Lg model, fx ≈ 288.13 px) and

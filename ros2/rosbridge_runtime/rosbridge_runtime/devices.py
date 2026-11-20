@@ -34,6 +34,8 @@ class Actuator:
     def __init__(self, spec, node):
         self.spec, self.node = spec, node
         self.group = next(g for g in node.sim.layout.groups if g.name == spec.source)
+        if self.group.scalar:
+            self.stopped = 'keeping the grip target'  # the command buffer keeps a gripper's applied target
         self.indices = list(self.group.indices)
         self.names = [node.sim.layout.joint_names[i] for i in self.indices]
         callbacks = ReentrantCallbackGroup()

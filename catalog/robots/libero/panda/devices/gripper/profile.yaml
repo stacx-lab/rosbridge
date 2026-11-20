@@ -33,8 +33,8 @@ operations:
       durability: volatile
     timeout_s: 10
   stop:
-    description: Hold the measured finger position; the fingers may settle briefly
-      after the stop.
+    description: Stop and keep the active grip target; a held object stays gripped. Before
+      the first command it holds the opening at reset. Command an open target to release.
     transport: service
     direction: input
     endpoint: /gripper/stop

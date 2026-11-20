@@ -49,8 +49,9 @@ World waits are sequential: one requested while another is pending is rejected, 
 `world/stop` cancels the pending wait. Realtime observes progress; stepped mode
 advances only for a pending wait; shutdown interrupts it. Commands are
 validated on the simulator owner thread; invalid ones are logged and keep the held
-target. A device's `stop` holds the measured position (a base commands zero
-velocity) and is created after its command subscription, so a client that
+target. A device's `stop` holds the measured position, a gripper's keeps its applied grip
+target so a held object stays gripped (Kinex's grip contract), and a base's commands zero
+velocity; each stop is created after its command subscription, so a client that
 discovered `stop` reaches the device.
 Joint states and CameraInfo use transient-local reliable QoS. Images are reliable
 and volatile and render only for subscribers: once per camera sample (30 Hz of

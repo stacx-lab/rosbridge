@@ -95,7 +95,7 @@ def main():
             rigs.pose_frame(f"{side}_gripper:base", mount(sim, f"{side}_gripper_link", link(f"{side}_eef_link"))),
             state="The smooth command the mean finger opening reaches, -1 (closed) to 1 (open), "
                   "stamped at acquisition; the URDF finger links follow it.",
-            hold="Hold the commanded opening, keeping any grasp.", opened=1.0, closed=-1.0)
+            opened=1.0, closed=-1.0)
         files[f"devices/{side}_gripper/gripper.urdf"] = rigs.source_gripper(
             source, f"{side}_gripper", [f"{side}_gripper_finger_joint{i}" for i in (1, 2)], lower, upper,
             f"r1pro_{side}_gripper",

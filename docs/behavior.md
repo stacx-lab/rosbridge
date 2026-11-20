@@ -148,8 +148,8 @@ Commands are the evaluator's action vector:
   is held by assisted grasping. `joint_state` reports the command the mean finger
   opening reaches.
 
-Each `stop` holds the measured joints or the commanded gripper opening, or commands
-zero base velocity. Cameras are the evaluator's full-resolution RGB-D set: the
+Each `stop` holds the measured joints, keeps a gripper's applied grip target (keeping any
+grasp), or commands zero base velocity. Cameras are the evaluator's full-resolution RGB-D set: the
 720×720 head camera (fx = 306) and 480×480 wrist cameras (fx ≈ 388.66), with
 OmniGibson's `depth_linear` along the optical axis and the principal point at the
 image center, `(width-1)/2` in ROS pixel coordinates.

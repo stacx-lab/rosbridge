@@ -83,11 +83,13 @@ class CommandBuffer:
 
     def stop(self, group, values):
         """Hold values: measured positions, which can fall outside command limits, or a pose group's measured tip
-        pose. A pose group never commanded keeps no target: the simulator holds it as it was."""
+        pose. A pose group never commanded keeps no target: the simulator holds it as it was. A gripper (a scalar
+        group) keeps its applied target instead, as Kinex's grip contract requires, since its measured opening
+        would release a held object; it starts at the reset opening, so a stop never closes it."""
         if group in self._pose:
             if self._pose[group] is not None or self._trajectory[group] is not None:
                 self._pose[group] = self._unit_pose(values, f"{group} hold")
-        else:
+        elif not self._groups[group].scalar:
             self._target[list(self._groups[group].indices)] = values
         self._trajectory[group] = None
         self._expiry.pop(group, None)

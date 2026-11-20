@@ -154,7 +154,8 @@ and rejected; a target within 0.001 (rad or m) of a limit, such as a measured
 position slightly past it, is held at the limit. A topic publisher gets no reply,
 so the message of the next `world/wait` reply names each refused command's topic
 and reason, once (at most five kinds, then a count). The latest valid target is
-held until replaced or stopped. `<device>/stop` holds the measured position; a base's stop
+held until replaced or stopped. `<device>/stop` holds the measured position; a gripper's
+stop keeps its applied grip target, so a held object stays gripped, and a base's stop
 commands zero velocity. Each command
 subscription is created before its device's stop service. Cameras publish RGB8
 `Image` on `<camera>/image` and `CameraInfo`; frames are `<camera>/base`. RGB-D

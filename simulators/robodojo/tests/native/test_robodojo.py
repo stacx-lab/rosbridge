@@ -86,6 +86,21 @@ def test_reset_is_bounded_reloads_the_layout_and_serves_one_task(sim):
     assert not sim.done and sim.task == "pack_objects_into_box"
 
 
+def test_a_gripper_stop_keeps_a_held_object_gripped(tmp_path):
+    """Kinex's grip contract through the world node's command buffer: a gripper stop keeps the closed target, so a
+    toothbrush held between the pads stays there. Holding the measured opening instead dropped it 14 cm in 0.4 s."""
+    import json
+    import subprocess
+    path = tmp_path / "grip.json"
+    run = subprocess.run([sys.executable, os.path.join(os.path.dirname(__file__), "grip_stop.py"), str(path)],
+                         capture_output=True, text=True, timeout=1800)
+    assert path.is_file(), run.stderr[-4000:]
+    grip = json.loads(path.read_text())
+    assert .2 < grip["held"] < .9  # stalled on the toothbrush, short of closed (about 0.185) and open (1)
+    assert grip["target"] == 0.  # the closed command, not the measured opening
+    assert max(grip["offset"]) < .01 and abs(grip["drop"]) < .005
+
+
 @pytest.mark.parametrize("task", SELECTED)
 def test_catalog_task_loads_and_steps(task):
     sim = native()

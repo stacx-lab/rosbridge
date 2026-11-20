@@ -255,6 +255,22 @@ def test_a_workspace_hook_changes_profiles_by_json_merge_patch():
                        "description": "held"}
 
 
+def test_every_gripper_stop_keeps_its_grip_target_as_the_rig_builders_say():
+    """Every catalog gripper documents Kinex's grip contract in the builders' own words: a stop keeps the applied
+    target, so a held object stays gripped. Builder output and the catalog cannot drift apart."""
+    sys.path.insert(0, str(PROJECT / "tools/robots"))
+    try:
+        import rigs
+    finally:
+        sys.path.remove(str(PROJECT / "tools/robots"))
+    grippers = [path for path in sorted((PROJECT / "catalog/robots").rglob("devices/*/profile.yaml"))
+                if yaml.safe_load(path.read_text())["type"] == "gripper"]
+    assert len(grippers) >= 10
+    for path in grippers:
+        stop = yaml.safe_load(path.read_text())["operations"]["stop"]
+        assert stop["description"] == rigs.GRIP_STOP, path
+
+
 def test_rig_builders_write_configurations_as_patches_that_merge_back():
     """A configuration's profiles.yaml holds patches of the rig's profiles, here an RGB camera made RGB-D."""
     sys.path.insert(0, str(PROJECT / "tools/robots"))

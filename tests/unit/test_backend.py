@@ -35,6 +35,26 @@ def test_non_abc_layout_and_atomic_rejection():
         commands.set_group("finger", [0.])
 
 
+def test_a_gripper_stop_keeps_its_grip_target_where_an_arm_stop_holds_the_measured_position():
+    """Kinex's grip contract: a stop keeps a gripper's applied target, since holding its measured opening would
+    release a held object; it starts at the reset opening, so a stop before any command never closes it."""
+    layout = ActionLayout(("finger", "axis_b", "axis_a"), (
+        CommandGroup("arm", (2, 1), (-2., -3.), (2., 3.)),
+        CommandGroup("finger", (0,), (0.,), (1.,), scalar=True),
+    ))
+    commands = CommandBuffer(layout, [.8, 0, 0])  # the reset opening
+    commands.stop("finger", [.3])
+    assert commands.action(0).tolist() == [.8, 0., 0.]
+    commands.set_group("finger", [0.])  # close, and the fingers stall on an object at 0.3
+    commands.set_group("arm", [1., 2.])
+    commands.stop("finger", [.3])
+    commands.stop("arm", [1.5, 2.5])
+    assert commands.action(1).tolist() == [0., 2.5, 1.5]
+    commands.set_group("finger", [1.])  # an open target releases, and a stop keeps it
+    commands.stop("finger", [.4])
+    assert commands.action(2).tolist()[0] == 1.
+
+
 def test_targets_within_a_tolerance_of_a_limit_are_held_at_it():
     """A measured position slightly past a limit, or a client's interpolation rounding past one, is a valid target;
     anything further out is still refused whole."""

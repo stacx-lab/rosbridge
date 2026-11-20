@@ -86,8 +86,8 @@ and gripper commands.
   fingers: the URDF fingers mimic the position their actuators are commanded to,
   so a closed grip may be stalled on an object.
 
-Each `stop` holds the measured joint positions, the gripper's integrated command
-(keeping any grip), or zero base velocity.
+Each `stop` holds the measured joint positions, keeps the gripper's applied grip target
+(keeping any grip), or commands zero base velocity.
 
 ## Episode timing and tasks
 

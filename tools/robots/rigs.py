@@ -112,8 +112,12 @@ def joint(name, description, joints, home, base, *, units="radians", part="arm",
                   frames={"base": base})
 
 
-def gripper(name, description, joint, target, base, tcp, *, state=None, hold=None, opened=1.0,
-            closed=0.0):
+# Kinex's grip contract: a stop keeps the applied target, since the measured opening would release a held object.
+GRIP_STOP = ("Stop and keep the active grip target; a held object stays gripped. Before the first command it "
+             "holds the opening at reset. Command an open target to release.")
+
+
+def gripper(name, description, joint, target, base, tcp, *, state=None, opened=1.0, closed=0.0):
     ops = {
         "joint_state": operation(
             state or f"Measured {joint}, the native normalized gripper opening (0 closed, 1 open), "
@@ -121,8 +125,7 @@ def gripper(name, description, joint, target, base, tcp, *, state=None, hold=Non
             "topic", "output", f"/{name}/joint_state", "sensor_msgs/msg/JointState",
             qos(durability="transient_local")),
         "target": operation(target, "topic", "input", f"/{name}/target", "std_msgs/msg/Float64"),
-        "stop": operation(hold or "Hold the measured opening; fingers may settle briefly after "
-                          "the stop.", "service", "input", f"/{name}/stop", "std_srvs/srv/Trigger"),
+        "stop": operation(GRIP_STOP, "service", "input", f"/{name}/stop", "std_srvs/srv/Trigger"),
     }
     return device(name, "gripper", description, ops, observation="joint_state",
                   stop={"behavior": "hold", "affected_devices": [name]},

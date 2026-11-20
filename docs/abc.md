@@ -59,8 +59,9 @@ upstream's 14-D policy action. Gripper targets are `std_msgs/msg/Float64` in
 `[0,1]`, closed to open, upstream's policy gripper value with its 0.0475-metre
 finger scale; `joint_state` reports the same normalized `<side>_gripper`, and the
 rig's gripper URDF drives both finger links from it. Invalid targets are logged
-and leave the held target unchanged. Each `stop` (`std_srvs/srv/Trigger`) holds
-the measured position.
+and leave the held target unchanged. Each arm `stop` (`std_srvs/srv/Trigger`) holds
+the measured position; a gripper `stop` keeps its applied grip target, so a held object
+stays squeezed.
 
 The cameras are `rgbd` devices, as in RoboEnv: `<camera>/depth` publishes
 16UC1 millimetres along the optical axis, registered to the image (0 where nothing
