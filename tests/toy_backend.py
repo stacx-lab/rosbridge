@@ -133,24 +133,23 @@ class PoseToy(ToyBackend):
 
 
 class JointPoseToy(PoseToy):
-    """The planar arm taking joint targets too; it refuses a tip pose beyond its 1.5 m reach, keeping its joints."""
+    """The planar arm as a joint group that solves its tip's pose paths; one leaving its 1.5 m reach has no joints."""
     layout = ActionLayout(("x", "y"), (CommandGroup("reach", (0, 1), (-2., -2.), (2., 2.), tip="tip",
                                                     joint_targets=True),))
     devices = device_inventory(layout, {})
 
-    def step(self, action, poses):
+    def step(self, action):
         assert threading.get_ident() == self.owner
-        pose, unexecuted = poses["reach"], None
-        self.commanded.append(pose)
-        if pose is None:
-            self.position = np.asarray(action, dtype=float).copy()
-        elif np.linalg.norm(pose[:2]) <= 1.5:
-            self.position = np.asarray(pose[:2], dtype=float).copy()
-        else:
-            unexecuted = {"reach": "the tip pose is beyond the 1.5 m reach"}
+        self.position = np.asarray(action, dtype=float).copy()
         self.steps += 1
         self.time_s = self.steps * self.period
-        return unexecuted
+
+    def joint_path(self, group, joints, poses):
+        assert threading.get_ident() == self.owner and group == "reach"
+        for index, pose in enumerate(poses, 1):
+            if np.linalg.norm(pose[:2]) > 1.5:
+                raise ValueError(f"at {index * self.period:.2f} s of the path the tip pose is beyond the 1.5 m reach")
+        return [pose[:2] for pose in poses]
 
 
 class SceneToy(ToyBackend):

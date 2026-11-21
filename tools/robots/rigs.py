@@ -80,7 +80,8 @@ def joint(name, description, joints, home, base, *, units="radians", part="arm",
           model="arm.urdf", pose=None, joint_targets=False):
     """A joint device; tip is its FK/IK link, None for trees such as hands. With pose, a sentence on how the
     simulator executes them, the device takes pose targets of its tip instead of joint targets, or, with
-    joint_targets, besides them: the latest command of either kind replaces the active one."""
+    joint_targets, besides them, as joints it solves on arrival: the latest command of either kind replaces the
+    active one."""
     count = len(joints)
     over = f"all {count} {part} joints" if count > 1 else f"the {part} joint"
     both = bool(pose and joint_targets)
@@ -97,16 +98,15 @@ def joint(name, description, joints, home, base, *, units="radians", part="arm",
             "strictly increasing time_from_start and finishing within 120 seconds; velocities, "
             "accelerations and effort must be empty. A zero header stamp selects now; a nonzero "
             "stamp must not start in the past. Points are absolute native joint positions, "
-            "linearly interpolated at the native control period"
-            + (", from the measured joints when it replaces a pose_target. " if both else ". ")
-            + "Replacement clears pending "
+            "linearly interpolated at the native control period. Replacement clears pending "
             "references; invalid trajectories are ignored, so verify measured joint_state.",
             "topic", "input", f"/{name}/joint_target", "trajectory_msgs/msg/JointTrajectory")
     if pose:
         ops["pose_target"] = operation(
             f"Trajectory of absolute {tip} poses in {name}/base: joint_names [{tip}], one transform per "
             "point (metres, unit quaternion xyzw), time_from_start strictly increasing and within 120 "
-            "seconds; a zero header stamp starts it now. It is interpolated from the current target. "
+            "seconds; a zero header stamp starts it now. It is interpolated from the "
+            f"{'measured pose' if both else 'current target'}. "
             f"{pose} A new {'joint or pose ' if both else ''}trajectory replaces the active one and an invalid "
             f"one is ignored; verify the {tip} with pose_state.",
             "topic", "input", f"/{name}/pose_target", "trajectory_msgs/msg/MultiDOFJointTrajectory")
@@ -401,15 +401,17 @@ def _motion(joint):
             "limits": (float(limit.get("lower")), float(limit.get("upper")))}
 
 
-def source_arm(source, joint_names, name, comment, tip="flange"):
-    """A kinematic-only serial chain from a native URDF: base_link, link1.., tip."""
+def source_arm(source, joint_names, name, comment, tip="flange", velocity=None):
+    """A kinematic-only serial chain from a native URDF: base_link, link1.., tip. velocity is each joint's limit,
+    for a simulator that drives the joints slower than the URDF writer's default."""
     links, chain, previous = ["base_link"], [], "base_link"
     for index, joint_name in enumerate(joint_names, 1):
         joint = source[joint_name]
         child = tip if index == len(joint_names) else f"link{index}"
         links.append(child)
         chain.append({"name": joint_name, "type": "revolute", "parent": previous, "child": child,
-                      "origin": urdf_origin(joint), **_motion(joint)})
+                      "origin": urdf_origin(joint), **_motion(joint),
+                      **({} if velocity is None else {"velocity": velocity})})
         previous = child
     return urdf(name, comment, links, chain)
 

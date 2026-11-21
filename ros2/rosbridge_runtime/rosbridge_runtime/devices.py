@@ -92,15 +92,13 @@ class Actuator:
                 raise ValueError('trajectory must end within 120 seconds')
             if start is not None and start < world.time_s:
                 raise ValueError('trajectory start is in the past')
-            # A group leaving a pose command starts from its measured joints.
-            world.commands.set_trajectory(self.group.name, world.time_s if start is None else start, times, points,
-                                          lambda: self.node.sim.state()[0][self.indices])
+            world.commands.set_trajectory(self.group.name, world.time_s if start is None else start, times, points)
         self._admit(apply, getattr(self, 'joints', None))
 
     def pose_target(self, msg):
         def apply():
             world, frame, tip = self.node.world, f'{self.spec.name}/base', self.group.tip
-            if msg.header.frame_id != frame:
+            if msg.header.frame_id not in ('', frame):
                 raise ValueError(f'pose targets must be expressed in {frame}')
             if list(msg.joint_names) != [tip]:
                 raise ValueError(f'pose targets must name the tip link {tip} once')
@@ -111,8 +109,12 @@ class Actuator:
                 raise ValueError('trajectory must end within 120 seconds')
             if start is not None and start < world.time_s:
                 raise ValueError('trajectory start is in the past')
-            world.commands.set_pose_trajectory(self.group.name, world.time_s if start is None else start, times,
-                                               poses, lambda: self.node.sim.tip_pose(self.group.name))
+            sim, name = self.node.sim, self.group.name
+            command = [name, world.time_s if start is None else start, times, poses, lambda: sim.tip_pose(name)]
+            if self.group.joint_targets:  # the backend solves the whole path now, or refuses it before the arm moves
+                world.commands.set_pose_path(*command, sim.period, lambda joints, path: sim.joint_path(name, joints, path))
+            else:
+                world.commands.set_pose_trajectory(*command)
         self._admit(apply)
 
     async def stop(self, request, response):

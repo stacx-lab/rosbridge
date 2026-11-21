@@ -16,9 +16,9 @@ class CommandGroup:
     A pose group names the tip link of a joint device that takes pose targets:
     the tip's pose in the device base, [x, y, z, qx, qy, qz, qw], which the
     simulator's own Cartesian control executes. Its feedback stays joint positions,
-    and its limits bound nothing it is commanded. A pose group with joint_targets
-    takes joint targets too, within its limits: the latest command of either kind
-    replaces the active one, and a stop holds the measured joints.
+    and its limits bound nothing it is commanded. A tip with joint_targets is a
+    joint group that also takes its tip's poses: the backend's joint_path solves a
+    whole pose path into joints when it arrives.
     """
 
     name: str
@@ -104,11 +104,12 @@ class SimulatorBackend(Protocol):
     poses maps each pose group to its tip's target pose in the device base,
     [x, y, z, qx, qy, qz, qw], or to None until the group's first command. Its
     tip_pose(group) returns the measured tip pose there, which a stop holds and
-    a group's first trajectory starts from. A group that also takes joint
-    targets has None while a joint command is active, and the action carries
-    its joints. step may return the pose groups whose target it could not
-    execute, mapped to why; the world stops each, holding its measured joints,
-    and the next wait reply names the refusal.
+    a group's first trajectory starts from.
+
+    A backend with a joint group that takes tip poses has
+    joint_path(group, joints, poses): the joints for the group's tip pose at each
+    control period of a path that starts at joints, or a ValueError saying why the
+    path has none. The path is then refused whole, before the group moves.
 
     Optionally, camera_rate_hz sets how many times per simulated second a
     subscribed camera renders (default 30), for a simulator whose renders are

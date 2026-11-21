@@ -87,33 +87,28 @@ ahead of `link6`) and the measured camera mounts.
 
 ### Pose targets
 
-Each arm also takes `pose_target`: timed waypoints for its `flange` in `<arm>/base`. The flange
-is `link6`, upstream's `ee_link` and cuRobo's tool frame, and `pose_state` reports its measured
-pose. The flange reaches each waypoint at its time along a straight line, with rotation by
-slerp. Nothing plans a path around objects, so a single far waypoint is a straight move, and it
-needs enough time for every joint to stay within one frame's travel. The latest command of either kind replaces the active one: a `joint_target` after a pose
-command starts from the measured joints, and a `stop` holds them.
+Each arm also takes `pose_target`: timed waypoints for its `flange` in `<arm>/base`, the header's
+`frame_id` or none. The flange is `link6`, upstream's `ee_link` and cuRobo's tool frame, and
+`pose_state` reports its measured pose. The flange reaches each waypoint at its time along a
+straight line from its measured pose, with rotation by slerp. Nothing plans a path around objects.
 
-Upstream's own `ee_pose` action solves a pose with cuRobo IK and, when the solve fails, leaves
-the arm on its previous target without saying so. The backend solves a pose the same way, then
-executes the result as upstream's joint action:
+The backend turns the whole path into a joint trajectory when it arrives
+(`RoboDojoSim.joint_path`), so a path the arm cannot follow is refused before it moves:
 
-1. Each frame, upstream's `RobotManager.solve_ik` solves that frame's pose from the measured
-   joints. It is the cuRobo `InverseKinematics` the `ee_pose` action uses: 32 seeds, self and
-   table collision, 1 mm and 0.02 rad. An unchanged pose keeps its solution.
-2. The solution must lie within the joint limits, taking a whole turn nearer the commanded joints
-   where the limits allow. It must move no joint more than 0.2 rad from the commanded joints: the
-   X5 actuators' 5 rad/s `velocity_limit_sim` over the 0.04 s frame. And its joint path, sampled
-   every 0.025 rad, must pass cuRobo's self and table constraints. If it fails any of these, the
-   next of cuRobo's 32 ranked solutions that passes is taken. These checks follow
-   uni-robot-agent's RoboDojo adapter, with the native velocity limit in place of its 1 rad
-   jump limit.
-3. If no solution passes, the arm keeps its commanded joints for that frame and the world then
-   stops it at its measured joints. The pending `world/wait` ends there, with `success` false and
-   a message naming the pose target, the time and the reason, so the rest of the wait costs no
-   budget.
+1. The path is sampled at every 0.04 s frame. cuRobo's `InverseKinematics`, the solver upstream's
+   `ee_pose` action uses (32 seeds, self and table collision, 1 mm and 0.02 rad), solves each
+   frame's pose from the joints of the frame before, the first from the joints last commanded.
+2. Of its solutions, the one nearest the frame before is taken that lies within the joint limits,
+   a whole turn nearer where they allow, moves no joint more than 0.2 rad (the X5 actuators'
+   5 rad/s `velocity_limit_sim` over a frame), and has a joint path, sampled every 0.025 rad,
+   that passes cuRobo's self and table constraints. These checks follow uni-robot-agent's
+   RoboDojo adapter, with the native velocity limit in place of its 1 rad jump limit and the
+   nearest solution in place of cuRobo's first.
+3. A frame without one refuses the whole trajectory: the arm keeps its command, and the next
+   `world/wait` ends at once, with `success` false and a message naming the pose target, the
+   frame's time in the path and the reason, so the refusal costs no budget.
 
-The joints then go through `EvalEnv.take_action` exactly as joint targets do, so evaluation and
+The joints then run as a joint trajectory does, through `EvalEnv.take_action`, so evaluation and
 scoring are unchanged. A pose is tracked only as precisely as upstream's IK tolerances, 1 mm and
 0.02 rad. To serve pose targets, rosbridge builds upstream's cuRobo planner for the arms, as
 upstream's evaluation does by default (`need_planner`). RoboEnv's adapter, whose arms took joints

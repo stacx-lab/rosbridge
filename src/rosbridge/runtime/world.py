@@ -143,7 +143,10 @@ class WorldRuntime:
         action = self.commands.action(self.time_s + self.sim.period)
         poses = self.commands.poses()  # pose groups' tip targets for the same step
         try:
-            unexecuted = self.sim.step(action, poses) if poses else self.sim.step(action)
+            if poses:
+                self.sim.step(action, poses)
+            else:
+                self.sim.step(action)
         except Exception as failure:
             # A step that fails, as BEHAVIOR's physics can when the robot is driven into furniture, ends the episode;
             # the world goes on answering.
@@ -157,11 +160,6 @@ class WorldRuntime:
             if self.sim.success and self.first_success_step is None:
                 self.first_success_step = self.steps
             self.publish()
-            # Pose targets the simulator could not execute: each group stops where it is, and its refusal, after this
-            # step's publications, ends the pending wait.
-            for group, reason in (unexecuted or {}).items() if poses else ():
-                self.hold(group)
-                self.refuse(f"/{group}/pose_target", f"at t={self.time_s:.2f} s: {reason}")
             if self.sim.done:
                 reason, cause = self._stop()
                 self._end(ENDS.get(reason, f"the simulator ended it ({reason})") + (f" ({cause})" if cause else ""),

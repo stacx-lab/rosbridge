@@ -117,9 +117,9 @@ def flange(urdf, q):
     return pose
 
 
-def test_flange_pose_targets_take_upstreams_curobo_ik_within_one_frames_travel():
-    """An arm's pose target through upstream's cuRobo IK: a held pose keeps the arm still, a straight lift arrives,
-    and a pose beyond reach or beyond one frame's native joint travel is refused, keeping the commanded joints."""
+def test_a_flange_pose_path_becomes_joints_through_curobo_ik_or_has_none():
+    """An arm's pose path through cuRobo's IK: a held pose keeps the arm still, a straight lift arrives, and a path
+    beyond reach, or with a frame beyond one frame's native joint travel, has no joints."""
     import time
     import transforms3d as t3d
     sim = native(max_steps=200)
@@ -137,44 +137,39 @@ def test_flange_pose_targets_take_upstreams_curobo_ik_within_one_frames_travel()
         assert tip[:3] == pytest.approx(expected[:3, 3], abs=1e-4)
         assert t3d.quaternions.quat2mat([w, x, y, z]) == pytest.approx(expected[:3, :3], abs=1e-4)
 
-        def frame(pose):
-            return sim.step(held, {"left_arm": pose, "right_arm": None})
+        def follow(poses):
+            """Solve a path and step through it; the largest joint travel of one frame."""
+            started, target = time.monotonic(), sim.state()[0]
+            before = target[joints]
+            rows = np.asarray(sim.joint_path("left_arm", before, poses))
+            print(f"{len(poses)} pose frames: {(time.monotonic() - started) / len(poses) * 1000:.0f} ms each")
+            for row in rows:
+                target[joints] = row
+                sim.step(target)
+            return np.abs(np.diff(np.vstack([before, rows]), axis=0)).max()
 
         def error(pose):
             now = np.asarray(sim.tip_pose("left_arm"))
             return np.linalg.norm(now[:3] - pose[:3]), 2 * np.arccos(min(1., abs(float(np.dot(now[3:], pose[3:])))))
 
-        started = time.monotonic()
-        for _ in range(10):  # the measured pose, re-sent, holds the arm within upstream's IK tolerances
-            assert frame(tip) is None
-        print(f"first pose frames: {(time.monotonic() - started) / 10 * 1000:.0f} ms each")
+        assert follow([tip] * 10) < .05  # the measured pose holds the arm within upstream's IK tolerances
         moved, turned = error(tip)
         assert moved < 1.5e-3 and turned < .03
         goal = tip.copy()
         goal[2] += .05
-        started = time.monotonic()
-        for s in np.linspace(0, 1, 26)[1:]:  # a straight 5 cm lift over one second
-            pose = tip.copy()
-            pose[2] += .05 * s
-            assert frame(pose) is None
-        print(f"moving pose frames: {(time.monotonic() - started) / 25 * 1000:.0f} ms each")
-        for _ in range(10):
-            assert frame(goal) is None
+        lift = [np.r_[tip[:2], tip[2] + .05 * s, tip[3:]] for s in np.linspace(0, 1, 26)[1:]]
+        assert follow(lift + [goal] * 10) < .2  # a straight 5 cm lift over one second, then held
         moved, turned = error(goal)
         assert moved < 2e-3 and turned < .03
-        before = sim.state()[0][joints]
         far = goal.copy()
         far[0] += 2.
-        refused = frame(far)
-        assert set(refused) == {"left_arm"} and "no solution" in refused["left_arm"], refused
+        with pytest.raises(ValueError, match="at 0.08 s of the path cuRobo's IK has no solution"):
+            sim.joint_path("left_arm", sim.state()[0][joints], [goal, far])
         # A quarter turn about the flange's approach axis at once: joint6 would turn 1.57 rad in one frame.
         quarter = t3d.quaternions.qmult(t3d.quaternions.qmult([goal[6], *goal[3:6]], [np.sqrt(.5), np.sqrt(.5),
                                                                                        0., 0.]), [1., 0., 0., 0.])
-        twisted = np.r_[goal[:3], quarter[1:], quarter[0]]
-        refused = frame(twisted)
-        assert set(refused) == {"left_arm"} and "beyond 0.20 rad" in refused["left_arm"], refused
-        assert np.abs(sim.state()[0][joints] - before).max() < 5e-3  # refused frames kept the commanded joints
-        print("refusals:", refused)
+        with pytest.raises(ValueError, match="at 0.04 s of the path the nearest IK solution moves .* beyond 0.20 rad"):
+            sim.joint_path("left_arm", sim.state()[0][joints], [np.r_[goal[:3], quarter[1:], quarter[0]]])
     finally:
         sim.close()
 

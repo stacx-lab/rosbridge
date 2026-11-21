@@ -22,9 +22,8 @@ operations:
       strictly increasing time_from_start and finishing within 120 seconds; velocities, accelerations
       and effort must be empty. A zero header stamp selects now; a nonzero stamp must not
       start in the past. Points are absolute native joint positions, linearly interpolated
-      at the native control period, from the measured joints when it replaces a pose_target.
-      Replacement clears pending references; invalid trajectories are ignored, so verify measured
-      joint_state.
+      at the native control period. Replacement clears pending references; invalid trajectories
+      are ignored, so verify measured joint_state.
     transport: topic
     direction: input
     endpoint: /left_arm/joint_target
@@ -38,12 +37,14 @@ operations:
     description: 'Trajectory of absolute flange poses in left_arm/base: joint_names [flange],
       one transform per point (metres, unit quaternion xyzw), time_from_start strictly increasing
       and within 120 seconds; a zero header stamp starts it now. It is interpolated from the
-      current target. Each point is a waypoint the flange reaches at its time along a straight
-      line (rotation by slerp); nothing plans around objects. Upstream''s cuRobo IK solves
-      every 0.04 s frame: if no solution stays within the joint limits, moves each joint at
-      most 0.20 rad per frame and avoids self and table collision, the arm stops and the pending
-      wait ends there, saying why. A new joint or pose trajectory replaces the active one
-      and an invalid one is ignored; verify the flange with pose_state.'
+      measured pose. Each point is a waypoint the flange reaches at its time along a straight
+      line (rotation by slerp); nothing plans around objects. On arrival, upstream''s cuRobo
+      IK solves the pose of every 0.04 s frame from the frame before, and the path runs as
+      a joint trajectory. If a frame has no solution that stays within the joint limits, moves
+      each joint at most 0.20 rad and avoids self and table collision, the whole trajectory
+      is refused before the arm moves, and the next world wait reply says where and why. A
+      new joint or pose trajectory replaces the active one and an invalid one is ignored;
+      verify the flange with pose_state.'
     transport: topic
     direction: input
     endpoint: /left_arm/pose_target

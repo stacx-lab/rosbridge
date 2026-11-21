@@ -17,7 +17,7 @@ Kinex's, so a Kinex workspace uses an export as it is; see [Kinex](kinex.md).
 | `world` | `time` (`/clock`, Clock), `wait` (`/world/wait`, Wait), `budget` (`/world/budget`, Float64MultiArray), `stop` (`/world/stop`) |
 | `joint` (arm, torso) | `joint_state` (`/<arm>/joint_state`, JointState), `joint_target` (`/<arm>/joint_target`, JointTrajectory), `stop` |
 | `joint` commanded by its tip pose (HandsOn's arms, LIBERO's arm with `--config osc`) | `joint_state`, `pose_target` (`/<arm>/pose_target`, MultiDOFJointTrajectory in `<arm>/base`), `pose_state` (`/<arm>/pose_state`, MultiDOFJointState), `stop` |
-| `joint` commanded by joints or its tip pose (RoboDojo's arms) | `joint_state`, `joint_target`, `pose_target`, `pose_state`, `stop`; the latest command of either kind replaces the active one, and a stop holds the measured joints |
+| `joint` commanded by joints or its tip pose (RoboDojo's arms) | `joint_state`, `joint_target`, `pose_target`, `pose_state`, `stop`; a pose path is solved into joints when it arrives, or refused whole; the latest command of either kind replaces the active one, and a stop holds the measured joints |
 | `gripper` | `joint_state`, `target` (`/<gripper>/target`, Float64 position), `stop` |
 | `locomotion` (base) | `velocity` (`/<base>/velocity`, Twist), `odometry` (`/<base>/odometry`, Odometry), `stop` |
 | `rgb` (camera) | `image` (`/<camera>/image`), `camera_info`, in frame `<camera>/base` |

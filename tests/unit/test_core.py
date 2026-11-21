@@ -111,34 +111,36 @@ def test_pose_groups_hold_no_target_until_commanded_then_track_tip_poses():
         ActionLayout(("j",), (CommandGroup("bad", (0,), (0.,), (1.,), scalar=True, tip="palm"),))
 
 
-def test_a_group_taking_joint_and_pose_targets_follows_the_latest_kind():
+def test_a_joint_group_with_a_tip_solves_a_pose_path_into_joints_on_arrival():
     layout = ActionLayout(("j1", "j2"), (CommandGroup("arm", (0, 1), (-1.,)*2, (1.,)*2, tip="flange",
                                                        joint_targets=True),))
-    tip = np.array([0.1, 0.2, 0.3, 0., 0., 0., 1.])
-    joints = np.array([0.25, -0.25])
+    tip = np.array([0., 0., 0., 0., 0., 0., 1.])
     b = CommandBuffer(layout, [0., 0.])
-    b.set_trajectory("arm", 0.0, [1.0], [[0.5, -0.5]], lambda: pytest.fail("no pose command to leave"))
-    b.action(0.5)
-    assert b.poses() == {"arm": None}  # a joint command: the action carries the joints
-    # A pose command takes over from the measured tip, mid-trajectory.
-    b.set_pose_trajectory("arm", 0.5, [1.0], [[0.3, 0.2, 0.3, 0., 0., 0., 1.]], lambda: tip)
-    b.action(1.0)
-    assert b.poses()["arm"][:3] == pytest.approx([0.2, 0.2, 0.3])
-    b.action(2.0)
-    assert b.poses()["arm"] == pytest.approx([0.3, 0.2, 0.3, 0., 0., 0., 1.])  # holds its last pose
-    # A joint command after a pose one starts from the measured joints and clears the pose target.
-    with pytest.raises(CommandError, match="measured joints"):
-        b.set_trajectory("arm", 2.0, [1.0], [[0., 0.]])
-    b.set_trajectory("arm", 2.0, [1.0], [[0.75, 0.25]], lambda: joints)
-    assert b.poses() == {"arm": None}
-    assert b.action(2.5).tolist() == pytest.approx([0.5, 0.])  # halfway from the measured joints
-    with pytest.raises(CommandError, match="outside"):
-        b.set_trajectory("arm", 3.0, [1.0], [[2., 0.]], lambda: joints)  # joint targets keep their limits
-    # A stop holds the measured joints and drops a pose target.
-    b.set_pose_trajectory("arm", 3.0, [1.0], [tip], lambda: tip)
-    b.action(3.5)
-    b.stop("arm", joints)
-    assert b.poses() == {"arm": None} and b.action(4.0).tolist() == joints.tolist()
+    paths = []
+
+    def solve(joints, path):  # the tip's x and y are the joints
+        paths.append((joints.tolist(), path))
+        return [pose[:2] for pose in path]
+    b.set_pose_path("arm", 0., [.2], [[.4, .2, 0., 0., 0., 0., 1.]], lambda: tip, .1, solve)
+    assert b.poses() == {}  # a joint group: the action carries its joints
+    assert paths[0][0] == [0., 0.]  # from the joints it holds, the tip's pose at each period
+    assert np.allclose([pose[:2] for pose in paths[0][1]], [[.2, .1], [.4, .2]])
+    assert b.action(.1).tolist() == pytest.approx([.2, .1]) and b.action(.3).tolist() == pytest.approx([.4, .2])
+
+    def unsolved(joints, path):
+        raise ValueError("no joints")
+    # A path with no joints, or with joints beyond the limits, is refused whole: the group keeps its command.
+    for solve, reason in ((unsolved, "no joints"), (lambda joints, path: [[2., 0.]] * len(path), "outside")):
+        with pytest.raises(ValueError, match=reason):
+            b.set_pose_path("arm", .3, [.2], [[.9, 0., 0., 0., 0., 0., 1.]], lambda: tip, .1, solve)
+    assert b.action(.5).tolist() == pytest.approx([.4, .2])
+    with pytest.raises(CommandError, match="joint targets, not pose"):
+        b.set_pose_trajectory("arm", .5, [.2], [tip], lambda: tip)
+    b.set_trajectory("arm", .5, [1.], [[0., 0.]])
+    assert b.action(1.).tolist() == pytest.approx([.2, .1])  # and it takes joint targets
+    with pytest.raises(CommandError, match="no joint targets"):
+        CommandBuffer(ActionLayout(("j",), (CommandGroup("arm", (0,), (0.,), (1.,), tip="flange"),)), [0.]).set_pose_path(
+            "arm", 0., [.2], [tip], lambda: tip, .1, solve)
     with pytest.raises(ValueError):
         ActionLayout(("j",), (CommandGroup("bad", (0,), (0.,), (1.,), joint_targets=True),))  # needs a tip
 

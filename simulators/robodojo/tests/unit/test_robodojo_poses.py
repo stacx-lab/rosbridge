@@ -1,4 +1,4 @@
-"""Which of cuRobo's IK solutions a RoboDojo arm executes for a pose target, without Isaac."""
+"""Which of cuRobo's IK solutions a RoboDojo arm takes for a frame of a pose path, without Isaac."""
 import numpy as np
 import pytest
 
@@ -20,19 +20,21 @@ def test_a_solution_takes_the_whole_turn_nearest_the_commanded_joints_within_its
     assert q == pytest.approx([.1, 0., 0., 0., 0., 3.])  # joint6's limits allow no other turn
 
 
-def test_the_first_ranked_solution_one_frame_can_execute_is_taken():
+def test_the_nearest_solution_one_frame_can_execute_is_taken():
     near, nearer = np.r_[.1, 0, 0, 0, 0, 0], np.r_[.05, 0, 0, 0, 0, 0]
     flip = np.r_[0, 0, 0, 0, 3.1, 0]
     q, why = pick([flip, near, nearer])
-    assert why is None and q == pytest.approx(near)  # cuRobo's ranking, not the nearest
+    assert why is None and q == pytest.approx(nearer)  # the nearest, not cuRobo's ranking
     q, why = pick([flip])
-    assert q is None and why == "moves joint5 +3.10 rad in one frame, beyond 0.20 rad"
+    assert q is None and why == ("moves joint5 +3.10 rad in one frame, beyond 0.20 rad: 15.5 times too fast here, "
+                                 "or a change of posture")
+    assert pick([]) == (None, None)
     q, why = pick([np.r_[0, 0, 0, 0, 0, np.pi]])  # joint6's limits hold neither pi nor -pi
     assert q is None and why == "lies outside the joint limits"
 
 
 def test_a_solution_whose_joint_path_collides_is_passed_over():
-    blocked, clear = np.r_[.15, 0, 0, 0, 0, 0], np.r_[0, .15, 0, 0, 0, 0]
+    blocked, clear = np.r_[.15, 0, 0, 0, 0, 0], np.r_[0, .16, 0, 0, 0, 0]
     seen = []
 
     def path_free(rows):

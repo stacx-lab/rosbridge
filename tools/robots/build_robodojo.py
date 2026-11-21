@@ -23,12 +23,13 @@ ARM = ("ARX X5 six-joint {side} arm of the RoboDojo rig. Geometry is the sibling
        "joint positions ({side}_arm_joint_state of EvalEnv.take_action), or flange pose targets, which upstream's "
        "cuRobo IK turns into those joints; the native controller interpolates them over each 0.04 s frame. Both "
        "arms use the native joint names joint1..joint6.")
-# How the backend executes a pose target (rosbridge_robodojo.backend.RoboDojoSim._solve); step is one frame's
+# How the backend executes a pose target (rosbridge_robodojo.backend.RoboDojoSim.joint_path); step is one frame's
 # joint travel at the native velocity limit.
 POSE = ("Each point is a waypoint the flange reaches at its time along a straight line (rotation by slerp); "
-        "nothing plans around objects. Upstream's cuRobo IK solves every 0.04 s frame: if no solution stays within "
-        "the joint limits, moves each joint at most {step:.2f} rad per frame and avoids self and table collision, "
-        "the arm stops and the pending wait ends there, saying why.")
+        "nothing plans around objects. On arrival, upstream's cuRobo IK solves the pose of every 0.04 s frame from "
+        "the frame before, and the path runs as a joint trajectory. If a frame has no solution that stays within "
+        "the joint limits, moves each joint at most {step:.2f} rad and avoids self and table collision, the whole "
+        "trajectory is refused before the arm moves, and the next world wait reply says where and why.")
 
 
 def arm(side, base, step):
@@ -87,7 +88,7 @@ def main():
         files[f"devices/{side}_arm/arm.urdf"] = rigs.source_arm(
             source, [f"joint{i}" for i in range(1, 7)], f"x5_{side}_arm",
             "RoboDojo ARX X5 arm from Assets/Robots/x5/X5A.urdf: base_link..link6; flange is "
-            "the link6 frame.")
+            "the link6 frame.", velocity=sim._limits[side][2] / sim.period)
         files[f"devices/{side}_gripper/gripper.urdf"] = rigs.source_gripper(
             source, f"{side}_gripper", ["joint7", "joint8"], lower, upper, f"x5_{side}_gripper",
             f"RoboDojo ARX X5 {side} parallel gripper on the link6 flange. {side}_gripper is a "

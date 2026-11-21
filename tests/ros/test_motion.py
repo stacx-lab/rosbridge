@@ -119,7 +119,7 @@ def test_pose_target_moves_the_tip_validates_and_stops(tmp_path):
         graph.close()
 
 
-def test_an_arm_taking_joint_and_pose_targets_follows_the_latest_and_stops_on_its_joints(tmp_path):
+def test_an_arm_solving_pose_paths_into_joints_follows_the_latest_command_and_refuses_a_path_whole(tmp_path):
     graph = Graph(tmp_path, backend='joint_pose_toy')
     try:
         states, poser, stop = endpoints(graph, 'reach', 'pose_target', MultiDOFJointTrajectory)
@@ -131,27 +131,24 @@ def test_an_arm_taking_joint_and_pose_targets_follows_the_latest_and_stops_on_it
         assert graph.wait(1.).success
         graph.spin(.1)
         assert position() == pytest.approx([1., 0.])
-        send(graph, poser, poses((1., 1., upright)))  # takes over from the measured tip
+        send(graph, poser, poses((1., 1., upright), frame=''))  # from the measured tip; no frame is the arm's base
         assert graph.wait(1.).success
         graph.spin(.1)
         assert position() == pytest.approx([1., 1.])
-        send(graph, joints, trajectory([0., 0.], names=('x', 'y')))  # and back, from the measured joints
+        send(graph, joints, trajectory([0., 0.], names=('x', 'y')))
         assert graph.wait(1.).success
         graph.spin(.1)
         assert position() == pytest.approx([0., 0.])
         send(graph, joints, trajectory([3., 0.], names=('x', 'y')))
         assert '/reach/joint_target: x=3.0000 outside [-2.0000, 2.0000]' in graph.wait(.1).message
-        # A pose the simulator cannot execute stops the arm where it is; the next reply names why.
+        # A pose path the backend cannot solve is refused before the arm moves; the next reply names why.
         send(graph, poser, poses((2., 0., upright)))
         result = graph.wait(1.)
-        assert not result.success and result.waited_s < 1. and '/reach/pose_target: at t=' in result.message
-        assert result.message.endswith('the tip pose is beyond the 1.5 m reach')
-        graph.spin(.1)
-        held = position()
-        assert 0. < held[0] <= 1.5 and held[1] == pytest.approx(0.)
+        assert not result.success and result.waited_s < 1.
+        assert result.message.endswith('/reach/pose_target: at 0.80 s of the path the tip pose is beyond the 1.5 m reach')
         assert graph.wait(.5).message == 'ok'
         graph.spin(.1)
-        assert position() == pytest.approx(held)
+        assert position() == pytest.approx([0., 0.])
         send(graph, poser, poses((1., -1., upright)))
         assert graph.wait(.5).success
         assert graph.call(stop, Trigger.Request()).success

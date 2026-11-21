@@ -185,6 +185,9 @@ class WorkerBackend:
     def tip_pose(self, group):
         return self._call("tip_pose", group)
 
+    def joint_path(self, group, joints, poses):
+        return self._call("joint_path", group, joints, poses)
+
     def intrinsics(self, camera):
         return self._call("intrinsics", camera)
 
