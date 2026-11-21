@@ -148,6 +148,13 @@ episode runs to its horizon.
 The episode loads saved layout `ids[seed % len(ids)]`, retried up to three times
 when it fails upstream's settle check, so a seed keeps its layout.
 
+**Instruction.** The episode's instructions are upstream's, drawn for its layout, so a seed
+keeps them too. Upstream's policy receives two: `instruction`, a sentence in each observation,
+and `detailed_instruction`, the task's description and scoring rubric in its `extra_info`. Both
+are written with the task, seed and layout to `robodojo/PROMPT.json` in the run's directory
+(`.cache/rosbridge/runs/<id>/`), and the instruction is printed to the run log. Give the agent
+both; they are not published on ROS.
+
 ## Recording and checks
 
 With `--record`, spectators `third_person`, `left_wrist` and `right_wrist` copy the
