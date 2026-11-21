@@ -74,19 +74,23 @@ class SpectatorRenderer:
         finally:
             self._restore()
 
-    def capture(self, name):
+    def capture(self):
+        """Every view's RGB frame, by name. Each camera is its own render: a frame of three 960x720 views takes
+        a few milliseconds, nearly all of it drawing."""
         import mujoco as mj
-        view = self.views[name]
+        frames = {}
         with self._current():
-            self.camera.type = mj.mjtCamera.mjCAMERA_FIXED
-            self.camera.fixedcamid = self.camera_ids[name]
-            mj.mjv_updateScene(self.model, self.data, self.options, self.perturb,
-                              self.camera, mj.mjtCatBit.mjCAT_ALL, self.scene)
-            rgb = np.empty((view.height, view.width, 3), dtype=np.uint8)
-            viewport = mj.MjrRect(0, 0, view.width, view.height)
-            mj.mjr_render(viewport, self.scene, self.context)
-            mj.mjr_readPixels(rgb, None, viewport, self.context)
-            return np.ascontiguousarray(rgb[::-1])
+            for name, view in self.views.items():
+                self.camera.type = mj.mjtCamera.mjCAMERA_FIXED
+                self.camera.fixedcamid = self.camera_ids[name]
+                mj.mjv_updateScene(self.model, self.data, self.options, self.perturb,
+                                  self.camera, mj.mjtCatBit.mjCAT_ALL, self.scene)
+                rgb = np.empty((view.height, view.width, 3), dtype=np.uint8)
+                viewport = mj.MjrRect(0, 0, view.width, view.height)
+                mj.mjr_render(viewport, self.scene, self.context)
+                mj.mjr_readPixels(rgb, None, viewport, self.context)
+                frames[name] = np.ascontiguousarray(rgb[::-1])
+        return frames
 
     def intrinsics(self, name):
         view, cid = self.views[name], self.camera_ids[name]

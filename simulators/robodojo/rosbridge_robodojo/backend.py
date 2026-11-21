@@ -191,7 +191,7 @@ class RoboDojoSim:
         if configuration not in (None, "depth"):
             raise ValueError(f"RoboDojo has no configuration {configuration!r}")
         self.depth = configuration == "depth"  # RGB-D cameras
-        self._captures = {}  # each camera's annotator outputs at the current step
+        self._captures = None  # each camera's annotator outputs at the current step; None until it is rendered
         self.requested_max_steps = max_steps
         self.max_steps = max_steps
         self.early_stop = early_stop
@@ -236,7 +236,7 @@ class RoboDojoSim:
                        or sorted(getattr(self.env.seed_manager, "seed_info", {})))
         if not layouts:
             raise ValueError(f"{native} has no saved evaluation layouts")
-        self.done, self._captures = True, {}
+        self.done, self._captures = True, None
         layout = int(layouts[int(seed) % len(layouts)])
         from utils.cluttered_generator import UnStableError
         for attempt in range(UNSTABLE_RETRIES):
@@ -333,7 +333,7 @@ class RoboDojoSim:
                 key.set_joint_velocity_target(torch.zeros_like(tensor), joint_ids=indices)
                 manager.control_manager.prev_control[0][command] = {"position": positions, "velocity": 0}
         self.env.take_action(native)
-        self.steps, self._captures = self.steps + 1, {}
+        self.steps, self._captures = self.steps + 1, None
         self._score()
         if self.early_stop and self.env.end_flag[0]:
             # EvalEnv ends at its completion, or at a failed constraint (patch 0001 keeps both for early_stop).
@@ -464,12 +464,30 @@ class RoboDojoSim:
         position, quaternion = self._camera(camera).get_world_pose(camera_axes="ros")
         return values(position), values(quaternion)
 
+    def _render(self):
+        """Render the current step once: one native render fills every camera's and every spectator view's
+        buffers, so the first read of a step places the spectator cameras and renders, and the others reuse it."""
+        if self._captures is not None:
+            return
+        from pxr import Gf
+        for view, transform, _ in self._spectators.values():
+            position, q = self._camera(view.source).get_world_pose(camera_axes="usd")
+            w, x, y, z = values(q)
+            matrix = np.eye(4)
+            matrix[:3, :3] = [[1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w)],
+                              [2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w)],
+                              [2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)]]
+            matrix[:3, 3] = values(position)
+            transform.Set(Gf.Matrix4d(matrix.T.tolist()))
+        self.env.obs_manager.render_for_capture()
+        self._captures = {}
+
     def _capture(self, camera, annotator, dtype):
-        """A camera's annotator output at the current step; one render serves its image and depth."""
+        """A camera's annotator output at the current step."""
         if camera not in CAMERAS:
             raise KeyError(camera)
+        self._render()
         if camera not in self._captures:
-            self.env.obs_manager.render_for_capture()
             # RoboDojo owns tiled render products and their annotators.
             index = self.env.camera_manager.cameras[0].index(self._camera(camera))
             self._captures[camera] = self.env.capture_manager.step(env_ids=[0], cam_ids=[index])[0]
@@ -507,19 +525,10 @@ class RoboDojoSim:
             rgb.attach(product)
             self._spectators[view.name] = (view, UsdGeom.Xformable(camera).AddTransformOp(), rgb)
 
-    def render_spectator(self, name):
-        from pxr import Gf
-        view, transform, rgb = self._spectators[name]
-        position, q = self._camera(view.source).get_world_pose(camera_axes="usd")
-        w, x, y, z = values(q)
-        matrix = np.eye(4)
-        matrix[:3, :3] = [[1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w)],
-                          [2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w)],
-                          [2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)]]
-        matrix[:3, 3] = values(position)
-        transform.Set(Gf.Matrix4d(matrix.T.tolist()))
-        self.env.obs_manager.render_for_capture()
-        return np.ascontiguousarray(np.asarray(rgb.get_data())[..., :3])
+    def render_spectators(self):
+        self._render()
+        return {name: np.ascontiguousarray(np.asarray(rgb.get_data())[..., :3])
+                for name, (_, _, rgb) in self._spectators.items()}
 
     def spectator_intrinsics(self, name):
         view = self._spectators[name][0]

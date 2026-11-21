@@ -185,7 +185,8 @@ Implement `SimulatorBackend` (`src/rosbridge/core/backend.py`). Its docstring is
   - `measures()` adds the backend's own fields to the episode record, such as a native seed or a
     graded score.
 - **Optional.**
-  - spectators (`configure_spectators`, `render_spectator`, `spectator_intrinsics`);
+  - spectators (`configure_spectators`, `render_spectators`, `spectator_intrinsics`): one call returns a frame
+    of every view, so a renderer that draws all its views in one pass renders once;
   - `camera_rate_hz`;
   - `distortion` for lensed cameras;
   - `configuration=NAME` for declared configurations.

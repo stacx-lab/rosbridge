@@ -116,8 +116,7 @@ class BiDexSim:
             from rosbridge.core.mujoco_rendering import SpectatorRenderer
             self._spectator = SpectatorRenderer(env.model, env.data, self.spectators,
                                                 options=env._scene_option)
-            for view in self.spectators:
-                self._spectator.capture(view.name)
+            self._spectator.capture()
         self.steps, self.done, self.success, self.reward = 0, False, False, 0.
         print(f"[bidex] {native} seed {seed} (eval seed {eval_seed}, episode {index}): "
               f"{instruction(self._loaded)}", flush=True)
@@ -191,8 +190,8 @@ class BiDexSim:
         mujoco.mju_mat2Quat(quat, (data.cam_xmat[cid].reshape(3, 3) @ OPTICAL).flatten())
         return data.cam_xpos[cid].copy(), quat
 
-    def render_spectator(self, name):
-        return self._spectator.capture(name)
+    def render_spectators(self):
+        return self._spectator.capture()
 
     def spectator_intrinsics(self, name):
         return self._spectator.intrinsics(name)

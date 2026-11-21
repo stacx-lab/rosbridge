@@ -197,8 +197,8 @@ class WorkerBackend:
     def render_depth(self, camera):
         return self._call("render_depth", camera)
 
-    def render_spectator(self, name):
-        return self._call("render_spectator", name)
+    def render_spectators(self):
+        return self._call("render_spectators")
 
     def spectator_intrinsics(self, name):
         return self._call("spectator_intrinsics", name)

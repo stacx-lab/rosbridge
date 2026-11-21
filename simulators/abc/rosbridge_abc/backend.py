@@ -108,8 +108,7 @@ class AbcSim:
                 from rosbridge.core.mujoco_rendering import SpectatorRenderer
                 candidate._spectator = SpectatorRenderer(env.model, env.data, candidate.spectators)
                 # Validate capture before replacing a live episode.
-                for view in candidate.spectators:
-                    candidate._spectator.capture(view.name)
+                candidate._spectator.capture()
         except BaseException:
             candidate.close()
             raise
@@ -241,8 +240,8 @@ class AbcSim:
             self.env.close()
             self.env = None
 
-    def render_spectator(self, name):
-        return self._spectator.capture(name)
+    def render_spectators(self):
+        return self._spectator.capture()
 
     def spectator_intrinsics(self, name):
         return self._spectator.intrinsics(name)

@@ -60,7 +60,7 @@ def test_rendering_and_spectators_leave_physics_unchanged(sim):
         depth = sim.render_depth(camera)
         assert depth.dtype == np.float32 and (depth > 0).mean() > .9
     for view in sim.spectators:
-        frame = sim.render_spectator(view.name)
+        frame = sim.render_spectators()[view.name]
         assert frame.shape == (720, 960, 3) and frame.std() > 1
         fx, fy, cx, cy = sim.spectator_intrinsics(view.name)
         assert fx == pytest.approx(fy) and (cx, cy) == pytest.approx((479.5, 359.5))

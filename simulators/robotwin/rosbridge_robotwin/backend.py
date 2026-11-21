@@ -199,8 +199,7 @@ class RoboTwinSim:
         if self.spectators:
             for view in self.spectators:
                 self._open_spectator(view)
-            for view in self.spectators:
-                self.render_spectator(view.name)
+            self.render_spectators()
 
     def _index(self):
         robot = self.env.robot
@@ -340,18 +339,21 @@ class RoboTwinSim:
                                           k[0, 2], k[1, 2], k[0, 1])
         self._spectators[view.name] = (view, camera)
 
-    def render_spectator(self, name):
-        view, camera = self._spectators[name]
-        if view.source == "head_camera":
-            pose = self._camera(view.source).get_global_pose()
-        else:
-            # Read the live wrist mount without updating task cameras.
-            pose = getattr(self.env.robot, view.source).get_pose()
-        camera.entity.set_pose(pose)
-        self.env.scene.update_render()
-        camera.take_picture()
-        pixels = np.asarray(camera.get_picture("Color"))
-        return np.ascontiguousarray((np.clip(pixels[..., :3], 0, 1) * 255).astype(np.uint8))
+    def render_spectators(self):
+        for view, camera in self._spectators.values():
+            if view.source == "head_camera":
+                pose = self._camera(view.source).get_global_pose()
+            else:
+                # Read the live wrist mount without updating task cameras.
+                pose = getattr(self.env.robot, view.source).get_pose()
+            camera.entity.set_pose(pose)
+        self.env.scene.update_render()  # once for every view; each camera then takes its own picture
+        frames = {}
+        for name, (_, camera) in self._spectators.items():
+            camera.take_picture()
+            pixels = np.asarray(camera.get_picture("Color"))
+            frames[name] = np.ascontiguousarray((np.clip(pixels[..., :3], 0, 1) * 255).astype(np.uint8))
+        return frames
 
     def spectator_intrinsics(self, name):
         k = self._spectators[name][1].get_intrinsic_matrix()

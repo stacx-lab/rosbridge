@@ -21,10 +21,10 @@ class Spectator:
         self._pending = None
         node.create_timer(.005, self._flush)
 
-    def submit(self, stamp, sim):
+    def submit(self, stamp, sim, rgb):
         info = conv.camera_info(stamp, self.frame, self.view.width, self.view.height,
                                 *sim.spectator_intrinsics(self.view.name))
-        image = conv.image(stamp, self.frame, sim.render_spectator(self.view.name))
+        image = conv.image(stamp, self.frame, rgb)
         with self._lock:
             self._pending = (info, image)
 
@@ -59,5 +59,6 @@ class ObservationPublisher:
             elif cameras:
                 device.publish(stamp)
         if self.spectators and self.spectator_schedule.due(time_s):
+            frames = self.sim.render_spectators()
             for spectator in self.spectators:
-                spectator.submit(stamp, self.sim)
+                spectator.submit(stamp, self.sim, frames[spectator.view.name])

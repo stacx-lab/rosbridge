@@ -268,8 +268,9 @@ class R1ProSim:
             with og.sim.editing_usd():
                 transform.Set(Gf.Matrix4d(matrix.T.tolist()))
 
-    def render_spectator(self, name):
-        return np.ascontiguousarray(np.asarray(self._spectators[name][3].get_data())[..., :3])
+    def render_spectators(self):
+        return {name: np.ascontiguousarray(np.asarray(spectator[3].get_data())[..., :3])
+                for name, spectator in self._spectators.items()}
 
     # Diagnostics for tests --------------------------------------------------------------
 

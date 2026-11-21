@@ -103,7 +103,7 @@ def test_cameras_render_the_contract_and_leave_physics_unchanged(sim):
     assert sim.intrinsics("head_camera")[4:] == pytest.approx((431.267, 239.419), abs=1e-3)
     assert set(sim.distortion) == {"head_camera"} and len(sim.distortion["head_camera"]) == 5
     for view in sim.spectators:
-        assert sim.render_spectator(view.name).shape == (720, 960, 3)
+        assert sim.render_spectators()[view.name].shape == (720, 960, 3)
         assert sim.spectator_intrinsics(view.name)[2:] == (479.5, 359.5)
     after = sim.state()
     np.testing.assert_array_equal(before[0], after[0])
@@ -142,7 +142,7 @@ def test_cameras_render_the_geometry_their_profiles_state(tmp_path, sim):
         width, height = color["width"], color["height"]
         fx, fy, cx, cy = (color["projection"][key] for key in ("fx", "fy", "cx", "cy"))
         u, v = (grid.ravel() for grid in np.meshgrid(np.arange(width, dtype=float), np.arange(height, dtype=float)))
-        image, spectator = sim.render(camera), sim.render_spectator(view)
+        image, spectator = sim.render(camera), sim.render_spectators()[view]
         pinhole = np.column_stack([(u - cx) / fx, (v - cy) / fy, np.ones_like(u)])
         if color["distortion"]["model"] == "none":
             through = pinhole

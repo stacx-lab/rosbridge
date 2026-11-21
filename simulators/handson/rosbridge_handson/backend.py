@@ -374,7 +374,11 @@ class HandsOnSim:
         return (pose_matrix(pose[:3], pose[3:]) @ np.asarray(spec["nominal_camera_to_palm_opengl"])
                 @ self._offsets[camera])
 
-    def render_spectator(self, name):
+    def render_spectators(self):
+        """Each view in passes of its own: sharing them between views measured no faster here."""
+        return {name: self._render_spectator(name) for name in self._spectators}
+
+    def _render_spectator(self, name):
         from handson.evaluation.cameras import role_render_products
         from pxr import Gf
         view, _, transform, texture, rgb = self._spectators[name]

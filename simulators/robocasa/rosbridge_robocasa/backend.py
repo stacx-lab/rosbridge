@@ -184,8 +184,7 @@ class RoboCasaSim:
             context = self.env.sim._render_context_offscreen
             self._spectator = SpectatorRenderer(self.model, self.data, self.spectators,
                                                restore_context=context.gl_ctx, options=context.vopt)
-            for view in self.spectators:
-                self._spectator.capture(view.name)
+            self._spectator.capture()
 
     def _index(self):
         parts, model = self.robot.part_controllers, self.model
@@ -284,8 +283,8 @@ class RoboCasaSim:
         self._depth.update_scene(self.data, camera=camera, scene_option=options)
         return render_depth(self._depth, self.model)
 
-    def render_spectator(self, name):
-        return self._spectator.capture(name)
+    def render_spectators(self):
+        return self._spectator.capture()
 
     def spectator_intrinsics(self, name):
         return self._spectator.intrinsics(name)

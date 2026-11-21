@@ -40,15 +40,15 @@ def test_slow_writer_keeps_only_latest_pending_frame():
 
     spectator.info = SimpleNamespace(publish=lambda _: None)
     spectator.image = SimpleNamespace(publish=publish)
-    sim = SimpleNamespace(spectator_intrinsics=lambda _: (1., 1., .5, .5), render_spectator=frame)
-    spectator.submit(conv.stamp(0.), sim)
+    sim = SimpleNamespace(spectator_intrinsics=lambda _: (1., 1., .5, .5))
+    spectator.submit(conv.stamp(0.), sim, frame())
     writer = threading.Thread(target=spectator._flush)
     writer.start()
     try:
         assert entered.wait(5.)
         # A blocked DDS write must not prevent the owner from submitting frames.
         for t in range(1, 101):
-            spectator.submit(conv.stamp(float(t)), sim)
+            spectator.submit(conv.stamp(float(t)), sim, frame())
         assert conv.seconds(spectator._pending[1].header.stamp) == 100.
     finally:
         release.set()

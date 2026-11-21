@@ -150,7 +150,7 @@ def test_catalog_task_loads_steps_and_records(task):
         assert sim.steps == 1 and np.isfinite(sim.state()[0]).all() and sim.reward in (0., 1.)
         assert 0. <= sim.native("measures")["q_score"] <= 1.
         for view in sim.spectators:
-            assert sim.render_spectator(view.name).shape == (720, 960, 3)
+            assert sim.render_spectators()[view.name].shape == (720, 960, 3)
             assert sim.spectator_intrinsics(view.name)[2:] == (479.5, 359.5)
     finally:
         sim.close()

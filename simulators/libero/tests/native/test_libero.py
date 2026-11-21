@@ -66,7 +66,7 @@ def test_rendering_calibration_and_failed_capture_preserve_world(monkeypatch):
         images = {c: sim.render(c) for c in sim.cameras}
         vis = sim.model.vis.global_.offwidth, sim.model.vis.global_.offheight
         for view in sim.spectators:
-            rgb = sim.render_spectator(view.name)
+            rgb = sim.render_spectators()[view.name]
             assert rgb.shape == (720, 960, 3) and rgb.std() > 1
             intrinsics = sim.spectator_intrinsics(view.name)
             expected_focal = 360 / np.tan(np.deg2rad(sim.model.camera(view.source).fovy[0]) / 2)
@@ -89,7 +89,7 @@ def test_rendering_calibration_and_failed_capture_preserve_world(monkeypatch):
                 sim.reset(sim.default_task, 1)
         assert sim.env is old
         np.testing.assert_array_equal(images['agentview'], sim.render('agentview'))
-        assert sim.render_spectator('wrist').shape == (720, 960, 3)
+        assert sim.render_spectators()['wrist'].shape == (720, 960, 3)
         sim.reset(sim.default_task, 0, False)
         for camera in sim.cameras:
             np.testing.assert_array_equal(images[camera], sim.render(camera))

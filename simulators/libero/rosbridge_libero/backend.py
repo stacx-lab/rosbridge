@@ -147,8 +147,7 @@ class LiberoSim:
             context = self.env.sim._render_context_offscreen
             self._spectator = SpectatorRenderer(self.model, self.data, self.spectators,
                                                restore_context=context.gl_ctx, options=context.vopt)
-            for view in self.spectators:
-                self._spectator.capture(view.name)
+            self._spectator.capture()
 
     def _index(self):
         robot, model = self.robot, self.model
@@ -262,8 +261,8 @@ class LiberoSim:
         return np.ascontiguousarray(self.env.sim.render(camera_name=camera,
                                    width=self.width, height=self.height)[::-1])
 
-    def render_spectator(self, name):
-        return self._spectator.capture(name)
+    def render_spectators(self):
+        return self._spectator.capture()
 
     def spectator_intrinsics(self, name):
         return self._spectator.intrinsics(name)

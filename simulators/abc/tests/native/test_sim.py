@@ -62,7 +62,7 @@ def test_spectator_isolation_and_reset_failure(monkeypatch):
         renderer = SpectatorRenderer(sim.env.model, sim.env.data, sim.spectators)
         try:
             for view in sim.spectators:
-                rgb = renderer.capture(view.name)
+                rgb = renderer.capture()[view.name]
                 assert rgb.shape == (720, 960, 3) and rgb.std() > 1
                 assert np.isfinite(renderer.intrinsics(view.name)).all()
                 np.testing.assert_array_equal(state[0], sim.env.data.qpos)
@@ -82,7 +82,7 @@ def test_spectator_isolation_and_reset_failure(monkeypatch):
             with pytest.raises(RuntimeError, match='capture failed'):
                 sim.reset(sim.task, seed=1)
         assert sim.env is previous
-        assert sim.render_spectator('third_person').shape == (720, 960, 3)
+        assert sim.render_spectators()['third_person'].shape == (720, 960, 3)
         sim.step(sim.state()[0])
         assert sim.time_s == pytest.approx(sim.period)
     finally:

@@ -201,7 +201,7 @@ def test_rgbd_rendering_is_registered_and_never_advances_the_world():
             _, buffer = sim.env.sim.render(camera_name=camera, width=256, height=256, depth=True)
             native = get_real_depth_map(sim.env.sim, buffer)[::-1]
             assert np.median(np.abs(native - depth)[depth > 0]) < .005
-        assert sim.render_spectator('third_person').shape == (240, 320, 3)
+        assert sim.render_spectators()['third_person'].shape == (240, 320, 3)
         assert sim.steps == steps
         np.testing.assert_array_equal(qpos, sim.data.qpos)
         with pytest.raises(KeyError):
