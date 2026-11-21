@@ -45,8 +45,9 @@ def test_arm_target_validates_replaces_and_stops(tmp_path):
                         trajectory([.2, .1], velocities=[0., 0.]), trajectory([9., .1]),
                         JointTrajectory(joint_names=['slide', 'rotate'])):
             send(graph, publisher, invalid)
-        result = graph.wait(.5)
-        assert result.success and result.message.startswith('ok; refused since the previous wait reply: ')
+        result = graph.wait(.5)  # ends at once: the refusals await this reply
+        assert not result.success and result.waited_s == 0.
+        assert result.message.startswith('ended early by a refused command; refused since the previous wait reply: ')
         for reason in ('axes target has non-finite values', 'trajectory must name each of',
                        'only position trajectories are supported', 'slide=9.0000 outside',
                        'trajectory needs one time per point and at least one point'):
@@ -98,11 +99,12 @@ def test_pose_target_moves_the_tip_validates_and_stops(tmp_path):
                         poses((0., 0., upright), velocities=[Twist()])):
             send(graph, publisher, invalid)
         result = graph.wait(1.)
-        assert result.success
+        assert not result.success and result.message.startswith('ended early by a refused command; ')
         for reason in ('pose targets must be expressed in reach/base', 'pose targets must name the tip link tip once',
                        'reach tip pose needs a unit quaternion', 'reach tip pose has non-finite values',
                        'only pose trajectories are supported'):
             assert f'/reach/pose_target: {reason}' in result.message
+        assert graph.wait(1.).success
         graph.spin(.1)
         assert position() == pytest.approx([1.5, .5])  # the active trajectory went on
         send(graph, publisher, poses((-1., -1., upright)))
@@ -142,7 +144,7 @@ def test_an_arm_taking_joint_and_pose_targets_follows_the_latest_and_stops_on_it
         # A pose the simulator cannot execute stops the arm where it is; the next reply names why.
         send(graph, poser, poses((2., 0., upright)))
         result = graph.wait(1.)
-        assert result.success and '/reach/pose_target: at t=' in result.message
+        assert not result.success and result.waited_s < 1. and '/reach/pose_target: at t=' in result.message
         assert result.message.endswith('the tip pose is beyond the 1.5 m reach')
         graph.spin(.1)
         held = position()
@@ -175,7 +177,7 @@ def test_gripper_target_persists_and_stop_keeps_it(tmp_path):
         for value in (math.nan, math.inf, -2., 2.):
             send(graph, publisher, Float64(data=value))
         result = graph.wait(.1)
-        assert result.success and '/finger/target: finger target has non-finite values (2 commands)' in result.message
+        assert not result.success and '/finger/target: finger target has non-finite values (2 commands)' in result.message
         assert graph.wait(0.).message == 'ok'  # named once
         graph.spin(.1)
         assert states[-1].position[0] == -1.

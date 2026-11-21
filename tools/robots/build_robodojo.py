@@ -28,7 +28,7 @@ ARM = ("ARX X5 six-joint {side} arm of the RoboDojo rig. Geometry is the sibling
 POSE = ("Each point is a waypoint the flange reaches at its time along a straight line (rotation by slerp); "
         "nothing plans around objects. Upstream's cuRobo IK solves every 0.04 s frame: if no solution stays within "
         "the joint limits, moves each joint at most {step:.2f} rad per frame and avoids self and table collision, "
-        "the arm stops and the next wait reply says why.")
+        "the arm stops and the pending wait ends there, saying why.")
 
 
 def arm(side, base, step):

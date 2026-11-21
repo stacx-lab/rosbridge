@@ -24,8 +24,7 @@ def world(mode="stepped", max_steps=None, backend=ToyBackend, task="toy", early_
 def wait(runtime, duration):
     """Admit a world wait on the owner thread; the future completes with its result."""
     result = Future()
-    runtime.submit(lambda: runtime.waits.admit(duration, runtime.time_s, runtime.steps,
-                                               runtime.sim.period, runtime.ended, result.set_result))
+    runtime.submit(lambda: runtime.wait(duration, result.set_result))
     return result
 
 
@@ -133,8 +132,7 @@ def test_records_say_why_the_episode_ended(tmp_path, monkeypatch, task, early_st
 def replied(runtime, duration):
     """A world wait as the world node admits it: its reply names the commands refused since the previous one."""
     result = Future()
-    runtime.submit(lambda: runtime.waits.admit(duration, runtime.time_s, runtime.steps, runtime.sim.period,
-                                               runtime.ended, lambda done: result.set_result(runtime.reply(done))))
+    runtime.submit(lambda: runtime.wait(duration, lambda done: result.set_result(runtime.reply(done))))
     return result
 
 
@@ -151,9 +149,11 @@ def test_a_wait_reply_names_the_commands_refused_since_the_previous_reply():
     named = replied(runtime, .1)
     finish(runtime)
     assert plain.result().message == "ok"
-    assert named.result().success and named.result().message == (
-        "ok; refused since the previous wait reply: /arm/joint_target: arm_joint1=9.0000 outside [-1.0000, 1.0000] "
-        "(2 commands); /finger/target: finger target has non-finite values")
+    # Refusals not yet reported end a wait at once, before it steps: waited 0 s, nothing charged.
+    assert not named.result().success and (named.result().waited_s, runtime.time_s) == (0., 0.)
+    assert named.result().message == (
+        "ended early by a refused command; refused since the previous wait reply: /arm/joint_target: "
+        "arm_joint1=9.0000 outside [-1.0000, 1.0000] (2 commands); /finger/target: finger target has non-finite values")
     again = replied(runtime, 0.)
     runtime.drain()
     assert again.result().message == "ok"  # named once
@@ -180,12 +180,15 @@ def test_a_pose_the_simulator_cannot_execute_stops_its_group_and_is_named_in_the
                                                                  [[2., 0., 0., 0., 0., 0., 1.]], measured))
     refused = replied(runtime, .3)
     finish(runtime)
-    assert refused.result().message == ("ok; refused since the previous wait reply: /reach/pose_target: "
-                                        "at t=0.50 s: the tip pose is beyond the 1.5 m reach")
+    # The wait ends at the refusal, 0.1 s short: that rest is never stepped, so the budget does not count it.
+    assert not refused.result().success and refused.result().message == (
+        "ended early by a refused command; refused since the previous wait reply: /reach/pose_target: "
+        "at t=0.50 s: the tip pose is beyond the 1.5 m reach")
+    assert (refused.result().time_s, refused.result().waited_s) == (pytest.approx(.5), pytest.approx(.2))
+    assert runtime.time_s == pytest.approx(.5) and runtime.budget()[0] == pytest.approx(.5)
     held = runtime.sim.position.tolist()
     assert 1. < held[0] <= 1.5 and runtime.commands.poses() == {"reach": None}  # stopped where it was
     assert runtime.commands.action(runtime.time_s + .1).tolist() == held  # holding its measured joints
-    assert runtime.sim.commanded[-1] is None
 
 
 def test_only_a_stepped_world_has_an_episode_budget():
@@ -206,23 +209,24 @@ def test_only_a_stepped_world_has_an_episode_budget():
     assert all(math.isnan(value) for value in realtime.budget())
 
 
-def test_a_refusal_reaches_a_wait_that_the_end_or_stop_completes():
-    runtime, _ = world(max_steps=2)
+def test_a_refusal_ends_the_pending_wait_there():
+    runtime, _ = world(max_steps=20)
     pending = replied(runtime, 1.)
     runtime.drain()
     runtime.tick()
     refuse(runtime, "/arm/joint_target", "trajectory start is in the past")
     finish(runtime)
-    assert not pending.result().success
-    assert pending.result().message == (f"episode ended during wait; {TIME_LIMIT}; refused since the previous "
+    assert not pending.result().success and runtime.steps == 1 and not runtime.ended
+    assert pending.result().message == ("ended early by a refused command; refused since the previous "
                                         "wait reply: /arm/joint_target: trajectory start is in the past")
-    runtime, _ = world()
+    assert (pending.result().time_s, pending.result().waited_s) == (pytest.approx(.1), pytest.approx(.1))
+    after = replied(runtime, .2)  # reported: the next wait runs its full duration
+    finish(runtime)
+    assert after.result().success and after.result().message == "ok" and runtime.steps == 3
     stopped = replied(runtime, 1.)
     runtime.drain()
-    runtime.refuse("/finger/target", "finger target has non-finite values")
     runtime.close()
-    assert stopped.result().message == ("runtime stopped; refused since the previous wait reply: /finger/target: "
-                                        "finger target has non-finite values")
+    assert stopped.result().message == "runtime stopped"  # no refusal: the stop ends it
 
 
 def test_realtime_runs_without_waits_and_wait_does_not_add_extra_ticks():

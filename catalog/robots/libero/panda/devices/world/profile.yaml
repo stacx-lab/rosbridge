@@ -17,11 +17,12 @@ operations:
       durability: transient_local
     timeout_s: 10
   wait:
-    description: Advance or await duration_s of world time (finite and nonnegative).
-      Zero is an observation barrier. Waits are sequential; one requested while another
-      is pending is rejected. A terminal episode rejects further progression. The
-      reply's message also names the device commands refused since the previous reply,
-      with their reasons.
+    description: 'Advance or await duration_s of world time (finite and nonnegative). Zero
+      is an observation barrier. Waits are sequential; one requested while another is pending
+      is rejected. A terminal episode rejects further progression. A device command refused
+      during a wait, or before it and not yet reported, ends it there (success false; waited_s
+      is how far it ran): the rest is never stepped, so it costs no budget. The reply''s message
+      names the commands refused since the previous reply, with their reasons.'
     transport: service
     direction: input
     endpoint: /world/wait
@@ -61,8 +62,8 @@ meta:
   created_at: '2026-10-19T00:00:00Z'
   updated_at: '2026-10-20T17:24:01.458Z'
 type: world
-description: Scene reference and authoritative world clock. Bounds and surfaces describe
-  known scene geometry. This device exposes no task instructions or evaluator results.
+description: Scene reference and authoritative world clock. Bounds and surfaces describe known
+  scene geometry. This device exposes no task instructions or evaluator results.
 source: default
 method: unknown
 calibrated_at: null

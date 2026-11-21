@@ -107,8 +107,7 @@ class SimNode(Node):
                 self.pending_wait = None
                 ready.set_result(self.world.reply(result))  # with the commands refused since the previous reply
             self.pending_wait = complete
-            self.world.waits.admit(request.duration_s, self.world.time_s, self.world.steps,
-                                   self.sim.period, self.world.ended, complete)
+            self.world.wait(request.duration_s, complete)
         try:
             await self.request(admit)
             result = await ready

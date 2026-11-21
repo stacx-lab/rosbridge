@@ -14,6 +14,10 @@ from rosbridge.core import CommandBuffer
 from .pacing import Pacer
 from .waits import WaitScheduler
 
+# Why a wait with time left ends at once: a refusal its reply must name. The rest of the wait is never stepped, so a
+# stepped run never charges it.
+REFUSED = "ended early by a refused command"
+
 # A wait's reply names at most this many kinds of refused command (endpoint and reason), then counts the rest.
 REFUSALS_LISTED = 5
 # What wait replies say of an episode's end, by the record's reason; a cause the backend names follows.
@@ -60,10 +64,19 @@ class WorldRuntime:
         return future
 
     def refuse(self, endpoint, reason):
-        """A device refused a command published on endpoint; the next wait's reply names it. Owner thread."""
+        """A device refused a command published on endpoint: the pending wait ends now, and its reply, or the next
+        wait's, names the refusal. Owner thread."""
         self._assert_owner()
         key = (endpoint, str(reason))
         self.refused[key] = self.refused.get(key, 0) + 1
+        self.waits.interrupt(self.time_s, REFUSED)
+
+    def wait(self, duration_s, complete):
+        """Admit a world wait; complete receives its WaitResult. One admitted while a refusal awaits its reply ends at
+        once, as refuse ends a pending one. Owner thread."""
+        self._assert_owner()
+        self.waits.admit(duration_s, self.time_s, self.steps, self.sim.period, self.ended, complete,
+                         interrupted=REFUSED if self.refused else None)
 
     def hold(self, group):
         """Stop a command group where it is, as its device's stop does: a base at zero velocity, a pose group that
@@ -141,13 +154,14 @@ class WorldRuntime:
         else:
             self.pacer.advanced()
             self.time_s, self.steps = self.sim.time_s, self.sim.steps
-            # Pose targets the simulator could not execute: each group stops where it is, and its refusal names why.
-            for group, reason in (unexecuted or {}).items() if poses else ():
-                self.hold(group)
-                self.refuse(f"/{group}/pose_target", f"at t={self.time_s:.2f} s: {reason}")
             if self.sim.success and self.first_success_step is None:
                 self.first_success_step = self.steps
             self.publish()
+            # Pose targets the simulator could not execute: each group stops where it is, and its refusal, after this
+            # step's publications, ends the pending wait.
+            for group, reason in (unexecuted or {}).items() if poses else ():
+                self.hold(group)
+                self.refuse(f"/{group}/pose_target", f"at t={self.time_s:.2f} s: {reason}")
             if self.sim.done:
                 reason, cause = self._stop()
                 self._end(ENDS.get(reason, f"the simulator ended it ({reason})") + (f" ({cause})" if cause else ""),

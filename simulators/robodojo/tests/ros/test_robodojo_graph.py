@@ -88,7 +88,8 @@ def test_robodojo_graph_serves_its_devices_from_a_native_worker(tmp_path, mode):
         pose_target.publish(lift(3., 1))
         graph.spin(.1)
         refused = graph.wait(1.)
-        assert refused.success and "/left_arm/pose_target: at t=" in refused.message, refused.message
+        # The wait ends at the refusal: the rest of its second is never stepped.
+        assert not refused.success and refused.waited_s < 1. and "/left_arm/pose_target: at t=" in refused.message
         assert graph.call(stop, Trigger.Request()).success
         opened = last["gripper"].position[0]
         gripper_target.publish(Float64(data=0.))

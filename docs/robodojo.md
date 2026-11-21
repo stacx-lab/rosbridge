@@ -109,8 +109,9 @@ executes the result as upstream's joint action:
    uni-robot-agent's RoboDojo adapter, with the native velocity limit in place of its 1 rad
    jump limit.
 3. If no solution passes, the arm keeps its commanded joints for that frame and the world then
-   stops it at its measured joints. The next `world/wait` reply names the pose target, the time
-   and the reason.
+   stops it at its measured joints. The pending `world/wait` ends there, with `success` false and
+   a message naming the pose target, the time and the reason, so the rest of the wait costs no
+   budget.
 
 The joints then go through `EvalEnv.take_action` exactly as joint targets do, so evaluation and
 scoring are unchanged. A pose is tracked only as precisely as upstream's IK tolerances, 1 mm and

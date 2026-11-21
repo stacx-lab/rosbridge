@@ -26,14 +26,18 @@ class WaitScheduler:
     def pending(self):
         return bool(self._pending)
 
-    def admit(self, duration_s, time_s, step, period, ended, complete):
-        """ended: None while the episode runs, then why it ended, which every valid reply adds."""
+    def admit(self, duration_s, time_s, step, period, ended, complete, interrupted=None):
+        """ended: None while the episode runs, then why it ended, which every valid reply adds. interrupted: why a
+        wait with time left ends at once, as interrupt ends pending ones; a zero wait, an observation barrier, still
+        succeeds."""
         if not math.isfinite(duration_s) or duration_s < 0:
             complete(WaitResult(False, "duration_s must be finite and nonnegative", 0., time_s))
         elif duration_s == 0:
             complete(WaitResult(True, f"ok; {ended}" if ended else "ok", 0., time_s))
         elif ended:
             complete(WaitResult(False, f"episode is done; {ended}", 0., time_s))
+        elif interrupted:
+            complete(WaitResult(False, interrupted, 0., time_s))
         else:
             # Integer deadlines avoid accumulated floating-point drift. Move one ULP
             # toward zero so e.g. 0.3 / 0.1 does not accidentally request an extra tick.
@@ -66,6 +70,7 @@ class WaitScheduler:
         return False
 
     def interrupt(self, time_s, message):
+        """End every pending wait now, unsuccessfully, with message."""
         pending, self._pending = self._pending, []
         for wait in pending:
             wait.complete(WaitResult(False, message, max(0., time_s - wait.start_s), time_s))

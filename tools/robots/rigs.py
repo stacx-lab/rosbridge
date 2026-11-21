@@ -54,9 +54,11 @@ def world(description):
         "wait": operation(
             "Advance or await duration_s of world time (finite and nonnegative). Zero is an "
             "observation barrier. Waits are sequential; one requested while another is pending "
-            "is rejected. A terminal episode rejects further progression. The reply's message "
-            "also names the device commands refused since the previous reply, with their "
-            "reasons.", "service", "input", "/world/wait",
+            "is rejected. A terminal episode rejects further progression. A device command "
+            "refused during a wait, or before it and not yet reported, ends it there (success "
+            "false; waited_s is how far it ran): the rest is never stepped, so it costs no "
+            "budget. The reply's message names the commands refused since the previous reply, "
+            "with their reasons.", "service", "input", "/world/wait",
             "custom_interfaces/srv/Wait",
             timeout_s=120),
         "budget": operation(

@@ -157,7 +157,13 @@ on `<base>/odometry`. Invalid targets are logged
 and rejected; a target within 0.001 (rad or m) of a limit, such as a measured
 position slightly past it, is held at the limit. A topic publisher gets no reply,
 so the message of the next `world/wait` reply names each refused command's topic
-and reason, once (at most five kinds, then a count). The latest valid target is
+and reason, once (at most five kinds, then a count). A refusal also ends the pending
+wait at once, as does one made before a wait and not yet reported: the reply has
+`success` false, `ended early by a refused command`, and the `waited_s` it ran. The rest
+of the wait is never stepped, so in stepped mode it costs no budget. This covers a pose target
+that the simulator cannot execute mid-trajectory, such as RoboDojo's (see its page), as well
+as commands refused on arrival. A zero wait, an observation barrier, still succeeds and names
+the refusals. The latest valid target is
 held until replaced or stopped. `<device>/stop` holds the measured position; a gripper's
 stop keeps its applied grip target, so a held object stays gripped, and a base's stop
 commands zero velocity. Each command
