@@ -21,7 +21,7 @@ from rosbridge.assets import AssetStore, file_lock, link_asset, seed_root
 from rosbridge.storage import write_json
 
 REPOSITORY = "RoboDojo-Benchmark/RoboDojo"
-REVISION = "0a709fe7863f6c869a8d141676585a883fce4270"
+REVISION = "1127bda94f172d757386945af3eb3a6754d1a4e6"
 LISTING = f"https://huggingface.co/api/datasets/{REPOSITORY}/revision/{REVISION}?blobs=true"
 FILE = f"https://huggingface.co/datasets/{REPOSITORY}/resolve/{REVISION}/{{name}}"
 LAYOUTS = "Assets/Eval_Layout/RoboDojo/arx_x5"
@@ -50,9 +50,10 @@ def verified(path, entry):
 
 
 def listing(store):
-    """The pinned dataset's Assets entries; the listing is kept beside the depot."""
+    """The pinned dataset's Assets entries; the listing is kept beside the depot, replacing an earlier pin's."""
     path = store.root / "robodojo" / "source.json"
-    if not path.is_file():
+    source = json.loads(path.read_text()) if path.is_file() else None
+    if source is None or source.get("sha") != REVISION:
         path.parent.mkdir(parents=True, exist_ok=True)
         seed = seed_root()
         if seed is not None and (seed / "robodojo/source.json").is_file():
@@ -61,7 +62,7 @@ def listing(store):
             with urlopen(LISTING, timeout=90) as response:
                 path.with_suffix(".tmp").write_bytes(response.read())
         path.with_suffix(".tmp").replace(path)
-    source = json.loads(path.read_text())
+        source = json.loads(path.read_text())
     if source["sha"] != REVISION or source.get("gated") or source.get("private"):
         raise ValueError("expected the pinned public, ungated RoboDojo dataset listing")
     entries = [entry for entry in source["siblings"] if entry["rfilename"].startswith("Assets/")]

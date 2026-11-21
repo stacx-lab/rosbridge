@@ -52,7 +52,7 @@ same file as `curobo.yml` (`utils/update_embodiment_config_path.py`), but rosbri
 into the pinned asset store.
 
 Assets come from the `RoboDojo-Benchmark/RoboDojo` dataset at
-`0a709fe7863f6c869a8d141676585a883fce4270`: 15,365 files (41 GB) under
+`1127bda94f172d757386945af3eb3a6754d1a4e6`: 15,365 files (41 GB) under
 `Assets/`, each pinned by LFS SHA-256 or git blob SHA-1 in the dataset listing.
 With `ROSBRIDGE_ASSET_SEED` pointing at RoboEnv's asset cache, every file is
 verified and the tree is moved into the store; otherwise files are downloaded
