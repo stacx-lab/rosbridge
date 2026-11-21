@@ -3,7 +3,7 @@
 RoboDojo runs its 42 simulation tasks on the dual ARX X5 rig in Isaac Sim 5.1,
 with upstream's saved evaluation layouts. The integration follows RoboEnv's
 RoboDojo device runtime. Upstream is pinned to
-`cb2a37d58dbbeb2777b0c2b30e97ecb8ab91095c`, with its Isaac Lab fork
+`c3af1ac6ad7302c0c09d17f4b050fd3a5c68c921`, with its Isaac Lab fork
 (`yuechen0614/IsaacLab@afca7b09`) and cuRobo fork (`yuechen0614/curobo@895c6517`)
 pinned as nested sources. See the [design and CLI guide](README.md) for shared
 lifecycle and timing contracts.

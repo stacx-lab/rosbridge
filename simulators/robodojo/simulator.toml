@@ -1,7 +1,7 @@
 name = "robodojo"
 source = "third_party/robodojo"
 source_url = "https://github.com/RoboDojo-Benchmark/RoboDojo.git"
-source_revision = "cb2a37d58dbbeb2777b0c2b30e97ecb8ab91095c"
+source_revision = "c3af1ac6ad7302c0c09d17f4b050fd3a5c68c921"
 patches = "patches/robodojo"
 python_path = "simulators/robodojo"
 # RoboDojo is imported from the generated tree; its forks are editable installs.
