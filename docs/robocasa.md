@@ -101,9 +101,11 @@ after each step, once the kitchen has updated its fixtures' state, and that valu
 the success and the reward. As there, the predicate also runs inside the step, so tasks
 that count calls in it (PreheatPot's heat timer, for example) count twice per step.
 `--early-stop` ends the episode at its first success, and
-RoboCasa has no failure termination. The kitchen and the native language instruction
-are printed to the run log when the episode starts; rosbridge does not publish the
-instruction.
+RoboCasa has no failure termination.
+
+The [task description](devices.md#task-description)'s `instruction` is the episode
+metadata's language instruction (`get_ep_meta()["lang"]`), which depends on the kitchen and
+objects the seed and scene options pick.
 
 ## Scenes: split, layout and style
 

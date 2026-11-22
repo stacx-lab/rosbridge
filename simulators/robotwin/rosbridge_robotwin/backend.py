@@ -35,6 +35,8 @@ def native_seed(task, seed):
                          f"tools/robotwin_seeds.py --count {int(seed) + 1}")
     return seeds[int(seed)]
 
+# Upstream's default evaluation size (eval_policy_xpolicylab.py test_num), which also caps an episode's instructions.
+EVALUATION_EPISODES = 100
 PHYSICS_DT = 1 / 250
 SUBSTEPS = 10
 CAMERAS = ("head_camera", "left_camera", "right_camera")
@@ -175,14 +177,21 @@ class RoboTwinSim:
             self.env.setup_demo(now_ep_num=seed, seed=native, is_test=True, **deepcopy(args))
             # Upstream's evaluation runs the expert once, then rebuilds the scene: the
             # dry run assigns attributes that some check_success methods read.
+            episode_info = {"info": {}}
             try:
-                self.env.play_once()
+                episode_info = self.env.play_once()
                 self.expert_error = None
             except Exception as error:
                 self.expert_error = f"{type(error).__name__}: {error}"
             self.expert_plan_success = bool(getattr(self.env, "plan_success", False))
             self.env.setup_demo(now_ep_num=seed, seed=native, is_test=True,
                                  **{**deepcopy(args), "eval_mode": True})
+            # The instruction upstream's evaluation gives its policy, drawn from the dry run's episode info.
+            if str(root / "scripts") not in sys.path:
+                sys.path.insert(0, str(root / "scripts"))
+            evaluation = importlib.import_module("eval_policy_xpolicylab")
+            self.description = {"instruction": evaluation.build_instruction(
+                args, episode_info, evaluation.resolve_eval_instruction({}, args), EVALUATION_EPISODES, native)}
         # Device control records nothing through upstream's data-collection hook.
         self.env._take_picture = lambda: None
         scene_dt = float(self.env.scene.get_timestep())

@@ -12,7 +12,7 @@ import pytest
 import yaml
 
 from rosbridge.catalog import tasks
-from rosbridge.catalog.robots import setup
+from rosbridge.catalog.robots import export
 from rosbridge.core.worker import WorkerBackend
 
 # The default task: both arms move freely.
@@ -135,7 +135,7 @@ def test_cameras_render_the_geometry_their_profiles_state(tmp_path, sim):
     Without the head camera's lens, its edges miss by pixels."""
     from rosbridge.catalog.cameras import BROWN_CONRADY
     from rosbridge.core.lens import LensGeometry
-    setup(TASK, tmp_path, seed=0)  # the workspace of the episode the fixture loaded
+    export(TASK, tmp_path, seed=0)  # the workspace of the episode the fixture loaded
     for camera, view in (("head_camera", "third_person"), ("left_camera", "left_wrist"),
                          ("right_camera", "right_wrist")):
         color = yaml.safe_load((tmp_path / ".kinex/devices" / camera / "profile.yaml").read_text())["color"]
@@ -178,8 +178,9 @@ def test_catalog_task_loads_steps_and_commands_the_arms_upstream_drives(task, tm
     sim = native()
     try:
         sim.reset(task, 0)
+        assert sim.description["instruction"]
         held = sim.native("held_arms")
-        setup(ALL[task], tmp_path, seed=0)
+        export(ALL[task], tmp_path, seed=0)
         operations = {name: yaml.safe_load((tmp_path / ".kinex/devices" / name / "profile.yaml").read_text())
                       ["operations"] for name in ("right_arm", "right_hand", "left_arm", "left_hand")}
         for side, _ in SIDES:

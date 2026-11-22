@@ -91,6 +91,12 @@ class AbcSim:
         candidate.env, candidate.task, candidate.seed, candidate.world_seed = env, spec.name, seed, native
         try:
             env.reset(seed=native, randomize=randomize)
+            # The prompt upstream's evaluator gives its policy: the task's, or the one its randomizer drew for the
+            # world seed, without the "sim " tag of the checkpoint's training mixture. multi_drawer_search's runtime
+            # advances it target by target ("find the <label>"); the agent gets every target at once, in order.
+            sequence = (env.task_runtime_debug_state() or {}).get("target_sequence")
+            candidate.description = {"instruction": ", then ".join(f"find the {target['label']}" for target in sequence)
+                                     if sequence else env.prompt}
             missing = [c for c in self.cameras
                        if mujoco.mj_name2id(env.model, mujoco.mjtObj.mjOBJ_CAMERA, c) < 0]
             if missing:

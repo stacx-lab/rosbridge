@@ -170,8 +170,8 @@ class RoboCasaSim:
         meta = self.env.get_ep_meta()
         # The kitchen the seed picked, or the one the ids pinned.
         self.scene = {'split': scene['split'], 'layout_id': meta['layout_id'], 'style_id': meta['style_id']}
-        print(f'[robocasa] {self.task} seed {seed}, split {scene["split"] or "none"}, layout {meta["layout_id"]}, '
-              f'style {meta["style_id"]}: {meta.get("lang", "")}', flush=True)
+        # The language instruction upstream's episode metadata gives its policy.
+        self.description = {'instruction': meta['lang']}
         # Pixel-center depth from a separate single-sample context; RGB keeps native antialiasing.
         quality = self.model.vis.quality
         samples, quality.offsamples = quality.offsamples, 0

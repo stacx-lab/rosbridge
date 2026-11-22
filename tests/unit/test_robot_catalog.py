@@ -7,7 +7,7 @@ from unittest.mock import patch
 import pytest
 import yaml
 
-from rosbridge.catalog.robots import list_robots, merge, setup
+from rosbridge.catalog.robots import export, list_robots, merge
 
 
 PROJECT = Path(__file__).resolve().parents[2]
@@ -59,11 +59,11 @@ def task_of(robot):
     return next(task["id"] for task in tasks(PROJECT).values() if task["robot"] == robot)
 
 
-def export(identifier, directory, **options):
+def rig_workspace(identifier, directory, **options):
     """A robot's workspace through its first task, without the simulator's task and seed changes."""
     with patch.dict("sys.modules", {"rclpy": None, "mujoco": None}), \
             patch("rosbridge.catalog.robots.changes", lambda *args: {}):
-        result = setup(task_of(identifier), directory, project=PROJECT, **options)
+        result = export(task_of(identifier), directory, project=PROJECT, **options)
     root = Path(directory) / ".kinex"
     profiles = {path.parent.name: yaml.safe_load(path.read_text())
                 for path in root.glob("devices/*/profile.yaml")}
@@ -73,7 +73,7 @@ def export(identifier, directory, **options):
 @pytest.mark.parametrize("identifier,configuration", configured(list_robots(PROJECT)))
 def test_every_rig_exports_loaded_profiles_on_rosbridge_endpoints(tmp_path, identifier, configuration):
     import json
-    result, root, profiles = export(identifier, tmp_path, domain_id=83, configuration=configuration)
+    result, root, profiles = rig_workspace(identifier, tmp_path, domain_id=83, configuration=configuration)
     assert result["loaded"] and result["configuration"] == configuration
     assert json.loads((root / "kinex.json").read_text())["python"] == {"provider": "ros-jazzy"}
     assert kinds(identifier.split("/")[0], configuration) | {"world": "world"} == {
@@ -109,9 +109,9 @@ def test_every_rig_exports_loaded_profiles_on_rosbridge_endpoints(tmp_path, iden
     assert result["robot"] == identifier and result["task"] == task_of(identifier)
     with pytest.raises(ValueError, match="already contains"), \
             patch("rosbridge.catalog.robots.changes", lambda *args: {}):
-        setup(task_of(identifier), tmp_path, project=PROJECT)
+        export(task_of(identifier), tmp_path, project=PROJECT)
     with pytest.raises(ValueError, match="domain ID"):
-        setup(task_of(identifier), tmp_path / "other", project=PROJECT, domain_id=-1)
+        export(task_of(identifier), tmp_path / "other", project=PROJECT, domain_id=-1)
 
 
 def test_native_gripper_commands_drive_their_fingers_through_mimics(tmp_path):
@@ -119,7 +119,7 @@ def test_native_gripper_commands_drive_their_fingers_through_mimics(tmp_path):
     on a virtual joint spanning open to closed; the URDF fingers mimic it."""
     import xml.etree.ElementTree as ET
     for identifier in list_robots(PROJECT):
-        _, root, profiles = export(identifier, tmp_path / identifier.replace("/", "-"))
+        _, root, profiles = rig_workspace(identifier, tmp_path / identifier.replace("/", "-"))
         for name, profile in profiles.items():
             grip = profile.get("grip")
             if profile["type"] != "gripper" or (grip["open"], grip["closed"]) not in ((1., 0.), (-1., 1.)):
@@ -145,7 +145,7 @@ def test_rigs_carry_their_calibration_in_profiles(tmp_path, variant, base):
     project = Path(__file__).resolve().parents[2]
     identifier = f"libero/libero-panda-{variant}"
     with patch.dict("sys.modules", {"rclpy": None, "mujoco": None}):
-        setup(task_of(identifier), tmp_path, project=project)
+        export(task_of(identifier), tmp_path, project=project)
     root = tmp_path / ".kinex"
     assert yaml.safe_load((root / "workspace.yaml").read_text())["identity"]["id"] == identifier.split("/")[1]
     arm = yaml.safe_load((root / "devices/arm/profile.yaml").read_text())
@@ -189,14 +189,38 @@ def test_setup_takes_the_launch_seed_and_names_its_task(tmp_path, monkeypatch):
     import rosbridge.catalog.robots as robots
     from rosbridge.catalog import resolve
     task = resolve("robotwin", PROJECT)[2]
-    result = setup(task["id"], tmp_path / "default", project=PROJECT)
+    result = export(task["id"], tmp_path / "default", project=PROJECT)
     assert (result["task"], result["seed"], result["robot"]) == (task["id"], 0, task["robot"])
-    assert setup(task["id"], tmp_path / "chosen", seed=3, project=PROJECT)["seed"] == 3
+    assert export(task["id"], tmp_path / "chosen", seed=3, project=PROJECT)["seed"] == 3
     # A catalog entry's seed is the default that launch and setup take.
     monkeypatch.setattr(robots, "resolve", lambda *args: (lambda r: (*r[:2], dict(r[2], seed=5)))(resolve(*args)))
-    assert setup(task["id"], tmp_path / "catalog", project=PROJECT)["seed"] == 5
+    assert export(task["id"], tmp_path / "catalog", project=PROJECT)["seed"] == 5
     with pytest.raises(ValueError, match="Unknown task"):
-        setup("robotwin/no-such-task", tmp_path / "unknown", project=PROJECT)
+        export("robotwin/no-such-task", tmp_path / "unknown", project=PROJECT)
+
+
+def test_setup_adds_the_task_description_of_the_episode_it_opens(tmp_path):
+    """Setup exports with describe: in the simulator's environment it opens the episode a launch of the same task,
+    seed, configuration and scene runs (rosbridge.runs.setup), here a stand-in, and writes what its backend states."""
+    import json
+    from rosbridge.catalog import resolve
+    opened = []
+
+    def describe(root, config, task, seed):
+        opened.append((task["id"], seed))
+        return {"task": task["native_task"], "seed": seed, "instruction": "Pick the mug from the counter."}
+    task = resolve("robocasa", PROJECT)[2]
+    result = export(task["id"], tmp_path, seed=2, project=PROJECT, describe=describe)
+    assert opened == [(task["id"], 2)]
+    assert result["task_description"] == str(tmp_path / ".kinex/task_description.json")
+    assert json.loads(Path(result["task_description"]).read_text()) == {
+        "task": task["native_task"], "seed": 2, "instruction": "Pick the mug from the counter."}
+    # A second setup into the same workspace is refused before the simulator opens anything.
+    with pytest.raises(ValueError, match="already contains .*task_description.json"):
+        export(task["id"], tmp_path, project=PROJECT, describe=describe)
+    assert len(opened) == 1
+    # An export without one adds no description.
+    assert "task_description" not in export(task["id"], tmp_path / "plain", project=PROJECT)
 
 
 HANDSON = PROJECT / ".runtime/handson/handson/handson/evaluation/camera_contracts.py"
@@ -210,7 +234,7 @@ def test_a_handson_workspace_holds_the_cameras_its_task_and_seed_render(tmp_path
 
     def profiles(task, seed):
         directory = tmp_path / f"{task}-{seed}"
-        setup(f"handson/{task}", directory, seed=seed, project=PROJECT)
+        export(f"handson/{task}", directory, seed=seed, project=PROJECT)
         return {name: yaml.safe_load((directory / ".kinex/devices" / name / "profile.yaml").read_text())
                 for name in nominal}
     first, second = profiles("t24-place-ball-in-bowl", 0), profiles("t24-place-ball-in-bowl", 1)
@@ -337,7 +361,7 @@ def test_setup_ships_a_rigs_library_programs_and_skills_with_its_configurations_
     (rig / "programs/reach.py").symlink_to("../lib/reach.py")
 
     def shipped(directory, **options):
-        setup("toy/reach", directory, project=project, **options)
+        export("toy/reach", directory, project=project, **options)
         root = directory / ".kinex"
         assert not any(path.is_symlink() for path in root.rglob("*")) and not (root / "configurations").exists()
         return {str(path.relative_to(root)): path.read_text()
@@ -350,6 +374,6 @@ def test_setup_ships_a_rigs_library_programs_and_skills_with_its_configurations_
     assert (retry["lib/grasp.py"], retry["programs/retry.py"], retry["lib/reach.py"]) == ("retrying", "retry", "reach")
     (tmp_path / "own/.kinex/programs").mkdir(parents=True)
     with pytest.raises(ValueError, match="already contains programs"):
-        setup("toy/reach", tmp_path / "own", project=project)
+        export("toy/reach", tmp_path / "own", project=project)
     with pytest.raises(ValueError, match="toy has no configuration 'depth'"):
-        setup("toy/reach", tmp_path / "other", project=project, configuration="depth")
+        export("toy/reach", tmp_path / "other", project=project, configuration="depth")

@@ -8,7 +8,7 @@ import sys
 import time
 import uuid
 
-from rosbridge.catalog import check_configuration, resolve, simulator
+from rosbridge.catalog import check_configuration, check_scene, resolve, simulator
 from rosbridge.project import project_root
 from rosbridge.recording import destination, reserve
 from rosbridge.storage import run_environment, write_json
@@ -40,14 +40,9 @@ def recording_settings(options):
 
 
 def scene_argument(config, scene):
-    """The world's scene launch argument: the given scene options, which the simulator's manifest must declare
-    (scene_options), as one compact JSON object; None when none is given. The backend checks their values."""
-    declared = tuple(config.get("scene_options", ()))
-    unknown = sorted(set(scene) - set(declared))
-    if unknown:
-        flags = ", ".join("--" + name.replace("_", "-") for name in unknown)
-        takes = ", ".join("--" + name.replace("_", "-") for name in declared) or "none"
-        raise ValueError(f"{config['name']} takes no {flags} (its scene options: {takes})")
+    """The world's scene launch argument: the given scene options (check_scene) as one compact JSON object; None
+    when none is given."""
+    scene = check_scene(config, scene)
     if not scene:
         return None
     return "scene:=" + json.dumps(scene, separators=(",", ":"), sort_keys=True, allow_nan=False)

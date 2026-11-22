@@ -102,6 +102,14 @@ seed `SimEvalConfig.seed + k` (20260511 + k, `eval_policy.py: rollout_worlds`), 
 episode record names `world_seed`. Each run starts from the task's initial arm pose, as the
 evaluator's first world does; later worlds there carry the previous arm pose.
 
+The [task description](devices.md#task-description)'s `instruction` is the prompt the evaluator
+gives its policy, without the `sim ` tag of its checkpoint's training mixture: the task's own
+prompt, or the one its randomizer draws for the world seed (`count_*_into_opaque_box`,
+`put_relative`, `grab_specific_object_from_clutter`). `multi_drawer_search`'s prompt advances
+target by target as each reaches the bin ("find the <label>"); the instruction holds every
+target at once, in order, such as seed 0's "find the lemon, then find the apple, then find the
+canned food".
+
 | Setting | Default |
 |---|---|
 | Execution, seed, randomize | realtime, 0, true |

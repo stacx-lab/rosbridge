@@ -77,13 +77,12 @@ nominal mounts. `rosbridge setup bidex/TASK --seed N` exports the episode's moun
 catalog rig holds the nominal ones, and `rosbridge_bidex.workspace` moves them by the
 episode's delta with upstream's own plan, without MuJoCo; it needs `rosbridge prepare bidex`.
 
-**Instruction.** The instruction is printed to the run log with the evaluator's eval seed
-and episode. Give it to the agent; it is not published on ROS. Five Instruction_Following
-tasks and their OOD twins switch their instruction at a fixed control step, and upstream's
-policy sees only the current part. Here the instruction holds every part at once, in order,
-such as "Pick up the milk carton from the shelf and put it into the tray. Leave the milk.
-Pick up the lemon from the shelf and put it into the tray instead." This is the one
-deliberate departure from the evaluator's protocol.
+**Instruction.** The [task description](devices.md#task-description)'s `instruction` is the
+task's language. Five Instruction_Following tasks and their OOD twins switch their instruction
+at a fixed control step, and upstream's policy sees only the current part. Here the instruction
+holds every part at once, in order, such as "Pick up the milk carton from the shelf and put it
+into the tray. Leave the milk. Pick up the lemon from the shelf and put it into the tray
+instead." This is the one deliberate departure from the evaluator's protocol.
 
 **Timing.** Control runs at 25 Hz: twenty 2 ms MuJoCo substeps per step. A step costs about
 10 ms of wall time, and a reset about 3.5 s. The horizon is the evaluator's: the task's

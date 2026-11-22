@@ -35,7 +35,7 @@ def test_an_out_of_domain_workspace_moves_the_cameras_its_episode_moves(tmp_path
     import numpy as np
     import pytest
     import yaml
-    from rosbridge.catalog.robots import setup
+    from rosbridge.catalog.robots import export
     root = Path(__file__).resolve().parents[4]
     if not (root / ".runtime/bidex/bidex/eval/ood.py").is_file():
         pytest.skip("BiDex-100 is not prepared")
@@ -43,7 +43,7 @@ def test_an_out_of_domain_workspace_moves_the_cameras_its_episode_moves(tmp_path
 
     def cameras(task, seed):
         directory = tmp_path / f"{task}-{seed}"
-        setup(f"bidex/{task}", directory, seed=seed, project=root)
+        export(f"bidex/{task}", directory, seed=seed, project=root)
         return {name: yaml.safe_load((directory / ".kinex/devices" / name / "profile.yaml").read_text())["frames"]
                 for name in ("head_camera", "left_camera", "right_camera")}
     catalog = {name: yaml.safe_load((nominal / name / "profile.yaml").read_text())["frames"]

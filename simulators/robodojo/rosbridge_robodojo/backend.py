@@ -9,7 +9,6 @@ action uses, checked as uni-robot-agent's RoboDojo adapter checks it. Resets loa
 upstream's saved evaluation layouts. Ported from RoboEnv's RoboDojo adapter.
 """
 import os
-from pathlib import Path
 import secrets
 import sys
 
@@ -19,7 +18,6 @@ from rosbridge.catalog import resolve
 from rosbridge.core import ActionLayout, CommandGroup
 from rosbridge.core.devices import device_inventory, spectator_views
 from rosbridge.project import project_root
-from rosbridge.storage import write_json
 from .assets import check_task
 
 CAMERAS = {"head_camera": "cam_head", "left_camera": "cam_left_wrist",
@@ -258,7 +256,11 @@ class RoboDojoSim:
             if callable(getattr(self.env, hook, None)):
                 getattr(self.env, hook)()
         self.seed, self.layout_id = seed, layout
-        self._prompt()
+        # The layout's instruction pair as upstream's policy receives it: the observation's instruction and its
+        # extra_info's detailed instruction, a description of the task and its scoring.
+        manager = self.env.obs_manager
+        self.description = {"instruction": manager.instruction[0],
+                            "detailed_instruction": manager.detailed_instruction[0]}
         self.max_steps = self.requested_max_steps or self.native_step_limit
         # EvalEnv checks its own counter in take_action; keep both limits equal.
         self.env.step_lim = self.max_steps
@@ -267,19 +269,6 @@ class RoboDojoSim:
         self._score()
         if self.spectators and not self._spectators:
             self._open_spectators()
-
-    def _prompt(self):
-        """The layout's instruction pair as upstream's policy receives it: the observation's instruction and its
-        extra_info's detailed instruction (description and scoring). Written to robodojo/PROMPT.json in the run."""
-        manager = self.env.obs_manager
-        prompt = {"task": self.task, "seed": self.seed, "layout": self.layout_id,
-                  "instruction": manager.instruction[0], "detailed_instruction": manager.detailed_instruction[0]}
-        print(f"[robodojo] {self.task} seed {self.seed}, layout {self.layout_id}: {prompt['instruction']}",
-              flush=True)
-        run = os.environ.get("ROSBRIDGE_RUN_DIR")
-        if run:
-            (Path(run) / "robodojo").mkdir(exist_ok=True)
-            write_json(Path(run) / "robodojo" / "PROMPT.json", prompt)
 
     def _index(self):
         manager = self.env.robot_manager

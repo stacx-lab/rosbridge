@@ -118,8 +118,7 @@ class BiDexSim:
                                                 options=env._scene_option)
             self._spectator.capture()
         self.steps, self.done, self.success, self.reward = 0, False, False, 0.
-        print(f"[bidex] {native} seed {seed} (eval seed {eval_seed}, episode {index}): "
-              f"{instruction(self._loaded)}", flush=True)
+        self.description = {"instruction": instruction(self._loaded)}
 
     def _index(self):
         model, groups, joints = self.env.model, [], []

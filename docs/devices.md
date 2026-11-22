@@ -132,15 +132,16 @@ rosbridge setup libero/libero-spatial-01 --directory ../my-libero-workspace --do
 rosbridge launch libero/libero-spatial-01 --execution-mode stepped --domain-id 83
 ```
 
-`rosbridge setup` takes a task as `launch` does, with `--seed` and `--config`. It exports the
-workspace that a launch of that task, seed and configuration serves: the task's rig in that
-configuration, with the profile changes its simulator makes for that task and seed. HandsOn
-changes its cameras' intrinsics and mounts by task and seed, and BiDex-100 moves cameras in its
-`-ood` tasks (see their pages). The seed defaults as launch's does. Setup is offline: it exports
-the profiles on the selected ROS domain into `.kinex/` (`workspace.yaml`, `devices/` and
-`kinex.json`), every device loaded, so Kinex activates them all when it starts; it launches
-nothing, and it refuses an existing workspace. Export a workspace
-for each task, seed and configuration whose devices differ, and launch with the same ones.
+`rosbridge setup` takes a task as `launch` does, with `--seed`, `--config` and the simulator's
+scene options. It exports the workspace that a launch of that task, seed, configuration and
+scene serves: the task's rig in that configuration, with the profile changes its simulator
+makes for that task and seed. HandsOn changes its cameras' intrinsics and mounts by task and
+seed, and BiDex-100 moves cameras in its `-ood` tasks (see their pages). The seed defaults as
+launch's does. Setup exports the profiles on the selected ROS domain into `.kinex/`
+(`workspace.yaml`, `devices/` and `kinex.json`), every device loaded, so Kinex activates them
+all when it starts, and the episode's [task description](#task-description) as
+`task_description.json`. It refuses an existing workspace before it starts anything. Export a
+workspace for each task, seed, configuration and scene, and launch with the same ones.
 
 A rig may also ship Kinex workspace content beside its profiles: a `lib/` function library
 (`kinex.lib.<module>`), `programs/` and `skills/`. Setup copies these into `.kinex/`, and it
@@ -160,9 +161,29 @@ configuration its simulator declares and check the device kinds against the mani
 
 ## Episodes and judging
 
-Task instructions and judging are not device operations or ROS topics. Supply
-the agent objective in the user prompt; the operator reads native outcomes with
+Task instructions and judging are not device operations or ROS topics. The agent's objective
+is the episode's task description; the operator reads native outcomes with
 `rosbridge judge RUN_ID --json`.
+
+### Task description
+
+Every simulator describes an episode the same way: its native task and seed, and the
+instructions upstream's evaluator gives its policy for that episode, which may depend on the
+seed or the scene. `rosbridge setup` writes it to `.kinex/task_description.json`, and the world
+node prints the same JSON to the run log (`graph.log`) as one `task description: {...}` line
+when the episode starts. Give the agent the file.
+
+```json
+{"task": "stack_bowls", "seed": 0, "instruction": "Stack the three bowls together.",
+ "detailed_instruction": "## Description\n\nNest all bowls together ... ## Scoring\n\n- 0: ..."}
+```
+
+`instruction` is always there; a simulator whose evaluator gives its policy more text adds it
+under its own name, such as RoboDojo's `detailed_instruction`. Each simulator's page says where
+its instruction comes from. The backend states it as `description` after its reset
+(`rosbridge.core.episode`), so setup opens the episode once to read it, the way the world node
+opens it: the simulator boots and resets in its own environment, which takes as long as a
+launch's start and needs the same preparation and GPU.
 
 A run is one episode; the world offers no reset, so starting over is the operator's:
 stop the run and launch another. An episode ending at a step limit, a failed simulator

@@ -28,7 +28,7 @@ def test_representative_tasks_load_and_step_without_a_split(task, horizon):
         layout, style = kitchen(sim)  # create_env(split=None): every kitchen and object
         assert 1 <= layout <= 60 and 1 <= style <= 60 and sim.env.obj_instance_split is None
         assert sim.measures() == {'split': None, 'layout_id': layout, 'style_id': style}
-        assert sim.env.get_ep_meta()['lang']
+        assert sim.description == {'instruction': sim.env.get_ep_meta()['lang']} and sim.description['instruction']
         sim.step(sim.state()[0])
         assert sim.steps == 1 and sim.time_s == pytest.approx(.05)
         assert np.isfinite(np.concatenate(sim.state())).all()

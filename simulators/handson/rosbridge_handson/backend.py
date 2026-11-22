@@ -5,8 +5,8 @@ rosbridge.core.worker. A launch's seed k names the task's k-th native seed that 
 pre-screen accepted (seeds.json, written by tools/handson_seeds.py). A reset replays the
 PhysX branch of upstream's official evaluator (handson/evaluation/native.py:run_episode)
 at that native seed: the frozen task contract, the seeded setting, native construction,
-reset, the stable-origin settle gate and the seeded instruction, written to PROMPT.json
-in the run directory. Every 1/30 s step passes upstream's own command: each arm's palm pose
+reset, the stable-origin settle gate and the seeded instruction, whose prompt is the task
+description and whose receipt PROMPT.json stays in the run directory. Every 1/30 s step passes upstream's own command: each arm's palm pose
 target, which upstream's EEF52 actions command (the <side>_palm_link world pose), and the
 hand's absolute joint targets. The task's own arm IK, palm-pose limits and guards, hand
 slewing and success and failure predicates apply; an arm not yet commanded is upstream's idle.
@@ -208,7 +208,10 @@ class HandsOnSim:
                 # substitutes no other seed. It is deterministic for a task and native seed.
                 raise SettleGateRejected(f"{self.task} native seed {native_seed}: {str(error)[:300]}") from error
             raise
-        (out / "PROMPT.json").write_text(json.dumps(bind(env, self.task, native_seed), indent=2) + "\n")
+        # Upstream's instruction receipt, which also holds the goal and must stay the judge's; the agent gets its prompt.
+        language = bind(env, self.task, native_seed)
+        (out / "PROMPT.json").write_text(json.dumps(language, indent=2) + "\n")
+        self.description = {"instruction": language["prompt"]}
         if self._adapter.spec.force_scoring:  # t10 scores support, lift and hold; force is diagnostic
             from handson.evaluation.carton import install
             self._tracker = install(env, out / "CARTON_RAW_FORCE_000")

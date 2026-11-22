@@ -28,6 +28,7 @@ def test_round_trip_keeps_layout_state_and_errors():
         assert sim.layout.joint_names == ("slide", "finger", "rotate")
         assert [d.name for d in sim.devices] == ["axes", "finger"]
         assert sim.task == "toy" and sim.period == pytest.approx(.1)
+        assert sim.description == {"instruction": "Move the toy's axes (toy, seed 0)."}
         sim.step(np.array([.5, -.25, 1.]))
         positions, velocities = sim.state()
         np.testing.assert_array_equal(positions, [.5, -.25, 1.])
@@ -41,6 +42,7 @@ def test_round_trip_keeps_layout_state_and_errors():
         sim.max_steps = None
         sim.reset("toy", 3, False)
         assert sim.max_steps is None and sim.seed == 3 and not sim.done
+        assert sim.description == {"instruction": "Move the toy's axes (toy, seed 3)."}  # the reset's, proxied again
         with pytest.raises(WorkerError, match="AttributeError") as error:
             sim.native("missing_method")
         assert error.value.kind == "AttributeError"

@@ -114,6 +114,11 @@ upstream's `take_action` does, and latched; the episode
 horizon is the native `step_lim` unless a maximum is given. `--early-stop` ends the
 episode at the first success, as the evaluator does; RoboTwin has no failure termination.
 
+The [task description](devices.md#task-description)'s `instruction` is the one upstream's
+evaluation then gives its policy (`build_instruction`): drawn for the native seed from the dry
+run's episode details, among the task config's `seen` instructions (`demo_clean`), as for
+upstream's default 100-episode evaluation.
+
 ## Recording and checks
 
 With `--record`, spectators `third_person`, `left_wrist` and `right_wrist` follow

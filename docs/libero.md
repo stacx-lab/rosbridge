@@ -120,6 +120,11 @@ Episodes are scored as upstream's evaluation scores them:
 - **Judging:** `rosbridge judge RUN_ID` reports them. `--early-stop` ends the episode at
   the first success, as the evaluator's `done` does. LIBERO has no failure termination.
 
+The [task description](devices.md#task-description)'s `instruction` is the suite task's
+language, which upstream's evaluation embeds for its policy (`libero/lifelong/evaluate.py`):
+`Task.language`, read from the BDDL file's name, as in "pick up the black bowl between the
+plate and the ramekin and place it on the plate".
+
 ## Cameras, recording and demo
 
 Observation cameras are 256×256 RGB in frames `camera_agentview/base` and

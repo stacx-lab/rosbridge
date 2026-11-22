@@ -4,7 +4,7 @@ import os
 import shutil
 import subprocess
 
-from rosbridge.storage import local_environment
+from rosbridge.storage import local_environment, run_environment, write_json
 
 
 # A native worker's interpreter must not see the parent environment's Python, ROS or Pixi state.
@@ -42,6 +42,21 @@ def native_activated(root, config):
     python, env = activated(root, {**config, "environment": config.get("native_environment")
                                    or config["environment"]}, base)
     env["PYTHONPATH"] = os.pathsep.join(native_path(root, config))
+    return python, env
+
+
+def run_activated(root, config, folder, domain=None):
+    """The ROS interpreter and environment of a run's processes, which keep their state in the run folder. A
+    simulator with a native backend also gets its worker's interpreter and environment, written to the folder
+    for the world's WorkerBackend to read."""
+    shared = {**run_environment(folder), **({"ROS_DOMAIN_ID": str(domain)} if domain is not None else {})}
+    python, env = activated(root, config)
+    env.update(shared)
+    if config.get("native_environment"):
+        native_python, native_env = native_activated(root, config)
+        native_env.update(shared)
+        write_json(folder / "native-environment.json", {"python": str(native_python), "env": native_env})
+        env["ROSBRIDGE_NATIVE_ENVIRONMENT"] = str(folder / "native-environment.json")
     return python, env
 
 

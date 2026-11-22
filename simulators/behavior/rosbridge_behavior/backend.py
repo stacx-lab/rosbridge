@@ -97,6 +97,9 @@ class R1ProSim:
         self.initial_goal_options = self.episode.env.task.get_goal_option_satisfaction(0)
         self.episode.origin = self.episode.base_pose()
         self.seed, self.steps, self.done = seed, 0, False
+        # Upstream's evaluator gives its policy no text, only the task's id (eval_utils.TASK_NAMES_TO_INDICES): the
+        # agent gets the task's name.
+        self.description = {"instruction": native}
         self.success = bool(self.episode.env.task.success[0])
         self.reward, self._frames, self._followed = float(self.success), {}, None
         if self.spectators and not self._spectators:

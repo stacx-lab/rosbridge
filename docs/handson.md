@@ -63,9 +63,9 @@ A launch builds the episode as upstream's `handson/evaluation/native.py:run_epis
   0.5 GB, removed when the run stops).
 - **Settle gate:** after the reset, a stable-origin gate settles the scene. The pre-screen
   kept only native seeds it accepts.
-- **Instruction:** the seeded instruction (canonical or paraphrased) is written with
-  upstream's other receipts to `handson/PROMPT.json` in the run's directory
-  (`.cache/rosbridge/runs/<id>/`). Give it to the agent; it is not published on ROS.
+- **Instruction:** the seeded instruction (canonical or paraphrased). Its `prompt` is the
+  [task description](devices.md#task-description)'s `instruction`; the whole binding is
+  upstream's `handson/PROMPT.json` receipt in the run's directory (`.cache/rosbridge/runs/<id>/`).
 
 Booting Isaac, converting the scene and settling take minutes (about 2.5 on an L40S); allow
 `--timeout 1800`. A worker serves the one episode it was launched with.
@@ -118,8 +118,8 @@ always asks for the tennis ball and `t26` for the apple: only the constructor ov
 upstream's archived paper trials choose their targets, and rosbridge does not use those
 trials. For the 16 tasks in upstream's `settings.json`, the native seed selects a setting and
 derives the reset seed. The instruction is fixed by task, native seed and goal: canonical for
-about one seed in five, else one of 32 paraphrases. Give the agent only `PROMPT.json`'s
-`prompt`. Its `canonical_prompt` (the unparaphrased instruction), `goal` and
+about one seed in five, else one of 32 paraphrases. The task description holds only
+`PROMPT.json`'s `prompt`. Its `canonical_prompt` (the unparaphrased instruction), `goal` and
 `native_goal_readback` must not reach the agent; `eval_gen05`'s readback also gives the
 knobs' initial angles. Every receipt in `<run>/handson/` is the judge's, not the agent's:
 

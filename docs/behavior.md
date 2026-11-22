@@ -39,6 +39,10 @@ not loaded. The episode record names them in `particles_removed_out_of_loaded_ro
 the public instances, these are `sweeping_garage`'s two at seed 0 and one at seed 12, outside
 its garage door.
 
+Upstream's evaluator gives its policy no text, only the activity's task id
+(`eval_utils.TASK_NAMES_TO_INDICES`), so the [task description](devices.md#task-description)'s
+`instruction` is the activity's name, such as `turning_on_radio`.
+
 Success is the activity's BDDL goal predicate, evaluated every step; the reward is
 1 while it holds. `--early-stop` ends the episode at the first success, as the
 evaluator's termination does; BEHAVIOR has no failure termination. The default horizon is

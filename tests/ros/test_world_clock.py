@@ -32,6 +32,21 @@ def budgets(graph):
     return received
 
 
+def test_the_run_log_states_the_task_description(tmp_path):
+    """The world logs the description `rosbridge setup` writes to .kinex/task_description.json, as one JSON line."""
+    import json
+    graph = Graph(tmp_path, task="succeeds")
+    try:
+        log = graph.logs[0]
+        log.flush()
+        log.seek(0)
+        line = next(line for line in log.read().splitlines() if "task description: " in line)
+        assert json.loads(line.split("task description: ", 1)[1]) == {
+            "task": "succeeds", "seed": 0, "instruction": "Move the toy's axes (succeeds, seed 0)."}
+    finally:
+        graph.close()
+
+
 def test_the_budget_topic_reports_a_stepped_episodes_budget(tmp_path):
     """Kinex's world budget: data [used_s, max_s], the control steps taken and the step limit times the 0.1 s
     control period, latched for a new reader and published after every step."""

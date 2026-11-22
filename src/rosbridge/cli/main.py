@@ -26,6 +26,23 @@ def domain(value):
         raise argparse.ArgumentTypeError(str(error)) from None
 
 
+def scene_flags(command):
+    """The scene options of SCENE_FLAGS, which launch, demo and setup take alike."""
+    command.add_argument("--split", choices=("pretrain", "target", "all"),
+                         help="Scene split, for simulators that take one (RoboCasa: upstream's create_env "
+                              "split; default none, every kitchen and object); the seed picks within it")
+    command.add_argument("--layout-id", type=int, metavar="ID",
+                         help="Kitchen layout overriding the split's, for simulators that take one "
+                              "(RoboCasa: 1-60; default: the seed picks)")
+    command.add_argument("--style-id", type=int, metavar="ID",
+                         help="Kitchen style overriding the split's, for simulators that take one "
+                              "(RoboCasa: 1-60; default: the seed picks)")
+
+
+def scene(args):
+    return {name: getattr(args, name) for name in SCENE_FLAGS if getattr(args, name) is not None}
+
+
 def parser():
     root = argparse.ArgumentParser(prog="rosbridge", description=__doc__)
     commands = root.add_subparsers(dest="command", required=True)
@@ -47,15 +64,7 @@ def parser():
         command.add_argument("--timeout", type=positive, default=900., help="Startup timeout in wall seconds")
         command.add_argument("--seed", type=int)
         command.add_argument("--config", dest="configuration", metavar="NAME", help=CONFIGURATION_HELP)
-        command.add_argument("--split", choices=("pretrain", "target", "all"),
-                             help="Scene split, for simulators that take one (RoboCasa: upstream's create_env "
-                                  "split; default none, every kitchen and object); the seed picks within it")
-        command.add_argument("--layout-id", type=int, metavar="ID",
-                             help="Kitchen layout overriding the split's, for simulators that take one "
-                                  "(RoboCasa: 1-60; default: the seed picks)")
-        command.add_argument("--style-id", type=int, metavar="ID",
-                             help="Kitchen style overriding the split's, for simulators that take one "
-                                  "(RoboCasa: 1-60; default: the seed picks)")
+        scene_flags(command)
         command.add_argument("--record", type=Path, metavar="DIR",
                              help="Save spectator recordings to a new or empty directory")
         command.add_argument("--record-type", choices=("mp4", "bag", "both"),
@@ -80,11 +89,13 @@ def parser():
     robots = commands.add_parser("robots")
     listing = robots.add_subparsers(dest="robots_command", required=True).add_parser("list")
     common(listing)
-    setup = commands.add_parser("setup", help="Export the Kinex workspace of a task and seed, every device loaded")
+    setup = commands.add_parser("setup", help="Export the Kinex workspace of a task and seed, every device loaded, "
+                                              "and the episode's task description (the simulator opens it once)")
     common(setup)
     setup.add_argument("selection", help="Task as launch takes it, such as handson/t24-place-ball-in-bowl")
     setup.add_argument("--seed", type=int, help="The launch seed whose devices to export (default: launch's)")
     setup.add_argument("--config", dest="configuration", metavar="NAME", help=CONFIGURATION_HELP)
+    scene_flags(setup)
     setup.add_argument("--directory", type=Path)
     setup.add_argument("--domain-id", type=domain, default=0)
     task = commands.add_parser("tasks")
@@ -144,10 +155,11 @@ def main(argv=None):
                 print("\n".join(sorted(entries)))
             return 0
         if args.command in ("robots", "setup"):
-            from rosbridge.catalog.robots import list_robots, setup
+            from rosbridge.catalog.robots import list_robots
+            from rosbridge.runs.setup import setup
             result = ({"robots": list_robots(args.project)} if args.command == "robots" else
                       setup(args.selection, args.directory, seed=args.seed, project=args.project,
-                            domain_id=args.domain_id, configuration=args.configuration))
+                            domain_id=args.domain_id, configuration=args.configuration, scene=scene(args)))
             emit(result, args.json)
             return 0
         from rosbridge.runs import api
@@ -155,9 +167,8 @@ def main(argv=None):
             for flag in ("record_type", "record_rate", "record_size", "record_views", "record_quality"):
                 if getattr(args, flag, None) is not None and args.record is None:
                     raise ValueError(f"--{flag.replace('_', '-')} requires --record DIR")
-            scene = {name: getattr(args, name) for name in SCENE_FLAGS if getattr(args, name) is not None}
             record, process = api.launch(args.selection, project=args.project,
-                                         options=dict(vars(args), scene=scene), demo=args.command == "demo")
+                                         options=dict(vars(args), scene=scene(args)), demo=args.command == "demo")
             emit(record, args.json)
             if getattr(args, "detach", False):
                 return 0

@@ -31,6 +31,7 @@ class ToyBackend:
         if task not in ("toy", "succeeds", "fails", "stumbles"):
             raise ValueError("unknown task")
         self.task, self.seed = task, seed
+        self.description = {"instruction": f"Move the toy's axes ({task}, seed {seed})."}
         self.steps, self.time_s, self.done, self.success, self.stop = 0, 0., False, False, None
         self.position = np.zeros(3)
 

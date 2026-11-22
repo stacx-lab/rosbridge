@@ -96,9 +96,12 @@ class LiberoSim:
 
     def _initialize(self, runtime, spec, seed, randomize):
         import torch
+        from libero.libero.benchmark import task_maps
         from libero.libero.envs.env_wrapper import ControlEnv
 
         self.task, self.seed = spec['native_task'], seed
+        # The suite task's language, which upstream's evaluation embeds for its policy (libero/lifelong/evaluate.py).
+        self.description = {'instruction': task_maps[spec['suite']][spec['task_name']].language}
         bddl, state_file = task_files(runtime, self.task)
         # Only trusted files from the pinned upstream are deserialized.
         states = torch.load(state_file, map_location='cpu', weights_only=False)

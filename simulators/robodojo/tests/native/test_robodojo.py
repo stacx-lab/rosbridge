@@ -4,7 +4,6 @@ Isaac hosts one app per process and its shutdown ends the process, so every chec
 drives RoboDojoSim through a worker subprocess. Each task needs its own Isaac boot
 (minutes), so the every-task sweep runs only with ROSBRIDGE_ALL_TASKS=1.
 """
-import json
 import os
 import sys
 
@@ -176,16 +175,13 @@ def test_a_flange_pose_path_becomes_joints_through_curobo_ik_or_has_none():
 
 
 @pytest.mark.parametrize("task", SELECTED)
-def test_catalog_task_loads_writes_its_instruction_and_steps(task, tmp_path, monkeypatch):
-    monkeypatch.setenv("ROSBRIDGE_RUN_DIR", str(tmp_path))
+def test_catalog_task_loads_describes_itself_and_steps(task):
     sim = native()
     try:
         sim.reset(task, 0)
         assert not sim.done and sim.max_steps > 0
         # Upstream's instruction pair for the layout, as its policy receives it.
-        prompt = json.loads((tmp_path / "robodojo/PROMPT.json").read_text())
-        assert (prompt["task"], prompt["seed"]) == (task, 0) and isinstance(prompt["layout"], int)
-        assert prompt["instruction"] and "## Scoring" in prompt["detailed_instruction"]
+        assert sim.description["instruction"] and "## Scoring" in sim.description["detailed_instruction"]
         sim.step(sim.state()[0])
         assert sim.steps == 1 and np.isfinite(sim.state()[0]).all() and 0 <= sim.reward <= 1
     finally:

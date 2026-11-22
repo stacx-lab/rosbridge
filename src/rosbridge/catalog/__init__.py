@@ -26,6 +26,18 @@ def check_configuration(config, name):
     return name
 
 
+def check_scene(config, scene):
+    """Scene options the simulator's manifest declares (scene_options), as a launch or setup gives them; its
+    backend checks their values."""
+    declared = tuple(config.get("scene_options", ()))
+    unknown = sorted(set(scene) - set(declared))
+    if unknown:
+        flags = ", ".join("--" + name.replace("_", "-") for name in unknown)
+        takes = ", ".join("--" + name.replace("_", "-") for name in declared) or "none"
+        raise ValueError(f"{config['name']} takes no {flags} (its scene options: {takes})")
+    return dict(scene)
+
+
 def tasks(project=None, name=None):
     root = project_root(project)
     names = [name] if name else sorted(p.parent.name for p in (root / "simulators").glob("*/simulator.toml"))

@@ -124,6 +124,11 @@ class SimulatorBackend(Protocol):
 
     Optionally, measures() returns the backend's own measures of the episode as
     JSON fields, such as BEHAVIOR's q_score; the episode record adds them.
+
+    After a reset, description holds the instructions upstream's evaluator gives
+    its policy for the episode: {"instruction": text}, plus any further text it
+    gives under its own name, such as RoboDojo's detailed_instruction. Setup
+    writes it to the workspace and the world node logs it (rosbridge.core.episode).
     """
 
     default_task: str
@@ -141,6 +146,7 @@ class SimulatorBackend(Protocol):
     success: bool
     stop: tuple[str, str | None] | None
     spectators: tuple[SpectatorView, ...]
+    description: dict[str, str]
 
     def __init__(self, *, max_steps, early_stop): ...
     def reset(self, task: str, seed: int, randomize: bool = True, **scene) -> None: ...

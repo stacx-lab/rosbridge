@@ -179,6 +179,11 @@ Implement `SimulatorBackend` (`src/rosbridge/core/backend.py`). Its docstring is
   - The seed fully determines the episode.
   - A reset that fails keeps the live episode: build a candidate, and adopt it only once it has loaded.
   - Native state is touched only on the owner thread.
+- **Task description.** After the reset, `description` holds the instructions upstream's evaluator
+  gives its policy for this episode: `{"instruction": ...}`, read from upstream as its evaluation
+  reads it, plus any further text it gives under its own name (RoboDojo's `detailed_instruction`).
+  Setup writes it to the workspace and the world node logs it
+  ([Task description](devices.md#task-description)); the backend neither prints nor writes it.
 - **Ending.** `done` at the step limit; `success` and `reward` every step.
   - Created with `early_stop`, the backend ends where upstream's evaluator ends an episode, and names
     that end in `stop`.
@@ -239,7 +244,8 @@ rerun it.
   cover every rig, in every declared configuration, automatically.
 - **Native.**
   - Parity with upstream: actions, timing and the scoring items above.
-  - Every task loads and steps. Guard a slow sweep with `ROSBRIDGE_ALL_TASKS=1`.
+  - Every task loads, describes itself (`description["instruction"]`) and steps. Guard a slow sweep
+    with `ROSBRIDGE_ALL_TASKS=1`.
   - Rendering and spectator isolation.
   - A failed reset keeps the episode.
 - **ROS.** A graph test through `tests.ros.support.Graph(backend="<sim>")`: device endpoints, waits,
@@ -253,7 +259,8 @@ rerun it.
 - **Page:** add `docs/<sim>.md`, covering:
   - source, environment and assets;
   - devices;
-  - timing and episodes, including the scoring parity and any departures;
+  - timing and episodes, including the scoring parity and any departures, and where the
+    instruction comes from;
   - recording and checks.
 - **Links:** link the page from `README.md` and `docs/README.md`.
 - **Lists:** add the rig to the table in `docs/devices.md`, and the commands to

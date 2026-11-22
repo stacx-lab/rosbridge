@@ -38,8 +38,8 @@ or a simulator's default-task alias. It takes `--execution-mode`, `--seed`, `--c
 A simulator that serves alternative device sets names them in its manifest's
 `configurations`, and `--config NAME` selects one, such as RoboDojo's `depth` (RGB-D
 cameras). Without it the simulator serves its standard devices. Launch refuses a name the
-simulator does not declare. `setup` takes the same flag, so export a workspace in the
-configuration you launch.
+simulator does not declare. `setup` takes the same flag and scene options, so export a
+workspace in the configuration and scene you launch.
 A simulator that selects scenes in its own terms names them in its manifest's
 `scene_options`, and launch takes those as flags: RoboCasa's `--split`,
 `--layout-id` and `--style-id` (see its page). Launch passes the ones given to the
@@ -138,7 +138,9 @@ result = await world.wait_async(1.0)
 
 The ROS graph inventory remains fixed during a run. Native evaluator results are
 available to the operator through `rosbridge judge RUN_ID`; task instructions and
-evaluator state are not published.
+evaluator state are not published. The episode's task description, the instructions upstream's
+evaluator gives its policy, is in the workspace `rosbridge setup` exports and in the run log
+(see [Task description](devices.md#task-description)).
 
 Arms accept `trajectory_msgs/msg/JointTrajectory` on `<arm>/joint_target`:
 position-only points over every arm joint, strictly increasing times ending within

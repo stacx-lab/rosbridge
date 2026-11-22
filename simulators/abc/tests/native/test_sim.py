@@ -115,7 +115,7 @@ def test_wrapped_actions_match_native_rollout():
 import yaml  # noqa: E402
 
 from rosbridge.catalog import tasks  # noqa: E402
-from rosbridge.catalog.robots import setup  # noqa: E402
+from rosbridge.catalog.robots import export  # noqa: E402
 
 
 @pytest.mark.parametrize('task', [entry['native_task'] for entry in tasks(name='abc').values()])
@@ -124,6 +124,7 @@ def test_catalog_assets_load_and_step(task):
     sim = AbcSim(cameras=(), width=64, height=48, max_steps=2)
     try:
         sim.reset(task, seed=0)
+        assert sim.description['instruction']
         before = sim.time_s
         sim.step(sim.state()[0])
         assert sim.time_s - before == pytest.approx(sim.period)
@@ -154,7 +155,7 @@ def test_rgbd_cameras_and_supplemental_judging():
 
 
 def test_profile_intrinsics_and_depth_range_match_rendering(tmp_path):
-    setup("abc", tmp_path)
+    export("abc", tmp_path)
     sim = AbcSim()
     try:
         sim.reset(sim.default_task, 0, False)

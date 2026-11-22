@@ -31,6 +31,7 @@ def test_representative_tasks_reset_hold_step_and_render(task, seed, joint):
     sim = BiDexSim()
     try:
         sim.reset(task, seed)
+        assert sim.description["instruction"]
         suite, name = sim.task.removesuffix("__ood").split("/")
         assert (sim.steps, sim.time_s, sim.period, sim.max_steps) == (0, 0, .04, max_steps_for_task(suite, name))
         assert sim.layout.joint_names[0] == joint and len(sim.layout.joint_names) == 58

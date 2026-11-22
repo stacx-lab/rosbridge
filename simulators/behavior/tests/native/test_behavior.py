@@ -145,7 +145,7 @@ def test_catalog_task_loads_steps_and_records(task):
     try:
         sim.configure_spectators()
         sim.reset(task, 0)
-        assert not sim.done and sim.max_steps > 0
+        assert not sim.done and sim.max_steps > 0 and sim.description == {"instruction": task}
         sim.step(sim.state()[0])
         assert sim.steps == 1 and np.isfinite(sim.state()[0]).all() and sim.reward in (0., 1.)
         assert 0. <= sim.native("measures")["q_score"] <= 1.

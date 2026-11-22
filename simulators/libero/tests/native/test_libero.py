@@ -16,6 +16,7 @@ def test_catalog_task_loads_and_steps(task):
     sim = LiberoSim(cameras=())
     try:
         sim.reset(task, seed=17, randomize=False)
+        assert sim.description['instruction']
         # Upstream's evaluation horizon, libero/configs/eval/default.yaml.
         assert sim.steps == 0 and sim.time_s == 0 and sim.period == .05 and sim.max_steps == 600
         sim.step(sim.state()[0])

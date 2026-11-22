@@ -10,7 +10,7 @@ import pytest
 import yaml
 
 from rosbridge.catalog import tasks
-from rosbridge.catalog.robots import setup
+from rosbridge.catalog.robots import export
 from rosbridge_robotwin.backend import RoboTwinSim
 
 SEEDS = {t["native_task"]: t.get("seed", 0) for t in tasks(name="robotwin").values()}
@@ -68,7 +68,7 @@ def test_rendering_and_spectators_leave_physics_unchanged(sim):
 
 
 def test_profile_intrinsics_and_depth_range_match_rendering(tmp_path, sim):
-    setup("robotwin", tmp_path)
+    export("robotwin", tmp_path)
     for camera in sim.cameras:
         profile = yaml.safe_load((tmp_path / ".kinex/devices" / camera / "profile.yaml").read_text())
         color = profile["color"]
@@ -103,7 +103,7 @@ def test_catalog_task_loads_and_steps(task):
     sim = RoboTwinSim(cameras=())
     try:
         sim.reset(task, SEEDS[task])
-        assert sim.max_steps == int(sim.env.step_lim) and not sim.done
+        assert sim.max_steps == int(sim.env.step_lim) and not sim.done and sim.description["instruction"]
         sim.step(sim.state()[0])
         assert sim.steps == 1 and np.isfinite(sim.state()[0]).all()
         assert sim.reward == float(sim.success)

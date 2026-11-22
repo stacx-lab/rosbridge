@@ -122,6 +122,13 @@ def test_invalid_flags_fail_before_launch():
         assert error.value.code == 2
 
 
+def test_launch_and_setup_take_the_same_scene_options():
+    from rosbridge.cli.main import parser, scene
+    for command in (["launch", "robocasa"], ["setup", "robocasa/pick-place-counter-to-cabinet"]):
+        args = parser().parse_args([*command, "--split", "target", "--layout-id", "3"])
+        assert scene(args) == {"split": "target", "layout_id": 3}
+
+
 def test_scene_options_are_those_the_simulator_declares(capsys):
     from rosbridge.catalog import simulator
     robocasa, abc = (simulator(name, ROOT)[2] for name in ("robocasa", "abc"))

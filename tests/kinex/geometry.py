@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from rosbridge.catalog.robots import setup
+from rosbridge.catalog.robots import export
 
 PROJECT = Path(__file__).resolve().parents[2]
 
@@ -44,7 +44,7 @@ def rt(position, quaternion_wxyz):
 class Rig:
     """The Kinex workspace a task and seed's launch serves (rosbridge setup)."""
     def __init__(self, selection, directory, seed=None):
-        setup(selection, directory, seed=seed, project=PROJECT)
+        export(selection, directory, seed=seed, project=PROJECT)
         self.directory = Path(directory) / ".kinex/devices"
         self.profiles = {path.parent.name: yaml.safe_load(path.read_text())
                          for path in self.directory.glob("*/profile.yaml")}
