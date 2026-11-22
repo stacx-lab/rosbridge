@@ -54,9 +54,10 @@ into the pinned asset store.
 Assets come from the `RoboDojo-Benchmark/RoboDojo` dataset at
 `1127bda94f172d757386945af3eb3a6754d1a4e6`: 15,365 files (41 GB) under
 `Assets/`, each pinned by LFS SHA-256 or git blob SHA-1 in the dataset listing.
-With `ROSBRIDGE_ASSET_SEED` pointing at RoboEnv's asset cache, every file is
-verified and the tree is moved into the store; otherwise files are downloaded
-once at a polite request rate.
+With `ROSBRIDGE_ASSET_SEED=DIR`, a depot laid out as `DIR/robodojo/<revision>/Assets` is
+verified file by file and moved into the store; otherwise files are downloaded
+once at a polite request rate. A seed of hard links to an earlier revision's files, with the
+changed files replaced, bumps the pin without copying.
 
 ## Devices
 

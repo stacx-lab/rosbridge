@@ -139,8 +139,8 @@ own: whatever upstream leaves to chance stays upstream's chance.
   (`rosbridge.assets`), verifies it against its pin, and links it into `.runtime/<sim>`.
 - **Checker:** `check_task(runtime, task)` raises before an environment is built when something
   is missing. It never downloads.
-- **Seeding:** where RoboEnv already holds verified copies, adopt them with `ROSBRIDGE_ASSET_SEED`
-  rather than downloading again.
+- **Seeding:** where a verified copy already exists on the store's filesystem, adopt it with
+  `ROSBRIDGE_ASSET_SEED` rather than downloading again.
 
 ## 8. Devices
 

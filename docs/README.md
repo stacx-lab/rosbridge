@@ -244,7 +244,7 @@ never publish a partial tree.
 
 Downloads use file locks, atomic extraction and upstream checksums where supplied.
 `ROSBRIDGE_ASSET_SEED=DIR` adopts an existing, already extracted asset depot laid
-out like RoboEnv's (`DIR/<simulator>/...`): each file is verified against its pin
+out by simulator (`DIR/<simulator>/...`): each file is verified against its pin
 and then renamed into the store, so it must share the store's filesystem. A seeded
 preparation never downloads; a missing or mismatched file is an error.
 Packages without upstream checksums record an observed digest without claiming

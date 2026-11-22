@@ -123,14 +123,13 @@ space for the largest archive). They are cached once under
 which OmniGibson reads. Every activity shares them, so one preparation serves all
 activities; a changed pin or generated source requires preparing again.
 
-With `ROSBRIDGE_ASSET_SEED=DIR`, RoboEnv's extracted depot
-(`DIR/behavior/datasets/<dataset>`) is verified file by file against RoboEnv's
+With `ROSBRIDGE_ASSET_SEED=DIR`, an extracted depot
+(`DIR/behavior/datasets/<dataset>`) is verified file by file against its
 receipts (`DIR/behavior/<dataset>.json`, which must name the pinned archive) and
 moved into the cache; the key is copied:
 
 ```bash
-ROSBRIDGE_BEHAVIOR_ACCEPT_LICENSE=YES ROSBRIDGE_ASSET_SEED=../RoboEnv/.cache/roboenv/assets \
-    rosbridge prepare behavior
+ROSBRIDGE_BEHAVIOR_ACCEPT_LICENSE=YES ROSBRIDGE_ASSET_SEED=DIR rosbridge prepare behavior
 ```
 
 ## R1Pro

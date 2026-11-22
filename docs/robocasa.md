@@ -33,11 +33,11 @@ cached once under `.runtime/assets/robocasa` and linked into
 ABC mounts the objaverse and lightwheel packs from the same cache. Upstream
 publishes no checksums. With `ROSBRIDGE_ASSET_SEED=DIR`, extracted archives at
 `DIR/robocasa/<root>/` (`textures`, `generative_textures`, `fixtures`, `objaverse`,
-`aigen_objs`, `lightwheel`) are verified file by file against RoboEnv's sha256
+`aigen_objs`, `lightwheel`) are verified file by file against their sha256
 receipts `DIR/robocasa/<archive>.json` and moved into the cache:
 
 ```bash
-ROSBRIDGE_ASSET_SEED=../RoboEnv/.cache/roboenv/assets rosbridge prepare robocasa
+ROSBRIDGE_ASSET_SEED=DIR rosbridge prepare robocasa
 ```
 
 ## Graph

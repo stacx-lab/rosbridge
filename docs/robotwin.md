@@ -68,7 +68,7 @@ and seed from `ROBOENV_PLANNER_*`.
 Preparation mounts the pinned `TianxingChen/RoboTwin2.0` packs
 (`785feb15aa4a4f532395ad2b1d2be5f28cb561ad`): `embodiments.zip` and
 `objects.zip`, each SHA-256 pinned. Randomized background textures are excluded.
-With `ROSBRIDGE_ASSET_SEED` pointing at RoboEnv's asset cache, the extracted packs
+With `ROSBRIDGE_ASSET_SEED=DIR` naming a depot of the extracted packs, they
 are verified against their archives (every member's size and CRC) and moved into
 the store instead of being downloaded.
 
