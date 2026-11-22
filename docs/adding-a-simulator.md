@@ -94,7 +94,7 @@ simulators/<sim>/
 | `native_environment`, `native_backend` | a native worker (step 2) |
 | `[devices]` | the backend's device inventory by kind (step 8) |
 | `scene_options` | upstream's episode controls besides the seed, which launch takes as flags and passes to `reset` (step 6) |
-| `workspace` | a setup hook for profile changes by task and seed ([HandsOn](handson.md), [BiDex-100](bidex.md)) |
+| `workspace` | a setup hook for profile changes by task and seed ([HandsOn](handson.md), [BiDex-100](bidex.md)); it runs in the CLI's interpreter, which has PyYAML, NumPy and SciPy (`rosbridge[cli]`) |
 | `[configurations.NAME]` | alternative device sets that `--config` selects ([Devices](devices.md#robot-catalog-and-workspace-setup)) |
 
 ## 5. Task catalog

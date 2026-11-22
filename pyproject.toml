@@ -12,6 +12,8 @@ dependencies = ["PyYAML>=6,<7"]
 
 [project.optional-dependencies]
 runtime = ["numpy"]
+# The CLI (tools/bootstrap.sh): setup runs simulators' workspace hooks, which compute profiles with NumPy and SciPy.
+cli = ["numpy", "scipy"]
 dev = ["numpy", "pytest", "ruff"]
 
 [project.scripts]

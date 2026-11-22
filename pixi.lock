@@ -18257,6 +18257,8 @@ packages:
   requires_dist:
   - pyyaml>=6,<7
   - numpy ; extra == 'runtime'
+  - numpy ; extra == 'cli'
+  - scipy ; extra == 'cli'
   - numpy ; extra == 'dev'
   - pytest ; extra == 'dev'
   - ruff ; extra == 'dev'

@@ -24,6 +24,6 @@ if [[ ! -f "$environment_dir/pyvenv.cfg" ]]; then
   uv venv --python 3.12 --python-preference only-managed "$environment_dir"
 fi
 "$environment_dir/bin/python" -I -c 'import sys; assert sys.version_info[:2] == (3, 12), "Python 3.12 required"'
-uv pip install --python "$environment_dir/bin/python" -e .
+uv pip install --python "$environment_dir/bin/python" -e ".[cli]"
 echo "Activate: source $environment_dir/bin/activate"
 echo 'Prepare a simulator: rosbridge prepare abc'
