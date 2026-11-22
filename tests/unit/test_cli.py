@@ -122,11 +122,29 @@ def test_invalid_flags_fail_before_launch():
         assert error.value.code == 2
 
 
-def test_launch_and_setup_take_the_same_scene_options():
+def test_launch_and_describe_take_the_same_scene_options():
     from rosbridge.cli.main import parser, scene
-    for command in (["launch", "robocasa"], ["setup", "robocasa/pick-place-counter-to-cabinet"]):
-        args = parser().parse_args([*command, "--split", "target", "--layout-id", "3"])
+    for command in ("launch", "describe"):
+        args = parser().parse_args([command, "robocasa", "--split", "target", "--layout-id", "3"])
         assert scene(args) == {"split": "target", "layout_id": 3}
+
+
+def test_describe_prints_each_instruction_under_its_name(monkeypatch, capsys):
+    import rosbridge.runs.describe as describing
+    asked = []
+
+    def describe(selection, **options):
+        asked.append((selection, options))
+        return {"task": "stack_bowls", "seed": 2, "instruction": "Stack the three bowls together.",
+                "detailed_instruction": "## Description\n\nNest all bowls.\n\n## Scoring\n\n- 100: stacked."}
+    monkeypatch.setattr(describing, "describe", describe)
+    assert main(["describe", "robodojo/stack-bowls", "--seed", "2"]) == 0
+    assert asked == [("robodojo/stack-bowls", {"seed": 2, "project": None, "configuration": None, "scene": {}})]
+    assert capsys.readouterr().out == (
+        "Task: stack_bowls\nSeed: 2\nInstruction: Stack the three bowls together.\n\nDetailed instruction:\n"
+        "## Description\n\nNest all bowls.\n\n## Scoring\n\n- 100: stacked.\n")
+    assert main(["describe", "robodojo/stack-bowls", "--json"]) == 0
+    assert json.loads(capsys.readouterr().out)["instruction"] == "Stack the three bowls together."
 
 
 def test_scene_options_are_those_the_simulator_declares(capsys):

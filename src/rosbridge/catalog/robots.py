@@ -1,6 +1,4 @@
 """Export the Kinex workspace of a task and seed from the robot catalog, without importing ROS or simulators.
-`rosbridge setup` exports it in the simulator's environment with the episode's task description
-(rosbridge.runs.setup).
 
 Each robot is a complete workspace skeleton whose profiles carry its calibration; it may also ship Kinex
 workspace content (SHIPPED). Files shared by several robots are symlinks; export copies their content.
@@ -31,8 +29,6 @@ from rosbridge.runs.domains import check_domain
 # Kinex workspace content a rig or configuration may ship besides its profiles: its function library
 # (kinex.lib.<module>), saved programs and skills.
 SHIPPED = ("lib", "programs", "skills")
-# The episode's task description, which `rosbridge setup` adds to the workspace.
-DESCRIPTION = "task_description.json"
 IGNORED = shutil.ignore_patterns("__pycache__", "*.pyc")
 
 
@@ -103,12 +99,11 @@ def changes(root, config, task, seed, profiles=None):
                 catalog_profiles(root, task["robot"]) if profiles is None else profiles)
 
 
-def export(selection, directory=None, *, seed=None, project=None, domain_id=0, configuration=None, describe=None):
+def setup(selection, directory=None, *, seed=None, project=None, domain_id=0, configuration=None):
     """The workspace a launch of the same task, seed and configuration serves, every device loaded (Kinex activates
     loaded devices when it starts): the task's robot in that
     configuration, with its simulator's profile changes for that task and seed and the content it ships. The seed
-    defaults as a launch's does. With describe(root, config, task, seed), the episode's task description is added
-    as task_description.json once the selection checks out."""
+    defaults as a launch's does."""
     check_domain(domain_id)
     root, config, task = resolve(selection, project)
     check_configuration(config, configuration)
@@ -122,13 +117,11 @@ def export(selection, directory=None, *, seed=None, project=None, domain_id=0, c
     profiles = catalog_profiles(root, identifier, configuration)
     apply(profiles, changes(root, config, task, seed, profiles), f"{config['name']}'s workspace hook")
     exported = ["workspace.yaml", "devices",
-                *(name for name in SHIPPED if any((source / name).is_dir() for source in sources)),
-                *([DESCRIPTION] if describe else [])]
+                *(name for name in SHIPPED if any((source / name).is_dir() for source in sources))]
     target = Path(directory or Path.cwd()).resolve() / ".kinex"
     present = [name for name in exported if (target / name).exists()]
     if present:
         raise ValueError(f"workspace already contains {', '.join(present)}; export into a new directory")
-    description = describe(root, config, task, seed) if describe else None
     target.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix=".kinex-export-", dir=target.parent) as temporary:
         staging = Path(temporary)
@@ -142,8 +135,6 @@ def export(selection, directory=None, *, seed=None, project=None, domain_id=0, c
             value["loaded"] = True
             value["runtime"] = {**value["runtime"], "domain_id": domain_id}
             (staging / "devices" / name / "profile.yaml").write_text(yaml.safe_dump(value, sort_keys=False))
-        if description is not None:
-            (staging / DESCRIPTION).write_text(json.dumps(description, indent=2, ensure_ascii=False) + "\n")
         target.mkdir(exist_ok=True)
         for name in exported:
             (staging / name).rename(target / name)
@@ -152,5 +143,4 @@ def export(selection, directory=None, *, seed=None, project=None, domain_id=0, c
     config_value.setdefault("python", {"provider": "ros-jazzy"})
     config_file.write_text(json.dumps(config_value, indent=2) + "\n")
     return {"task": task["id"], "seed": seed, "configuration": configuration, "robot": identifier,
-            "workspace": str(target), "loaded": True,
-            **({"task_description": str(target / DESCRIPTION)} if description is not None else {})}
+            "workspace": str(target), "loaded": True}

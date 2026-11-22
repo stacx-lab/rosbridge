@@ -33,7 +33,7 @@ def budgets(graph):
 
 
 def test_the_run_log_states_the_task_description(tmp_path):
-    """The world logs the description `rosbridge setup` writes to .kinex/task_description.json, as one JSON line."""
+    """The world logs the task description `rosbridge describe` prints, as one JSON line."""
     import json
     graph = Graph(tmp_path, task="succeeds")
     try:

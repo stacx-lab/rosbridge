@@ -27,7 +27,7 @@ def domain(value):
 
 
 def scene_flags(command):
-    """The scene options of SCENE_FLAGS, which launch, demo and setup take alike."""
+    """The scene options of SCENE_FLAGS, which launch, demo and describe take alike."""
     command.add_argument("--split", choices=("pretrain", "target", "all"),
                          help="Scene split, for simulators that take one (RoboCasa: upstream's create_env "
                               "split; default none, every kitchen and object); the seed picks within it")
@@ -89,15 +89,20 @@ def parser():
     robots = commands.add_parser("robots")
     listing = robots.add_subparsers(dest="robots_command", required=True).add_parser("list")
     common(listing)
-    setup = commands.add_parser("setup", help="Export the Kinex workspace of a task and seed, every device loaded, "
-                                              "and the episode's task description (the simulator opens it once)")
+    setup = commands.add_parser("setup", help="Export the Kinex workspace of a task and seed, every device loaded")
     common(setup)
     setup.add_argument("selection", help="Task as launch takes it, such as handson/t24-place-ball-in-bowl")
     setup.add_argument("--seed", type=int, help="The launch seed whose devices to export (default: launch's)")
     setup.add_argument("--config", dest="configuration", metavar="NAME", help=CONFIGURATION_HELP)
-    scene_flags(setup)
     setup.add_argument("--directory", type=Path)
     setup.add_argument("--domain-id", type=domain, default=0)
+    describe = commands.add_parser("describe", help="Print an episode's task description: the instructions "
+                                                    "upstream's evaluator gives its policy (opens the episode once)")
+    common(describe)
+    describe.add_argument("selection", help="Task as launch takes it, such as robodojo/stack-bowls")
+    describe.add_argument("--seed", type=int, help="The launch seed to describe (default: launch's)")
+    describe.add_argument("--config", dest="configuration", metavar="NAME", help=CONFIGURATION_HELP)
+    scene_flags(describe)
     task = commands.add_parser("tasks")
     listing = task.add_subparsers(dest="tasks_command", required=True).add_parser("list")
     common(listing)
@@ -108,6 +113,16 @@ def parser():
     command.add_argument("run")
     command.add_argument("argv", nargs=argparse.REMAINDER)
     return root
+
+
+def described(description):
+    """A task description as text: its task and seed, then each instruction under its name."""
+    lines = [f"Task: {description['task']}", f"Seed: {description['seed']}"]
+    for name, text in description.items():
+        if name not in ("task", "seed"):
+            label = name.replace("_", " ").capitalize()
+            lines += ["", f"{label}:", str(text)] if "\n" in str(text) else [f"{label}: {text}"]
+    return "\n".join(lines)
 
 
 def emit(value, machine=False):
@@ -155,12 +170,20 @@ def main(argv=None):
                 print("\n".join(sorted(entries)))
             return 0
         if args.command in ("robots", "setup"):
-            from rosbridge.catalog.robots import list_robots
-            from rosbridge.runs.setup import setup
+            from rosbridge.catalog.robots import list_robots, setup
             result = ({"robots": list_robots(args.project)} if args.command == "robots" else
                       setup(args.selection, args.directory, seed=args.seed, project=args.project,
-                            domain_id=args.domain_id, configuration=args.configuration, scene=scene(args)))
+                            domain_id=args.domain_id, configuration=args.configuration))
             emit(result, args.json)
+            return 0
+        if args.command == "describe":
+            from rosbridge.runs.describe import describe
+            description = describe(args.selection, seed=args.seed, project=args.project,
+                                   configuration=args.configuration, scene=scene(args))
+            if args.json:
+                emit(description, True)
+            else:
+                print(described(description), flush=True)
             return 0
         from rosbridge.runs import api
         if args.command in ("launch", "demo"):

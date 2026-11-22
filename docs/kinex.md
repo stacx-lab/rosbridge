@@ -4,9 +4,8 @@ rosbridge does not depend on Kinex: its graphs, profiles and tests stand on thei
 (see [Devices and robot catalog](devices.md)). Its device types, operation names and
 profile format are Kinex's, so a workspace that `rosbridge setup` exports is a Kinex
 workspace: `.kinex/workspace.yaml`, `.kinex/devices/<name>/profile.yaml` and
-`.kinex/kinex.json` with the `ros-jazzy` provider, beside the episode's
-`.kinex/task_description.json` ([Task description](devices.md#task-description)). Setup neither
-starts Kinex nor prepares its Python environment.
+`.kinex/kinex.json` with the `ros-jazzy` provider. Setup neither starts Kinex nor prepares
+its Python environment.
 
 ```sh
 rosbridge setup libero/libero-spatial-01 --directory ../my-libero-workspace --domain-id 83

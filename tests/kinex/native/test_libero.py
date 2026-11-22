@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 import yaml
 
-from rosbridge.catalog.robots import export
+from rosbridge.catalog.robots import setup
 from rosbridge_libero.backend import LiberoSim
 from tests.kinex.geometry import requires_kinex
 
@@ -21,7 +21,7 @@ def test_catalog_arm_and_camera_geometry_matches_measurements(tmp_path, variant,
     from kinex.common.geometry import compose_rt, xyzq_to_rt
     from kinex.common.joints import JointModel
     project = Path(__file__).resolve().parents[3]
-    result = export(f"libero/{task}", tmp_path, seed=0, project=project)
+    result = setup(f"libero/{task}", tmp_path, seed=0, project=project)
     assert result["robot"] == f"libero/libero-panda-{variant}"
     directory = tmp_path / ".kinex/devices"
     profiles = {name: yaml.safe_load((directory / name / "profile.yaml").read_text())
@@ -59,7 +59,7 @@ def test_osc_pose_state_is_kinex_forward_kinematics_of_the_flange(tmp_path):
     from kinex.common.geometry import xyzq_to_rt
     from kinex.common.joints import JointModel
     project = Path(__file__).resolve().parents[3]
-    export("libero/libero-spatial-01", tmp_path, seed=0, project=project, configuration="osc")
+    setup("libero/libero-spatial-01", tmp_path, seed=0, project=project, configuration="osc")
     directory = tmp_path / ".kinex/devices/arm"
     arm = yaml.safe_load((directory / "profile.yaml").read_text())
     assert arm["model"]["tip_links"] == ["flange"] and "pose_target" in arm["operations"]

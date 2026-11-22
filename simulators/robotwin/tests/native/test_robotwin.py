@@ -10,7 +10,7 @@ import pytest
 import yaml
 
 from rosbridge.catalog import tasks
-from rosbridge.catalog.robots import export
+from rosbridge.catalog.robots import setup
 from rosbridge_robotwin.backend import RoboTwinSim
 
 SEEDS = {t["native_task"]: t.get("seed", 0) for t in tasks(name="robotwin").values()}
@@ -68,7 +68,7 @@ def test_rendering_and_spectators_leave_physics_unchanged(sim):
 
 
 def test_profile_intrinsics_and_depth_range_match_rendering(tmp_path, sim):
-    export("robotwin", tmp_path)
+    setup("robotwin", tmp_path)
     for camera in sim.cameras:
         profile = yaml.safe_load((tmp_path / ".kinex/devices" / camera / "profile.yaml").read_text())
         color = profile["color"]

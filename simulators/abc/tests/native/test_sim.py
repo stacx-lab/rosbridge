@@ -115,7 +115,7 @@ def test_wrapped_actions_match_native_rollout():
 import yaml  # noqa: E402
 
 from rosbridge.catalog import tasks  # noqa: E402
-from rosbridge.catalog.robots import export  # noqa: E402
+from rosbridge.catalog.robots import setup  # noqa: E402
 
 
 @pytest.mark.parametrize('task', [entry['native_task'] for entry in tasks(name='abc').values()])
@@ -155,7 +155,7 @@ def test_rgbd_cameras_and_supplemental_judging():
 
 
 def test_profile_intrinsics_and_depth_range_match_rendering(tmp_path):
-    export("abc", tmp_path)
+    setup("abc", tmp_path)
     sim = AbcSim()
     try:
         sim.reset(sim.default_task, 0, False)

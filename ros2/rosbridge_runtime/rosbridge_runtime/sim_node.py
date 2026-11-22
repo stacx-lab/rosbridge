@@ -45,7 +45,7 @@ class SimNode(Node):
         self.sim = open_episode(p["backend"], p["task"], p["seed"], configuration=p["configuration"] or None,
                                 scene=p["scene"], max_steps=p["max_steps"] or None, early_stop=p["early_stop"],
                                 randomize=p["randomize"], before_reset=spectators if p["spectator_rate_hz"] else None)
-        # The run log states what `rosbridge setup` wrote to the workspace's .kinex/task_description.json.
+        # The run log states the episode's task description, as `rosbridge describe` prints it.
         self.get_logger().info("task description: " + json.dumps(
             task_description(p["task"], self.sim), ensure_ascii=False))
         self.world = WorldRuntime(self.sim, p["mode"], lambda: self.observations.publish(),

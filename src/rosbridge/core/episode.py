@@ -1,8 +1,8 @@
 """One episode of a simulator's backend, opened as a run opens it, and the task description it gives the agent.
 
-The world node opens a run's episode and prints its task description to the run log; `rosbridge setup` opens
-the same episode once and writes the description to the workspace's .kinex/task_description.json. Both open it
-here, so the agent reads the description of the episode it then runs.
+The world node opens a run's episode and prints its task description to the run log; `rosbridge describe` opens
+the same episode once and prints its description (rosbridge.runs.describe). Both open it here, so the agent reads
+the description of the episode it then runs.
 """
 from .registry import load_backend
 
