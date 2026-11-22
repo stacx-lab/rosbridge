@@ -19,7 +19,8 @@ from rclpy.node import Node
 from rclpy.task import Future
 from std_srvs.srv import Trigger
 
-from rosbridge.core.episode import open_episode, task_description
+from rosbridge.core import load_backend
+from rosbridge.runtime.description import logged, task_description
 from rosbridge.runtime.world import WorldRuntime
 from .devices import device
 from .publishing import ObservationPublisher
@@ -31,23 +32,22 @@ class SimNode(Node):
         self.sim = None
         self.executor_error = None
         p = self._read_parameters()
-
-        def spectators(sim):
+        # A configuration the simulator declares selects its alternative devices; other backends never see one.
+        options = {"configuration": p["configuration"]} if p["configuration"] else {}
+        self.sim = load_backend(p["backend"])(max_steps=p["max_steps"] or None, early_stop=p["early_stop"],
+                                              **options)
+        if p["spectator_rate_hz"]:
             # The views a recording asked for (comma-separated; empty: every view the simulator offers). The
             # simulator sets up only these, so views nobody records cost no rendering.
             selected = [name for name in p["spectator_select"].split(",") if name]
-            sim.configure_spectators(p["spectator_width"], p["spectator_height"], selected or None)
-            unknown = sorted(set(selected) - {view.name for view in sim.spectators})
+            self.sim.configure_spectators(p["spectator_width"], p["spectator_height"], selected or None)
+            unknown = sorted(set(selected) - {view.name for view in self.sim.spectators})
             if unknown:
                 raise ValueError(f"this simulator offers no spectator views {unknown}")
-        # A run is one episode: the launch's task, seed and scene options, loaded once. A configuration the
-        # simulator declares selects its alternative devices; other backends never see one.
-        self.sim = open_episode(p["backend"], p["task"], p["seed"], configuration=p["configuration"] or None,
-                                scene=p["scene"], max_steps=p["max_steps"] or None, early_stop=p["early_stop"],
-                                randomize=p["randomize"], before_reset=spectators if p["spectator_rate_hz"] else None)
-        # The run log states the episode's task description, as `rosbridge describe` prints it.
-        self.get_logger().info("task description: " + json.dumps(
-            task_description(p["task"], self.sim), ensure_ascii=False))
+        # A run is one episode: the launch's task, seed and scene options, loaded once.
+        self.sim.reset(p["task"] or self.sim.default_task, p["seed"], p["randomize"], **p["scene"])
+        # The run log states the episode's task description, which `rosbridge describe` reads back.
+        self.get_logger().info(logged(task_description(p["task"], self.sim)))
         self.world = WorldRuntime(self.sim, p["mode"], lambda: self.observations.publish(),
                                   early_stop=p["early_stop"])
         self.devices = [device(spec, self) for spec in self.sim.devices]
@@ -60,7 +60,6 @@ class SimNode(Node):
         self.create_service(Wait, "world/wait", self._wait, callback_group=services)
         self.create_service(Trigger, "world/stop", self._stop, callback_group=services)
         self.observations.publish()
-        options = {"configuration": p["configuration"]} if p["configuration"] else {}
         scene = "".join(f" {name}={value}" for name, value in sorted({**options, **p["scene"]}.items()))
         self.get_logger().info(f"task={self.sim.task} seed={self.sim.seed}{scene} mode={p['mode']} "
                                f"period={self.sim.period:.4f}s")

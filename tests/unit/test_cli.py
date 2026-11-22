@@ -100,6 +100,34 @@ def test_default_selection_requires_one_live_run(tmp_path):
         select(tmp_path)
 
 
+def test_describe_prints_the_task_description_of_the_live_run_on_a_domain(tmp_path, capsys):
+    """describe reads the line the run's world node logged when its episode started; it opens nothing."""
+    (tmp_path / "src/rosbridge").mkdir(parents=True)
+    (tmp_path / "pixi.toml").touch()
+    description = {"task": "stack_bowls", "seed": 2, "instruction": "Stack the three bowls together.",
+                   "detailed_instruction": "## Description\n\nNest all bowls.\n\n## Scoring\n\n- 100: stacked."}
+    lines = {"started": "[sim_node-1] [INFO] [1.0] [world]: task description: " + json.dumps(description) + "\n",
+             "starting": "[sim_node-1] booting\n", "other": "[sim_node-1] [INFO] [1.0] [world]: task description: "
+             + json.dumps(dict(description, task="pour_by_language")) + "\n"}
+    for name, domain in (("started", 42), ("starting", 43), ("other", 44)):
+        folder = tmp_path / ".cache/rosbridge/runs" / name
+        folder.mkdir(parents=True)
+        (folder / "graph.log").write_text(lines[name])
+        write_json(folder / "run.json", {"schema": SCHEMA, "uid": os.getuid(), "id": name, "state": "ready",
+                                         "owner": identity(os.getpid()), "domain_id": domain,
+                                         "log": str(folder / "graph.log")})
+    assert main(["describe", "--domain-id", "42", "--project", str(tmp_path)]) == 0
+    assert capsys.readouterr().out == (
+        "Task: stack_bowls\nSeed: 2\nInstruction: Stack the three bowls together.\n\nDetailed instruction:\n"
+        "## Description\n\nNest all bowls.\n\n## Scoring\n\n- 100: stacked.\n")
+    assert main(["describe", "--domain-id", "42", "--project", str(tmp_path), "--json"]) == 0
+    assert json.loads(capsys.readouterr().out) == description
+    assert main(["describe", "--domain-id", "43", "--project", str(tmp_path)]) == 1
+    assert "has not started its episode yet" in capsys.readouterr().err
+    assert main(["describe", "--domain-id", "45", "--project", str(tmp_path)]) == 1
+    assert "No live run on ROS domain 45" in capsys.readouterr().err
+
+
 def test_overlay_preserves_command_arguments(tmp_path):
     overlay = tmp_path / ".workspaces/fake/install/local_setup.bash"
     overlay.parent.mkdir(parents=True)
@@ -120,31 +148,6 @@ def test_invalid_flags_fail_before_launch():
         with pytest.raises(SystemExit) as error:
             main(args)
         assert error.value.code == 2
-
-
-def test_launch_and_describe_take_the_same_scene_options():
-    from rosbridge.cli.main import parser, scene
-    for command in ("launch", "describe"):
-        args = parser().parse_args([command, "robocasa", "--split", "target", "--layout-id", "3"])
-        assert scene(args) == {"split": "target", "layout_id": 3}
-
-
-def test_describe_prints_each_instruction_under_its_name(monkeypatch, capsys):
-    import rosbridge.runs.describe as describing
-    asked = []
-
-    def describe(selection, **options):
-        asked.append((selection, options))
-        return {"task": "stack_bowls", "seed": 2, "instruction": "Stack the three bowls together.",
-                "detailed_instruction": "## Description\n\nNest all bowls.\n\n## Scoring\n\n- 100: stacked."}
-    monkeypatch.setattr(describing, "describe", describe)
-    assert main(["describe", "robodojo/stack-bowls", "--seed", "2"]) == 0
-    assert asked == [("robodojo/stack-bowls", {"seed": 2, "project": None, "configuration": None, "scene": {}})]
-    assert capsys.readouterr().out == (
-        "Task: stack_bowls\nSeed: 2\nInstruction: Stack the three bowls together.\n\nDetailed instruction:\n"
-        "## Description\n\nNest all bowls.\n\n## Scoring\n\n- 100: stacked.\n")
-    assert main(["describe", "robodojo/stack-bowls", "--json"]) == 0
-    assert json.loads(capsys.readouterr().out)["instruction"] == "Stack the three bowls together."
 
 
 def test_scene_options_are_those_the_simulator_declares(capsys):

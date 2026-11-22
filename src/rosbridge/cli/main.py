@@ -26,23 +26,6 @@ def domain(value):
         raise argparse.ArgumentTypeError(str(error)) from None
 
 
-def scene_flags(command):
-    """The scene options of SCENE_FLAGS, which launch, demo and describe take alike."""
-    command.add_argument("--split", choices=("pretrain", "target", "all"),
-                         help="Scene split, for simulators that take one (RoboCasa: upstream's create_env "
-                              "split; default none, every kitchen and object); the seed picks within it")
-    command.add_argument("--layout-id", type=int, metavar="ID",
-                         help="Kitchen layout overriding the split's, for simulators that take one "
-                              "(RoboCasa: 1-60; default: the seed picks)")
-    command.add_argument("--style-id", type=int, metavar="ID",
-                         help="Kitchen style overriding the split's, for simulators that take one "
-                              "(RoboCasa: 1-60; default: the seed picks)")
-
-
-def scene(args):
-    return {name: getattr(args, name) for name in SCENE_FLAGS if getattr(args, name) is not None}
-
-
 def parser():
     root = argparse.ArgumentParser(prog="rosbridge", description=__doc__)
     commands = root.add_subparsers(dest="command", required=True)
@@ -64,7 +47,15 @@ def parser():
         command.add_argument("--timeout", type=positive, default=900., help="Startup timeout in wall seconds")
         command.add_argument("--seed", type=int)
         command.add_argument("--config", dest="configuration", metavar="NAME", help=CONFIGURATION_HELP)
-        scene_flags(command)
+        command.add_argument("--split", choices=("pretrain", "target", "all"),
+                             help="Scene split, for simulators that take one (RoboCasa: upstream's create_env "
+                                  "split; default none, every kitchen and object); the seed picks within it")
+        command.add_argument("--layout-id", type=int, metavar="ID",
+                             help="Kitchen layout overriding the split's, for simulators that take one "
+                                  "(RoboCasa: 1-60; default: the seed picks)")
+        command.add_argument("--style-id", type=int, metavar="ID",
+                             help="Kitchen style overriding the split's, for simulators that take one "
+                                  "(RoboCasa: 1-60; default: the seed picks)")
         command.add_argument("--record", type=Path, metavar="DIR",
                              help="Save spectator recordings to a new or empty directory")
         command.add_argument("--record-type", choices=("mp4", "bag", "both"),
@@ -96,13 +87,11 @@ def parser():
     setup.add_argument("--config", dest="configuration", metavar="NAME", help=CONFIGURATION_HELP)
     setup.add_argument("--directory", type=Path)
     setup.add_argument("--domain-id", type=domain, default=0)
-    describe = commands.add_parser("describe", help="Print an episode's task description: the instructions "
-                                                    "upstream's evaluator gives its policy (opens the episode once)")
+    describe = commands.add_parser("describe", help="Print the task description of the live run on a ROS domain, "
+                                                    "as its run log states it")
     common(describe)
-    describe.add_argument("selection", help="Task as launch takes it, such as robodojo/stack-bowls")
-    describe.add_argument("--seed", type=int, help="The launch seed to describe (default: launch's)")
-    describe.add_argument("--config", dest="configuration", metavar="NAME", help=CONFIGURATION_HELP)
-    scene_flags(describe)
+    describe.add_argument("--domain-id", type=domain, required=True,
+                          help="The run's ROS domain, which launch prints")
     task = commands.add_parser("tasks")
     listing = task.add_subparsers(dest="tasks_command", required=True).add_parser("list")
     common(listing)
@@ -176,26 +165,25 @@ def main(argv=None):
                             domain_id=args.domain_id, configuration=args.configuration))
             emit(result, args.json)
             return 0
-        if args.command == "describe":
-            from rosbridge.runs.describe import describe
-            description = describe(args.selection, seed=args.seed, project=args.project,
-                                   configuration=args.configuration, scene=scene(args))
-            if args.json:
-                emit(description, True)
-            else:
-                print(described(description), flush=True)
-            return 0
         from rosbridge.runs import api
         if args.command in ("launch", "demo"):
             for flag in ("record_type", "record_rate", "record_size", "record_views", "record_quality"):
                 if getattr(args, flag, None) is not None and args.record is None:
                     raise ValueError(f"--{flag.replace('_', '-')} requires --record DIR")
+            scene = {name: getattr(args, name) for name in SCENE_FLAGS if getattr(args, name) is not None}
             record, process = api.launch(args.selection, project=args.project,
-                                         options=dict(vars(args), scene=scene(args)), demo=args.command == "demo")
+                                         options=dict(vars(args), scene=scene), demo=args.command == "demo")
             emit(record, args.json)
             if getattr(args, "detach", False):
                 return 0
             return api.follow(record, process)
+        if args.command == "describe":
+            description = api.describe(args.domain_id, project=args.project)
+            if args.json:
+                emit(description, True)
+            else:
+                print(described(description), flush=True)
+            return 0
         if args.command in ("status", "stop", "judge"):
             result = {"status": api.status, "stop": api.stop, "judge": api.judge}[args.command](args.run, project=args.project)
             emit(result, args.json)

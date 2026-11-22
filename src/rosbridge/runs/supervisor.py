@@ -9,9 +9,9 @@ import sys
 import time
 
 from rosbridge.catalog import simulator
-from rosbridge.provisioning.environment import overlay_command, run_activated
+from rosbridge.provisioning.environment import activated, native_activated, overlay_command
 from rosbridge.provisioning.setup import workspace_lock
-from rosbridge.storage import write_json
+from rosbridge.storage import run_environment, write_json
 from .api import probe_command
 from .domains import DomainLease
 from .records import identity, read
@@ -62,7 +62,17 @@ def main():
         lease = DomainLease(record.get("requested_domain"))
         locks.callback(lease.close)
         record["domain_id"] = lease.domain
-        python, env = run_activated(root, config, path.parent, lease.domain)
+        python, env = activated(root, config)
+        env.update(run_environment(path.parent))
+        env["ROS_DOMAIN_ID"] = str(lease.domain)
+        if config.get("native_environment"):
+            # The world node proxies a backend that runs in the simulator's own interpreter.
+            native_python, native_env = native_activated(root, config)
+            native_env.update(run_environment(path.parent))
+            native_env["ROS_DOMAIN_ID"] = env["ROS_DOMAIN_ID"]
+            write_json(path.parent / "native-environment.json",
+                       {"python": str(native_python), "env": native_env})
+            env["ROSBRIDGE_NATIVE_ENVIRONMENT"] = str(path.parent / "native-environment.json")
         env.pop("ROSBRIDGE_RECORDING_READY", None)
         if record.get("recording_dir"):
             env["ROSBRIDGE_RECORDING_READY"] = str(path.parent / "recording.ready")

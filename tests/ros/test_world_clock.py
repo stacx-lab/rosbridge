@@ -33,15 +33,12 @@ def budgets(graph):
 
 
 def test_the_run_log_states_the_task_description(tmp_path):
-    """The world logs the task description `rosbridge describe` prints, as one JSON line."""
-    import json
+    """The world logs the task description as one line, which `rosbridge describe` reads back."""
+    from rosbridge.runtime.description import stated
     graph = Graph(tmp_path, task="succeeds")
     try:
-        log = graph.logs[0]
-        log.flush()
-        log.seek(0)
-        line = next(line for line in log.read().splitlines() if "task description: " in line)
-        assert json.loads(line.split("task description: ", 1)[1]) == {
+        graph.logs[0].flush()
+        assert stated(graph.logs[0].name) == {
             "task": "succeeds", "seed": 0, "instruction": "Move the toy's axes (succeeds, seed 0)."}
     finally:
         graph.close()

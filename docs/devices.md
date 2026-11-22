@@ -168,13 +168,15 @@ is the episode's task description; the operator reads native outcomes with
 
 Every simulator describes an episode the same way: its native task and seed, and the
 instructions upstream's evaluator gives its policy for that episode, which may depend on the
-seed or the scene. `rosbridge describe` prints it for a task as `launch` takes it, with
-`--seed`, `--config` and the scene options (`--json` prints it as JSON), and the world node
-prints the same JSON to the run log (`graph.log`) as one `task description: {...}` line when
-the episode starts. Give it to the agent; nothing is published on ROS or written to a file.
+seed or the scene. When the episode starts, the world node states it in the run log
+(`graph.log`) as one `task description: {...}` line of JSON, and `rosbridge describe` prints it
+for the live run on a ROS domain, the one launch printed. It reads the line back, so it opens
+nothing and answers at once; `--json` prints the JSON. Give it to the agent; nothing is
+published on ROS or written to a file.
 
 ```sh
-rosbridge describe robodojo/stack-bowls --seed 0
+rosbridge launch robodojo/stack-bowls --execution-mode stepped --domain-id 83 --detach
+rosbridge describe --domain-id 83
 ```
 
 ```text
@@ -189,11 +191,7 @@ Detailed instruction:
 
 `instruction` is always there; a simulator whose evaluator gives its policy more text adds it
 under its own name, such as RoboDojo's `detailed_instruction`. Each simulator's page says where
-its instruction comes from. The backend states it as `description` after its reset
-(`rosbridge.core.episode`), so `describe` opens the episode once, the way the world node opens
-it: the simulator boots and resets in its own environment, which takes as long as a launch's
-start (seconds for the MuJoCo simulators, minutes for the Isaac ones) and needs the same
-preparation and GPU.
+its instruction comes from: the backend states it as `description` after its reset.
 
 A run is one episode; the world offers no reset, so starting over is the operator's:
 stop the run and launch another. An episode ending at a step limit, a failed simulator

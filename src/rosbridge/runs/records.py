@@ -56,6 +56,15 @@ def select(root, run=None):
     return matches[0]
 
 
+def on_domain(root, domain):
+    """The live run on a ROS domain; each live run leases its own."""
+    for path in directory(root).glob("*/run.json"):
+        record = read(path)
+        if alive(record) and record.get("domain_id") == domain:
+            return path, record
+    raise ValueError(f"No live run on ROS domain {domain}; launch one first")
+
+
 def wait_stopped(path, timeout=45.):
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:

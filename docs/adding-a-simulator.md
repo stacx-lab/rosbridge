@@ -182,7 +182,7 @@ Implement `SimulatorBackend` (`src/rosbridge/core/backend.py`). Its docstring is
 - **Task description.** After the reset, `description` holds the instructions upstream's evaluator
   gives its policy for this episode: `{"instruction": ...}`, read from upstream as its evaluation
   reads it, plus any further text it gives under its own name (RoboDojo's `detailed_instruction`).
-  `rosbridge describe` prints it and the world node logs it
+  The world node logs it and `rosbridge describe` reads it back
   ([Task description](devices.md#task-description)); the backend neither prints nor writes it.
 - **Ending.** `done` at the step limit; `success` and `reward` every step.
   - Created with `early_stop`, the backend ends where upstream's evaluator ends an episode, and names

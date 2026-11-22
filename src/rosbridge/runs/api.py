@@ -8,13 +8,14 @@ import sys
 import time
 import uuid
 
-from rosbridge.catalog import check_configuration, check_scene, resolve, simulator
+from rosbridge.catalog import check_configuration, resolve, simulator
 from rosbridge.project import project_root
 from rosbridge.recording import destination, reserve
 from rosbridge.storage import run_environment, write_json
 from rosbridge.provisioning.environment import activated, overlay_command
 from rosbridge.provisioning.setup import doctor
-from .records import SCHEMA, alive, directory, read, select, wait_stopped
+from rosbridge.runtime.description import stated
+from .records import SCHEMA, alive, directory, on_domain, read, select, wait_stopped
 from .processes import signal_owner
 
 SPECTATOR_RATE_HZ = 10.
@@ -40,9 +41,14 @@ def recording_settings(options):
 
 
 def scene_argument(config, scene):
-    """The world's scene launch argument: the given scene options (check_scene) as one compact JSON object; None
-    when none is given."""
-    scene = check_scene(config, scene)
+    """The world's scene launch argument: the given scene options, which the simulator's manifest must declare
+    (scene_options), as one compact JSON object; None when none is given. The backend checks their values."""
+    declared = tuple(config.get("scene_options", ()))
+    unknown = sorted(set(scene) - set(declared))
+    if unknown:
+        flags = ", ".join("--" + name.replace("_", "-") for name in unknown)
+        takes = ", ".join("--" + name.replace("_", "-") for name in declared) or "none"
+        raise ValueError(f"{config['name']} takes no {flags} (its scene options: {takes})")
     if not scene:
         return None
     return "scene:=" + json.dumps(scene, separators=(",", ":"), sort_keys=True, allow_nan=False)
@@ -188,6 +194,15 @@ def follow(record, process):
         stop(record["run_file"], project=record["project"])
         process.wait(timeout=5)
         return 130
+
+
+def describe(domain_id, *, project=None):
+    """The task description the live run on a ROS domain stated in its log when its episode started."""
+    _, record = on_domain(project_root(project), domain_id)
+    description = stated(record["log"])
+    if description is None:
+        raise ValueError(f"Run {record['id']} on ROS domain {domain_id} has not started its episode yet")
+    return description
 
 
 def judge(run=None, *, project=None):

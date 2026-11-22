@@ -138,9 +138,9 @@ result = await world.wait_async(1.0)
 
 The ROS graph inventory remains fixed during a run. Native evaluator results are
 available to the operator through `rosbridge judge RUN_ID`; task instructions and
-evaluator state are not published. `rosbridge describe TASK` prints the episode's task
-description, the instructions upstream's evaluator gives its policy, and the run log states it
-(see [Task description](devices.md#task-description)).
+evaluator state are not published. The run log states the episode's task description, the
+instructions upstream's evaluator gives its policy, and `rosbridge describe --domain-id N`
+prints it for the live run on that domain (see [Task description](devices.md#task-description)).
 
 Arms accept `trajectory_msgs/msg/JointTrajectory` on `<arm>/joint_target`:
 position-only points over every arm joint, strictly increasing times ending within

@@ -127,8 +127,8 @@ class SimulatorBackend(Protocol):
 
     After a reset, description holds the instructions upstream's evaluator gives
     its policy for the episode: {"instruction": text}, plus any further text it
-    gives under its own name, such as RoboDojo's detailed_instruction.
-    `rosbridge describe` prints it and the world node logs it (rosbridge.core.episode).
+    gives under its own name, such as RoboDojo's detailed_instruction. The world
+    node logs it and `rosbridge describe` reads it back (rosbridge.runtime.description).
     """
 
     default_task: str
