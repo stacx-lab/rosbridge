@@ -22,6 +22,21 @@ def seconds(stamp):
     return stamp.sec + stamp.nanosec * 1e-9
 
 
+def execute(graph, client, message, feedback=None):
+    """Send an action a goal; its handle once it is accepted, from when the world waits for it."""
+    sent = client.send_goal_async(message, feedback_callback=feedback)
+    graph.until(sent.done)
+    assert sent.result().accepted
+    return sent.result()
+
+
+def ended(graph, handle):
+    """A finished goal's (status, error code, error string)."""
+    reply = handle.get_result_async()
+    graph.until(reply.done)
+    return reply.result().status, reply.result().result.error_code, reply.result().result.error_string
+
+
 class Graph:
     def __init__(self, tmp_path, mode="stepped", backend="toy", max_steps=0, spectators=False,
                  startup_s=60., task="toy", early_stop=False, scene=None, configuration=None):
@@ -40,7 +55,7 @@ class Graph:
         # Scene options travel as one JSON object, as launch passes them.
         scene = json.dumps(scene, separators=(",", ":"), sort_keys=True) if scene else None
         try:
-            if backend in ("toy", "pose_toy", "joint_pose_toy", "camera_toy", "depth_toy", "lens_toy", "scene_toy"):
+            if backend.endswith("toy"):
                 self.owner = self.start([sys.executable, "-m", "tests.ros.toy_server", "--ros-args",
                                          "-p", f"backend:={backend}",
                                          "-p", f"mode:={mode}", "-p", f"max_steps:={max_steps}",
@@ -120,8 +135,11 @@ class Graph:
             for subscription in subscriptions:
                 self.node.destroy_subscription(subscription)
 
-    def wait(self, duration, timeout=15.):
-        return self.call(self.wait_client, Wait.Request(duration_s=float(duration)), timeout)
+    def wait(self, duration, timeout=15., goals=(), goal_timeout=0.):
+        """goals: handles of executing action goals the wait is for, cancelled goal_timeout into it if positive."""
+        request = Wait.Request(duration_s=float(duration), goals=[handle.goal_id for handle in goals],
+                               goal_timeout_s=float(goal_timeout))
+        return self.call(self.wait_client, request, timeout)
 
     def stop(self, process):
         if process.poll() is None:

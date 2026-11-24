@@ -133,24 +133,37 @@ class PoseToy(ToyBackend):
         return np.r_[self.position, 0., 0., 0., 0., 1.]
 
 
-class JointPoseToy(PoseToy):
-    """The planar arm as a joint group that solves its tip's pose paths; one leaving its 1.5 m reach has no joints."""
-    layout = ActionLayout(("x", "y"), (CommandGroup("reach", (0, 1), (-2., -2.), (2., 2.), tip="tip",
-                                                    joint_targets=True),))
+class PairPoseToy(PoseToy):
+    """Two planar arms, left and right, as joint groups that take goals for their tips. A goal's step leaving an
+    arm's 1.5 m reach has no joints, and the tips cannot pass a wall at x = 1.2."""
+    layout = ActionLayout(("x", "y", "x", "y"), tuple(
+        CommandGroup(name, indices, (-2., -2.), (2., 2.), tip="tip", joint_targets=True, move=True)
+        for name, indices in (("left", (0, 1)), ("right", (2, 3)))))
     devices = device_inventory(layout, {})
+
+    def reset(self, task, seed, randomize):
+        super().reset(task, seed, randomize)
+        self.position = np.array([.5, -.5, .5, -.5])
+
+    def state(self):
+        return self.position.copy(), np.zeros(4)
 
     def step(self, action):
         assert threading.get_ident() == self.owner
         self.position = np.asarray(action, dtype=float).copy()
+        self.position[::2] = np.minimum(self.position[::2], 1.2)
         self.steps += 1
         self.time_s = self.steps * self.period
+        self.done = self.max_steps is not None and self.steps >= self.max_steps
 
-    def joint_path(self, group, joints, poses):
-        assert threading.get_ident() == self.owner and group == "reach"
-        for index, pose in enumerate(poses, 1):
-            if np.linalg.norm(pose[:2]) > 1.5:
-                raise ValueError(f"at {index * self.period:.2f} s of the path the tip pose is beyond the 1.5 m reach")
-        return [pose[:2] for pose in poses]
+    def tip_pose(self, group):
+        return np.r_[self.position[:2] if group == "left" else self.position[2:], 0., 0., 0., 0., 1.]
+
+    def joint_step(self, group, pose):
+        assert threading.get_ident() == self.owner
+        if np.linalg.norm(pose[:2]) > 1.5:
+            raise ValueError("the tip pose is beyond the 1.5 m reach")
+        return pose[:2]
 
 
 class SceneToy(ToyBackend):

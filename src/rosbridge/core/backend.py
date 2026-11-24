@@ -17,8 +17,9 @@ class CommandGroup:
     the tip's pose in the device base, [x, y, z, qx, qy, qz, qw], which the
     simulator's own Cartesian control executes. Its feedback stays joint positions,
     and its limits bound nothing it is commanded. A tip with joint_targets is a
-    joint group that also takes its tip's poses: the backend's joint_path solves a
-    whole pose path into joints when it arrives.
+    joint group that reports its tip's measured pose. With move, it takes goals for
+    its tip (rosbridge.core.motions) in place of joint targets: the backend's
+    joint_step solves each step of one into joints.
     """
 
     name: str
@@ -29,6 +30,7 @@ class CommandGroup:
     velocity: bool = False
     tip: str | None = None
     joint_targets: bool = False
+    move: bool = False
 
 
 @dataclass(frozen=True)
@@ -59,6 +61,7 @@ class ActionLayout:
                     or (group.velocity and (group.scalar or len(group.indices) != 3))
                     or (group.tip is not None and (not group.tip or group.scalar or group.velocity))
                     or (group.joint_targets and group.tip is None)
+                    or (group.move and not group.joint_targets)
                     or not all(0 <= i < len(self.joint_names) for i in group.indices)):
                 raise ValueError(f"invalid command group: {group.name}")
             if len({self.joint_names[i] for i in group.indices}) != len(group.indices):
@@ -106,10 +109,10 @@ class SimulatorBackend(Protocol):
     tip_pose(group) returns the measured tip pose there, which a stop holds and
     a group's first trajectory starts from.
 
-    A backend with a joint group that takes tip poses has
-    joint_path(group, joints, poses): the joints for the group's tip pose at each
-    control period of a path that starts at joints, or a ValueError saying why the
-    path has none. The path is then refused whole, before the group moves.
+    A backend with a joint group that has a tip has tip_pose(group). One whose
+    tip takes goals has joint_step(group, pose): the joints for the next step of a
+    goal, solved from the measured joints as each step starts from the measured
+    pose, or a ValueError saying why it has none.
 
     Optionally, camera_rate_hz sets how many times per simulated second a
     subscribed camera renders (default 30), for a simulator whose renders are

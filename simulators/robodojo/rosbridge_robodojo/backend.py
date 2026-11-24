@@ -3,9 +3,9 @@
 Isaac Sim 5.1 needs Python 3.11, so the world node proxies this class through
 rosbridge.core.worker. Every 0.04 s frame passes absolute arm joints and the
 native normalized gripper value to upstream's EvalEnv.take_action, which
-interpolates the arm over its ten 250 Hz substeps. An arm's pose path becomes
-a joint trajectory when it arrives, through the cuRobo IK upstream's ee_pose
-action uses, checked as uni-robot-agent's RoboDojo adapter checks it. Resets load
+interpolates the arm over its ten 250 Hz substeps. Each step of an arm's move
+goal becomes joints through the cuRobo IK upstream's ee_pose action uses,
+checked as uni-robot-agent's RoboDojo adapter checks it. Resets load
 upstream's saved evaluation layouts. Ported from RoboEnv's RoboDojo adapter.
 """
 import os
@@ -26,11 +26,14 @@ SIDES = ("left", "right")
 SPECTATORS = (("third_person", "head_camera"), ("left_wrist", "left_camera"),
               ("right_wrist", "right_camera"))
 UNSTABLE_RETRIES = 3
-# An arm's pose targets are poses of its flange, link6: upstream's ee_link and its cuRobo tool frame.
+# An arm's goals are poses of its flange, link6: upstream's ee_link and its cuRobo tool frame.
 TIP = "flange"
-# A pose solution's joint path from the commanded joints is checked against cuRobo's self and table constraints at
+# A pose solution's joint path from the measured joints is checked against cuRobo's self and table constraints at
 # this spacing, as uni-robot-agent's RoboDojo adapter checks it.
 PATH_SAMPLE_RAD = .025
+# The most a goal's step may ask of a joint from where it is, uni-robot-agent's guard against a change of posture.
+# Beyond a frame's native travel (0.2 rad) the actuator saturates, and the next step starts from where the arm got.
+JUMP_RAD = 1.
 _APP = None  # Isaac allows one SimulationApp per process.
 
 
@@ -117,9 +120,9 @@ def path(previous, q):
 
 
 def choose(candidates, previous, lower, upper, step_limit, path_free, names):
-    """The candidate nearest previous that one frame can execute: within [lower, upper] (a whole turn nearer previous
+    """The candidate nearest previous that a step can take: within [lower, upper] (a whole turn nearer previous
     where the limits allow), moving no joint more than step_limit from previous, along a joint path path_free(rows)
-    accepts. Returns (joints, None), or (None, why the nearest candidate cannot be executed; None without one)."""
+    accepts. Returns (joints, None), or (None, why the nearest candidate cannot be taken; None without one)."""
     nearest = None
     turned = [nearest_turn(np.asarray(q, dtype=float), previous, lower, upper) for q in candidates]
     for q in sorted(turned, key=lambda q: np.abs(q - previous).max()):
@@ -128,8 +131,7 @@ def choose(candidates, previous, lower, upper, step_limit, path_free, names):
         if np.any(q < lower) or np.any(q > upper):
             why = "lies outside the joint limits"
         elif steps[i] > step_limit:
-            why = (f"moves {names[i]} {q[i] - previous[i]:+.2f} rad in one frame, beyond {step_limit:.2f} rad: "
-                   f"{steps[i] / step_limit:.1f} times too fast here, or a change of posture")
+            why = f"moves {names[i]} {q[i] - previous[i]:+.2f} rad in one step, a change of posture"
         elif not path_free(path(previous, q)):
             why = "has a joint path that collides with the arm itself or the table"
         else:
@@ -188,9 +190,10 @@ class RoboDojoSim:
     width, height = 640, 480
 
     def __init__(self, *, max_steps=None, early_stop=False, configuration=None):
-        if configuration not in (None, "depth"):
+        if configuration not in (None, "depth", "move"):
             raise ValueError(f"RoboDojo has no configuration {configuration!r}")
         self.depth = configuration == "depth"  # RGB-D cameras
+        self.move = configuration == "move"  # the arms take flange goals in place of joint targets
         self._captures = None  # each camera's annotator outputs at the current step; None until it is rendered
         self.requested_max_steps = max_steps
         self.max_steps = max_steps
@@ -281,14 +284,14 @@ class RoboDojoSim:
             arm = list(robot.arm_joint_indices)
             limits = values(key.data.joint_pos_limits[0])[arm]
             self._actuators[side] = (robot, key, arm, list(robot.gripper_joint_indices))
-            # A frame moves no joint further than its native velocity limit allows (upstream's 5 rad/s actuators).
+            # One frame's joint travel at the native velocity limit (upstream's 5 rad/s actuators), for the rig.
             step = float(np.min(values(key.data.joint_vel_limits[0])[arm])) * self.period
             self._limits[side] = (limits[:, 0], limits[:, 1], step)
             offset = len(names)
             names += list(robot.arm_joints_name) + [f"{side}_gripper"]
-            # Joint targets as upstream's arm_joint_state; flange pose targets through upstream's cuRobo IK.
-            groups.append(CommandGroup(f"{side}_arm", tuple(range(offset, offset + len(arm))),
-                                       tuple(limits[:, 0]), tuple(limits[:, 1]), tip=TIP, joint_targets=True))
+            # Joint targets as upstream's arm_joint_state, or flange goals through upstream's cuRobo IK.
+            groups.append(CommandGroup(f"{side}_arm", tuple(range(offset, offset + len(arm))), tuple(limits[:, 0]),
+                                       tuple(limits[:, 1]), tip=TIP, joint_targets=True, move=self.move))
             groups.append(CommandGroup(f"{side}_gripper", (offset + len(arm),), (0.,), (1.,), scalar=True))
         self.layout = ActionLayout(tuple(names), tuple(groups))
 
@@ -379,26 +382,22 @@ class RoboDojoSim:
         world = self._link(side, "base_link") @ relative
         return np.r_[world[:3, 3], t3d.quaternions.mat2quat(world[:3, :3])]
 
-    def joint_path(self, group, joints, poses):
-        """The joints taking an arm's flange through poses, one per 0.04 s frame, from joints. cuRobo's IK solves
-        each pose from the frame before: its solution nearest that frame must lie within the joint limits and one
-        frame's native joint travel of it, along a joint path clear of cuRobo's self and table constraints. A
-        ValueError names the first frame that has none, and why."""
+    def joint_step(self, group, pose):
+        """The joints for the next step of a goal: cuRobo's IK solves the flange pose from the measured joints, and
+        its solution nearest them must lie within the joint limits and JUMP_RAD of them, along a joint path clear
+        of cuRobo's self and table constraints. A ValueError says why there is none."""
         side = group.removesuffix("_arm")
-        robot = self._actuators[side][0]
+        robot, key, arm, _ = self._actuators[side]
         planner = self.env.robot_manager.ik_solver[robot.robot_name]
-        lower, upper, step = self._limits[side]
-        q, rows = np.asarray(joints, dtype=float), []
-        for index, pose in enumerate(poses, 1):
-            target = self._native_pose(side, np.asarray(pose, dtype=float))
-            q, why = choose(self._candidates(planner, robot, target, q), q, lower, upper, step,
-                            lambda joints: self._path_free(planner, joints), list(robot.arm_joints_name))
-            if q is None:
-                raise ValueError(f"at {index * self.period:.2f} s of the path " + (
-                    f"the nearest IK solution {why}" if why else
-                    "cuRobo's IK has no solution clear of the arm itself and the table"))
-            rows.append(q)
-        return rows
+        lower, upper, _ = self._limits[side]
+        joints = values(key.data.joint_pos[0])[arm]
+        target = self._native_pose(side, np.asarray(pose, dtype=float))
+        q, why = choose(self._candidates(planner, robot, target, joints), joints, lower, upper, JUMP_RAD,
+                        lambda rows: self._path_free(planner, rows), list(robot.arm_joints_name))
+        if q is None:
+            raise ValueError(f"the nearest IK solution {why}" if why else
+                             "cuRobo's IK has no solution clear of the arm itself and the table")
+        return q
 
     def _candidates(self, planner, robot, target, current):
         """cuRobo's successful IK solutions for an ee_pose target, built as upstream's

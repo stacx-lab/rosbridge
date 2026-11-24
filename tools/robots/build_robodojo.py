@@ -19,22 +19,19 @@ from rosbridge_robodojo.backend import RoboDojoSim, runtime  # noqa: E402
 # RoboEnv's parallel-gripper geometry: the pad center ahead of link6, in the flange frame.
 TCP = (0.15007, -0.000002, -0.00144)
 ARM = ("ARX X5 six-joint {side} arm of the RoboDojo rig. Geometry is the sibling arm.urdf with flange (link6) "
-       "as the tip link; its links are the frames {side}_arm/<link>. It takes joint targets, upstream's absolute "
-       "joint positions ({side}_arm_joint_state of EvalEnv.take_action), or flange pose targets, which upstream's "
-       "cuRobo IK turns into those joints; the native controller interpolates them over each 0.04 s frame. Both "
-       "arms use the native joint names joint1..joint6.")
-# How the backend executes a pose target (rosbridge_robodojo.backend.RoboDojoSim.joint_path); step is one frame's
-# joint travel at the native velocity limit.
-POSE = ("Each point is a waypoint the flange reaches at its time along a straight line (rotation by slerp); "
-        "nothing plans around objects. On arrival, upstream's cuRobo IK solves the pose of every 0.04 s frame from "
-        "the frame before, and the path runs as a joint trajectory. If a frame has no solution that stays within "
-        "the joint limits, moves each joint at most {step:.2f} rad and avoids self and table collision, the whole "
-        "trajectory is refused before the arm moves, and the next world wait reply says where and why.")
+       "as the tip link; its links are the frames {side}_arm/<link>. {control} Both arms use the native joint "
+       "names joint1..joint6.")
+JOINTS = ("It takes joint targets, upstream's absolute joint positions ({side}_arm_joint_state of "
+          "EvalEnv.take_action), which the native controller interpolates over each 0.04 s frame.")
+# The move configuration (rosbridge.runtime.world.WorldRuntime.move).
+GOALS = ("It takes move goals for its flange, which upstream's cuRobo IK turns into upstream's absolute joint "
+         "positions ({side}_arm_joint_state of EvalEnv.take_action), a step every 0.04 s frame.")
 
 
-def arm(side, base, step):
-    return rigs.joint(f"{side}_arm", ARM.format(side=side), [f"joint{i}" for i in range(1, 7)], [0.0] * 6, base,
-                      pose=POSE.format(step=step), joint_targets=True)
+def arm(side, base, move=False):
+    control = (GOALS if move else JOINTS).format(side=side)
+    return rigs.joint(f"{side}_arm", ARM.format(side=side, control=control), [f"joint{i}" for i in range(1, 7)],
+                      [0.0] * 6, base, tip_pose=True, move=move)
 
 
 def link(sim, side, name):
@@ -64,13 +61,13 @@ def main():
     devices = {"world": rigs.world(
         "Scene reference and authoritative world clock of the RoboDojo table. This device exposes "
         "no task instructions or evaluator results.")}
-    files, depth = {}, {}
+    files, depth, move = {}, {}, {}
     for side in ("left", "right"):
         robot = sim._actuators[side][0]
         lower, upper = map(float, robot.gripper_scale)
         flange = link(sim, side, "link6")
-        devices[f"{side}_arm"] = arm(side, rigs.pose_frame("world:base", link(sim, side, "base_link")),
-                                     sim._limits[side][2])
+        base = rigs.pose_frame("world:base", link(sim, side, "base_link"))
+        devices[f"{side}_arm"], move[f"{side}_arm"] = arm(side, base), arm(side, base, move=True)
         devices[f"{side}_gripper"] = rigs.gripper(
             f"{side}_gripper",
             f"ARX X5 {side} parallel two-finger gripper on the {side}_arm flange. The grip joint "
@@ -108,7 +105,7 @@ def main():
              "head_camera", "left_camera", "right_camera"]
     rigs.write_rig(ROOT / "catalog/robots/robodojo/robodojo-arx-x5",
                    rigs.workspace("robodojo-arx-x5", "RoboDojo dual ARX X5", "arm", "ARX X5 (dual)"),
-                   {name: devices[name] for name in order}, files, {"depth": depth})
+                   {name: devices[name] for name in order}, files, {"depth": depth, "move": move})
     print("rig written", flush=True)
     np.set_printoptions(precision=4)
     sim.close()

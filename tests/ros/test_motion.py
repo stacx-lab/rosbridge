@@ -1,7 +1,12 @@
-"""Actuator endpoints validate, replace and stop without ROS actions."""
+"""Actuator endpoints validate, replace and stop; an arm's move action reaches goals that world waits await."""
 import math
 import pytest
+from action_msgs.msg import GoalStatus
 from builtin_interfaces.msg import Duration
+from control_msgs.action import FollowJointTrajectory
+from control_msgs.msg import JointComponentTolerance
+from custom_interfaces.srv import Wait
+from rclpy.action import ActionClient
 from sensor_msgs.msg import JointState, MultiDOFJointState
 from std_msgs.msg import Float64, Header
 from std_srvs.srv import Trigger
@@ -9,7 +14,8 @@ from geometry_msgs.msg import Quaternion, Transform, Twist, Vector3
 from trajectory_msgs.msg import (JointTrajectory, JointTrajectoryPoint, MultiDOFJointTrajectory,
                                  MultiDOFJointTrajectoryPoint)
 from rosbridge_runtime.devices import STREAM_QOS
-from tests.ros.support import Graph
+from unique_identifier_msgs.msg import UUID
+from tests.ros.support import Graph, ended, execute
 
 
 def trajectory(positions, names=('slide', 'rotate'), **point):
@@ -119,44 +125,103 @@ def test_pose_target_moves_the_tip_validates_and_stops(tmp_path):
         graph.close()
 
 
-def test_an_arm_solving_pose_paths_into_joints_follows_the_latest_command_and_refuses_a_path_whole(tmp_path):
-    graph = Graph(tmp_path, backend='joint_pose_toy')
+def goal(*targets, tolerance=None, **trajectory):
+    """A move goal through (x, y, quaternion xyzw) tip poses at the arm's pace, in the arm's base."""
+    path = poses(*targets, **{'frame': '', **trajectory})
+    for point in path.points:
+        point.time_from_start = Duration()
+    return FollowJointTrajectory.Goal(multi_dof_trajectory=path, component_goal_tolerance=[
+        JointComponentTolerance(joint_name='tip', component=JointComponentTolerance.TRANSLATION, position=tolerance)
+    ] if tolerance else [])
+
+
+def arms(graph):
+    clients = [ActionClient(graph.node, FollowJointTrajectory, f'{arm}/move') for arm in ('left', 'right')]
+    graph.until(lambda: all(client.server_is_ready() for client in clients))
+    return clients
+
+
+def test_arms_reach_goals_at_their_own_pace_and_a_wait_ends_with_its_goals(tmp_path):
+    graph = Graph(tmp_path, backend='pair_pose_toy')  # tips at (0.5, -0.5), 0.1 m a 0.1 s step, a wall at x = 1.2
     try:
-        states, poser, stop = endpoints(graph, 'reach', 'pose_target', MultiDOFJointTrajectory)
-        joints = graph.node.create_publisher(JointTrajectory, 'reach/joint_target', 10)
-        graph.until(joints.get_subscription_count)
-        position = lambda: list(states[-1].position)
+        left, right = arms(graph)
+        upright, samples = (0., 0., 0., 1.), []
+        near = execute(graph, left, goal((.7, -.5, upright)), samples.append)
+        far = execute(graph, right, goal((1., -.5, upright)))
+        assert graph.wait(0.).time_s == 0.  # goals advance no time
+        both = graph.wait(0., goals=[near, far])  # until the later goal finishes
+        assert both.success and list(both.finished) == [True, True] and both.waited_s == pytest.approx(.5)
+        for handle, seconds in ((near, .2), (far, .5)):
+            assert ended(graph, handle) == (GoalStatus.STATUS_SUCCEEDED, 0, f'reached: 0.000 m and 0.000 rad '
+                                                                            f'from the goal after {seconds:.2f} s')
+        graph.spin(.1)
+        commanded = [sample.feedback.multi_dof_desired.transforms[0].translation.x for sample in samples]
+        assert commanded == pytest.approx([.6, .7]) and samples[0].feedback.multi_dof_joint_names == ['tip']
+        assert samples[1].feedback.multi_dof_actual.transforms[0].translation.x == pytest.approx(.6)
+        # A wait without goals runs its duration, whatever goals do.
+        back = execute(graph, left, goal((.5, -.5, upright)))
+        assert graph.wait(1.).waited_s == pytest.approx(1.) and ended(graph, back)[0] == GoalStatus.STATUS_SUCCEEDED
+        # The wall stalls a goal, which is aborted there; a goal's own tolerance accepts where it is.
+        blocked = execute(graph, right, goal((1.5, -.5, upright)))
+        assert graph.wait(0., goals=[blocked]).waited_s == pytest.approx(.5)
+        assert ended(graph, blocked) == (GoalStatus.STATUS_ABORTED, -4,
+                                         'stalled: 0.300 m and 0.000 rad from the goal after 0.50 s')
+        loose = execute(graph, right, goal((1.5, -.5, upright), tolerance=.35))
+        assert graph.wait(0., goals=[loose]).waited_s == 0. and ended(graph, loose)[1] == 0
+        # A goal still executing at the wait's goal timeout is cancelled; the wait then runs out its duration.
+        slow = execute(graph, left, goal((1.1, -.5, upright)))
+        cut = graph.wait(.4, goals=[slow], goal_timeout=.2)
+        assert cut.success and list(cut.finished) == [True] and cut.waited_s == pytest.approx(.4)
+        assert ended(graph, slow) == (GoalStatus.STATUS_ABORTED, -5, "not finished within the wait's goal_timeout_s: "
+                                                                   "0.400 m and 0.000 rad from the goal after 0.20 s")
+        unknown = graph.call(graph.wait_client, Wait.Request(duration_s=1., goals=[UUID(uuid=[7] * 16)]))
+        assert not unknown.success and unknown.message == 'goals must be goals this world accepted'
+        assert graph.wait(0.).time_s == pytest.approx(2.4)
+    finally:
+        graph.close()
+
+
+def test_a_goal_ends_when_cancelled_replaced_or_not_a_goal(tmp_path):
+    graph = Graph(tmp_path, backend='pair_pose_toy')
+    try:
+        left, _ = arms(graph)
+        states, stop = [], graph.node.create_client(Trigger, 'left/stop')
+        graph.node.create_subscription(JointState, 'left/joint_state', states.append, STREAM_QOS)
+        graph.until(lambda: stop.service_is_ready() and states)
+        assert not graph.node.count_subscribers('left/joint_target')  # move goals are its only command
         upright = (0., 0., 0., 1.)
-        send(graph, joints, trajectory([1., 0.], names=('x', 'y')))
-        assert graph.wait(1.).success
+        cancelled = execute(graph, left, goal((1., -.5, upright)))
+        assert graph.wait(.2).success
+        cancel = cancelled.cancel_goal_async()
+        graph.until(cancel.done)
+        assert ended(graph, cancelled) == (GoalStatus.STATUS_CANCELED, -1,
+                                           'canceled: 0.300 m and 0.000 rad from the goal after 0.20 s')
+        assert graph.wait(0., goals=[cancelled]).waited_s == 0.  # finished: nothing to wait for
+        first = execute(graph, left, goal((1., -.5, upright)))
+        second = execute(graph, left, goal((.7, 0., upright)))
+        assert ended(graph, first)[2].startswith('replaced by a newer goal: ')
+        assert graph.call(stop, Trigger.Request()).success and ended(graph, second)[2].startswith('stopped: ')
+        assert graph.wait(1.).success  # the stop held the joints the goal would have moved
         graph.spin(.1)
-        assert position() == pytest.approx([1., 0.])
-        send(graph, poser, poses((1., 1., upright), frame=''))  # from the measured tip; no frame is the arm's base
-        assert graph.wait(1.).success
-        graph.spin(.1)
-        assert position() == pytest.approx([1., 1.])
-        send(graph, joints, trajectory([0., 0.], names=('x', 'y')))
-        assert graph.wait(1.).success
-        graph.spin(.1)
-        assert position() == pytest.approx([0., 0.])
-        send(graph, joints, trajectory([3., 0.], names=('x', 'y')))
-        assert '/reach/joint_target: x=3.0000 outside [-2.0000, 2.0000]' in graph.wait(.1).message
-        # A pose path the backend cannot solve is refused before the arm moves; the next reply names why.
-        send(graph, poser, poses((2., 0., upright)))
-        result = graph.wait(1.)
-        assert not result.success and result.waited_s < 1.
-        assert result.message.endswith('/reach/pose_target: at 0.80 s of the path the tip pose is beyond the 1.5 m reach')
-        assert graph.wait(.5).message == 'ok'
-        graph.spin(.1)
-        assert position() == pytest.approx([0., 0.])
-        send(graph, poser, poses((1., -1., upright)))
-        assert graph.wait(.5).success
-        assert graph.call(stop, Trigger.Request()).success
-        graph.spin(.1)
-        stopped = position()
-        assert graph.wait(1.).success
-        graph.spin(.1)
-        assert position() == pytest.approx(stopped)  # a stop holds the measured joints
+        assert list(states[-1].position) == pytest.approx([.7, -.5])
+        for invalid, reason in ((goal((1., -.5, upright), tip='palm'), 'a goal is a multi_dof_trajectory of tip '
+                                 'poses in left/base'),
+                                (goal((1., -.5, (0., 0., 0., 0.))), 'left goal pose needs a unit quaternion'),
+                                (goal((.5, 1.9, upright)), None)):
+            refused = execute(graph, left, invalid)
+            graph.wait(0., goals=[refused])
+            status, code, text = ended(graph, refused)
+            assert (status, code) == (GoalStatus.STATUS_ABORTED, -1)
+            assert text == reason or text.startswith('the tip pose is beyond the 1.5 m reach: ')
+    finally:
+        graph.close()
+
+
+def test_a_realtime_goal_ends_without_a_wait(tmp_path):
+    graph = Graph(tmp_path, mode='realtime', backend='pair_pose_toy')
+    try:
+        left, _ = arms(graph)
+        assert ended(graph, execute(graph, left, goal((.8, -.5, (0., 0., 0., 1.)))))[:2] == (GoalStatus.STATUS_SUCCEEDED, 0)
     finally:
         graph.close()
 

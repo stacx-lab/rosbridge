@@ -20,6 +20,7 @@ from rclpy.task import Future
 from std_srvs.srv import Trigger
 
 from rosbridge.core import load_backend
+from rosbridge.core.motions import GOAL_TOLERANCE_VIOLATED
 from rosbridge.runtime.description import logged, task_description
 from rosbridge.runtime.world import WorldRuntime
 from .devices import device
@@ -50,6 +51,9 @@ class SimNode(Node):
         self.get_logger().info(logged(task_description(p["task"], self.sim)))
         self.world = WorldRuntime(self.sim, p["mode"], lambda: self.observations.publish(),
                                   early_stop=p["early_stop"])
+        # Action goals by id, each with the future of its end (done) and end(reason, code); and those the server is
+        # still accepting, by the id of their request, which have no goal id yet (devices.Actuator.accept).
+        self.goals, self.starting = {}, {}
         self.devices = [device(spec, self) for spec in self.sim.devices]
         self.declare_parameter("spectator_views", [v.name for v in self.sim.spectators],
                                ParameterDescriptor(read_only=True), ignore_override=True)
@@ -103,17 +107,34 @@ class SimNode(Node):
         def admit():
             if self.pending_wait is not None:
                 raise ValueError("another wait is pending; world waits are sequential")
-            if not math.isfinite(request.duration_s) or request.duration_s < 0:
-                raise ValueError("duration_s must be finite and nonnegative")
+            if not all(math.isfinite(s) and s >= 0 for s in (request.duration_s, request.goal_timeout_s)):
+                raise ValueError("duration_s and goal_timeout_s must be finite and nonnegative")
+
+            goals = [self.goals.get(bytes(goal.uuid)) for goal in request.goals]
+            if None in goals:  # unless it is one the server has just accepted, which gets its id at once
+                raise (LookupError if self.starting else ValueError)("goals must be goals this world accepted")
+            until = [goal.done.done for goal in goals]
+
+            def expire():
+                for goal in goals:
+                    goal.end("not finished within the wait's goal_timeout_s", GOAL_TOLERANCE_VIOLATED)
 
             def complete(result):
                 self.pending_wait = None
-                ready.set_result(self.world.reply(result))  # with the commands refused since the previous reply
+                # With the commands refused since the previous reply.
+                ready.set_result((self.world.reply(result), [done() for done in until]))
             self.pending_wait = complete
-            self.world.wait(request.duration_s, complete)
+            self.world.wait(request.duration_s, complete, until, request.goal_timeout_s, expire)
         try:
-            await self.request(admit)
-            result = await ready
+            for _ in range(100):
+                try:
+                    await self.request(admit)
+                    break
+                except LookupError as unnamed:
+                    error = ValueError(unnamed)
+            else:
+                raise error
+            result, response.finished = await ready
             response.success, response.message = result.success, result.message
             response.time_s, response.waited_s = result.time_s, result.waited_s
         except Exception as error:

@@ -99,7 +99,7 @@ def test_stepped_pause_validation_and_rounding(stepped):
 
 def test_waits_are_sequential_and_stop_ends_them(stepped):
     graph = stepped
-    assert set(Wait.Request.get_fields_and_field_types()) == {"duration_s"}
+    assert set(Wait.Request.get_fields_and_field_types()) == {"duration_s", "goals", "goal_timeout_s"}
     pending = graph.wait_client.call_async(Wait.Request(duration_s=1e8))
     graph.spin(.2)
     assert "sequential" in graph.wait(0.).message

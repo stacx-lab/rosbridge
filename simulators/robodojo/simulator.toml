@@ -50,3 +50,7 @@ right_camera = "rgb"
 [configurations.depth]
 description = "RGB-D cameras: upstream's distance_to_image_plane depth, registered to each image"
 devices = { head_camera = "rgbd", left_camera = "rgbd", right_camera = "rgbd" }
+
+[configurations.move]
+description = "The arms take move goals, flange poses they reach at their own pace through upstream's cuRobo IK, in place of joint targets"
+devices = {}  # the arms stay joint devices

@@ -12,13 +12,16 @@ class WorldClockClient:
         self.node, self._type = node, Wait
         self.client = node.create_client(Wait, service, callback_group=ReentrantCallbackGroup())
 
-    def wait_async(self, duration_s):
-        """Return a ROS future. The caller's executor must spin to receive completion."""
+    def wait_async(self, duration_s, goals=(), goal_timeout_s=0.):
+        """Return a ROS future. The caller's executor must spin to receive completion. goals: the ids of executing
+        action goals (a goal handle's goal_id); the wait ends once duration_s has passed and all have finished.
+        With a positive goal_timeout_s, goals still executing that long into the wait are cancelled."""
         if not math.isfinite(duration_s) or duration_s < 0:
             raise ValueError("duration_s must be finite and nonnegative")
-        return self.client.call_async(self._type.Request(duration_s=float(duration_s)))
+        return self.client.call_async(self._type.Request(duration_s=float(duration_s), goals=list(goals),
+                                                         goal_timeout_s=float(goal_timeout_s)))
 
-    def wait(self, duration_s, *, timeout_s=300.):
+    def wait(self, duration_s, *, timeout_s=300., goals=(), goal_timeout_s=0.):
         """Spin a standalone node until complete, with a separate wall-time timeout.
 
         Use wait_async from callbacks or nodes already spinning in an executor.
@@ -32,7 +35,7 @@ class WorldClockClient:
         deadline = time.monotonic() + timeout_s
         if not self.client.wait_for_service(timeout_sec=timeout_s):
             raise TimeoutError(f"world clock unavailable: {self.client.srv_name}")
-        future = self.wait_async(duration_s)
+        future = self.wait_async(duration_s, goals, goal_timeout_s)
         executor = SingleThreadedExecutor(context=self.node.context)
         executor.add_node(self.node)
         try:

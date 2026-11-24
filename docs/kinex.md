@@ -24,7 +24,8 @@ simulator instead of relaying it. What Kinex adds runs in Kinex:
 ## Interface types
 
 The world's `wait` is `custom_interfaces/srv/Wait` and a lensed camera's `geometry`,
-`unproject` and `project` are `custom_interfaces/srv/Json`. rosbridge and Kinex each build an
+`unproject` and `project` are `custom_interfaces/srv/Json`. An arm's `move` is the standard
+`control_msgs/action/FollowJointTrajectory`. rosbridge and Kinex each build an
 identical copy of the package, from `ros2/custom_interfaces` here and from Kinex's own assets
 there, so the types are the same on the wire and neither project needs the other to build or
 to call them. The package also holds `LookupTransform`, the type of Kinex's frame service;

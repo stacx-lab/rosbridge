@@ -11,6 +11,7 @@ import threading
 import traceback
 
 from rosbridge.core import CommandBuffer
+from rosbridge.core.motions import INVALID_GOAL, SUCCESSFUL, Motion
 from .pacing import Pacer
 from .waits import WaitScheduler
 
@@ -48,6 +49,7 @@ class WorldRuntime:
         self.waits = WaitScheduler()
         self.pacer = Pacer(mode, sim.period, **pacer_options)
         self.refused = {}  # (endpoint, reason) -> commands refused since the last wait reply
+        self.motions = {}  # command group -> the goal its tip is moving to
 
     def _assert_owner(self):
         if threading.get_ident() != self._owner:
@@ -71,18 +73,55 @@ class WorldRuntime:
         self.refused[key] = self.refused.get(key, 0) + 1
         self.waits.interrupt(self.time_s, REFUSED)
 
-    def wait(self, duration_s, complete):
+    def wait(self, duration_s, complete, until=(), timeout_s=0., expire=None):
         """Admit a world wait; complete receives its WaitResult. One admitted while a refusal awaits its reply ends at
-        once, as refuse ends a pending one. Owner thread."""
+        once, as refuse ends a pending one. until, timeout_s, expire: what the wait also waits for, such as goals
+        to finish, and how they are cut short (WaitScheduler.admit). Owner thread."""
         self._assert_owner()
         self.waits.admit(duration_s, self.time_s, self.steps, self.sim.period, self.ended, complete,
-                         interrupted=REFUSED if self.refused else None)
+                         REFUSED if self.refused else None, until, timeout_s, expire)
+
+    def move(self, group, complete, feedback, poses, times, tolerance=(0., 0.), settle_s=0.):
+        """Start a goal for the tip of a joint group that takes them (rosbridge.core.motions.Motion), in place of
+        its active one. Each step, feedback(time_s, commanded pose, measured pose); complete(code, text) once it
+        ends. A ValueError says why it cannot start. Owner thread."""
+        self._assert_owner()
+        if self.ended:
+            raise ValueError(self.ended)
+        poses = [self.commands.unit_pose(pose, f"{group} goal pose") for pose in poses]
+        self.end(group, "replaced by a newer goal")
+        motion = self.motions[group] = Motion(self.sim.tip_pose(group), self.time_s, self.sim.period, poses, times,
+                                              tolerance, settle_s)
+        motion.complete, motion.feedback = complete, feedback
+        self._follow(group, motion, motion.pose)
+
+    def _follow(self, group, motion, pose):
+        """Judge a goal by its tip's measured pose and command its next step, or end it; a goal ended short of its
+        last pose holds the measured joints."""
+        outcome = motion.observe(pose, self.time_s)
+        if outcome is None:
+            target = motion.reference()
+            motion.feedback(self.time_s, target, motion.pose)
+            try:
+                return self.commands.set_group(group, self.sim.joint_step(group, target))
+            except ValueError as error:
+                outcome = INVALID_GOAL, str(error)
+        self.end(group, outcome[1], outcome[0], hold=outcome[0] != SUCCESSFUL)
+
+    def end(self, group, reason, code=INVALID_GOAL, hold=False):
+        """End a group's active goal, if it has one. Owner thread."""
+        motion = self.motions.pop(group, None)
+        if motion is not None:
+            if hold:
+                self.hold(group)
+            motion.complete(code, motion.report(reason, self.time_s))
 
     def hold(self, group):
         """Stop a command group where it is, as its device's stop does: a base at zero velocity, a pose group that
         takes only pose targets at its measured tip pose, any other group at its measured positions (a gripper
         keeps its applied target instead). Owner thread."""
         self._assert_owner()
+        self.end(group, "stopped")
         spec = next(g for g in self.sim.layout.groups if g.name == group)
         if spec.velocity:
             values = [0.] * len(spec.indices)
@@ -138,6 +177,7 @@ class WorldRuntime:
 
     def tick(self):
         self._assert_owner()
+        self.waits.settle(self.time_s, self.steps, self.ended)  # a goal ended between steps may end its wait
         if self.ended or not self.pacer.ready(self.waits.pending):
             return False
         action = self.commands.action(self.time_s + self.sim.period)
@@ -160,6 +200,8 @@ class WorldRuntime:
             if self.sim.success and self.first_success_step is None:
                 self.first_success_step = self.steps
             self.publish()
+            for group, motion in list(self.motions.items()):
+                self._follow(group, motion, self.sim.tip_pose(group))
             if self.sim.done:
                 reason, cause = self._stop()
                 self._end(ENDS.get(reason, f"the simulator ended it ({reason})") + (f" ({cause})" if cause else ""),
@@ -180,6 +222,8 @@ class WorldRuntime:
     def _end(self, why, reason, error=None, cause=None):
         self.commands.close()
         self.ended = f"the episode ended because {why}"
+        for group in list(self.motions):
+            self.end(group, self.ended)
         self._record_terminal(reason, error=error, cause=cause)
 
     def _outcome(self, reason):

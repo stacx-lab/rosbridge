@@ -52,3 +52,83 @@ def test_async_service_failure_deadline_and_temporary_cleanup():
                 await io.request('test.absent', data=True, timeout_s=.03)
         assert not io.thread.is_alive()
     asyncio.run(run())
+
+
+SERVICE = {'transport': 'service', 'direction': 'input'}
+
+
+def arms():
+    """The pair toy's two arms as Kinex operations: move goals and stops."""
+    catalog = {}
+    for arm in ('left', 'right'):
+        catalog[f'{arm}.move'] = {'transport': 'action', 'direction': 'input', 'endpoint': f'/{arm}/move',
+                                  'type': 'control_msgs/action/FollowJointTrajectory'}
+        catalog[f'{arm}.stop'] = {**SERVICE, 'endpoint': f'/{arm}/stop', 'type': 'std_srvs/srv/Trigger'}
+    return catalog
+
+
+def goal(x, y):
+    return {'multi_dof_trajectory': {'joint_names': ['tip'], 'points': [{'transforms': [[x, y, 0, 0, 0, 0, 1]]}]}}
+
+
+def test_goals_run_in_parallel_and_a_world_wait_awaits_them(tmp_path):
+    """Kinex sends two arms' move goals and waits for both on the world, the only clock: io.act never steps it."""
+    from tests.ros.support import Graph
+    graph = Graph(tmp_path, backend='pair_pose_toy')  # tips at (0.5, -0.5), 0.1 m a 0.1 s step, a wall at x = 1.2
+    catalog = {**arms(), 'world.wait': {**SERVICE, 'endpoint': '/world/wait', 'type': 'custom_interfaces/srv/Wait'},
+               'world.stop': {**SERVICE, 'endpoint': '/world/stop', 'type': 'std_srvs/srv/Trigger'}}
+
+    async def run():
+        async with communication(catalog, domain_id=graph.lease.domain) as io:
+            near, far = await io.act('left.move', goal(.7, -.5)), await io.act('right.move', goal(1., -.5))
+            assert (near.status, near.done, near.result) == ('executing', False, None)
+            cut = await io.request('world.wait', goals=[near, far], goal_timeout_s=.3)  # far needs 0.5 s
+            assert list(cut.finished) == [True, True] and cut.waited_s == pytest.approx(.3)
+            assert (near.status, near.result.error_code) == ('succeeded', 0)
+            assert (far.status, far.result.error_code) == ('aborted', -5)
+            far = await io.act('right.move', goal(1., -.5))
+            both = await io.request('world.wait', duration_s=.5, goals=[near, far])  # its duration and its goals
+            assert list(both.finished) == [True, True] and both.waited_s == pytest.approx(.5)
+            assert far.result.error_string == 'reached: 0.000 m and 0.000 rad from the goal after 0.20 s'
+            assert far.feedback.multi_dof_desired.transforms[0].translation.x == pytest.approx(1.)
+            assert (await io.request('world.wait', duration_s=.5)).waited_s == pytest.approx(.5)  # a plain wait
+            blocked = await io.act('right.move', goal(1.5, -.5))
+            await io.request('world.wait', goals=[blocked])
+            assert (blocked.status, blocked.result.error_code) == ('aborted', -4)
+            cancelled = await io.act('left.move', goal(1., -.5))
+            await io.request('world.wait', duration_s=.1)
+            await cancelled.cancel()
+            assert (await cancelled.wait()).error_string.startswith('canceled: ') and cancelled.status == 'canceled'
+            with pytest.raises(RuntimeError, match='a goal is a multi_dof_trajectory of tip poses in left/base'):
+                refused = await io.act('left.move', {'multi_dof_trajectory': {'joint_names': ['palm']}})
+                raise RuntimeError((await refused.wait()).error_string)
+    try:
+        asyncio.run(run())
+    finally:
+        graph.close()
+
+
+def test_kinex_awaits_the_goals_of_a_world_that_does_not_observe_them(tmp_path):
+    """Where time passes by itself, a world's wait may only wait, as Kinex's template world does: its reply says
+    nothing of the goals, and Kinex awaits them and cancels those still executing at their timeout."""
+    from tests.ros.support import Graph
+    graph = Graph(tmp_path, mode='realtime', backend='pair_pose_toy')
+
+    async def run():
+        async with communication(arms(), domain_id=graph.lease.domain) as io:
+            io.catalog['world.wait'] = {**SERVICE, 'type': 'custom_interfaces/srv/Wait', 'endpoint': f'{io.namespace}/wait'}
+
+            async def wait(request):
+                await asyncio.sleep(request.duration_s)
+                return {'success': True, 'waited_s': request.duration_s}
+            io.serve(io.catalog['world.wait'], wait)
+            near = await io.act('left.move', goal(.7, -.5))  # 0.2 s away
+            reply = await io.request('world.wait', goals=[near])
+            assert list(reply.finished) == [True] and near.status == 'succeeded' and reply.waited_s > 0
+            far = await io.act('left.move', goal(1.1, -.5))  # 0.4 s away
+            reply = await io.request('world.wait', duration_s=.1, goals=[far], goal_timeout_s=.2)
+            assert list(reply.finished) == [True] and far.status == 'canceled' and .2 <= reply.waited_s < .4
+    try:
+        asyncio.run(run())
+    finally:
+        graph.close()

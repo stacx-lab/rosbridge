@@ -33,27 +33,6 @@ operations:
       reliability: reliable
       durability: volatile
     timeout_s: 10
-  pose_target:
-    description: 'Trajectory of absolute flange poses in right_arm/base: joint_names [flange],
-      one transform per point (metres, unit quaternion xyzw), time_from_start strictly increasing
-      and within 120 seconds; a zero header stamp starts it now. It is interpolated from the
-      measured pose. Each point is a waypoint the flange reaches at its time along a straight
-      line (rotation by slerp); nothing plans around objects. On arrival, upstream''s cuRobo
-      IK solves the pose of every 0.04 s frame from the frame before, and the path runs as
-      a joint trajectory. If a frame has no solution that stays within the joint limits, moves
-      each joint at most 0.20 rad and avoids self and table collision, the whole trajectory
-      is refused before the arm moves, and the next world wait reply says where and why. A
-      new joint or pose trajectory replaces the active one and an invalid one is ignored;
-      verify the flange with pose_state.'
-    transport: topic
-    direction: input
-    endpoint: /right_arm/pose_target
-    type: trajectory_msgs/msg/MultiDOFJointTrajectory
-    qos:
-      depth: 1
-      reliability: reliable
-      durability: volatile
-    timeout_s: 10
   pose_state:
     description: Measured flange pose in right_arm/base, stamped with joint_state.
     transport: topic
@@ -84,8 +63,8 @@ type: joint
 description: ARX X5 six-joint right arm of the RoboDojo rig. Geometry is the sibling arm.urdf
   with flange (link6) as the tip link; its links are the frames right_arm/<link>. It takes
   joint targets, upstream's absolute joint positions (right_arm_joint_state of EvalEnv.take_action),
-  or flange pose targets, which upstream's cuRobo IK turns into those joints; the native controller
-  interpolates them over each 0.04 s frame. Both arms use the native joint names joint1..joint6.
+  which the native controller interpolates over each 0.04 s frame. Both arms use the native
+  joint names joint1..joint6.
 source: introspected
 calibrated_at: null
 method: introspection

@@ -19,10 +19,13 @@ operations:
   wait:
     description: 'Advance or await duration_s of world time (finite and nonnegative). Zero
       is an observation barrier. Waits are sequential; one requested while another is pending
-      is rejected. A terminal episode rejects further progression. A device command refused
-      during a wait, or before it and not yet reported, ends it there (success false; waited_s
-      is how far it ran): the rest is never stepped, so it costs no budget. The reply''s message
-      names the commands refused since the previous reply, with their reasons.'
+      is rejected. With goals, executing action goals, it also waits until all have finished;
+      goals still executing goal_timeout_s into the wait are cancelled (zero: none). It ends
+      once duration_s has passed and the goals have finished. A terminal episode rejects further
+      progression. A device command refused during a wait, or before it and not yet reported,
+      ends it there (success false; waited_s is how far it ran): the rest is never stepped,
+      so it costs no budget. The reply''s message names the commands refused since the previous
+      reply, with their reasons.'
     transport: service
     direction: input
     endpoint: /world/wait

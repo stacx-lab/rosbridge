@@ -15,6 +15,7 @@ rosbridge launch robodojo/stack-bowls --execution-mode stepped --timeout 1800
 rosbridge setup robodojo/stack-bowls --directory ../my-robodojo-workspace
 rosbridge setup robodojo/stack-bowls --config depth --directory ../my-robodojo-depth-workspace
 rosbridge launch robodojo/stack-bowls --config depth --execution-mode stepped --timeout 1800
+rosbridge launch robodojo/stack-bowls --config move --execution-mode stepped --timeout 1800
 ```
 
 `robodojo` selects `pack_objects_into_box`. The twelve `*_random` variants are not
@@ -64,7 +65,7 @@ changed files replaced, bumps the pin without copying.
 | Device | Interfaces |
 |---|---|
 | `world` | `/clock`, `world/wait`, `world/stop`, `world/spectator/*` while recording |
-| `left_arm`, `right_arm` | `<arm>/joint_state`, `<arm>/joint_target`, `<arm>/pose_target`, `<arm>/pose_state`, `<arm>/stop` |
+| `left_arm`, `right_arm` | `<arm>/joint_state`, `<arm>/joint_target`, `<arm>/pose_state`, `<arm>/stop`; `<arm>/move` in place of `<arm>/joint_target` with `--config move` |
 | `left_gripper`, `right_gripper` | `<gripper>/joint_state`, `<gripper>/target`, `<gripper>/stop` |
 | `head_camera`, `left_camera`, `right_camera` | `<camera>/image`, `<camera>/camera_info`; `<camera>/depth` with `--config depth` |
 
@@ -86,35 +87,46 @@ The rig `robodojo/robodojo-arx-x5` holds the X5 chains from `X5A.urdf`, mounts
 at (∓0.3, −0.45, 0.765) with a 90° yaw, RoboEnv's TCP (the pad center, 0.15 m
 ahead of `link6`) and the measured camera mounts.
 
-### Pose targets
+The flange is `link6`, upstream's `ee_link` and cuRobo's tool frame, and `pose_state` reports its
+measured pose in `<arm>/base`.
 
-Each arm also takes `pose_target`: timed waypoints for its `flange` in `<arm>/base`, the header's
-`frame_id` or none. The flange is `link6`, upstream's `ee_link` and cuRobo's tool frame, and
-`pose_state` reports its measured pose. The flange reaches each waypoint at its time along a
-straight line from its measured pose, with rotation by slerp. Nothing plans a path around objects.
+### Move configuration
 
-The backend turns the whole path into a joint trajectory when it arrives
-(`RoboDojoSim.joint_path`), so a path the arm cannot follow is refused before it moves:
+`--config move` gives each arm one command, `<arm>/move`, in place of `joint_target`. It is a
+`control_msgs/action/FollowJointTrajectory`: a goal's `multi_dof_trajectory` gives the `flange` poses,
+in `<arm>/base`, that the arm passes in turn at its own pace, so a caller chooses no times. It is the stepped, closed-loop counterpart of
+uni-robot-agent's `move` tool (`rosbridge.core.motions`), and nothing plans a path around objects:
 
-1. The path is sampled at every 0.04 s frame. cuRobo's `InverseKinematics`, the solver upstream's
-   `ee_pose` action uses (32 seeds, self and table collision, 1 mm and 0.02 rad), solves each
-   frame's pose from the joints of the frame before, the first from the joints last commanded.
-2. Of its solutions, the one nearest the frame before is taken that lies within the joint limits,
-   a whole turn nearer where they allow, moves no joint more than 0.2 rad (the X5 actuators'
-   5 rad/s `velocity_limit_sim` over a frame), and has a joint path, sampled every 0.025 rad,
-   that passes cuRobo's self and table constraints. These checks follow uni-robot-agent's
-   RoboDojo adapter, with the native velocity limit in place of its 1 rad jump limit and the
-   nearest solution in place of cuRobo's first.
-3. A frame without one refuses the whole trajectory: the arm keeps its command, and the next
-   `world/wait` ends at once, with `success` false and a message naming the pose target, the
-   frame's time in the path and the reason, so the refusal costs no budget.
+1. Each 0.04 s frame commands a pose at most one step from the measured one, 4 cm and 0.13 rad at the
+   device pace of 1 m/s and 3.3 rad/s, so a blocked flange is never driven far past where it is.
+2. cuRobo's `InverseKinematics`, the solver upstream's `ee_pose` action uses (32 seeds, self and table
+   collision, 1 mm and 0.02 rad), solves that pose from the measured joints (`RoboDojoSim.joint_step`).
+   Of its solutions, the one nearest the measured joints is taken that lies within the joint limits, a
+   whole turn nearer where they allow, asks no joint for more than 1 rad, and has a joint path, sampled
+   every 0.025 rad, that passes cuRobo's self and table constraints. These checks follow
+   uni-robot-agent's RoboDojo adapter, with the nearest solution in place of cuRobo's first. A joint
+   asked for more than a frame's 0.2 rad (the X5 actuators' 5 rad/s `velocity_limit_sim`) saturates, and
+   the next frame goes on from where the arm is.
+3. A point's `time_from_start` is its nominal time: zero goes at the device pace, a later time
+   proportionally slower.
+4. The goal succeeds once the flange is within `component_goal_tolerance` of the last pose (`TRANSLATION`
+   in metres, `ROTATION` in radians; 0.005 m and 0.05 rad when omitted).
+5. It is aborted, the arm holding its measured joints, when the flange stalls (`error_code` -4: over four
+   frames it gains less than a tenth of the tolerance), when it is not there `goal_time_tolerance` (1 s
+   when zero) after its nominal end (-5), or when a frame has no IK solution (-1). `error_string` says
+   why and how far from the goal it ended. A newer goal or a stop also ends it, and a cancel holds the
+   measured joints.
 
-The joints then run as a joint trajectory does, through `EvalEnv.take_action`, so evaluation and
-scoring are unchanged. A pose is tracked only as precisely as upstream's IK tolerances, 1 mm and
-0.02 rad. To serve pose targets, rosbridge builds upstream's cuRobo planner for the arms, as
-upstream's evaluation does by default (`need_planner`). RoboEnv's adapter, whose arms took joints
-only, skipped it. `robodojo-native` carries cuRobo's `[cu12]` extra (`cuda-core`), as upstream's
-install does, because the planner compiles its kernels through it.
+A goal advances no time. Send both arms their goals, then give the goals' ids to one `world/wait`: it ends
+on the frame the last goal finishes, so the wait costs no more budget than the motion, and its
+`goal_timeout_s` cancels a goal that takes longer. A goal is the world's from its acceptance; a wait that names
+any other is refused.
+
+The joints run through `EvalEnv.take_action`, as joint targets do, so evaluation and scoring are
+unchanged. To solve them, rosbridge builds upstream's cuRobo planner for the arms, as upstream's
+evaluation does by default (`need_planner`). RoboEnv's adapter, whose arms took joints only, skipped it.
+`robodojo-native` carries cuRobo's `[cu12]` extra (`cuda-core`), as upstream's install does, because the
+planner compiles its kernels through it.
 
 ### Depth configuration
 

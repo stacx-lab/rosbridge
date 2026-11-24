@@ -104,7 +104,11 @@ Both modes retain the backend's native control period and physics decimation.
 Rendering can make realtime slower than wall time; it never changes simulated dt.
 
 `world/wait` uses `custom_interfaces/srv/Wait`: `duration_s` in, then `success`,
-`message`, `time_s` and actual `waited_s` out. The latched `world/budget`
+`message`, `time_s` and actual `waited_s` out. A wait may name `goals`, the ids of executing action
+goals: it then also waits until all of them have finished, and ends once `duration_s` has passed and they
+have. With a positive `goal_timeout_s`, goals still executing that long into the wait are cancelled, where
+they are. `finished` says of each goal whether it had finished when the wait ended. Without goals a wait
+lasts `duration_s`, whatever goals do. A goal advances no time. The latched `world/budget`
 (`std_msgs/msg/Float64MultiArray`) publishes the episode budget after every step: `data`
 is `[used_s, max_s]`, the seconds of world time the episode has used and is allowed
 (control steps times the control period; `max_s` inf without a step limit). Only a
@@ -149,7 +153,10 @@ device; two arms may keep the same native names. An arm the simulator commands b
 pose of its tip link, as HandsOn's arms and LIBERO's under `--config osc` are, takes instead a
 `trajectory_msgs/msg/MultiDOFJointTrajectory` of tip poses in `<arm>/base` on
 `<arm>/pose_target`, timed alike, and reports the measured tip on `<arm>/pose_state`
-(`sensor_msgs/msg/MultiDOFJointState`). Grippers accept a
+(`sensor_msgs/msg/MultiDOFJointState`). RoboDojo's arms take joint targets and report the measured tip
+on `<arm>/pose_state`; with `--config move` they serve instead `<arm>/move`, a
+`control_msgs/action/FollowJointTrajectory` whose goals of tip poses the arm reaches at its own pace
+(see [Move configuration](robodojo.md#move-configuration)). Grippers accept a
 `std_msgs/msg/Float64` position on `<gripper>/target`, in each simulator's native
 command units (LIBERO's finger metres; the normalized 0..1 opening of ABC, RoboTwin
 and RoboDojo; RoboCasa's integrated -1..1 command; BEHAVIOR's smooth -1..1 R1Pro command).
@@ -162,9 +169,7 @@ so the message of the next `world/wait` reply names each refused command's topic
 and reason, once (at most five kinds, then a count). A refusal also ends the pending
 wait at once, as does one made before a wait and not yet reported: the reply has
 `success` false, `ended early by a refused command`, and the `waited_s` it ran. The rest
-of the wait is never stepped, so in stepped mode it costs no budget. This covers a pose target
-that the simulator cannot execute mid-trajectory, such as RoboDojo's (see its page), as well
-as commands refused on arrival. A zero wait, an observation barrier, still succeeds and names
+of the wait is never stepped, so in stepped mode it costs no budget. A zero wait, an observation barrier, still succeeds and names
 the refusals. The latest valid target is
 held until replaced or stopped. `<device>/stop` holds the measured position; a gripper's
 stop keeps its applied grip target, so a held object stays gripped, and a base's stop

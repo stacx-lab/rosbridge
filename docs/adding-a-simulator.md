@@ -167,8 +167,9 @@ Implement `SimulatorBackend` (`src/rosbridge/core/backend.py`). Its docstring is
   - A velocity group is a mobile base.
   - A pose group names the tip link of a joint device. Its targets arrive in `step(action, poses)`,
     and `tip_pose(group)` measures them.
-  - A joint group with a tip and `joint_targets` also takes its tip's pose paths:
-    `joint_path(group, poses)` solves a whole path into joints when it arrives.
+  - A joint group with a tip and `joint_targets` reports its tip's pose, `tip_pose(group)`. With
+    `move`, it takes move goals for its tip in place of joint targets: `joint_step(group, pose)`
+    solves each step of one into joints.
 - **Devices.** `devices` comes from `device_inventory(layout, cameras, depth=...)`. Each camera
   provides:
   - `intrinsics(camera)` (width, height, fx, fy, cx, cy in ROS pixel centres);

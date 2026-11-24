@@ -117,17 +117,16 @@ def flange(urdf, q):
     return pose
 
 
-def test_a_flange_pose_path_becomes_joints_through_curobo_ik_or_has_none():
-    """An arm's pose path through cuRobo's IK: a held pose keeps the arm still, a straight lift arrives, and a path
-    beyond reach, or with a frame beyond one frame's native joint travel, has no joints."""
-    import time
+def test_a_goal_step_becomes_joints_through_curobo_ik_or_has_none():
+    """A step of an arm's move goal through cuRobo's IK: the measured pose keeps the arm still, a straight lift
+    arrives step by step, and a pose beyond reach, or one that needs a change of posture, has no joints."""
     import transforms3d as t3d
     sim = native(max_steps=200)
     try:
         sim.reset("stack_bowls", 0)
         arm = next(group for group in sim.layout.groups if group.name == "left_arm")
         assert (arm.tip, arm.joint_targets) == ("flange", True)
-        assert sim.native("__getattribute__", "_limits")["left"][2] == pytest.approx(5. * .04)  # the profiles' 0.20
+        assert sim.native("__getattribute__", "_limits")["left"][2] == pytest.approx(5. * .04)  # the URDF's velocity
         joints = list(arm.indices)
         held = sim.state()[0]
         tip = np.asarray(sim.tip_pose("left_arm"))
@@ -138,15 +137,14 @@ def test_a_flange_pose_path_becomes_joints_through_curobo_ik_or_has_none():
         assert t3d.quaternions.quat2mat([w, x, y, z]) == pytest.approx(expected[:3, :3], abs=1e-4)
 
         def follow(poses):
-            """Solve a path and step through it; the largest joint travel of one frame."""
-            started, target = time.monotonic(), sim.state()[0]
-            before = target[joints]
-            rows = np.asarray(sim.joint_path("left_arm", before, poses))
-            print(f"{len(poses)} pose frames: {(time.monotonic() - started) / len(poses) * 1000:.0f} ms each")
-            for row in rows:
+            """Step through poses, each solved from the measured joints; the largest joint travel asked of a step."""
+            asked, target = 0., sim.state()[0]
+            for pose in poses:
+                row = np.asarray(sim.joint_step("left_arm", pose))
+                asked = max(asked, np.abs(row - sim.state()[0][joints]).max())
                 target[joints] = row
                 sim.step(target)
-            return np.abs(np.diff(np.vstack([before, rows]), axis=0)).max()
+            return asked
 
         def error(pose):
             now = np.asarray(sim.tip_pose("left_arm"))
@@ -163,13 +161,12 @@ def test_a_flange_pose_path_becomes_joints_through_curobo_ik_or_has_none():
         assert moved < 2e-3 and turned < .03
         far = goal.copy()
         far[0] += 2.
-        with pytest.raises(ValueError, match="at 0.08 s of the path cuRobo's IK has no solution"):
-            sim.joint_path("left_arm", sim.state()[0][joints], [goal, far])
-        # A quarter turn about the flange's approach axis at once: joint6 would turn 1.57 rad in one frame.
-        quarter = t3d.quaternions.qmult(t3d.quaternions.qmult([goal[6], *goal[3:6]], [np.sqrt(.5), np.sqrt(.5),
-                                                                                       0., 0.]), [1., 0., 0., 0.])
-        with pytest.raises(ValueError, match="at 0.04 s of the path the nearest IK solution moves .* beyond 0.20 rad"):
-            sim.joint_path("left_arm", sim.state()[0][joints], [np.r_[goal[:3], quarter[1:], quarter[0]]])
+        with pytest.raises(ValueError, match="cuRobo's IK has no solution"):
+            sim.joint_step("left_arm", far)
+        # A quarter turn about the flange's approach axis at once: joint6 would turn 1.57 rad in one step.
+        quarter = t3d.quaternions.qmult([goal[6], *goal[3:6]], [np.sqrt(.5), np.sqrt(.5), 0., 0.])
+        with pytest.raises(ValueError, match="the nearest IK solution moves .* in one step, a change of posture"):
+            sim.joint_step("left_arm", np.r_[goal[:3], quarter[1:], quarter[0]])
     finally:
         sim.close()
 

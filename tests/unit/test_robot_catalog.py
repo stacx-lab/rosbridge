@@ -26,8 +26,9 @@ OPERATIONS = {
 # A joint device commanded by the pose of its one tip link serves pose_target in place of joint_target.
 POSE = {"joint_state": "sensor_msgs/msg/JointState", "pose_state": "sensor_msgs/msg/MultiDOFJointState",
         "pose_target": "trajectory_msgs/msg/MultiDOFJointTrajectory", "stop": "std_srvs/srv/Trigger"}
-# Rigs whose arms take joint targets as well as pose targets.
-POSE_AND_JOINT = ("robodojo/",)
+# One that reports its tip's pose serves pose_state besides; in a move configuration, move in place of joint_target.
+TIP = {**OPERATIONS["joint"], "pose_state": POSE["pose_state"]}
+MOVE = {**POSE, "pose_target": None, "move": "control_msgs/action/FollowJointTrajectory"}
 # The world node also serves the geometry of a camera rendered through a lens.
 GEOMETRY = {op: "custom_interfaces/srv/Json" for op in ("geometry", "unproject", "project")}
 WORLD = {"time": ("/clock", "rosgraph_msgs/msg/Clock"),
@@ -83,10 +84,12 @@ def test_every_rig_exports_loaded_profiles_on_rosbridge_endpoints(tmp_path, iden
         assert profile["name"] == name and profile["loaded"] is True  # Kinex activates them when it starts
         assert profile["runtime"]["domain_id"] == 83
         operations = OPERATIONS.get(profile["type"])
-        if "pose_target" in profile["operations"]:
+        if "pose_state" in profile["operations"]:
             assert profile["type"] == "joint" and len(profile["model"]["tip_links"]) == 1
-            operations = {**POSE, **({"joint_target": OPERATIONS["joint"]["joint_target"]}
-                                     if identifier.startswith(POSE_AND_JOINT) else {})}
+            assert ("move" in profile["operations"]) == (configuration == "move")
+            operations = next(kind for key, kind in (("move", MOVE), ("pose_target", POSE), ("pose_state", TIP))
+                              if key in profile["operations"])
+            operations = {op: kind for op, kind in operations.items() if kind}
         lens = profile["type"] in ("rgb", "rgbd") and profile["color"]["distortion"]["model"] != "none"
         if lens:
             assert profile["color"]["distortion"]["model"] == "opencv_brown_conrady" and profile["color"]["fov"]

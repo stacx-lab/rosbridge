@@ -1,7 +1,6 @@
 """Latest-target command buffer, written and sampled on the simulator owner thread. No ROS."""
 
 import bisect
-import math
 
 import numpy as np
 
@@ -68,7 +67,7 @@ class CommandBuffer:
 
     Velocity groups start at rest and return to rest VELOCITY_TIMEOUT_S after their last command. Pose groups hold
     a tip pose target, None until their first command; poses() gives each with the action. A group with a tip
-    and joint targets is a joint group: set_pose_path solves the tip poses it is sent into joints on arrival.
+    and joint targets is a joint group.
     """
 
     def __init__(self, layout, initial):
@@ -90,7 +89,7 @@ class CommandBuffer:
         would release a held object; it starts at the reset opening, so a stop never closes it."""
         if group in self._pose:
             if self._pose[group] is not None or self._trajectory[group] is not None:
-                self._pose[group] = self._unit_pose(values, f"{group} hold")
+                self._pose[group] = self.unit_pose(values, f"{group} hold")
         elif not self._groups[group].scalar:
             self._target[list(self._groups[group].indices)] = values
         self._trajectory[group] = None
@@ -117,7 +116,7 @@ class CommandBuffer:
         return v
 
     @classmethod
-    def _unit_pose(cls, value, what):
+    def unit_pose(cls, value, what):
         pose = cls._vector(value, 7, what)
         norm = np.linalg.norm(pose[3:])
         if norm < 1e-6:
@@ -178,7 +177,7 @@ class CommandBuffer:
 
     def _unit_poses(self, name, start_s, times, poses):
         self._times(start_s, times, poses)
-        return [self._unit_pose(pose, f"{name} {self._groups[name].tip} pose") for pose in poses]
+        return [self.unit_pose(pose, f"{name} {self._groups[name].tip} pose") for pose in poses]
 
     def set_pose_trajectory(self, name, start_s, times, poses, measured):
         """Tip poses [x, y, z, qx, qy, qz, qw] in the device base at times, seconds from start_s, strictly
@@ -190,21 +189,8 @@ class CommandBuffer:
         points = self._unit_poses(name, start_s, times, poses)
         current = self._trajectory[name]
         start = (current.sample(start_s) if current is not None else self._pose[name] if self._pose[name] is not None
-                 else self._unit_pose(measured(), f"{name} measured {group.tip} pose"))
+                 else self.unit_pose(measured(), f"{name} measured {group.tip} pose"))
         self._trajectory[name] = Trajectory(start_s, start, times, points, pose_blend)
-
-    def set_pose_path(self, name, start_s, times, poses, measured, period, solve):
-        """A joint group's tip poses, as set_pose_trajectory takes them, from measured(), its measured tip pose.
-        solve(joints, poses) gives the joints for the pose at each period of the path, from the joints the group
-        holds at its start, or raises ValueError saying why it has none: the whole path becomes a joint trajectory
-        on arrival, or the group keeps its command."""
-        group = self._open_group(name)
-        if not group.joint_targets:
-            raise CommandError(f"{name} has no joint targets to solve tip poses into")
-        path = Trajectory(0., self._unit_pose(measured(), f"{name} measured {group.tip} pose"), times,
-                          self._unit_poses(name, start_s, times, poses), pose_blend)
-        frames = [period * k for k in range(1, max(1, math.ceil(times[-1] / period - 1e-9)) + 1)]
-        self.set_trajectory(name, start_s, frames, solve(self._held(name, start_s), [path.sample(t) for t in frames]))
 
     def action(self, t):
         """Native action for the step that ends at sim time t; poses() holds the pose groups' targets for it."""

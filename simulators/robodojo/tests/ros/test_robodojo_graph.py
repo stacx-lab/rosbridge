@@ -2,16 +2,19 @@
 import numpy as np
 import psutil
 import pytest
+from action_msgs.msg import GoalStatus
 from builtin_interfaces.msg import Duration
-from geometry_msgs.msg import Quaternion, Transform, Vector3
+from control_msgs.action import FollowJointTrajectory
+from geometry_msgs.msg import Transform, Vector3
+from rclpy.action import ActionClient
 from sensor_msgs.msg import CameraInfo, Image, JointState, MultiDOFJointState
-from std_msgs.msg import Float64, Header
+from std_msgs.msg import Float64
 from std_srvs.srv import Trigger
 from trajectory_msgs.msg import (JointTrajectory, JointTrajectoryPoint, MultiDOFJointTrajectory,
                                  MultiDOFJointTrajectoryPoint)
 
 from rosbridge_runtime.devices import STREAM_QOS
-from tests.ros.support import Graph, seconds
+from tests.ros.support import Graph, ended, execute, seconds
 
 # Isaac Sim boots, compiles shaders and loads the layout before serving.
 STARTUP_S = 1200.
@@ -47,10 +50,9 @@ def test_robodojo_graph_serves_its_devices_from_a_native_worker(tmp_path, mode):
                                  (Image, "world/spectator/third_person/image_raw", "spectator")):
             node.create_subscription(kind, topic, lambda msg, k=key: last.update({k: msg}), STREAM_QOS)
         joint_target = node.create_publisher(JointTrajectory, "left_arm/joint_target", 1)
-        pose_target = node.create_publisher(MultiDOFJointTrajectory, "left_arm/pose_target", 1)
         gripper_target = node.create_publisher(Float64, "left_gripper/target", 1)
         stop = node.create_client(Trigger, "left_arm/stop")
-        graph.until(lambda: joint_target.get_subscription_count() and pose_target.get_subscription_count()
+        graph.until(lambda: joint_target.get_subscription_count()
                     and gripper_target.get_subscription_count() and stop.service_is_ready())
         assert graph.wait(.2).success
         graph.until(lambda: all(k in last for k in ("arm", "right", "gripper", "flange", "info", "spectator")))
@@ -68,29 +70,7 @@ def test_robodojo_graph_serves_its_devices_from_a_native_worker(tmp_path, mode):
         assert graph.wait(1.).success
         graph.spin(.1)
         assert abs(last["arm"].position[0] - target[0]) < .03
-        # The same arm by its flange pose: a 4 cm lift through upstream's cuRobo IK, then one beyond reach.
         assert (last["flange"].header.frame_id, list(last["flange"].joint_names)) == ("left_arm/base", ["flange"])
-        start = last["flange"].transforms[0]
-        (x, y, z), rotation = (start.translation.x, start.translation.y, start.translation.z), start.rotation
-
-        def lift(dz, seconds):
-            goal = Transform(translation=Vector3(x=x, y=y, z=z + dz),
-                             rotation=Quaternion(x=rotation.x, y=rotation.y, z=rotation.z, w=rotation.w))
-            return MultiDOFJointTrajectory(header=Header(frame_id="left_arm/base"), joint_names=["flange"], points=[
-                MultiDOFJointTrajectoryPoint(transforms=[goal], time_from_start=Duration(sec=seconds))])
-
-        pose_target.publish(lift(.04, 1))
-        graph.spin(.1)
-        assert graph.wait(1.5).message == "ok"
-        graph.spin(.1)
-        reached = last["flange"].transforms[0].translation
-        assert abs(reached.z - z - .04) < .003 and abs(reached.x - x) < .003 and abs(reached.y - y) < .003
-        pose_target.publish(lift(3., 1))
-        graph.spin(.1)
-        refused = graph.wait(1.)
-        # The path is refused on arrival, before the arm moves: its wait is never stepped.
-        assert not refused.success and refused.waited_s < 1. and "/left_arm/pose_target: at " in refused.message
-        assert " s of the path " in refused.message
         assert graph.call(stop, Trigger.Request()).success
         opened = last["gripper"].position[0]
         gripper_target.publish(Float64(data=0.))
@@ -112,3 +92,42 @@ def test_robodojo_graph_serves_its_devices_from_a_native_worker(tmp_path, mode):
     finally:
         graph.close()
     assert not any(process.is_running() and process.status() != psutil.STATUS_ZOMBIE for process in native)
+
+
+def test_robodojo_arms_take_move_goals_in_the_move_configuration(tmp_path):
+    graph = Graph(tmp_path, backend="robodojo", mode="stepped", startup_s=STARTUP_S, configuration="move")
+    node, last = graph.node, {}
+    try:
+        for key, arm in (("flange", "left_arm"), ("right_flange", "right_arm")):
+            node.create_subscription(MultiDOFJointState, f"{arm}/pose_state", lambda msg, k=key: last.update({k: msg}),
+                                     STREAM_QOS)
+        assert not node.count_subscribers("left_arm/joint_target")  # move goals are the arms' only command
+        # Both arms at once by move goals: each flange lifts at the arm's pace, and one wait ends with both.
+        moves = [ActionClient(node, FollowJointTrajectory, f"{arm}/move") for arm in ("left_arm", "right_arm")]
+        graph.until(lambda: all(move.server_is_ready() for move in moves) and "right_flange" in last)
+        graph.spin(.1)
+
+        def raised(key, dz):
+            pose = last[key].transforms[0]
+            lifted = Transform(translation=Vector3(x=pose.translation.x, y=pose.translation.y,
+                                                   z=pose.translation.z + dz), rotation=pose.rotation)
+            return lifted.translation.z, FollowJointTrajectory.Goal(multi_dof_trajectory=MultiDOFJointTrajectory(
+                joint_names=["flange"], points=[MultiDOFJointTrajectoryPoint(transforms=[lifted])]))
+
+        heights, goals = zip(*(raised(key, dz) for key, dz in (("flange", .06), ("right_flange", .04))))
+        handles = [execute(graph, move, goal) for move, goal in zip(moves, goals)]
+        both = graph.wait(0., timeout=120., goals=handles, goal_timeout=3.)
+        assert both.success and list(both.finished) == [True, True] and both.waited_s < .5
+        for handle in handles:
+            status, code, text = ended(graph, handle)
+            assert (status, code) == (GoalStatus.STATUS_SUCCEEDED, 0) and text.startswith("reached: "), text
+        graph.spin(.1)
+        for key, height in zip(("flange", "right_flange"), heights):
+            assert abs(last[key].transforms[0].translation.z - height) < .03
+        # A goal beyond reach is aborted where upstream's IK has no next step, with the reason.
+        beyond = execute(graph, moves[0], raised("flange", 3.)[1])
+        assert list(graph.wait(0., timeout=120., goals=[beyond]).finished) == [True]
+        status, code, text = ended(graph, beyond)
+        assert (status, code) == (GoalStatus.STATUS_ABORTED, -1) and " IK " in text, text
+    finally:
+        graph.close()

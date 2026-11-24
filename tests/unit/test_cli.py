@@ -169,7 +169,7 @@ def test_configurations_are_those_the_simulator_declares(capsys):
     from rosbridge.catalog import check_configuration, simulator
     robodojo, abc = (simulator(name, ROOT)[2] for name in ("robodojo", "abc"))
     assert check_configuration(robodojo, None) is None and check_configuration(robodojo, "depth") == "depth"
-    with pytest.raises(ValueError, match=r"robodojo has no configuration 'stereo' \(its configurations: depth\)"):
+    with pytest.raises(ValueError, match=r"robodojo has no configuration 'stereo' \(its configurations: depth, move\)"):
         check_configuration(robodojo, "stereo")
     # Refused before preparation is checked or a run is created.
     before = set((ROOT / ".cache/rosbridge/runs").glob("*/run.json"))
