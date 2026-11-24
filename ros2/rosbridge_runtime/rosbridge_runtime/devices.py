@@ -3,7 +3,6 @@ import json
 import time
 from types import SimpleNamespace
 
-from control_msgs.action import FollowJointTrajectory
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 from rclpy.action import ActionServer, CancelResponse, GoalResponse
@@ -12,12 +11,13 @@ from rclpy.event_handler import PublisherEventCallbacks
 from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy
 from rclpy.task import Future
 from rosbridge.core.lens import LensGeometry
-from rosbridge.core.motions import INVALID_GOAL, SUCCESSFUL
 from custom_interfaces.srv import Json
 from sensor_msgs.msg import CameraInfo, Image, JointState, MultiDOFJointState
 from std_msgs.msg import Float64
 from std_srvs.srv import Trigger
-from trajectory_msgs.msg import JointTrajectory, MultiDOFJointTrajectory, MultiDOFJointTrajectoryPoint
+from rosidl_runtime_py.convert import message_to_ordereddict
+from rosidl_runtime_py.utilities import get_action
+from trajectory_msgs.msg import JointTrajectory, MultiDOFJointTrajectory
 
 from . import conversions as conv
 
@@ -33,8 +33,8 @@ KEEPALIVE_S = .2
 
 class Actuator:
     """An arm (`joint_target`, or `pose_target` of its tip link with the measured `pose_state`) or gripper
-    (`target`) with `joint_state` and `stop`. A joint group with a tip takes joint targets and reports `pose_state`,
-    or, with move, serves the `move` action in their place: goals of tip poses it reaches at its own pace."""
+    (`target`) with `joint_state` and `stop`. A joint group with a tip takes joint targets and reports `pose_state`.
+    A group without targets serves no target topic: its backend's actions command it."""
     stopped = 'holding the measured position'
 
     def __init__(self, spec, node):
@@ -52,23 +52,15 @@ class Actuator:
     def _endpoints(self, callbacks):
         node, name = self.node, self.spec.name
         self.state = node.create_publisher(JointState, f'{name}/joint_state', STREAM_QOS)
-        if self.group.scalar:
-            self.command = node.create_subscription(Float64, f'{name}/target', self.target, 10,
-                                                    callback_group=callbacks)
-            return
         if self.group.tip:
             self.pose_state = node.create_publisher(MultiDOFJointState, f'{name}/pose_state', STREAM_QOS)
-        if self.group.tip and not self.group.joint_targets:
-            self.command = node.create_subscription(MultiDOFJointTrajectory, f'{name}/pose_target',
-                                                    self.pose_target, 10, callback_group=callbacks)
+        if not self.group.targets:
             return
-        if self.group.move:
-            self.command = ActionServer(node, FollowJointTrajectory, f'{name}/move', self.execute,
-                                        goal_callback=self.accept, handle_accepted_callback=self.accepted,
-                                        cancel_callback=self.cancel, callback_group=callbacks)
-            return
-        self.command = node.create_subscription(JointTrajectory, f'{name}/joint_target', self.joint_target, 10,
-                                                callback_group=callbacks)
+        kind, target, handler = (
+            (Float64, 'target', self.target) if self.group.scalar else
+            (MultiDOFJointTrajectory, 'pose_target', self.pose_target) if self.group.tip and not self.group.joint_targets
+            else (JointTrajectory, 'joint_target', self.joint_target))
+        self.command = node.create_subscription(kind, f'{name}/{target}', handler, 10, callback_group=callbacks)
 
     def publish(self, stamp, positions, velocities):
         self.state.publish(conv.joint_state(stamp, self.names, positions[self.indices], velocities[self.indices]))
@@ -80,6 +72,7 @@ class Actuator:
         def run():
             try:
                 apply()
+                self.node.world.release(self.group.name, 'replaced by a command')
             except ValueError as error:
                 # A topic publisher gets no reply; the next world wait's reply names the refusal.
                 self.node.world.refuse(self.command.topic_name, error)
@@ -123,44 +116,42 @@ class Actuator:
                                                lambda: self.node.sim.tip_pose(self.group.name))
         self._admit(apply)
 
-    def path(self, request):
-        """A goal's tip poses, their nominal times, its tolerance (m, rad) and seconds to settle; a ValueError says
-        why it is none."""
-        msg, frame, tip = request.multi_dof_trajectory, f'{self.spec.name}/base', self.group.tip
-        if msg.header.frame_id not in ('', frame) or list(msg.joint_names) != [tip] or not msg.points:
-            raise ValueError(f'a goal is a multi_dof_trajectory of {tip} poses in {frame}')
-        _, times, poses = conv.pose_trajectory(msg)
-        tolerance = [0., 0.]
-        for item in request.component_goal_tolerance:
-            if item.component in (item.TRANSLATION, item.ROTATION):
-                tolerance[item.component - item.TRANSLATION] = item.position
-        return poses, times, tolerance, conv.seconds(request.goal_time_tolerance)
+    async def stop(self, request, response):
+        try:
+            await self.node.request(lambda: self.node.world.hold(self.group.name))
+            response.success, response.message = True, self.stopped
+        except Exception as error:
+            response.success, response.message = False, str(error)
+        return response
+
+
+class Goals:
+    """A backend's action as a ROS action server, `<device>/<name>` of the type it names. A goal starts in the world
+    before the server accepts it, so the world has every goal a client holds; its messages cross to the backend as
+    their fields."""
+
+    def __init__(self, action, node):
+        self.node, self.operation, self.type = node, f'{action.device}/{action.name}', get_action(action.type)
+        self.server = ActionServer(node, self.type, self.operation, self.execute, goal_callback=self.accept,
+                                   handle_accepted_callback=self.accepted, cancel_callback=self.cancel,
+                                   callback_group=ReentrantCallbackGroup())
 
     async def accept(self, request):
-        """Start a goal in the world before the server accepts it, so the world has every goal a client holds."""
-        frame, tip = f'{self.spec.name}/base', self.group.tip
+        goal = SimpleNamespace(done=Future(executor=self.node.executor), handle=None, sample=None)
 
-        def feedback(time_s, target, pose):
-            goal.sample = FollowJointTrajectory.Feedback(
-                multi_dof_joint_names=[tip],
-                multi_dof_desired=MultiDOFJointTrajectoryPoint(transforms=[conv.transform(target)]),
-                multi_dof_actual=MultiDOFJointTrajectoryPoint(transforms=[conv.transform(pose)]))
-            goal.sample.header.stamp, goal.sample.header.frame_id = conv.stamp(time_s), frame
+        def feedback(fields):
+            goal.sample = conv.message(self.type.Feedback, fields)
             if goal.handle is not None:
                 goal.handle.publish_feedback(goal.sample)
-
-        def end(reason, code=INVALID_GOAL):
-            if not goal.done.done():  # still this arm's goal
-                self.node.world.end(self.group.name, reason, code, hold=True)
-
-        def start():
-            try:
-                self.node.world.move(self.group.name, lambda *end: goal.done.set_result(end), feedback,
-                                     *self.path(request))
-            except ValueError as error:
-                goal.done.set_result((INVALID_GOAL, str(error)))
-        goal = SimpleNamespace(done=Future(executor=self.node.executor), end=end, handle=None, sample=None)
-        await self.node.request(start)
+        # Ends the goal while it is still this one.
+        goal.end = lambda reason: goal.done.done() or self.node.world.end(self.operation, reason)
+        fields = message_to_ordereddict(request)
+        try:
+            await self.node.request(lambda: self.node.world.start(
+                self.operation, fields, lambda *end: goal.done.set_result(end), feedback))
+        except Exception as error:
+            self.node.executor_error = error  # rclpy drops what a goal callback raises once it has awaited
+            raise
         self.node.starting[id(request)] = goal
         return GoalResponse.ACCEPT
 
@@ -169,26 +160,18 @@ class Actuator:
         goal = self.node.goals[bytes(handle.goal_id.uuid)] = self.node.starting[id(handle.request)]
         del self.node.starting[id(handle.request)]
         goal.handle = handle
-        if goal.sample is not None:  # its first step, commanded before it had a handle
+        if goal.sample is not None:  # the feedback of its start, given before it had a handle
             handle.publish_feedback(goal.sample)
         handle.execute()
 
     async def execute(self, handle):
-        code, text = await self.node.goals[bytes(handle.goal_id.uuid)].done
-        (handle.succeed if code == SUCCESSFUL else handle.canceled if handle.is_cancel_requested else handle.abort)()
-        return FollowJointTrajectory.Result(error_code=code, error_string=text)
+        status, result = await self.node.goals[bytes(handle.goal_id.uuid)].done
+        (handle.succeed if status == 'succeeded' else handle.canceled if handle.is_cancel_requested else handle.abort)()
+        return conv.message(self.type.Result, result)
 
     def cancel(self, handle):
         self.node.world.submit(lambda: self.node.goals[bytes(handle.goal_id.uuid)].end('canceled'))
         return CancelResponse.ACCEPT
-
-    async def stop(self, request, response):
-        try:
-            await self.node.request(lambda: self.node.world.hold(self.group.name))
-            response.success, response.message = True, self.stopped
-        except Exception as error:
-            response.success, response.message = False, str(error)
-        return response
 
 
 class Base(Actuator):

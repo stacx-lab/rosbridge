@@ -18,7 +18,7 @@ Kinex's, so a Kinex workspace uses an export as it is; see [Kinex](kinex.md).
 | `joint` (arm, torso) | `joint_state` (`/<arm>/joint_state`, JointState), `joint_target` (`/<arm>/joint_target`, JointTrajectory), `stop` |
 | `joint` commanded by its tip pose (HandsOn's arms, LIBERO's arm with `--config osc`) | `joint_state`, `pose_target` (`/<arm>/pose_target`, MultiDOFJointTrajectory in `<arm>/base`), `pose_state` (`/<arm>/pose_state`, MultiDOFJointState), `stop` |
 | `joint` that reports its tip (RoboDojo's arms) | `joint_state`, `joint_target`, `pose_state`, `stop` |
-| `joint` commanded by move goals (RoboDojo's arms with `--config move`) | `joint_state`, `pose_state`, `move` (`/<arm>/move`, the FollowJointTrajectory action), `stop`; a move goal reaches tip poses at the arm's own pace, a newer goal replaces the active one, and a stop holds the measured joints |
+| `joint` commanded by its backend's action (RoboDojo's arms with `--config move`) | `joint_state`, `pose_state`, `move` (`/<arm>/move`, the FollowJointTrajectory action), `stop`; the action is the simulator's own ([Move configuration](robodojo.md#move-configuration)): a newer goal replaces the active one, and a stop ends it |
 | `gripper` | `joint_state`, `target` (`/<gripper>/target`, Float64 position), `stop` |
 | `locomotion` (base) | `velocity` (`/<base>/velocity`, Twist), `odometry` (`/<base>/odometry`, Odometry), `stop` |
 | `rgb` (camera) | `image` (`/<camera>/image`), `camera_info`, in frame `<camera>/base` |

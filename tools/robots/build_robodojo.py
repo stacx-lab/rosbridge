@@ -14,6 +14,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT / "simulators/robodojo"), str(Path(__file__).parent)]
 
 import rigs  # noqa: E402
+from rosbridge_robodojo import move  # noqa: E402
 from rosbridge_robodojo.backend import RoboDojoSim, runtime  # noqa: E402
 
 # RoboEnv's parallel-gripper geometry: the pad center ahead of link6, in the flange frame.
@@ -23,15 +24,25 @@ ARM = ("ARX X5 six-joint {side} arm of the RoboDojo rig. Geometry is the sibling
        "names joint1..joint6.")
 JOINTS = ("It takes joint targets, upstream's absolute joint positions ({side}_arm_joint_state of "
           "EvalEnv.take_action), which the native controller interpolates over each 0.04 s frame.")
-# The move configuration (rosbridge.runtime.world.WorldRuntime.move).
+# The move configuration: what an arm's move goal does (rosbridge_robodojo.move).
 GOALS = ("It takes move goals for its flange, which upstream's cuRobo IK turns into upstream's absolute joint "
          "positions ({side}_arm_joint_state of EvalEnv.take_action), a step every 0.04 s frame.")
+MOVE = (f"Move the flange through poses in a straight line at the arm's own pace: multi_dof_trajectory with "
+        f"joint_names [flange] and one transform per point, poses in {{side}}_arm/base (metres, unit quaternion "
+        f"xyzw). A time_from_start of zero moves at up to {move.SPEED[0]:g} m/s and {move.SPEED[1]:g} rad/s; a later "
+        f"time moves slower. The goal succeeds within {move.TOLERANCE[0]:g} m and {move.TOLERANCE[1]:g} rad of the "
+        f"last pose, or within component_goal_tolerance (joint_name flange; component 4 in metres, 5 in radians). It "
+        f"is aborted where the arm is when the flange stalls, as against an obstacle, is not there "
+        f"{move.SETTLE_S:g} s (or goal_time_tolerance) after the motion should end, or has no IK solution. The "
+        f"result's error_code is 0 reached, -4 stalled, -5 late and -1 otherwise; error_string says why and how far "
+        f"from the goal. A goal advances no time: give it to the world wait's goals. A newer goal or a stop ends it.")
 
 
-def arm(side, base, move=False):
-    control = (GOALS if move else JOINTS).format(side=side)
-    return rigs.joint(f"{side}_arm", ARM.format(side=side, control=control), [f"joint{i}" for i in range(1, 7)],
-                      [0.0] * 6, base, tip_pose=True, move=move)
+def arm(side, base, goals=False):
+    control = (GOALS if goals else JOINTS).format(side=side)
+    profile = rigs.joint(f"{side}_arm", ARM.format(side=side, control=control), [f"joint{i}" for i in range(1, 7)],
+                         [0.0] * 6, base, tip_pose=True, targets=not goals)
+    return rigs.action(profile, "move", move.TYPE, MOVE.format(side=side)) if goals else profile
 
 
 def link(sim, side, name):
@@ -61,13 +72,13 @@ def main():
     devices = {"world": rigs.world(
         "Scene reference and authoritative world clock of the RoboDojo table. This device exposes "
         "no task instructions or evaluator results.")}
-    files, depth, move = {}, {}, {}
+    files, depth, goals = {}, {}, {}
     for side in ("left", "right"):
         robot = sim._actuators[side][0]
         lower, upper = map(float, robot.gripper_scale)
         flange = link(sim, side, "link6")
         base = rigs.pose_frame("world:base", link(sim, side, "base_link"))
-        devices[f"{side}_arm"], move[f"{side}_arm"] = arm(side, base), arm(side, base, move=True)
+        devices[f"{side}_arm"], goals[f"{side}_arm"] = arm(side, base), arm(side, base, goals=True)
         devices[f"{side}_gripper"] = rigs.gripper(
             f"{side}_gripper",
             f"ARX X5 {side} parallel two-finger gripper on the {side}_arm flange. The grip joint "
@@ -105,7 +116,7 @@ def main():
              "head_camera", "left_camera", "right_camera"]
     rigs.write_rig(ROOT / "catalog/robots/robodojo/robodojo-arx-x5",
                    rigs.workspace("robodojo-arx-x5", "RoboDojo dual ARX X5", "arm", "ARX X5 (dual)"),
-                   {name: devices[name] for name in order}, files, {"depth": depth, "move": move})
+                   {name: devices[name] for name in order}, files, {"depth": depth, "move": goals})
     print("rig written", flush=True)
     np.set_printoptions(precision=4)
     sim.close()

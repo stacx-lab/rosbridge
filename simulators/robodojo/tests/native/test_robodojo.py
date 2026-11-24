@@ -23,6 +23,9 @@ class Native(WorkerBackend):
     simulator = "robodojo"
     close_timeout_s = 120.
 
+    def joint_step(self, group, pose):  # the backend's own IK for a step of a move goal
+        return self._call("joint_step", group, pose)
+
 
 def native(**options):
     return Native(python=sys.executable, env=dict(os.environ), **options)

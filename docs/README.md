@@ -272,7 +272,7 @@ and register a lazy `rosbridge.backends` entry point (a `WorkerBackend` subclass
 for a native worker). Supply an `ActionLayout` whose commands are positions in
 feedback units (or, for a base's velocity group, body velocities whose feedback is
 odometry; for a pose group, its tip pose, passed to `step(action, poses)` with
-`tip_pose(group)` measuring it), a `device_inventory` naming its devices by type (`joint`,
+`tip_pose(group)` measuring it), any ROS [actions](adding-a-simulator.md#actions) it executes itself, a `device_inventory` naming its devices by type (`joint`,
 `gripper`, `locomotion`, `rgb`, `rgbd`), each camera's image size and intrinsics
 (`intrinsics(camera)`: width, height, fx, fy, cx, cy) and `SpectatorView` settings, and
 declare the inventory in the manifest's `[devices]` table. A manifest's `install`

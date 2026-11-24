@@ -95,6 +95,16 @@ class CommandBuffer:
         self._trajectory[group] = None
         self._expiry.pop(group, None)
 
+    def take(self, group, values):
+        """Take values as a group's command in place of the one it has: joints, a gripper's target, a base's
+        velocity or a pose group's tip pose, as a backend's goal commands them."""
+        if group in self._pose:
+            self._pose[group] = self.unit_pose(values, f"{group} command")
+        else:
+            self._target[list(self._groups[group].indices)] = values
+        self._trajectory[group] = None
+        self._expiry.pop(group, None)
+
     def poses(self):
         """Each pose group's tip pose target [x, y, z, qx, qy, qz, qw] in its device base, or None before its first
         command, as the last action() sampled it."""

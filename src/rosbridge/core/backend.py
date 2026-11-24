@@ -17,9 +17,8 @@ class CommandGroup:
     the tip's pose in the device base, [x, y, z, qx, qy, qz, qw], which the
     simulator's own Cartesian control executes. Its feedback stays joint positions,
     and its limits bound nothing it is commanded. A tip with joint_targets is a
-    joint group that reports its tip's measured pose. With move, it takes goals for
-    its tip (rosbridge.core.motions) in place of joint targets: the backend's
-    joint_step solves each step of one into joints.
+    joint group that reports its tip's measured pose. Without targets, the group's
+    device serves no target topic: only its backend's actions command it.
     """
 
     name: str
@@ -30,7 +29,16 @@ class CommandGroup:
     velocity: bool = False
     tip: str | None = None
     joint_targets: bool = False
-    move: bool = False
+    targets: bool = True
+
+
+@dataclass(frozen=True)
+class Action:
+    """A ROS action a backend executes for a device: `<device>/<name>`, of the action type it names."""
+
+    device: str
+    name: str
+    type: str
 
 
 @dataclass(frozen=True)
@@ -61,7 +69,6 @@ class ActionLayout:
                     or (group.velocity and (group.scalar or len(group.indices) != 3))
                     or (group.tip is not None and (not group.tip or group.scalar or group.velocity))
                     or (group.joint_targets and group.tip is None)
-                    or (group.move and not group.joint_targets)
                     or not all(0 <= i < len(self.joint_names) for i in group.indices)):
                 raise ValueError(f"invalid command group: {group.name}")
             if len({self.joint_names[i] for i in group.indices}) != len(group.indices):
@@ -109,10 +116,23 @@ class SimulatorBackend(Protocol):
     tip_pose(group) returns the measured tip pose there, which a stop holds and
     a group's first trajectory starts from.
 
-    A backend with a joint group that has a tip has tip_pose(group). One whose
-    tip takes goals has joint_step(group, pose): the joints for the next step of a
-    goal, solved from the measured joints as each step starts from the measured
-    pose, or a ValueError saying why it has none.
+    A backend with a joint group that has a tip has tip_pose(group).
+
+    Optionally, actions lists the ROS actions the backend executes for its devices,
+    and the backend, not the world, knows what each does. An operation is the
+    action's `<device>/<name>`, and a goal crosses as the fields of its messages:
+    start(operation, goal) begins a goal, given as its Goal's fields, in place of
+    the operation's active one; end(operation, reason) ends the active one at once.
+    Neither raises for the goal's sake: a goal the backend cannot take ends as it
+    starts. The backend advances its goals in step, where the groups a goal
+    commands take its commands in place of the action's, and reports them in goals:
+    each operation's {"status": None while it executes, then "succeeded" or
+    "aborted", "result" and "feedback": the fields of the action's Result, once it
+    has ended, and of its latest Feedback, or None, "commands": by command group,
+    what the goal commands it, or leaves it commanded once ended; none for a goal
+    that commands no group}. The world takes these as the groups' commands, so a
+    goal and a group's targets replace each other, and a goal's end leaves its
+    groups where the backend puts them.
 
     Optionally, camera_rate_hz sets how many times per simulated second a
     subscribed camera renders (default 30), for a simulator whose renders are

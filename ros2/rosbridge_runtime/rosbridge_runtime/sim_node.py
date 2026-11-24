@@ -20,10 +20,9 @@ from rclpy.task import Future
 from std_srvs.srv import Trigger
 
 from rosbridge.core import load_backend
-from rosbridge.core.motions import GOAL_TOLERANCE_VIOLATED
 from rosbridge.runtime.description import logged, task_description
 from rosbridge.runtime.world import WorldRuntime
-from .devices import device
+from .devices import Goals, device
 from .publishing import ObservationPublisher
 
 
@@ -51,10 +50,11 @@ class SimNode(Node):
         self.get_logger().info(logged(task_description(p["task"], self.sim)))
         self.world = WorldRuntime(self.sim, p["mode"], lambda: self.observations.publish(),
                                   early_stop=p["early_stop"])
-        # Action goals by id, each with the future of its end (done) and end(reason, code); and those the server is
-        # still accepting, by the id of their request, which have no goal id yet (devices.Actuator.accept).
+        # Action goals by id, each with the future of its end (done) and end(reason); and those a server is still
+        # accepting, by the id of their request, which have no goal id yet (devices.Goals).
         self.goals, self.starting = {}, {}
         self.devices = [device(spec, self) for spec in self.sim.devices]
+        self.actions = [Goals(action, self) for action in getattr(self.sim, "actions", ())]
         self.declare_parameter("spectator_views", [v.name for v in self.sim.spectators],
                                ParameterDescriptor(read_only=True), ignore_override=True)
         self.observations = ObservationPublisher(self, p["spectator_rate_hz"])
@@ -117,7 +117,7 @@ class SimNode(Node):
 
             def expire():
                 for goal in goals:
-                    goal.end("not finished within the wait's goal_timeout_s", GOAL_TOLERANCE_VIOLATED)
+                    goal.end("not finished within the wait's goal_timeout_s")
 
             def complete(result):
                 self.pending_wait = None

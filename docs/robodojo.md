@@ -94,8 +94,11 @@ measured pose in `<arm>/base`.
 
 `--config move` gives each arm one command, `<arm>/move`, in place of `joint_target`. It is a
 `control_msgs/action/FollowJointTrajectory`: a goal's `multi_dof_trajectory` gives the `flange` poses,
-in `<arm>/base`, that the arm passes in turn at its own pace, so a caller chooses no times. It is the stepped, closed-loop counterpart of
-uni-robot-agent's `move` tool (`rosbridge.core.motions`), and nothing plans a path around objects:
+in `<arm>/base`, that the arm passes in turn at its own pace, so a caller chooses no times. It is the
+stepped, closed-loop counterpart of uni-robot-agent's `move` tool, and nothing plans a path around
+objects. The action is this backend's own (`rosbridge_robodojo.move`): it advances each goal inside its
+step, and the world only carries the goal, its feedback and its result (see
+[Actions](adding-a-simulator.md#actions)):
 
 1. Each 0.04 s frame commands a pose at most one step from the measured one, 4 cm and 0.13 rad at the
    device pace of 1 m/s and 3.3 rad/s, so a blocked flange is never driven far past where it is.
@@ -114,8 +117,8 @@ uni-robot-agent's `move` tool (`rosbridge.core.motions`), and nothing plans a pa
 5. It is aborted, the arm holding its measured joints, when the flange stalls (`error_code` -4: over four
    frames it gains less than a tenth of the tolerance), when it is not there `goal_time_tolerance` (1 s
    when zero) after its nominal end (-5), or when a frame has no IK solution (-1). `error_string` says
-   why and how far from the goal it ended. A newer goal or a stop also ends it, and a cancel holds the
-   measured joints.
+   why and how far from the goal it ended. A cancel, a newer goal, a stop or a wait's `goal_timeout_s`
+   ends it the same way (-1, with that reason).
 
 A goal advances no time. Send both arms their goals, then give the goals' ids to one `world/wait`: it ends
 on the frame the last goal finishes, so the wait costs no more budget than the motion, and its

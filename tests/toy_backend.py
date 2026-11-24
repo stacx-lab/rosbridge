@@ -1,7 +1,7 @@
 """Synthetic position/scalar backend for shared conformance tests."""
 import threading
 import numpy as np
-from rosbridge.core import ActionLayout, CommandGroup
+from rosbridge.core import Action, ActionLayout, CommandGroup
 from rosbridge.core.devices import device_inventory
 
 
@@ -134,36 +134,73 @@ class PoseToy(ToyBackend):
 
 
 class PairPoseToy(PoseToy):
-    """Two planar arms, left and right, as joint groups that take goals for their tips. A goal's step leaving an
-    arm's 1.5 m reach has no joints, and the tips cannot pass a wall at x = 1.2."""
+    """Two planar arms, left and right, as joint groups that take joint targets and, by an action of this backend's
+    own, goals: move steps an arm's tip 0.1 m a step to the last pose of a goal's multi_dof_trajectory. A step
+    leaving an arm's 1.5 m reach ends the goal, and the tips cannot pass a wall at x = 1.2, where a goal stalls."""
     layout = ActionLayout(("x", "y", "x", "y"), tuple(
-        CommandGroup(name, indices, (-2., -2.), (2., 2.), tip="tip", joint_targets=True, move=True)
+        CommandGroup(name, indices, (-2., -2.), (2., 2.), tip="tip", joint_targets=True)
         for name, indices in (("left", (0, 1)), ("right", (2, 3)))))
     devices = device_inventory(layout, {})
+    actions = tuple(Action(arm, "move", "control_msgs/action/FollowJointTrajectory") for arm in ("left", "right"))
+    JOINTS = {"left": slice(0, 2), "right": slice(2, 4)}
 
     def reset(self, task, seed, randomize):
         super().reset(task, seed, randomize)
         self.position = np.array([.5, -.5, .5, -.5])
+        self.goals, self.targets = {}, {}  # each arm's goal as the world reads it; the tip targets of those executing
 
     def state(self):
         return self.position.copy(), np.zeros(4)
 
+    def tip_pose(self, group):
+        return np.r_[self.position[self.JOINTS[group]], 0., 0., 0., 0., 1.]
+
+    def start(self, operation, goal):
+        points = goal["multi_dof_trajectory"]["points"]
+        if not points:
+            self.targets.pop(operation, None)
+            return self.finish(operation, "aborted", "a goal needs a tip pose")
+        to = points[-1]["transforms"][0]["translation"]
+        self.targets[operation] = np.array([to["x"], to["y"]])
+        self.follow(operation)
+
+    def end(self, operation, reason):
+        if self.targets.pop(operation, None) is not None:
+            self.finish(operation, "aborted", reason)
+
+    def finish(self, operation, status, text):
+        arm = operation.partition("/")[0]
+        self.goals[operation] = {"status": status, "feedback": None, "commands": {arm: self.position[self.JOINTS[arm]]},
+                                 "result": {"error_code": 0 if status == "succeeded" else -1, "error_string": text}}
+
+    def follow(self, operation, moved=True):
+        """The goal's next step, or its end: there, stalled, or out of reach."""
+        arm = operation.partition("/")[0]
+        gap = self.targets[operation] - self.position[self.JOINTS[arm]]
+        distance = np.linalg.norm(gap)
+        command = self.position[self.JOINTS[arm]] + gap * min(1., .1 / max(distance, 1e-9))
+        end = (("succeeded", "reached") if distance < 1e-9 else ("aborted", "stalled") if not moved else
+               ("aborted", "the tip pose is beyond the 1.5 m reach") if np.linalg.norm(command) > 1.5 else None)
+        if end:
+            del self.targets[operation]
+            return self.finish(operation, *end)
+        self.goals[operation] = {"status": None, "result": None, "commands": {arm: command}, "feedback": {
+            "multi_dof_joint_names": ["tip"], "multi_dof_desired": {"transforms": [{"translation": {
+                "x": float(command[0]), "y": float(command[1])}}]}}}
+
     def step(self, action):
         assert threading.get_ident() == self.owner
-        self.position = np.asarray(action, dtype=float).copy()
+        before, self.position = self.position, np.array(action, dtype=float)
+        for operation in self.targets:  # an arm with a goal takes the goal's step
+            arm = operation.partition("/")[0]
+            self.position[self.JOINTS[arm]] = self.goals[operation]["commands"][arm]
         self.position[::2] = np.minimum(self.position[::2], 1.2)
         self.steps += 1
         self.time_s = self.steps * self.period
         self.done = self.max_steps is not None and self.steps >= self.max_steps
-
-    def tip_pose(self, group):
-        return np.r_[self.position[:2] if group == "left" else self.position[2:], 0., 0., 0., 0., 1.]
-
-    def joint_step(self, group, pose):
-        assert threading.get_ident() == self.owner
-        if np.linalg.norm(pose[:2]) > 1.5:
-            raise ValueError("the tip pose is beyond the 1.5 m reach")
-        return pose[:2]
+        for operation in list(self.targets):
+            arm = self.JOINTS[operation.partition("/")[0]]
+            self.follow(operation, moved=not np.allclose(self.position[arm], before[arm]))
 
 
 class SceneToy(ToyBackend):

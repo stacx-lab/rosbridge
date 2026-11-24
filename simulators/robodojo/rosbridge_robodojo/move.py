@@ -1,10 +1,14 @@
-"""Tip goals a joint group steps toward at its own pace, judged on the simulator owner thread. No ROS."""
+"""The arms' move action: goals of flange poses an arm steps toward at its own pace. No ROS and no Isaac: a goal,
+its feedback and its result are the fields of the action's messages."""
 import numpy as np
 
-from .commands import slerp
+from rosbridge.core.commands import CommandBuffer, slerp
 
-# Why a goal ended: the error codes of control_msgs/action/FollowJointTrajectory.
+TYPE = "control_msgs/action/FollowJointTrajectory"
+# Why a goal ended: the action's error codes.
 SUCCESSFUL, INVALID_GOAL, PATH_TOLERANCE_VIOLATED, GOAL_TOLERANCE_VIOLATED = 0, -1, -4, -5
+# The action's components of a pose that a tolerance names: its distance and its angle.
+TRANSLATION, ROTATION = 4, 5
 # The fastest a tip is stepped, m/s and rad/s: 4 cm and 0.13 rad a 0.04 s step, uni-robot-agent's standard profile.
 SPEED = np.array([1., 3.3])
 # How near its last pose a tip has reached it, m and rad, unless the goal says: uni-robot-agent's precision profile.
@@ -67,3 +71,40 @@ class Motion:
     def report(self, reason, time_s):
         distance, angle = offset(self.pose, self.points[-1])
         return f"{reason}: {distance:.3f} m and {angle:.3f} rad from the goal after {time_s - self.start_s:.2f} s"
+
+
+def seconds(duration):
+    return duration["sec"] + duration["nanosec"] * 1e-9
+
+
+def motion(goal, tip, frame, pose, time_s, period):
+    """The Motion of a goal, the fields of the action's Goal, for the tip measured at pose in frame. A ValueError
+    says why it is none."""
+    path = goal["multi_dof_trajectory"]
+    if path["header"]["frame_id"] not in ("", frame) or path["joint_names"] != [tip] or not path["points"] or any(
+            len(point["transforms"]) != 1 for point in path["points"]):
+        raise ValueError(f"a goal is a multi_dof_trajectory of {tip} poses in {frame}")
+    poses = [CommandBuffer.unit_pose([*(transform["translation"][axis] for axis in "xyz"),
+                                      *(transform["rotation"][axis] for axis in "xyzw")], "goal pose")
+             for transform in (point["transforms"][0] for point in path["points"])]
+    tolerance = {item["component"]: item["position"] for item in goal["component_goal_tolerance"]}
+    return Motion(pose, time_s, period, poses, [seconds(point["time_from_start"]) for point in path["points"]],
+                  (tolerance.get(TRANSLATION, 0.), tolerance.get(ROTATION, 0.)), seconds(goal["goal_time_tolerance"]))
+
+
+def transform(pose):
+    x, y, z, qx, qy, qz, qw = map(float, pose)
+    return {"transforms": [{"translation": {"x": x, "y": y, "z": z}, "rotation": {"x": qx, "y": qy, "z": qz, "w": qw}}]}
+
+
+def feedback(tip, frame, time_s, target, pose):
+    """The action's Feedback for a step: the pose it commands and the measured one."""
+    nanoseconds = round(time_s * 1e9)
+    return {"header": {"stamp": {"sec": nanoseconds // 10**9, "nanosec": nanoseconds % 10**9}, "frame_id": frame},
+            "multi_dof_joint_names": [tip], "multi_dof_desired": transform(target), "multi_dof_actual": transform(pose)}
+
+
+def ended(code, text, commands):
+    """A goal that has ended, as a backend reports it: the action's Result and what it leaves its arm commanded."""
+    return {"status": "succeeded" if code == SUCCESSFUL else "aborted", "feedback": None, "commands": commands,
+            "result": {"error_code": code, "error_string": text}}

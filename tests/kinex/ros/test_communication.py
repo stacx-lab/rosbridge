@@ -85,23 +85,22 @@ def test_goals_run_in_parallel_and_a_world_wait_awaits_them(tmp_path):
             cut = await io.request('world.wait', goals=[near, far], goal_timeout_s=.3)  # far needs 0.5 s
             assert list(cut.finished) == [True, True] and cut.waited_s == pytest.approx(.3)
             assert (near.status, near.result.error_code) == ('succeeded', 0)
-            assert (far.status, far.result.error_code) == ('aborted', -5)
+            assert (far.status, far.result.error_string) == ('aborted', "not finished within the wait's goal_timeout_s")
             far = await io.act('right.move', goal(1., -.5))
             both = await io.request('world.wait', duration_s=.5, goals=[near, far])  # its duration and its goals
             assert list(both.finished) == [True, True] and both.waited_s == pytest.approx(.5)
-            assert far.result.error_string == 'reached: 0.000 m and 0.000 rad from the goal after 0.20 s'
+            assert (far.status, far.result.error_string) == ('succeeded', 'reached')
             assert far.feedback.multi_dof_desired.transforms[0].translation.x == pytest.approx(1.)
             assert (await io.request('world.wait', duration_s=.5)).waited_s == pytest.approx(.5)  # a plain wait
             blocked = await io.act('right.move', goal(1.5, -.5))
             await io.request('world.wait', goals=[blocked])
-            assert (blocked.status, blocked.result.error_code) == ('aborted', -4)
+            assert (blocked.status, blocked.result.error_string) == ('aborted', 'stalled')
             cancelled = await io.act('left.move', goal(1., -.5))
             await io.request('world.wait', duration_s=.1)
             await cancelled.cancel()
-            assert (await cancelled.wait()).error_string.startswith('canceled: ') and cancelled.status == 'canceled'
-            with pytest.raises(RuntimeError, match='a goal is a multi_dof_trajectory of tip poses in left/base'):
-                refused = await io.act('left.move', {'multi_dof_trajectory': {'joint_names': ['palm']}})
-                raise RuntimeError((await refused.wait()).error_string)
+            assert (await cancelled.wait()).error_string == 'canceled' and cancelled.status == 'canceled'
+            refused = await io.act('left.move', {})  # a goal the backend cannot take ends as it starts
+            assert (await refused.wait()).error_string == 'a goal needs a tip pose' and refused.status == 'aborted'
     try:
         asyncio.run(run())
     finally:

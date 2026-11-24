@@ -11,7 +11,6 @@ import threading
 import traceback
 
 from rosbridge.core import CommandBuffer
-from rosbridge.core.motions import INVALID_GOAL, SUCCESSFUL, Motion
 from .pacing import Pacer
 from .waits import WaitScheduler
 
@@ -49,7 +48,7 @@ class WorldRuntime:
         self.waits = WaitScheduler()
         self.pacer = Pacer(mode, sim.period, **pacer_options)
         self.refused = {}  # (endpoint, reason) -> commands refused since the last wait reply
-        self.motions = {}  # command group -> the goal its tip is moving to
+        self.goals = {}  # operation -> (complete, feedback) of the goal a backend's action is executing
 
     def _assert_owner(self):
         if threading.get_ident() != self._owner:
@@ -81,47 +80,50 @@ class WorldRuntime:
         self.waits.admit(duration_s, self.time_s, self.steps, self.sim.period, self.ended, complete,
                          REFUSED if self.refused else None, until, timeout_s, expire)
 
-    def move(self, group, complete, feedback, poses, times, tolerance=(0., 0.), settle_s=0.):
-        """Start a goal for the tip of a joint group that takes them (rosbridge.core.motions.Motion), in place of
-        its active one. Each step, feedback(time_s, commanded pose, measured pose); complete(code, text) once it
-        ends. A ValueError says why it cannot start. Owner thread."""
+    def start(self, operation, goal, complete, feedback):
+        """Start a goal of one of the backend's actions (SimulatorBackend), given as its Goal's fields, in place of
+        the operation's active one: feedback(fields) with the Feedback it gives, complete(status, result fields)
+        once it ends. Owner thread."""
         self._assert_owner()
+        self.end(operation, "replaced by a newer goal")
+        self.goals[operation] = complete, feedback
+        self.sim.start(operation, goal)
         if self.ended:
-            raise ValueError(self.ended)
-        poses = [self.commands.unit_pose(pose, f"{group} goal pose") for pose in poses]
-        self.end(group, "replaced by a newer goal")
-        motion = self.motions[group] = Motion(self.sim.tip_pose(group), self.time_s, self.sim.period, poses, times,
-                                              tolerance, settle_s)
-        motion.complete, motion.feedback = complete, feedback
-        self._follow(group, motion, motion.pose)
+            self.sim.end(operation, self.ended)
+        self._follow([operation])
 
-    def _follow(self, group, motion, pose):
-        """Judge a goal by its tip's measured pose and command its next step, or end it; a goal ended short of its
-        last pose holds the measured joints."""
-        outcome = motion.observe(pose, self.time_s)
-        if outcome is None:
-            target = motion.reference()
-            motion.feedback(self.time_s, target, motion.pose)
-            try:
-                return self.commands.set_group(group, self.sim.joint_step(group, target))
-            except ValueError as error:
-                outcome = INVALID_GOAL, str(error)
-        self.end(group, outcome[1], outcome[0], hold=outcome[0] != SUCCESSFUL)
+    def _follow(self, operations, keep=None):
+        """Take what the backend's goals of operations command as their groups' commands, but for the group keep,
+        and deliver their feedback and ends."""
+        for operation in list(operations):
+            (complete, feedback), goal = self.goals[operation], self.sim.goals[operation]
+            for group, values in goal["commands"].items():
+                if group != keep:
+                    self.commands.take(group, values)
+            if goal["status"]:
+                del self.goals[operation]
+                complete(goal["status"], goal["result"])
+            elif goal["feedback"]:
+                feedback(goal["feedback"])
 
-    def end(self, group, reason, code=INVALID_GOAL, hold=False):
-        """End a group's active goal, if it has one. Owner thread."""
-        motion = self.motions.pop(group, None)
-        if motion is not None:
-            if hold:
-                self.hold(group)
-            motion.complete(code, motion.report(reason, self.time_s))
+    def end(self, operation, reason, keep=None):
+        """End an operation's active goal, if it has one: its groups take the commands the backend leaves them,
+        but for the group keep. Owner thread."""
+        if operation in self.goals:
+            self.sim.end(operation, reason)
+            self._follow([operation], keep)
+
+    def release(self, group, reason):
+        """End the goals that command a group, whose command another now gives. Owner thread."""
+        for operation in [operation for operation in self.goals if group in self.sim.goals[operation]["commands"]]:
+            self.end(operation, reason, group)
 
     def hold(self, group):
         """Stop a command group where it is, as its device's stop does: a base at zero velocity, a pose group that
         takes only pose targets at its measured tip pose, any other group at its measured positions (a gripper
-        keeps its applied target instead). Owner thread."""
+        keeps its applied target instead). The goals that command it end. Owner thread."""
         self._assert_owner()
-        self.end(group, "stopped")
+        self.release(group, "stopped")
         spec = next(g for g in self.sim.layout.groups if g.name == group)
         if spec.velocity:
             values = [0.] * len(spec.indices)
@@ -200,8 +202,7 @@ class WorldRuntime:
             if self.sim.success and self.first_success_step is None:
                 self.first_success_step = self.steps
             self.publish()
-            for group, motion in list(self.motions.items()):
-                self._follow(group, motion, self.sim.tip_pose(group))
+            self._follow(self.goals)
             if self.sim.done:
                 reason, cause = self._stop()
                 self._end(ENDS.get(reason, f"the simulator ended it ({reason})") + (f" ({cause})" if cause else ""),
@@ -222,8 +223,8 @@ class WorldRuntime:
     def _end(self, why, reason, error=None, cause=None):
         self.commands.close()
         self.ended = f"the episode ended because {why}"
-        for group in list(self.motions):
-            self.end(group, self.ended)
+        for operation in list(self.goals):
+            self.end(operation, self.ended)
         self._record_terminal(reason, error=error, cause=cause)
 
     def _outcome(self, reason):

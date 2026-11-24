@@ -101,16 +101,21 @@ def pose_trajectory(msg):
     return (start if start > 0 else None), times, poses
 
 
-def transform(pose):
-    """A pose [x, y, z, qx, qy, qz, qw] as a Transform."""
-    from geometry_msgs.msg import Quaternion, Transform, Vector3
-    x, y, z, qx, qy, qz, qw = map(float, pose)
-    return Transform(translation=Vector3(x=x, y=y, z=z), rotation=Quaternion(x=qx, y=qy, z=qz, w=qw))
-
-
 def pose_state(t, frame, tip, pose):
     """A tip pose [x, y, z, qx, qy, qz, qw] in frame as a MultiDOFJointState."""
+    from geometry_msgs.msg import Quaternion, Transform, Vector3
     from sensor_msgs.msg import MultiDOFJointState
-    msg = MultiDOFJointState(joint_names=[tip], transforms=[transform(pose)])
+    x, y, z, qx, qy, qz, qw = map(float, pose)
+    msg = MultiDOFJointState(joint_names=[tip], transforms=[
+        Transform(translation=Vector3(x=x, y=y, z=z), rotation=Quaternion(x=qx, y=qy, z=qz, w=qw))])
     msg.header.stamp, msg.header.frame_id = t, frame
+    return msg
+
+
+def message(cls, fields):
+    """A message of type cls from its fields, as rosidl_runtime_py's message_to_ordereddict gives them."""
+    import copy
+    from rosidl_runtime_py.set_message import set_message_fields
+    msg = cls()
+    set_message_fields(msg, copy.deepcopy(fields))  # which it would otherwise fill with the messages it makes
     return msg

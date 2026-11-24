@@ -3,9 +3,10 @@
 Isaac Sim 5.1 needs Python 3.11, so the world node proxies this class through
 rosbridge.core.worker. Every 0.04 s frame passes absolute arm joints and the
 native normalized gripper value to upstream's EvalEnv.take_action, which
-interpolates the arm over its ten 250 Hz substeps. Each step of an arm's move
-goal becomes joints through the cuRobo IK upstream's ee_pose action uses,
-checked as uni-robot-agent's RoboDojo adapter checks it. Resets load
+interpolates the arm over its ten 250 Hz substeps. In the move configuration
+the arms take goals instead (rosbridge_robodojo.move): each step of one becomes
+joints through the cuRobo IK upstream's ee_pose action uses, checked as
+uni-robot-agent's RoboDojo adapter checks it. Resets load
 upstream's saved evaluation layouts. Ported from RoboEnv's RoboDojo adapter.
 """
 import os
@@ -15,9 +16,10 @@ import sys
 import numpy as np
 
 from rosbridge.catalog import resolve
-from rosbridge.core import ActionLayout, CommandGroup
+from rosbridge.core import Action, ActionLayout, CommandGroup
 from rosbridge.core.devices import device_inventory, spectator_views
 from rosbridge.project import project_root
+from . import move
 from .assets import check_task
 
 CAMERAS = {"head_camera": "cam_head", "left_camera": "cam_left_wrist",
@@ -193,7 +195,7 @@ class RoboDojoSim:
         if configuration not in (None, "depth", "move"):
             raise ValueError(f"RoboDojo has no configuration {configuration!r}")
         self.depth = configuration == "depth"  # RGB-D cameras
-        self.move = configuration == "move"  # the arms take flange goals in place of joint targets
+        self.move = configuration == "move"  # the arms take move goals in place of joint targets
         self._captures = None  # each camera's annotator outputs at the current step; None until it is rendered
         self.requested_max_steps = max_steps
         self.max_steps = max_steps
@@ -203,6 +205,10 @@ class RoboDojoSim:
         self.env = None
         self.task = None
         self.spectators, self._spectators = (), {}
+
+    @property
+    def actions(self):
+        return tuple(Action(f"{side}_arm", "move", move.TYPE) for side in SIDES) if self.move else ()
 
     @property
     def devices(self):
@@ -269,6 +275,7 @@ class RoboDojoSim:
         self.env.step_lim = self.max_steps
         self._index()
         self.steps, self.done, self.stop = 0, False, None
+        self.goals, self._moves = {}, {}  # each arm's move goal as the world reads it, and those that execute
         self._score()
         if self.spectators and not self._spectators:
             self._open_spectators()
@@ -289,9 +296,9 @@ class RoboDojoSim:
             self._limits[side] = (limits[:, 0], limits[:, 1], step)
             offset = len(names)
             names += list(robot.arm_joints_name) + [f"{side}_gripper"]
-            # Joint targets as upstream's arm_joint_state, or flange goals through upstream's cuRobo IK.
+            # Joint targets as upstream's arm_joint_state, or move goals through upstream's cuRobo IK.
             groups.append(CommandGroup(f"{side}_arm", tuple(range(offset, offset + len(arm))), tuple(limits[:, 0]),
-                                       tuple(limits[:, 1]), tip=TIP, joint_targets=True, move=self.move))
+                                       tuple(limits[:, 1]), tip=TIP, joint_targets=True, targets=not self.move))
             groups.append(CommandGroup(f"{side}_gripper", (offset + len(arm),), (0.,), (1.,), scalar=True))
         self.layout = ActionLayout(tuple(names), tuple(groups))
 
@@ -320,7 +327,10 @@ class RoboDojoSim:
         import torch
         if self.done:
             raise RuntimeError("episode is done")
-        action = np.asarray(action, dtype=float)
+        action = np.array(action, dtype=float)
+        for operation, motion in self._moves.items():  # an arm with a goal takes the goal's step
+            offset = 7 * SIDES.index(operation.partition("_")[0])
+            action[offset:offset + 6] = motion.joints
         manager, native = self.env.robot_manager, {}
         for side, offset in zip(SIDES, (0, 7)):
             robot, key, arm, fingers = self._actuators[side]
@@ -352,6 +362,53 @@ class RoboDojoSim:
             elif found or self.steps < self.max_steps:
                 self.stop = ("failure", found or "a task constraint failed")
         self.done = bool(self.env.end_flag[0] or self.steps >= self.max_steps)
+        for operation in list(self._moves):
+            self._follow(operation)
+
+    # Move goals -------------------------------------------------------------------------
+
+    def _joints(self, group):
+        """An arm's measured joints."""
+        _, key, arm, _ = self._actuators[group.removesuffix("_arm")]
+        return values(key.data.joint_pos[0])[arm]
+
+    def start(self, operation, goal):
+        group = operation.partition("/")[0]
+        self._moves.pop(operation, None)
+        try:
+            motion = move.motion(goal, TIP, f"{group}/base", self.tip_pose(group), self.time_s, self.period)
+        except ValueError as error:
+            self.goals[operation] = move.ended(move.INVALID_GOAL, str(error), {group: self._joints(group)})
+            return
+        self._moves[operation], motion.joints = motion, self._joints(group)
+        self._follow(operation)
+
+    def end(self, operation, reason):
+        motion = self._moves.pop(operation, None)
+        if motion is not None:
+            group = operation.partition("/")[0]
+            self.goals[operation] = move.ended(move.INVALID_GOAL, motion.report(reason, self.time_s),
+                                               {group: self._joints(group)})
+
+    def _follow(self, operation):
+        """Judge a goal by its flange's measured pose and solve its next step, or end it: holding its last step if
+        it succeeded, else where the arm is."""
+        group, motion = operation.partition("/")[0], self._moves[operation]
+        outcome = motion.observe(self.tip_pose(group), self.time_s)
+        if outcome is None:
+            target = motion.reference()
+            try:
+                motion.joints = self.joint_step(group, target)
+            except ValueError as error:
+                outcome = move.INVALID_GOAL, str(error)
+            else:
+                self.goals[operation] = {
+                    "status": None, "result": None, "commands": {group: motion.joints},
+                    "feedback": move.feedback(TIP, f"{group}/base", self.time_s, target, motion.pose)}
+                return
+        del self._moves[operation]
+        held = motion.joints if outcome[0] == move.SUCCESSFUL else self._joints(group)
+        self.goals[operation] = move.ended(outcome[0], motion.report(outcome[1], self.time_s), {group: held})
 
     # Pose targets -----------------------------------------------------------------------
 
@@ -387,10 +444,10 @@ class RoboDojoSim:
         its solution nearest them must lie within the joint limits and JUMP_RAD of them, along a joint path clear
         of cuRobo's self and table constraints. A ValueError says why there is none."""
         side = group.removesuffix("_arm")
-        robot, key, arm, _ = self._actuators[side]
+        robot = self._actuators[side][0]
         planner = self.env.robot_manager.ik_solver[robot.robot_name]
         lower, upper, _ = self._limits[side]
-        joints = values(key.data.joint_pos[0])[arm]
+        joints = self._joints(group)
         target = self._native_pose(side, np.asarray(pose, dtype=float))
         q, why = choose(self._candidates(planner, robot, target, joints), joints, lower, upper, JUMP_RAD,
                         lambda rows: self._path_free(planner, rows), list(robot.arm_joints_name))

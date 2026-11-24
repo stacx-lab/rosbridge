@@ -11,9 +11,15 @@ import numpy as np
 import yaml
 
 from rosbridge.catalog import cameras
-from rosbridge.core.motions import SETTLE_S, SPEED, TOLERANCE
 
 CREATED = "2026-10-24T00:00:00Z"
+
+
+def action(profile, name, kind, description):
+    """Add to a device's profile an action its simulator's backend executes: the operation name, at
+    /<device>/<name>, of the ROS action type kind. Returns the profile."""
+    profile["operations"][name] = operation(description, "action", "input", f"/{profile['name']}/{name}", kind)
+    return profile
 
 
 def qos(reliability="reliable", durability="volatile"):
@@ -81,11 +87,10 @@ def world(description):
 
 
 def joint(name, description, joints, home, base, *, units="radians", part="arm", tip="flange",
-          model="arm.urdf", pose=None, tip_pose=False, move=False):
+          model="arm.urdf", pose=None, tip_pose=False, targets=True):
     """A joint device; tip is its FK/IK link, None for trees such as hands. With pose, a sentence on how the
     simulator executes them, the device takes pose targets of its tip instead of joint targets. With tip_pose, it
-    reports its tip's measured pose; with move, it takes goals its tip reaches at its own pace
-    (rosbridge.core.motions) instead of joint targets."""
+    reports its tip's measured pose. Without targets it takes no targets on a topic: its actions command it."""
     count = len(joints)
     over = f"all {count} {part} joints" if count > 1 else f"the {part} joint"
     ops = {
@@ -95,7 +100,7 @@ def joint(name, description, joints, home, base, *, units="radians", part="arm",
             "topic", "output", f"/{name}/joint_state", "sensor_msgs/msg/JointState",
             qos(durability="transient_local")),
     }
-    if not pose and not move:
+    if targets and not pose:
         ops["joint_target"] = operation(
             f"Joint trajectory over {over} in {units}, timed from receipt by "
             "strictly increasing time_from_start and finishing within 120 seconds; velocities, "
@@ -112,24 +117,11 @@ def joint(name, description, joints, home, base, *, units="radians", part="arm",
             f"{pose} A new trajectory replaces the active one and an invalid "
             f"one is ignored; verify the {tip} with pose_state.",
             "topic", "input", f"/{name}/pose_target", "trajectory_msgs/msg/MultiDOFJointTrajectory")
-    if pose or tip_pose or move:
+    if pose or tip_pose:
         ops["pose_state"] = operation(
             f"Measured {tip} pose in {name}/base, stamped with joint_state.",
             "topic", "output", f"/{name}/pose_state", "sensor_msgs/msg/MultiDOFJointState",
             qos(durability="transient_local"))
-    if move:
-        ops["move"] = operation(
-            f"Move the {tip} through poses in a straight line at the {part}'s own pace: multi_dof_trajectory "
-            f"with joint_names [{tip}] and one transform per point, poses in {name}/base (metres, unit "
-            f"quaternion xyzw). A time_from_start of zero moves at up to {SPEED[0]:g} m/s and {SPEED[1]:g} "
-            f"rad/s; a later time moves slower. The goal succeeds within {TOLERANCE[0]:g} m and "
-            f"{TOLERANCE[1]:g} rad of the last pose, or within component_goal_tolerance (joint_name {tip}; "
-            f"component 4 in metres, 5 in radians). It is aborted where the {part} is when the {tip} stalls, "
-            f"as against an obstacle, is not there {SETTLE_S:g} s (or goal_time_tolerance) after the motion "
-            "should end, or has no IK solution. The result's error_code is 0 reached, -4 stalled, -5 late and "
-            "-1 otherwise; error_string says why and how far from the goal. A goal advances no time: give it "
-            "to the world wait's goals. A newer goal or a stop ends it.",
-            "action", "input", f"/{name}/move", "control_msgs/action/FollowJointTrajectory")
     ops["stop"] = operation(f"Stop {part} motion and hold the measured posture.", "service", "input",
                             f"/{name}/stop", "std_srvs/srv/Trigger")
     return device(name, "joint", description, ops,

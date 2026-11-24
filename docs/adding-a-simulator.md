@@ -167,9 +167,9 @@ Implement `SimulatorBackend` (`src/rosbridge/core/backend.py`). Its docstring is
   - A velocity group is a mobile base.
   - A pose group names the tip link of a joint device. Its targets arrive in `step(action, poses)`,
     and `tip_pose(group)` measures them.
-  - A joint group with a tip and `joint_targets` reports its tip's pose, `tip_pose(group)`. With
-    `move`, it takes move goals for its tip in place of joint targets: `joint_step(group, pose)`
-    solves each step of one into joints.
+  - A joint group with a tip and `joint_targets` reports its tip's pose, `tip_pose(group)`.
+  - A group with `targets=False` serves no target topic: only the backend's [actions](#actions)
+    command it.
 - **Devices.** `devices` comes from `device_inventory(layout, cameras, depth=...)`. Each camera
   provides:
   - `intrinsics(camera)` (width, height, fx, fy, cx, cy in ROS pixel centres);
@@ -196,6 +196,33 @@ Implement `SimulatorBackend` (`src/rosbridge/core/backend.py`). Its docstring is
   - `camera_rate_hz`;
   - `distortion` for lensed cameras;
   - `configuration=NAME` for declared configurations.
+
+### Actions
+
+A command that runs over several steps and ends by itself, such as RoboDojo's `move`, is a ROS action
+the backend defines and executes. The world knows no action by name: it serves each one the backend
+lists, carries its goals, feedback and results, and lets waits name its goals.
+
+- **Declare.** `actions` lists an `Action(device, name, type)` per operation; the world serves it as
+  `<device>/<name>`, of any installed action type.
+- **Start and end.** `start(operation, goal)` takes a goal as the fields of the type's `Goal`, in place
+  of the operation's active one. `end(operation, reason)` ends the active one at once: a cancel, a
+  stop, a newer command, a wait's `goal_timeout_s` or the episode's end. Neither raises for the goal's
+  sake; a goal the backend cannot take ends as it starts, with the reason in its result.
+- **Advance.** Goals advance in `step`, one `period` each as everything does, and a goal's commands
+  replace the action's for the groups it commands.
+- **Report.** `goals[operation]` holds the goal's `status` (`None`, then `"succeeded"` or `"aborted"`),
+  its `result` and latest `feedback` as the fields of the type's messages, and `commands`: by command
+  group, what the goal commands it, or leaves it commanded once ended. The world takes these as the
+  groups' commands, so a group serves targets and goals side by side, each replacing the other, and
+  a stop ends the goals that command its group.
+- **Commanded only by goals.** A group with `targets=False` serves no target topic.
+- **Native worker.** `start`, `end`, `actions` and `goals` cross to a `WorkerBackend` as they are.
+- **Profile.** `rigs.action(profile, name, type, description)` adds the operation to the device's
+  profile; the description is the backend's to write.
+- **Tests.** The lifecycle is covered generically (`tests/unit/test_goals.py`, `tests/ros/test_motion.py`,
+  on the toy backend's own action). Test what the action does: its executor without a simulator, as
+  `simulators/robodojo/tests/unit/test_robodojo_move.py` does, and a goal in the graph test.
 
 ## Scoring parity
 
@@ -230,7 +257,8 @@ compare state, reward and success. Document whatever stays different on the simu
 `catalog/robots/<sim>/<rig>/` through `tools/robots/rigs.py`:
 
 - `workspace.yaml`;
-- each device's `profile.yaml`, built with `rigs.joint`, `rigs.gripper`, `rigs.camera` and `rigs.world`;
+- each device's `profile.yaml`, built with `rigs.joint`, `rigs.gripper`, `rigs.camera`, `rigs.world` and,
+  for a backend's actions, `rigs.action`;
 - kinematic URDFs.
 
 Rigs of one simulator share files through symlinks into a common directory, as LIBERO's do. A

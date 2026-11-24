@@ -4,7 +4,6 @@ import pytest
 from action_msgs.msg import GoalStatus
 from builtin_interfaces.msg import Duration
 from control_msgs.action import FollowJointTrajectory
-from control_msgs.msg import JointComponentTolerance
 from custom_interfaces.srv import Wait
 from rclpy.action import ActionClient
 from sensor_msgs.msg import JointState, MultiDOFJointState
@@ -125,14 +124,9 @@ def test_pose_target_moves_the_tip_validates_and_stops(tmp_path):
         graph.close()
 
 
-def goal(*targets, tolerance=None, **trajectory):
-    """A move goal through (x, y, quaternion xyzw) tip poses at the arm's pace, in the arm's base."""
-    path = poses(*targets, **{'frame': '', **trajectory})
-    for point in path.points:
-        point.time_from_start = Duration()
-    return FollowJointTrajectory.Goal(multi_dof_trajectory=path, component_goal_tolerance=[
-        JointComponentTolerance(joint_name='tip', component=JointComponentTolerance.TRANSLATION, position=tolerance)
-    ] if tolerance else [])
+def goal(*targets):
+    """A move goal through (x, y, quaternion xyzw) tip poses."""
+    return FollowJointTrajectory.Goal(multi_dof_trajectory=poses(*targets, frame=''))
 
 
 def arms(graph):
@@ -141,8 +135,9 @@ def arms(graph):
     return clients
 
 
-def test_arms_reach_goals_at_their_own_pace_and_a_wait_ends_with_its_goals(tmp_path):
-    graph = Graph(tmp_path, backend='pair_pose_toy')  # tips at (0.5, -0.5), 0.1 m a 0.1 s step, a wall at x = 1.2
+def test_a_backends_action_runs_goals_and_a_wait_ends_with_its_goals(tmp_path):
+    # The pair toy's own action: tips at (0.5, -0.5) step 0.1 m a 0.1 s step to a goal's last pose; a wall at x = 1.2.
+    graph = Graph(tmp_path, backend='pair_pose_toy')
     try:
         left, right = arms(graph)
         upright, samples = (0., 0., 0., 1.), []
@@ -151,68 +146,60 @@ def test_arms_reach_goals_at_their_own_pace_and_a_wait_ends_with_its_goals(tmp_p
         assert graph.wait(0.).time_s == 0.  # goals advance no time
         both = graph.wait(0., goals=[near, far])  # until the later goal finishes
         assert both.success and list(both.finished) == [True, True] and both.waited_s == pytest.approx(.5)
-        for handle, seconds in ((near, .2), (far, .5)):
-            assert ended(graph, handle) == (GoalStatus.STATUS_SUCCEEDED, 0, f'reached: 0.000 m and 0.000 rad '
-                                                                            f'from the goal after {seconds:.2f} s')
+        assert ended(graph, near) == ended(graph, far) == (GoalStatus.STATUS_SUCCEEDED, 0, 'reached')
         graph.spin(.1)
         commanded = [sample.feedback.multi_dof_desired.transforms[0].translation.x for sample in samples]
         assert commanded == pytest.approx([.6, .7]) and samples[0].feedback.multi_dof_joint_names == ['tip']
-        assert samples[1].feedback.multi_dof_actual.transforms[0].translation.x == pytest.approx(.6)
         # A wait without goals runs its duration, whatever goals do.
         back = execute(graph, left, goal((.5, -.5, upright)))
         assert graph.wait(1.).waited_s == pytest.approx(1.) and ended(graph, back)[0] == GoalStatus.STATUS_SUCCEEDED
-        # The wall stalls a goal, which is aborted there; a goal's own tolerance accepts where it is.
+        # A goal the backend ends itself, here stalled at the wall, is aborted with the backend's result.
         blocked = execute(graph, right, goal((1.5, -.5, upright)))
-        assert graph.wait(0., goals=[blocked]).waited_s == pytest.approx(.5)
-        assert ended(graph, blocked) == (GoalStatus.STATUS_ABORTED, -4,
-                                         'stalled: 0.300 m and 0.000 rad from the goal after 0.50 s')
-        loose = execute(graph, right, goal((1.5, -.5, upright), tolerance=.35))
-        assert graph.wait(0., goals=[loose]).waited_s == 0. and ended(graph, loose)[1] == 0
-        # A goal still executing at the wait's goal timeout is cancelled; the wait then runs out its duration.
+        assert graph.wait(0., goals=[blocked]).waited_s == pytest.approx(.3)
+        assert ended(graph, blocked) == (GoalStatus.STATUS_ABORTED, -1, 'stalled')
+        # A goal still executing at the wait's goal timeout is ended; the wait then runs out its duration.
         slow = execute(graph, left, goal((1.1, -.5, upright)))
         cut = graph.wait(.4, goals=[slow], goal_timeout=.2)
         assert cut.success and list(cut.finished) == [True] and cut.waited_s == pytest.approx(.4)
-        assert ended(graph, slow) == (GoalStatus.STATUS_ABORTED, -5, "not finished within the wait's goal_timeout_s: "
-                                                                   "0.400 m and 0.000 rad from the goal after 0.20 s")
+        assert ended(graph, slow) == (GoalStatus.STATUS_ABORTED, -1, "not finished within the wait's goal_timeout_s")
         unknown = graph.call(graph.wait_client, Wait.Request(duration_s=1., goals=[UUID(uuid=[7] * 16)]))
         assert not unknown.success and unknown.message == 'goals must be goals this world accepted'
-        assert graph.wait(0.).time_s == pytest.approx(2.4)
+        assert graph.wait(0.).time_s == pytest.approx(2.2)
     finally:
         graph.close()
 
 
-def test_a_goal_ends_when_cancelled_replaced_or_not_a_goal(tmp_path):
+def test_a_goal_ends_when_cancelled_replaced_or_stopped_and_shares_its_arm_with_joint_targets(tmp_path):
     graph = Graph(tmp_path, backend='pair_pose_toy')
     try:
         left, _ = arms(graph)
-        states, stop = [], graph.node.create_client(Trigger, 'left/stop')
-        graph.node.create_subscription(JointState, 'left/joint_state', states.append, STREAM_QOS)
-        graph.until(lambda: stop.service_is_ready() and states)
-        assert not graph.node.count_subscribers('left/joint_target')  # move goals are its only command
+        states, joints, stop = endpoints(graph, 'left', 'joint_target', JointTrajectory)
         upright = (0., 0., 0., 1.)
         cancelled = execute(graph, left, goal((1., -.5, upright)))
         assert graph.wait(.2).success
         cancel = cancelled.cancel_goal_async()
         graph.until(cancel.done)
-        assert ended(graph, cancelled) == (GoalStatus.STATUS_CANCELED, -1,
-                                           'canceled: 0.300 m and 0.000 rad from the goal after 0.20 s')
+        assert ended(graph, cancelled) == (GoalStatus.STATUS_CANCELED, -1, 'canceled')
         assert graph.wait(0., goals=[cancelled]).waited_s == 0.  # finished: nothing to wait for
         first = execute(graph, left, goal((1., -.5, upright)))
         second = execute(graph, left, goal((.7, 0., upright)))
-        assert ended(graph, first)[2].startswith('replaced by a newer goal: ')
-        assert graph.call(stop, Trigger.Request()).success and ended(graph, second)[2].startswith('stopped: ')
-        assert graph.wait(1.).success  # the stop held the joints the goal would have moved
+        assert ended(graph, first)[2] == 'replaced by a newer goal'
+        send(graph, joints, trajectory([.5, -.5], names=('x', 'y')))  # a joint target takes the arm from the goal
+        assert ended(graph, second)[2] == 'replaced by a command'
+        assert graph.wait(.5).success
         graph.spin(.1)
-        assert list(states[-1].position) == pytest.approx([.7, -.5])
-        for invalid, reason in ((goal((1., -.5, upright), tip='palm'), 'a goal is a multi_dof_trajectory of tip '
-                                 'poses in left/base'),
-                                (goal((1., -.5, (0., 0., 0., 0.))), 'left goal pose needs a unit quaternion'),
-                                (goal((.5, 1.9, upright)), None)):
+        assert list(states[-1].position) == pytest.approx([.6, -.45])  # from the goal's command, (0.7, -0.4)
+        third = execute(graph, left, goal((.9, -.45, upright)))  # and a goal takes it from the trajectory
+        assert graph.wait(.1).success
+        assert graph.call(stop, Trigger.Request()).success and ended(graph, third)[2] == 'stopped'
+        assert graph.wait(1.).success  # the stop held the joints
+        graph.spin(.1)
+        assert list(states[-1].position) == pytest.approx([.7, -.45])
+        for invalid, reason in ((FollowJointTrajectory.Goal(), 'a goal needs a tip pose'),
+                                (goal((.7, 1.9, upright)), 'the tip pose is beyond the 1.5 m reach')):
             refused = execute(graph, left, invalid)
             graph.wait(0., goals=[refused])
-            status, code, text = ended(graph, refused)
-            assert (status, code) == (GoalStatus.STATUS_ABORTED, -1)
-            assert text == reason or text.startswith('the tip pose is beyond the 1.5 m reach: ')
+            assert ended(graph, refused) == (GoalStatus.STATUS_ABORTED, -1, reason)
     finally:
         graph.close()
 
